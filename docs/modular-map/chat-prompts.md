@@ -215,8 +215,8 @@ Regras:
 Quero trabalhar apenas no modulo Radar de Conexoes do SagB.
 
 Escopo:
-- components/RadarConnectionsView.tsx
-- data/radarConnectionsBlueprint.ts
+- components/RICView.tsx
+- data/ricBlueprint.ts
 - docs/Estrutura_SagB/Radar_de_Conexoes
 - migracao nagi_radar_core quando necessario
 

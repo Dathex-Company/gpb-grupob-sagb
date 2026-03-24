@@ -4,6 +4,8 @@ import { Avatar } from './Avatar';
 import { BackIcon, BotIcon, CloudUploadIcon, PencilIcon, PlusIcon, SearchIcon, TrashIcon, XIcon } from './Icon';
 import { auth, db } from '../services/supabase';
 import { addDoc, collection, deleteDoc, doc, Timestamp, updateDoc } from '../services/supabase';
+import { deriveOperationalStatus, getOperationalStatusLabel, isAgentOperationallyBlocked } from '../utils/agentOperational';
+import { getAgentAuthEmail, getHumanAccessStatusLabel, isHumanStructuralEntity, resolveHumanAccessStatus } from '../utils/humanIdentity';
 
 interface AgentFactoryProps {
     onNavigateToEcosystem: () => void;
@@ -16,11 +18,14 @@ interface AgentFactoryProps {
     agents: Agent[];
     initialAgent?: Agent | null;
     onManageIntelligence?: (agent: Agent) => void;
+    authUsersByEmail?: Record<string, { id: string; email: string }>;
+    activeSessionEmail?: string | null;
 }
 
 type EntityType = 'HUMANO' | 'AGENTE' | 'HIBRIDO';
 type RoleType = 'LIDERANCA' | 'CONSULTORIA' | 'AUDITORIA' | 'EXECUCAO' | 'MENTORIA' | 'APOIO';
 type StructuralStatus = 'ESTRUTURAL' | 'EM_CONFIGURACAO' | 'HOMOLOGACAO' | 'ATIVO' | 'ARQUIVADO';
+type OperationalStatus = 'ESTRUTURAL' | 'DISPONIVEL' | 'ATIVO';
 type OperationalActivation = 'ATIVO_NASCIMENTO' | 'PREVISTO_GATILHO' | 'RESERVADO_FUTURO' | 'COMPARTILHADO';
 type DnaStatus = 'SEM_DNA' | 'DNA_BASE' | 'DNA_PARCIAL' | 'DNA_COMPLETO' | 'REVISAR';
 type OperationalClass = 'ECONOMICA' | 'BALANCEADA' | 'PREMIUM' | 'CRITICA';
@@ -33,6 +38,8 @@ interface FormCustomField {
 interface AgentFormState {
     name: string;
     entityType: EntityType;
+    email: string;
+    usesEmail: boolean;
     shortDescription: string;
     avatarUrl: string;
     origin: string;
@@ -44,6 +51,7 @@ interface AgentFormState {
     level: AgentTier;
     roleType: RoleType;
     structuralStatus: StructuralStatus;
+    operationalStatus: OperationalStatus;
     operationalActivation: OperationalActivation;
     dnaStatus: DnaStatus;
     operationalClass: OperationalClass;
@@ -95,6 +103,12 @@ const OPERATIONAL_ACTIVATION_OPTIONS: Array<{ value: OperationalActivation; labe
     { value: 'COMPARTILHADO', label: 'Compartilhado' }
 ];
 
+const OPERATIONAL_STATUS_OPTIONS: Array<{ value: OperationalStatus; label: string }> = [
+    { value: 'ESTRUTURAL', label: 'Estrutural' },
+    { value: 'DISPONIVEL', label: 'Disponível' },
+    { value: 'ATIVO', label: 'Ativo' }
+];
+
 const DNA_STATUS_OPTIONS: Array<{ value: DnaStatus; label: string }> = [
     { value: 'SEM_DNA', label: 'Sem DNA' },
     { value: 'DNA_BASE', label: 'DNA base' },
@@ -125,6 +139,14 @@ const STRUCTURAL_TO_AGENT_STATUS: Record<StructuralStatus, AgentStatus> = {
     HOMOLOGACAO: 'STAGING',
     ATIVO: 'ACTIVE',
     ARQUIVADO: 'BLOCKED'
+};
+
+const STRUCTURAL_STATUS_IMPACT: Record<StructuralStatus, string> = {
+    ESTRUTURAL: 'Registro estrutural sem disponibilidade operacional.',
+    EM_CONFIGURACAO: 'Cadastro em configuracao e ainda fora da operacao.',
+    HOMOLOGACAO: 'Disponivel para testes controlados (staging).',
+    ATIVO: 'Disponivel para operacao oficial no ecossistema.',
+    ARQUIVADO: 'Registro desativado e bloqueado para uso operacional.'
 };
 
 const normalizeText = (value: string) =>
@@ -241,6 +263,8 @@ const normalizeModelValue = (value: string): ModelProvider | '' => {
 const createEmptyForm = (activeBU: BusinessUnit, ventures: Venture[]): AgentFormState => ({
     name: '',
     entityType: 'AGENTE',
+    email: '',
+    usesEmail: false,
     shortDescription: '',
     avatarUrl: '',
     origin: 'Cadastro manual',
@@ -252,6 +276,7 @@ const createEmptyForm = (activeBU: BusinessUnit, ventures: Venture[]): AgentForm
     level: 'TÁTICO',
     roleType: 'EXECUCAO',
     structuralStatus: 'EM_CONFIGURACAO',
+    operationalStatus: 'ESTRUTURAL',
     operationalActivation: 'ATIVO_NASCIMENTO',
     dnaStatus: 'SEM_DNA',
     operationalClass: 'BALANCEADA',
@@ -273,6 +298,8 @@ const agentToForm = (agent: Agent, activeBU: BusinessUnit, ventures: Venture[]):
         ...fallback,
         name: agent.name || '',
         entityType: (agent.entityType || (agent.collaboratorType === 'HUMANO' ? 'HUMANO' : 'AGENTE')) as EntityType,
+        email: agent.email || '',
+        usesEmail: Boolean(agent.usesEmail || (agent.email && !isHumanStructuralEntity(agent))),
         shortDescription: agent.shortDescription || '',
         avatarUrl: agent.avatarUrl || '',
         origin: agent.origin || 'Cadastro manual',
@@ -284,6 +311,7 @@ const agentToForm = (agent: Agent, activeBU: BusinessUnit, ventures: Venture[]):
         level: (agent.tier || 'TÁTICO') as AgentTier,
         roleType: (agent.roleType || 'EXECUCAO') as RoleType,
         structuralStatus: (agent.structuralStatus || (agent.status === 'ACTIVE' ? 'ATIVO' : agent.status === 'STAGING' ? 'HOMOLOGACAO' : agent.status === 'BLOCKED' ? 'ARQUIVADO' : 'EM_CONFIGURACAO')) as StructuralStatus,
+        operationalStatus: deriveOperationalStatus(agent) as OperationalStatus,
         operationalActivation: (agent.operationalActivation || 'ATIVO_NASCIMENTO') as OperationalActivation,
         dnaStatus: (agent.dnaStatus || 'SEM_DNA') as DnaStatus,
         operationalClass: (agent.operationalClass || 'BALANCEADA') as OperationalClass,
@@ -310,7 +338,9 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
     ventures,
     agents,
     initialAgent,
-    onManageIntelligence
+    onManageIntelligence,
+    authUsersByEmail = {},
+    activeSessionEmail
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [form, setForm] = useState<AgentFormState>(() => createEmptyForm(activeBU, ventures));
@@ -318,9 +348,15 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
     const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
+    const [showAdvancedColumns, setShowAdvancedColumns] = useState(false);
     const [batchOrigin, setBatchOrigin] = useState('Importacao StartyB');
     const [batchVentureId, setBatchVentureId] = useState('');
     const [importFeedback, setImportFeedback] = useState('');
+
+    const shouldRequireEmail = useMemo(() => {
+        if (form.entityType === 'HUMANO' || form.entityType === 'HIBRIDO') return true;
+        return form.usesEmail;
+    }, [form.entityType, form.usesEmail]);
 
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const batchInputRef = useRef<HTMLInputElement>(null);
@@ -401,6 +437,25 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
         setForm((prev) => ({ ...prev, [key]: value }));
     };
 
+    const handleEntityTypeChange = (entityType: EntityType) => {
+        setForm((prev) => {
+            const forceEmail = entityType === 'HUMANO' || entityType === 'HIBRIDO';
+            return {
+                ...prev,
+                entityType,
+                usesEmail: forceEmail ? true : prev.usesEmail
+            };
+        });
+    };
+
+    const handleUsesEmailChange = (usesEmail: boolean) => {
+        setForm((prev) => ({
+            ...prev,
+            usesEmail,
+            email: usesEmail ? prev.email : ''
+        }));
+    };
+
     const toggleStack = (stack: ModelProvider) => {
         setForm((prev) => {
             const hasStack = prev.allowedStacks.includes(stack);
@@ -446,10 +501,15 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
         const preferredModel = (draft.preferredModel || normalizedStacks[0] || 'deepseek') as ModelProvider;
         const structuralStatus = draft.structuralStatus;
         const status = STRUCTURAL_TO_AGENT_STATUS[structuralStatus] || 'STAGING';
+        const operationalStatus = draft.dnaStatus === 'DNA_COMPLETO'
+            ? (draft.operationalStatus === 'ATIVO' ? 'ATIVO' : 'DISPONIVEL')
+            : 'ESTRUTURAL';
 
         return {
             name: draft.name.trim(),
             entityType: draft.entityType,
+            email: draft.email.trim() || undefined,
+            usesEmail: draft.entityType === 'HUMANO' || draft.entityType === 'HIBRIDO' ? true : draft.usesEmail,
             shortDescription: draft.shortDescription.trim(),
             origin: (originOverride || draft.origin || 'Cadastro manual').trim(),
             ventureId: selectedVenture?.id,
@@ -458,11 +518,12 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
             unitName: draft.unitName.trim(),
             area: draft.area.trim(),
             functionName: draft.functionName.trim(),
-            baseRoleUniversal: (draft.baseRoleUniversal || draft.functionName).trim(),
-            officialRole: (draft.functionName || draft.baseRoleUniversal).trim(),
+            baseRoleUniversal: draft.baseRoleUniversal.trim() || undefined,
+            officialRole: draft.functionName.trim(),
             tier: draft.level,
             roleType: draft.roleType,
             structuralStatus,
+            operationalStatus,
             operationalActivation: draft.operationalActivation,
             dnaStatus: draft.dnaStatus,
             operationalClass: draft.operationalClass,
@@ -480,19 +541,28 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
             avatarUrl: draft.avatarUrl || undefined,
             customFields: toCustomFieldObject(draft.customFields),
             status,
-            active: status === 'ACTIVE' || status === 'STAGING',
+            active: operationalStatus !== 'ESTRUTURAL' && (status === 'ACTIVE' || status === 'STAGING'),
             workspaceId: activeWorkspaceId || DEFAULT_WORKSPACE_ID,
             updatedAt: Timestamp.now(),
             updatedBy: userId || undefined
         };
     };
 
-    const persistAgent = async (draft: AgentFormState, originOverride?: string) => {
-        const payload = buildAgentPayload(draft, originOverride);
+    const validateDraft = (draft: AgentFormState) => {
+        if (!draft.name.trim()) throw new Error('Nome e obrigatorio.');
+        if (!draft.ventureId) throw new Error('Venture e obrigatoria.');
+        if (!draft.functionName.trim()) throw new Error('Funcao principal e obrigatoria.');
+        const requiresEmail = draft.entityType === 'HUMANO' || draft.entityType === 'HIBRIDO' || draft.usesEmail;
+        if (requiresEmail && !draft.email.trim()) throw new Error('E-mail é obrigatório para este cadastro.');
+        if (draft.allowedStacks.length === 0) throw new Error('Selecione ao menos uma stack permitida.');
+        if (draft.preferredModel && !draft.allowedStacks.includes(draft.preferredModel)) {
+            throw new Error('Modelo preferencial precisa estar dentro da stack permitida.');
+        }
+    };
 
-        if (!payload.name) throw new Error('Nome e obrigatorio.');
-        if (!payload.ventureId) throw new Error('Venture e obrigatoria.');
-        if (!payload.functionName && !payload.baseRoleUniversal) throw new Error('Funcao e obrigatoria.');
+    const persistAgent = async (draft: AgentFormState, originOverride?: string) => {
+        validateDraft(draft);
+        const payload = buildAgentPayload(draft, originOverride);
 
         if (editingAgentId && isUuid(editingAgentId)) {
             await updateDoc(doc(db, 'agents', editingAgentId), payload);
@@ -621,6 +691,10 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
             ...draft,
             name: readByAliases(row, ['nome', 'name']),
             entityType,
+            email: readByAliases(row, ['email', 'e-mail', 'mail']),
+            usesEmail: ['HUMANO', 'HIBRIDO'].includes(entityType)
+                ? true
+                : ['sim', 'yes', 'true', '1'].includes(normalizeText(readByAliases(row, ['usa email', 'uses_email', 'possui email']))),
             shortDescription: readByAliases(row, ['descricao', 'descricao curta', 'short_description', 'description']),
             origin: readByAliases(row, ['origem', 'origin']) || batchOrigin,
             ventureId: resolveVentureId(ventureRaw) || batchVentureId,
@@ -769,14 +843,40 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                             <CloudUploadIcon className="h-4 w-4" />
                             {isImporting ? 'Importando...' : 'Importar lote'}
                         </button>
+                        <button
+                            onClick={() => setShowAdvancedColumns((prev) => !prev)}
+                            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-gray-700 transition hover:bg-gray-50"
+                        >
+                            {showAdvancedColumns ? 'Colunas essenciais' : 'Colunas avancadas'}
+                        </button>
                     </div>
                     {importFeedback && <div className="border-b border-gray-100 bg-gray-50 px-6 py-2 text-[11px] font-semibold text-gray-600">{importFeedback}</div>}
 
                     <div className="flex-1 overflow-auto">
-                        <table className="min-w-[1700px] table-fixed border-collapse">
+                        <table className={`${showAdvancedColumns ? 'min-w-[1700px]' : 'min-w-[1120px]'} table-fixed border-collapse`}>
                             <thead className="sticky top-0 z-10 bg-white shadow-sm">
                                 <tr className="border-b border-gray-100 text-left text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">
-                                    <th className="px-3 py-3">Nome</th><th className="px-3 py-3">Tipo</th><th className="px-3 py-3">Venture</th><th className="px-3 py-3">Unidade</th><th className="px-3 py-3">Area</th><th className="px-3 py-3">Funcao</th><th className="px-3 py-3">Cargo-base</th><th className="px-3 py-3">Nivel</th><th className="px-3 py-3">Papel</th><th className="px-3 py-3">Status estrutural</th><th className="px-3 py-3">Ativacao</th><th className="px-3 py-3">DNA</th><th className="px-3 py-3">Classe</th><th className="px-3 py-3">Stack permitida</th><th className="px-3 py-3">Modelo preferencial</th><th className="px-3 py-3">Responsavel humano</th><th className="px-3 py-3">Documentos</th><th className="px-3 py-3">Origem</th><th className="px-3 py-3">Ultima atualizacao</th><th className="px-3 py-3 text-center">Acoes</th>
+                                    <th className="px-3 py-3">Nome</th>
+                                    <th className="px-3 py-3">Tipo</th>
+                                    <th className="px-3 py-3">Venture</th>
+                                    <th className="px-3 py-3">Unidade</th>
+                                    {showAdvancedColumns && <th className="px-3 py-3">Area</th>}
+                                    <th className="px-3 py-3">Funcao</th>
+                                    {showAdvancedColumns && <th className="px-3 py-3">Cargo-base</th>}
+                                    <th className="px-3 py-3">Nivel</th>
+                                    {showAdvancedColumns && <th className="px-3 py-3">Papel</th>}
+                                    <th className="px-3 py-3">Status estrutural</th>
+                                    {showAdvancedColumns && <th className="px-3 py-3">Ativacao</th>}
+                                    <th className="px-3 py-3">DNA</th>
+                                    {showAdvancedColumns && <th className="px-3 py-3">Status operacional</th>}
+                                    {showAdvancedColumns && <th className="px-3 py-3">Classe</th>}
+                                    {showAdvancedColumns && <th className="px-3 py-3">Stack permitida</th>}
+                                    {showAdvancedColumns && <th className="px-3 py-3">Modelo preferencial</th>}
+                                    <th className="px-3 py-3">Responsavel humano</th>
+                                    {showAdvancedColumns && <th className="px-3 py-3">Documentos</th>}
+                                    {showAdvancedColumns && <th className="px-3 py-3">Origem</th>}
+                                    <th className="px-3 py-3">Ultima atualizacao</th>
+                                    <th className="px-3 py-3 text-center">Acoes</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -789,8 +889,11 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                                     const updatedAtText = updatedAt ? new Date(updatedAt).toLocaleString('pt-BR') : '-';
                                     const structuralStatus = agent.structuralStatus || (agent.status === 'ACTIVE' ? 'ATIVO' : agent.status === 'STAGING' ? 'HOMOLOGACAO' : 'EM_CONFIGURACAO');
                                     const dnaStatus = agent.dnaStatus || 'SEM_DNA';
+                                    const operationalStatus = deriveOperationalStatus(agent);
+                                    const isBlocked = isAgentOperationallyBlocked(agent);
+                                    const humanAccessStatus = resolveHumanAccessStatus(agent, authUsersByEmail, activeSessionEmail);
                                     return (
-                                        <tr key={agent.id} className="border-b border-gray-100 text-[12px] text-gray-700 hover:bg-gray-50">
+                                        <tr key={agent.id} className={`border-b border-gray-100 text-[12px] text-gray-700 hover:bg-gray-50 ${isBlocked ? 'opacity-55' : ''}`}>
                                             <td className="px-3 py-2">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar name={agent.name} url={agent.avatarUrl} className="h-9 w-9" />
@@ -803,20 +906,22 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                                             <td className="px-3 py-2">{toDisplayOption(agent.entityType || (agent.collaboratorType === 'HUMANO' ? 'HUMANO' : 'AGENTE'))}</td>
                                             <td className="px-3 py-2">{ventureName}</td>
                                             <td className="px-3 py-2">{agent.unitName || agent.division || '-'}</td>
-                                            <td className="px-3 py-2">{agent.area || agent.sector || '-'}</td>
+                                            {showAdvancedColumns && <td className="px-3 py-2">{isHumanStructuralEntity(agent) ? <div className="space-y-1"><div>{renderBadge(getHumanAccessStatusLabel(humanAccessStatus), humanAccessStatus === 'AUTENTICADO' ? 'green' : humanAccessStatus === 'AUTENTICAVEL' ? 'purple' : 'gray')}</div><div className="text-[10px] text-gray-400 truncate">{getAgentAuthEmail(agent) || '-'}</div></div> : '-'}</td>}
+                                            {showAdvancedColumns && <td className="px-3 py-2">{agent.area || agent.sector || '-'}</td>}
                                             <td className="px-3 py-2">{agent.functionName || agent.officialRole || '-'}</td>
-                                            <td className="px-3 py-2">{agent.baseRoleUniversal || agent.officialRole || '-'}</td>
+                                            {showAdvancedColumns && <td className="px-3 py-2">{agent.baseRoleUniversal || '-'}</td>}
                                             <td className="px-3 py-2">{toDisplayOption(agent.tier || '-')}</td>
-                                            <td className="px-3 py-2">{toDisplayOption(agent.roleType || '-')}</td>
+                                            {showAdvancedColumns && <td className="px-3 py-2">{toDisplayOption(agent.roleType || '-')}</td>}
                                             <td className="px-3 py-2">{renderBadge(toDisplayOption(structuralStatus), structuralStatus === 'ATIVO' ? 'green' : structuralStatus === 'HOMOLOGACAO' ? 'purple' : 'gray')}</td>
-                                            <td className="px-3 py-2">{toDisplayOption(agent.operationalActivation || '-')}</td>
-                                            <td className="px-3 py-2">{renderBadge(toDisplayOption(dnaStatus), dnaStatus === 'DNA_COMPLETO' ? 'green' : dnaStatus === 'DNA_PARCIAL' ? 'yellow' : 'gray')}</td>
-                                            <td className="px-3 py-2">{toDisplayOption(agent.operationalClass || '-')}</td>
-                                            <td className="px-3 py-2">{stackText}</td>
-                                            <td className="px-3 py-2">{toDisplayOption(agent.preferredModel || agent.modelProvider || '-')}</td>
+                                            {showAdvancedColumns && <td className="px-3 py-2">{toDisplayOption(agent.operationalActivation || '-')}</td>}
+                                            <td className="px-3 py-2">{renderBadge(dnaStatus === 'DNA_COMPLETO' ? 'DNA Completo' : dnaStatus === 'SEM_DNA' ? 'Sem DNA' : toDisplayOption(dnaStatus), dnaStatus === 'DNA_COMPLETO' ? 'green' : dnaStatus === 'DNA_PARCIAL' ? 'yellow' : 'gray')}</td>
+                                            {showAdvancedColumns && <td className="px-3 py-2">{renderBadge(getOperationalStatusLabel(operationalStatus), operationalStatus === 'ATIVO' ? 'green' : operationalStatus === 'DISPONIVEL' ? 'purple' : 'gray')}</td>}
+                                            {showAdvancedColumns && <td className="px-3 py-2">{toDisplayOption(agent.operationalClass || '-')}</td>}
+                                            {showAdvancedColumns && <td className="px-3 py-2">{stackText}</td>}
+                                            {showAdvancedColumns && <td className="px-3 py-2">{toDisplayOption(agent.preferredModel || agent.modelProvider || '-')}</td>}
                                             <td className="px-3 py-2">{agent.humanOwner || '-'}</td>
-                                            <td className="px-3 py-2">{Number(agent.docCount || 0)}</td>
-                                            <td className="px-3 py-2">{agent.origin || '-'}</td>
+                                            {showAdvancedColumns && <td className="px-3 py-2">{Number(agent.docCount || 0)}</td>}
+                                            {showAdvancedColumns && <td className="px-3 py-2">{agent.origin || '-'}</td>}
                                             <td className="px-3 py-2 text-[11px]">{updatedAtText}</td>
                                             <td className="px-3 py-2">
                                                 <div className="flex items-center justify-center gap-2">
@@ -828,7 +933,7 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                                         </tr>
                                     );
                                 })}
-                                {filteredAgents.length === 0 && <tr><td colSpan={20} className="px-6 py-10 text-center text-sm font-semibold text-gray-400">Nenhum cadastro encontrado para o filtro atual.</td></tr>}
+                                {filteredAgents.length === 0 && <tr><td colSpan={showAdvancedColumns ? 22 : 11} className="px-6 py-10 text-center text-sm font-semibold text-gray-400">Nenhum cadastro encontrado para o filtro atual.</td></tr>}
                             </tbody>
                         </table>
                     </div>
@@ -849,9 +954,15 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                                 <div className="grid grid-cols-1 gap-3">
                                     <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Nome *</span><input value={form.name} onChange={(e) => setFormField('name', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Tipo *</span><select value={form.entityType} onChange={(e) => setFormField('entityType', e.target.value as EntityType)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{ENTITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                                        <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Tipo *</span><select value={form.entityType} onChange={(e) => handleEntityTypeChange(e.target.value as EntityType)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{ENTITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                                         <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Origem</span><input value={form.origin} onChange={(e) => setFormField('origin', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label>
                                     </div>
+                                    {(form.entityType === 'AGENTE') && (
+                                        <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Agente usa e-mail próprio?</span><select value={form.usesEmail ? 'sim' : 'nao'} onChange={(e) => handleUsesEmailChange(e.target.value === 'sim')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="nao">Não</option><option value="sim">Sim</option></select><p className="text-[10px] font-semibold text-gray-500">Defina se este agente terá identidade operacional por e-mail para ações externas.</p></label>
+                                    )}
+                                    {(form.entityType !== 'AGENTE' || form.usesEmail) && (
+                                        <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">E-mail {shouldRequireEmail ? '*' : ''}</span><input type="email" value={form.email} onChange={(e) => setFormField('email', e.target.value)} placeholder={form.entityType === 'AGENTE' ? 'agente@grupob.com.br' : 'humano@grupob.com.br'} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /><p className="text-[10px] font-semibold text-gray-500">{form.entityType === 'AGENTE' ? 'E-mail estrutural do agente para comunicação e operação externa.' : 'E-mail estrutural e principal da identidade humana.'}</p></label>
+                                    )}
                                     <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Descricao curta</span><textarea value={form.shortDescription} onChange={(e) => setFormField('shortDescription', e.target.value)} rows={2} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label>
                                     <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
                                         <Avatar name={form.name || 'Novo Cadastro'} url={form.avatarUrl} className="h-12 w-12" />
@@ -861,8 +972,8 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                                     </div>
                                 </div>
                             </section>
-                            <section className="space-y-3"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Estrutura organizacional</h3><div className="grid grid-cols-1 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Venture *</span><select value={form.ventureId} onChange={(e) => setFormField('ventureId', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{ventures.map((venture) => <option key={venture.id} value={venture.id}>{venture.name}</option>)}</select></label><div className="grid grid-cols-2 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Unidade</span><input value={form.unitName} onChange={(e) => setFormField('unitName', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Area</span><input value={form.area} onChange={(e) => setFormField('area', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label></div><div className="grid grid-cols-2 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Funcao *</span><input value={form.functionName} onChange={(e) => setFormField('functionName', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Cargo-base universal</span><input value={form.baseRoleUniversal} onChange={(e) => setFormField('baseRoleUniversal', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label></div><div className="grid grid-cols-2 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Nivel</span><select value={form.level} onChange={(e) => setFormField('level', e.target.value as AgentTier)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{LEVEL_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Papel</span><select value={form.roleType} onChange={(e) => setFormField('roleType', e.target.value as RoleType)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{ROLE_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div></div></section>
-                            <section className="space-y-3"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Status</h3><div className="grid grid-cols-1 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status estrutural</span><select value={form.structuralStatus} onChange={(e) => setFormField('structuralStatus', e.target.value as StructuralStatus)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{STRUCTURAL_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Ativacao operacional</span><select value={form.operationalActivation} onChange={(e) => setFormField('operationalActivation', e.target.value as OperationalActivation)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{OPERATIONAL_ACTIVATION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status DNA (somente status)</span><select value={form.dnaStatus} onChange={(e) => setFormField('dnaStatus', e.target.value as DnaStatus)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{DNA_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div></section>
+                            <section className="space-y-3"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Estrutura organizacional</h3><div className="grid grid-cols-1 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Venture *</span><select value={form.ventureId} onChange={(e) => setFormField('ventureId', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{ventures.map((venture) => <option key={venture.id} value={venture.id}>{venture.name}</option>)}</select></label><div className="grid grid-cols-2 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Unidade</span><input value={form.unitName} onChange={(e) => setFormField('unitName', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Area</span><input value={form.area} onChange={(e) => setFormField('area', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label></div><div className="grid grid-cols-2 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Funcao principal *</span><input value={form.functionName} onChange={(e) => setFormField('functionName', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Cargo-base (taxonomia)</span><input value={form.baseRoleUniversal} onChange={(e) => setFormField('baseRoleUniversal', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label></div><div className="grid grid-cols-2 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Nivel</span><select value={form.level} onChange={(e) => setFormField('level', e.target.value as AgentTier)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{LEVEL_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Papel de atuacao</span><select value={form.roleType} onChange={(e) => setFormField('roleType', e.target.value as RoleType)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{ROLE_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div></div></section>
+                            <section className="space-y-3"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Status</h3><div className="grid grid-cols-1 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status estrutural</span><select value={form.structuralStatus} onChange={(e) => setFormField('structuralStatus', e.target.value as StructuralStatus)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{STRUCTURAL_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><p className="text-[10px] font-semibold text-gray-500">{STRUCTURAL_STATUS_IMPACT[form.structuralStatus]}</p></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status operacional</span><select value={form.operationalStatus} onChange={(e) => setFormField('operationalStatus', e.target.value as OperationalStatus)} disabled={form.dnaStatus !== 'DNA_COMPLETO'} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300 disabled:bg-gray-100 disabled:text-gray-400">{OPERATIONAL_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><p className="text-[10px] font-semibold text-gray-500">{form.dnaStatus === 'DNA_COMPLETO' ? 'Com DNA válido, o agente pode ficar disponível ou ativo.' : 'Sem DNA válido, o agente permanece estrutural e bloqueado para operação.'}</p></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Ativacao operacional</span><select value={form.operationalActivation} onChange={(e) => setFormField('operationalActivation', e.target.value as OperationalActivation)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{OPERATIONAL_ACTIVATION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status DNA (indicador de cadastro)</span><select value={form.dnaStatus} onChange={(e) => setFormField('dnaStatus', e.target.value as DnaStatus)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{DNA_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div></section>
                             <section className="space-y-3"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Operacao</h3><div className="grid grid-cols-1 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Classe operacional</span><select value={form.operationalClass} onChange={(e) => setFormField('operationalClass', e.target.value as OperationalClass)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{OPERATIONAL_CLASS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><div className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Stack permitida (multiplos)</span><div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 bg-white p-2">{STACK_OPTIONS.map((option) => (<label key={option.value} className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"><input type="checkbox" checked={form.allowedStacks.includes(option.value)} onChange={() => toggleStack(option.value)} className="h-3.5 w-3.5" />{option.label}</label>))}</div></div><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Modelo preferencial</span><select value={form.preferredModel} onChange={(e) => setFormField('preferredModel', e.target.value as ModelProvider | '')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{STACK_OPTIONS.filter((option) => form.allowedStacks.includes(option.value)).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div></section>
                             <section className="space-y-3"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Vinculos e documentos</h3><div className="grid grid-cols-1 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Mentor IA</span><select value={form.aiMentor} onChange={(e) => setFormField('aiMentor', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{mentorCandidates.map((candidate) => <option key={candidate.id} value={candidate.name}>{candidate.name}</option>)}</select></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Responsavel humano</span><select value={form.humanOwner} onChange={(e) => setFormField('humanOwner', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{mentorCandidates.map((candidate) => <option key={candidate.id} value={candidate.name}>{candidate.name}</option>)}</select></label><div className="grid grid-cols-3 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Documentos vinculados</span><input type="number" min="0" value={form.documentCount} onChange={(e) => setFormField('documentCount', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Inicio</span><input type="date" value={form.startDate} onChange={(e) => setFormField('startDate', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Salario</span><input value={form.salary} onChange={(e) => setFormField('salary', e.target.value)} placeholder="R$ 0,00" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label></div></div></section>
                             <section className="space-y-3"><div className="flex items-center justify-between"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Campos customizados</h3><button onClick={addCustomField} className="rounded-lg border border-gray-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-gray-600 hover:bg-gray-50">+ Campo</button></div><div className="space-y-2">{form.customFields.length === 0 && <p className="rounded-lg border border-dashed border-gray-200 px-3 py-3 text-[11px] font-semibold text-gray-400">Nenhum campo customizado adicionado.</p>}{form.customFields.map((field, index) => (<div key={`${index}-${field.key}`} className="grid grid-cols-[1fr_1fr_auto] gap-2"><input value={field.key} onChange={(e) => upsertCustomField(index, { key: e.target.value })} placeholder="Chave" className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /><input value={field.value} onChange={(e) => upsertCustomField(index, { value: e.target.value })} placeholder="Valor" className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /><button onClick={() => removeCustomField(index)} className="rounded-lg border border-red-100 px-2 text-red-500 hover:bg-red-50"><XIcon className="h-4 w-4" /></button></div>))}</div></section>

@@ -19,6 +19,7 @@ import {
 import { createMissionArtifact, updateMissionArtifactStatus } from './artifactService';
 import { validateStepOutput } from './stepValidator';
 import {
+  createMissionEvent,
   createMissionHandoff,
   patchMission,
   patchMissionStep
@@ -320,6 +321,16 @@ export const runMissionOrchestration = async ({
       }
     });
 
+    await createMissionEvent({
+      missionId: liveMission.id,
+      eventType: 'step_started',
+      actorId: assembled.resolvedAgent.agentId,
+      actorName: assembled.resolvedAgent.agentName,
+      actorType: 'agent',
+      content: `Iniciando etapa: ${step.stepName}`,
+      payload: { stepId: step.id, stepIndex: step.stepIndex }
+    });
+
     await appendIntelligenceFlowStep({
       flowId,
       workspaceId: liveMission.workspaceId,
@@ -345,6 +356,16 @@ export const runMissionOrchestration = async ({
         message: assembled.message
       });
 
+      await createMissionEvent({
+        missionId: liveMission.id,
+        eventType: 'internal_comment',
+        actorId: assembled.resolvedAgent.agentId,
+        actorName: assembled.resolvedAgent.agentName,
+        actorType: 'agent',
+        content: 'Analise concluida. Gerando artefato estruturado.',
+        payload: { stepId: step.id }
+      });
+
       const validation = validateStepOutput(blueprint, rawText);
 
       if (!validation.ok) {
@@ -364,6 +385,17 @@ export const runMissionOrchestration = async ({
           }
         });
         liveArtifacts.push(rejectedArtifact);
+
+        await createMissionEvent({
+          missionId: liveMission.id,
+          eventType: 'step_failed',
+          actorId: assembled.resolvedAgent.agentId,
+          actorName: assembled.resolvedAgent.agentName,
+          actorType: 'agent',
+          content: `Falha na validacao do artefato: ${validation.issues[0]}`,
+          payload: { stepId: step.id, issues: validation.issues }
+        });
+
         await failMission({
           mission: liveMission,
           step,
@@ -387,6 +419,16 @@ export const runMissionOrchestration = async ({
           source: 'mission_runner',
           agentName: assembled.resolvedAgent.agentName
         }
+      });
+
+      await createMissionEvent({
+        missionId: liveMission.id,
+        eventType: 'artifact_created',
+        actorId: assembled.resolvedAgent.agentId,
+        actorName: assembled.resolvedAgent.agentName,
+        actorType: 'agent',
+        content: `Artefato ${step.artifactType} (v${artifact.version}) gerado com sucesso.`,
+        payload: { stepId: step.id, artifactId: artifact.id, version: artifact.version }
       });
       liveArtifacts.push({ ...artifact, status: 'validated' });
       await updateMissionArtifactStatus({
@@ -450,6 +492,16 @@ export const runMissionOrchestration = async ({
             fromStepIndex: step.stepIndex,
             toStepIndex: nextStep.stepIndex
           }
+        });
+
+        await createMissionEvent({
+          missionId: liveMission.id,
+          eventType: 'handoff_accepted',
+          actorId: 'system',
+          actorName: 'Mission Runner',
+          actorType: 'system',
+          content: `Handoff: ${step.stepName} -> ${nextStep.stepName}`,
+          payload: { fromStepId: step.id, toStepId: nextStep.id, artifactId: artifact.id }
         });
 
         await patchMissionStep({

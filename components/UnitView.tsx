@@ -5,6 +5,7 @@ import { BusinessUnit, Agent, Message, Sender } from '../types';
 import { sendMessageStream, transcribeAudio } from '../services/gemini';
 import { SendIcon, BackIcon, MicIcon, StopCircleIcon, PaperclipIcon, XIcon, FileTextIcon } from './Icon';
 import { Avatar } from './Avatar'; // Importar Avatar
+import { deriveOperationalStatus, getOperationalStatusLabel, isAgentOperationallyAvailable } from '../utils/agentOperational';
 import {
   appendMessage,
   createSession,
@@ -38,7 +39,7 @@ const UnitView: React.FC<UnitViewProps> = ({ activeBU, agents, onBack, activeWor
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filtrar agentes desta BU
-  const unitAgents = agents.filter(a => a.buId === activeBU.id);
+  const unitAgents = agents.filter(a => a.buId === activeBU.id && isAgentOperationallyAvailable(a));
 
   useEffect(() => {
     let cancelled = false;
@@ -350,7 +351,10 @@ Você coordena esta sala. Responda como liderança da unidade ou delegue a fala 
                         <h4 className="text-xs font-bold text-gray-700 truncate">{agent.name}</h4>
                         <p className="text-[9px] text-gray-400 truncate uppercase tracking-wide">{agent.officialRole}</p>
                      </div>
-                     <div className={`w-1.5 h-1.5 rounded-full ${agent.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                     <div className="text-right">
+                        <div className={`w-1.5 h-1.5 rounded-full ml-auto ${agent.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                        <div className="mt-1 text-[7px] font-black uppercase tracking-wider text-gray-400">{getOperationalStatusLabel(deriveOperationalStatus(agent))}</div>
+                     </div>
                   </div>
                ))
             )}

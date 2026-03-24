@@ -1,18 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Message, Sender, PersonaConfig } from '../types';
+import { Message, Sender, PersonaConfig, ChatAttachment } from '../types';
 import { CheckIcon, XIcon, PencilIcon, FileTextIcon } from './Icon';
 import { Avatar } from './Avatar';
+import ChatAttachmentCard from './ChatAttachmentCard';
 
 interface ChatMessageProps {
     message: Message;
     directors: PersonaConfig[];
     agentContext?: { name: string, avatarUrl?: string };
-    onEdit?: (msg: Message, newText: string, newAttachment?: { data: string, mimeType: string, preview: string } | null) => void;
+    onEdit?: (msg: Message, newText: string, newAttachment?: ChatAttachment | null) => void;
+    userProfile?: any;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentContext, onEdit }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentContext, onEdit, userProfile }) => {
     const isBot = message.sender === Sender.Bot;
     const isSystem = message.sender === Sender.System;
 
@@ -40,9 +42,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentCont
             const reader = new FileReader();
             reader.onloadend = () => {
                 setEditedAttachment({
-                    data: reader.result as string,
+                    data: String(reader.result || '').split(',')[1] || '',
                     mimeType: file.type,
-                    preview: URL.createObjectURL(file)
+                    preview: URL.createObjectURL(file),
+                    name: file.name,
+                    sizeBytes: file.size,
+                    uploadStatus: 'success'
                 });
             };
             reader.readAsDataURL(file);
@@ -53,6 +58,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentCont
         setEditedText(message.text);
         setIsEditing(false);
     };
+
+    const USER_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&q=80&w=200&h=200";
+    const userAvatarUrl = userProfile?.avatar || userProfile?.avatarUrl || USER_FALLBACK_IMAGE;
 
     // --- SYSTEM MESSAGE ---
     if (isSystem) {
@@ -123,7 +131,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentCont
         : (message.attachment ? [message.attachment] : []);
 
     return (
-        <div className={`flex w-full mb-4 animate-msg ${isBot ? 'justify-start' : 'justify-end'}`}>
+        <div className={`mb-5 flex w-full animate-msg md:mb-6 ${isBot ? 'justify-start' : 'justify-end'}`}>
 
             {messageParts.map((part, index) => (
                 // REMOVED 'flex-row-reverse' for User. Now both follow 'flex-row' logic (Avatar -> Bubble) or consistent Left-Avatar layout?
@@ -131,13 +139,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentCont
                 // Current User Logic: flex-row-reverse (Bubble ... Avatar).
                 // New User Logic: flex-row (Avatar ... Bubble). 
                 // BUT `justify-end` keeps the block on the right.
-                <div key={index} className={`flex items-start gap-4 max-w-[95%] md:max-w-[85%] ${isBot ? 'flex-row' : 'flex-row'}`}>
+                <div key={index} className={`flex items-start gap-3.5 max-w-[94%] md:max-w-[78%] ${isBot ? 'flex-row' : 'flex-row'}`}>
 
-                    <div className="flex flex-col items-center shrink-0 mt-1">
+                    <div className="mt-1 flex shrink-0 flex-col items-center">
                         <Avatar
                             name={part.speaker}
-                            url={part.imageUrl || undefined}
-                            className="w-10 h-10 rounded-xl shadow-sm border border-white"
+                            url={isBot ? (part.imageUrl || undefined) : userAvatarUrl}
+                            className="h-9 w-9 rounded-[0.95rem] border border-white/90 shadow-[0_10px_24px_rgba(15,23,42,0.08)] md:h-10 md:w-10"
                         />
                     </div>
 
@@ -145,18 +153,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentCont
                     <div className={`flex flex-col min-w-0 ${isBot ? 'items-start' : 'items-end'}`} style={{ minWidth: (part.speaker.length * 9) + 20 }}>
 
                         {/* HEADER: Nome */}
-                        <div className={`flex items-end mb-1 px-1 ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
-                            <span className={`text-[10px] font-black tracking-widest truncate ${isBot ? 'text-gray-400' : 'text-indigo-400'}`}>
+                        <div className={`mb-1.5 flex items-end px-1 ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
+                            <span className={`truncate text-[10px] font-black uppercase tracking-[0.18em] ${isBot ? 'text-slate-400' : 'text-indigo-400/80'}`}>
                                 {part.speaker}
                             </span>
                         </div>
 
                         {/* BUBBLE (FIXED VISUALS - PURPLE & FIT) */}
                         <div className={`
-                    px-5 py-3 rounded-2xl relative text-sm leading-relaxed shadow-sm w-fit max-w-full
+                    relative w-fit max-w-full rounded-[1.35rem] px-4 py-3 text-[13px] leading-[1.72] shadow-sm md:px-4.5 md:py-3 md:text-[14px]
                     ${isBot
-                                ? 'bg-white text-gray-700 rounded-tl-sm border border-gray-100 prose prose-sm max-w-none prose-p:text-gray-700 prose-p:mb-1 prose-a:text-blue-600 prose-strong:text-gray-900'
-                                : 'bg-purple-50 text-gray-800 rounded-tr-sm border border-purple-100 font-medium'
+                                ? 'rounded-tl-[0.45rem] border border-slate-200/80 bg-white/88 text-slate-700 shadow-[0_14px_30px_rgba(15,23,42,0.05)] prose prose-sm max-w-none prose-p:mb-2 prose-p:text-slate-700 prose-headings:text-slate-900 prose-strong:text-slate-900 prose-a:text-blue-600'
+                                : 'rounded-tr-[0.45rem] border border-violet-100/90 bg-[linear-gradient(180deg,#F7F5FF_0%,#F3F0FF_100%)] text-slate-800 font-medium shadow-[0_14px_28px_rgba(99,102,241,0.08)]'
                             }
                 `}>
                             {isEditing ? (
@@ -186,7 +194,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentCont
 
                                         {editedAttachment && (
                                             <div className="flex items-center gap-2 p-1 bg-indigo-50 rounded-lg border border-indigo-100">
-                                                <img src={editedAttachment.preview} className="w-6 h-6 rounded object-cover" />
+                                                <img src={editedAttachment.preview || editedAttachment.url} className="w-6 h-6 rounded object-cover" />
                                                 <button onClick={() => setEditedAttachment(null)} className="text-red-400 hover:text-red-600">
                                                     <XIcon className="w-3 h-3" />
                                                 </button>
@@ -205,22 +213,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentCont
                             ) : (
                                 <div className="space-y-3">
                                     {messageAttachments.length > 0 && (
-                                        <div className="mb-2 flex flex-wrap gap-2">
+                                        <div className="mb-2.5 flex flex-wrap gap-2">
                                             {messageAttachments.map((file, idx) => (
-                                                <div key={`${file.name || 'anexo'}-${idx}`} className="flex items-center gap-2 p-2 bg-black/5 rounded-lg border border-black/5">
-                                                    {file.mimeType.startsWith('image/') ? (
-                                                        <img
-                                                            src={file.preview}
-                                                            alt={file.name || 'Anexo'}
-                                                            className="w-12 h-12 rounded object-cover border border-white/20 shadow-sm"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-8 h-8 rounded bg-white flex items-center justify-center shadow-sm">
-                                                            <FileTextIcon className="w-4 h-4 text-gray-400" />
-                                                        </div>
-                                                    )}
-                                                    <span className="text-[10px] font-bold text-gray-500 truncate max-w-[130px]">{file.name || 'Arquivo'}</span>
-                                                </div>
+                                                <ChatAttachmentCard
+                                                    key={`${file.localId || file.storagePath || file.name || 'anexo'}-${idx}`}
+                                                    attachment={{ ...file, uploadStatus: file.uploadStatus || 'success' }}
+                                                    compact
+                                                />
                                             ))}
                                         </div>
                                     )}
@@ -230,19 +229,34 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentCont
                         </div>
 
                         {/* FOOTER: Horário e Status */}
-                        <div className={`flex items-center gap-3 mt-1.5 px-1 ${isBot ? 'justify-start' : 'justify-end'}`}>
-                            {!isBot && onEdit && !isEditing && (
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="text-[9px] font-bold text-indigo-400/60 hover:text-indigo-600 transition-colors flex items-center gap-1"
-                                >
-                                    Editar
-                                </button>
+                        <div className={`mt-2 flex flex-col gap-1 px-1 ${isBot ? 'items-start' : 'items-end'}`}>
+                            {isBot && message.payload?.provider_executed && (
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <span className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border ${message.payload?.fallback_triggered ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                                        {message.payload.fallback_triggered ? `Fallback: ${message.payload.provider_executed}` : message.payload.provider_executed}
+                                    </span>
+                                    {message.payload.fallback_triggered && (
+                                        <span className="text-[7px] font-bold text-orange-400 uppercase italic" title={message.payload.fallback_reason}>
+                                            (Original: {message.payload.provider_selected})
+                                        </span>
+                                    )}
+                                </div>
                             )}
-                            <span className="text-[9px] font-bold text-gray-300 uppercase tracking-tighter">
-                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                            {!isBot && <span className="text-[8px] font-black text-indigo-400 uppercase">Lido</span>}
+
+                            <div className="flex items-center gap-3">
+                                {!isBot && onEdit && !isEditing && (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.14em] text-indigo-400/70 transition-colors hover:text-indigo-600"
+                                    >
+                                        Editar
+                                    </button>
+                                )}
+                                <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-300">
+                                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                                {!isBot && <span className="text-[8px] font-black uppercase tracking-[0.14em] text-indigo-400/80">Lido</span>}
+                            </div>
                         </div>
 
                         {/* Streaming Indicator */}

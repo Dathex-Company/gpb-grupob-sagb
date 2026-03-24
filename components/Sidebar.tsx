@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { TabId, BusinessUnit, UserProfile } from '../types';
 
@@ -28,16 +27,22 @@ const Sidebar: React.FC<SidebarProps> = ({
   const GENERIC_PROFILE_NAME = "Perfil em configuração";
   const GENERIC_PROFILE_TIER = "CADASTRO PENDENTE";
 
+  const displayName = userProfile?.name || userProfile?.nickname || GENERIC_PROFILE_NAME;
+  const displayAvatar = userProfile?.avatarUrl || DEFAULT_AVATAR;
+  const displayTier = userProfile?.tier || GENERIC_PROFILE_TIER;
+
   const menuItems: { id: TabId; label: string; subtitle?: string; icon: string }[] = [
     {
-      id: 'home',
-      label: 'Início',
-      icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'
+      id: 'ric',
+      label: 'RIC',
+      subtitle: 'Radar de Inteligência Conectiva',
+      icon: 'M4 12h5m6 0h5M12 4v5m0 6v5M7.05 7.05l3.54 3.54m2.82 2.82l3.54 3.54m0-9.9l-3.54 3.54m-2.82 2.82l-3.54 3.54'
     },
     {
       id: 'ecosystem',
       label: 'Ecossistema',
-      icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'
+      subtitle: 'Visão Geral do GrupoB',
+      icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'
     },
     {
       id: 'ventures',
@@ -98,12 +103,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: 'M4 5h16M4 12h16M4 19h10M17 16l3 3-3 3'
     },
     {
-      id: 'radar-connections',
-      label: 'Radar de Conexões',
-      subtitle: 'NAGI / Ecossistema',
-      icon: 'M4 12h5m6 0h5M12 4v5m0 6v5M7.05 7.05l3.54 3.54m2.82 2.82l3.54 3.54m0-9.9l-3.54 3.54m-2.82 2.82l-3.54 3.54'
-    },
-    {
       id: 'cid',
       label: 'CID',
       icon: 'M4 7a2 2 0 012-2h6l2 2h4a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7zm8 2v8m0 0l-3-3m3 3l3-3'
@@ -114,9 +113,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: 'M12 18v3m-4 0h8M9 3h6a2 2 0 012 2v6a5 5 0 11-10 0V5a2 2 0 012-2zm-5 8h2m10 0h2M4.5 8.5l1.5 1.5m12-1.5L17 10'
     },
     {
-      id: 'quality',
-      label: 'Sensor de Qualidade',
-      icon: 'M3 3v18h18M7 14l3-3 3 2 4-5'
+      id: 'studio',
+      label: 'Studio',
+      subtitle: 'Gravação Inteligente',
+      icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'
+    },
+    {
+      id: 'monitoramento',
+      label: 'Monitoramento',
+      icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'
     },
   ];
 
@@ -144,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </button>
 
       {/* MENU NAVIGATION */}
-      <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto custom-scrollbar">
         {menuItems.map((item) => {
           const isActive = activeTab === item.id;
 
@@ -153,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`
-                group flex items-center w-full px-3 py-2.5 rounded-xl transition-all duration-200
+                group flex items-center w-full px-3 py-2 rounded-xl transition-all duration-200
                 ${isActive ? 'bg-cyan-50 text-slate-900 border border-cyan-100 shadow-sm' : 'text-gray-500 hover:bg-slate-50 hover:text-gray-800 border border-transparent'}
               `}
             >
@@ -167,14 +172,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               </svg>
 
               <span className="min-w-0 flex-1 text-left">
-                <span className={`block text-sm tracking-tight ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                <span className="block text-sm tracking-tight font-normal">
                   {item.label}
                 </span>
-                {item.subtitle && (
-                  <span className={`block text-[9px] uppercase tracking-[0.22em] ${isActive ? 'text-cyan-700/70' : 'text-gray-300 group-hover:text-gray-400'}`}>
-                    {item.subtitle}
-                  </span>
-                )}
               </span>
 
               {isActive && (
@@ -206,14 +206,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="mt-4 pt-4 border-t border-gray-100 px-3">
         <div className="flex items-center gap-3 p-2 rounded-xl bg-gray-50/50 border border-gray-100/50">
           <div className="w-9 h-9 rounded-lg overflow-hidden border border-white shadow-sm shrink-0">
-            <img src={DEFAULT_AVATAR} alt="Perfil genérico" className="w-full h-full object-cover" />
+            <img src={displayAvatar} alt="Perfil do Usuário" className="w-full h-full object-cover" />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-[11px] font-bold text-gray-900 truncate tracking-tight">
-              {GENERIC_PROFILE_NAME}
+              {displayName}
             </span>
             <span className="text-[9px] font-black text-gray-400 truncate uppercase tracking-widest">
-              {GENERIC_PROFILE_TIER}
+              {displayTier}
             </span>
           </div>
         </div>

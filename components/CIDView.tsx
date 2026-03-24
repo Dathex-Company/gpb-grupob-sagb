@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BackIcon, CloudUploadIcon, SearchIcon } from './Icon';
-import { CidAsset, CidAssetFile, CidChunk, CidOutput, CidProcessingJob, UserProfile, Venture } from '../types';
+import { CidAsset, CidAssetFile, CidChunk, CidOutput, CidProcessingJob, CidPrompt, CidPromptRun, CidPromptRunItem, UserProfile, Venture } from '../types';
 import { addDoc, collection, db, doc, onSnapshot, orderBy, query, updateDoc, where } from '../services/supabase';
 import { buildCidStoragePath, uploadBlobToSupabaseStorage } from '../services/storage';
 
-type CidTab = 'upload' | 'library' | 'processing' | 'intelligence';
+type CidTab = 'upload' | 'library' | 'processing';
 type Material = 'pdf' | 'doc' | 'docx' | 'txt' | 'spreadsheet' | 'image' | 'audio' | 'video' | 'other';
 type DesiredAction = 'store_only' | 'store_transcribe' | 'store_summarize' | 'store_transcribe_summarize' | 'store_consolidate';
 
@@ -156,6 +156,16 @@ const CIDView: React.FC<CIDViewProps> = ({ workspaceId, ownerUserId, userProfile
   const [chunks, setChunks] = useState<CidChunk[]>([]);
   const [outputs, setOutputs] = useState<CidOutput[]>([]);
   const [cidTags, setCidTags] = useState<Array<{ id: string; name: string }>>([]);
+  
+  // States para Prompts Reutilizaveis
+  const [prompts, setPrompts] = useState<CidPrompt[]>([]);
+  const [promptRuns, setPromptRuns] = useState<CidPromptRun[]>([]);
+  const [promptRunItems, setPromptRunItems] = useState<CidPromptRunItem[]>([]);
+  const [selectedAssetsIds, setSelectedAssetsIds] = useState<Set<string>>(new Set());
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [selectedPromptId, setSelectedPromptId] = useState('');
+  const [executionScope, setExecutionScope] = useState<'single'|'consolidated'>('single');
+  const [isApplyingPrompt, setIsApplyingPrompt] = useState(false);
 
   const [selectedAssetId, setSelectedAssetId] = useState('');
   
@@ -165,8 +175,6 @@ const CIDView: React.FC<CIDViewProps> = ({ workspaceId, ownerUserId, userProfile
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   
-  const [insight, setInsight] =useState('');
-  const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
 
   useEffect(() => {
     setForm((prev) => ({ ...prev, ownerName: prev.ownerName || userProfile?.name || '' }));
@@ -220,12 +228,28 @@ const CIDView: React.FC<CIDViewProps> = ({ workspaceId, ownerUserId, userProfile
       (snap) => setCidTags(snap.docs.map((d: any) => ({ id: d.id, name: String((d.data() as any).name || '') })))
     ));
 
+    unsubs.push(onSnapshot(
+      query(collection(db, 'cid_prompts'), where('workspaceId', '==', scopedWorkspaceId), where('isActive', '==', true), orderBy('title', 'asc')),
+      (snap) => setPrompts(snap.docs.map((d: any) => ({ id: d.id, ...(d.data() as CidPrompt) })))
+    ));
+    
+    unsubs.push(onSnapshot(
+      query(collection(db, 'cid_prompt_runs'), where('workspaceId', '==', scopedWorkspaceId), orderBy('createdAt', 'desc')),
+      (snap) => setPromptRuns(snap.docs.map((d: any) => ({ id: d.id, ...(d.data() as CidPromptRun) })))
+    ));
+
+    unsubs.push(onSnapshot(
+      query(collection(db, 'cid_prompt_run_items'), orderBy('createdAt', 'desc')), // Limitar por ID de run seria o ideal mas pro mvp:
+      (snap) => setPromptRunItems(snap.docs.map((d: any) => ({ id: d.id, ...(d.data() as CidPromptRunItem) })))
+    ));
+
     return () => unsubs.forEach((unsub) => unsub());
   }, [scopedWorkspaceId]);
 
   useEffect(() => {
     if (!assets.length) {
       setSelectedAssetId('');
+      setSelectedAssetsIds(new Set());
       return;
     }
     if (!selectedAssetId || !assets.some((a) => a.id === selectedAssetId)) {
@@ -281,6 +305,10 @@ const CIDView: React.FC<CIDViewProps> = ({ workspaceId, ownerUserId, userProfile
 
   const selectedAsset = useMemo(() => assets.find((a) => a.id === selectedAssetId) || null, [assets, selectedAssetId]);
   const selectedAssetFiles = useMemo(() => assetFiles.filter((x) => x.assetId === selectedAssetId), [assetFiles, selectedAssetId]);
+  const selectedAssetRuns = useMemo(() => {
+    const runIdsForThisAsset = promptRunItems.filter(i => i.assetId === selectedAssetId).map(i => i.runId);
+    return promptRuns.filter(r => runIdsForThisAsset.includes(r.id)).sort((a,b) => toDate(b.createdAt).getTime() - toDate(a.createdAt).getTime());
+  }, [promptRuns, promptRunItems, selectedAssetId]);
   const assetFileMap = useMemo(() => {
     const map = new Map<string, CidAssetFile[]>();
     assetFiles.forEach((file) => {
@@ -554,29 +582,83 @@ const CIDView: React.FC<CIDViewProps> = ({ workspaceId, ownerUserId, userProfile
     }
   };
 
-  const generateIntelligenceInsight = async () => {
-    if (isGeneratingInsight) return;
-    const corpus = searchResults.map((row) => `${row.assetTitle} | ${row.source}\n${row.text}`).join('\n\n').trim();
-    if (!corpus) {
-      setInsight('Sem conteúdo na busca atual para sintetizar.');
-      return;
-    }
+  const toggleAssetSelection = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const next = new Set(selectedAssetsIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedAssetsIds(next);
+    
+    // Auto atualiza o scope se houver mais de 1
+    if (next.size > 1 && executionScope === 'single') setExecutionScope('consolidated');
+    if (next.size <= 1) setExecutionScope('single');
+  };
 
-    setIsGeneratingInsight(true);
+  const handleApplyPrompt = async () => {
+    if (!selectedPromptId || selectedAssetsIds.size === 0) return;
+    const promptDef = prompts.find(p => p.id === selectedPromptId);
+    if (!promptDef) return;
+
+    setIsApplyingPrompt(true);
+    setFeedback('Criando job de processamento de prompt...');
+    
     try {
-        setInsight('Funcionalidade de síntese precisa ser migrada para um endpoint de back-end.');
-    } catch {
-      setInsight('Falha ao gerar síntese.');
+      const runRef = await addDoc(collection(db, 'cid_prompt_runs'), {
+        workspaceId: scopedWorkspaceId,
+        promptId: selectedPromptId,
+        executionScope,
+        status: 'queued',
+        promptSnapshot: {
+          title: promptDef.title,
+          system_prompt: promptDef.systemPrompt,
+          user_prompt_template: promptDef.userPromptTemplate,
+          output_format: promptDef.outputFormat,
+          prompt_type: promptDef.promptType
+        },
+        promptSnapshotVersion: 1,
+        createdBy: resolveOwnerUserId(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      const arrAssets = Array.from(selectedAssetsIds);
+      for (let i = 0; i < arrAssets.length; i++) {
+         await addDoc(collection(db, 'cid_prompt_run_items'), {
+            runId: runRef.id,
+            assetId: arrAssets[i],
+            sequenceOrder: i,
+            status: 'queued',
+            createdAt: new Date()
+         });
+      }
+
+      // Dispara netlify background
+      const res = await fetch('/.netlify/functions/cid-apply-prompt-background', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ runId: runRef.id }),
+      });
+      
+      if (!res.ok) {
+         throw new Error(`O servidor retornou o status: ${res.status}. Certifique-se que o backend está online.`);
+      }
+
+      setFeedback('');
+      // Ao invés de fechar o modal silenciosamente, fechamos e damos um alerta claro de sucesso
+      alert(`✅ Sucesso! A geração do derivado (Transformação Operacional) foi agendada.\n\nVocê pode fechar esta aba; o processamento ocorrerá na nuvem e o resultado aparecerá na tela do arquivo assim que concluído.`);
+      setShowPromptModal(false);
+      
+    } catch (e: any) {
+      setFeedback(`❌ Erro ao solicitar o processamento: ${e.message}`);
     } finally {
-      setIsGeneratingInsight(false);
+      setIsApplyingPrompt(false);
     }
   };
 
   const tabs: Array<{ id: CidTab; label: string }> = [
-    { id: 'upload', label: 'Upload' },
-    { id: 'library', label: 'Biblioteca' },
-    { id: 'processing', label: 'Processamento' },
-    { id: 'intelligence', label: 'Inteligência' }
+    { id: 'upload', label: 'Ingestão e Upload' },
+    { id: 'library', label: 'Repositório Documental' },
+    { id: 'processing', label: 'Filas de Transformação' }
   ];
 
   const inlineFile = selectedAssetFiles[0];
@@ -598,7 +680,7 @@ const CIDView: React.FC<CIDViewProps> = ({ workspaceId, ownerUserId, userProfile
           )}
           <div>
             <p className="text-[10px] font-black tracking-[0.32em] text-gray-400 uppercase">CID</p>
-            <h1 className="text-lg md:text-xl font-bold text-gray-900">Centro de Inteligência Documental</h1>
+            <h1 className="text-lg md:text-xl font-bold text-gray-900">Base de Preparação Documental</h1>
           </div>
         </div>
         <div className="hidden md:flex items-center gap-2 bg-gray-100 rounded-xl p-1">
@@ -634,7 +716,7 @@ const CIDView: React.FC<CIDViewProps> = ({ workspaceId, ownerUserId, userProfile
             <form onSubmit={handleUpload} className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-5 md:p-6 space-y-4 shadow-sm">
               <div className="flex items-center gap-2 text-gray-800">
                 <CloudUploadIcon className="w-5 h-5" />
-                <h2 className="text-sm font-black uppercase tracking-wider">Upload e Pipeline</h2>
+                <h2 className="text-sm font-black uppercase tracking-wider">Ingestão de Ativos</h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -756,37 +838,180 @@ const CIDView: React.FC<CIDViewProps> = ({ workspaceId, ownerUserId, userProfile
         {activeTab === 'library' && (
            <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-5">
             <div className="xl:col-span-1 bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-wider text-gray-800 mb-3">Biblioteca CID</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-black uppercase tracking-wider text-gray-800">Acervo Operacional</h2>
+                {selectedAssetsIds.size > 0 && (
+                  <button 
+                    onClick={() => setShowPromptModal(true)}
+                    className="text-[10px] bg-gray-900 hover:bg-black text-white px-3 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-colors"
+                  >
+                    Gerar Derivado ({selectedAssetsIds.size})
+                  </button>
+                )}
+              </div>
               <div className="space-y-2 max-h-[70vh] overflow-auto pr-1">
                 {assets.map((asset) => (
-                  <button
-                    key={asset.id}
-                    onClick={() => setSelectedAssetId(asset.id)}
-                    className={`w-full text-left rounded-xl border px-3 py-2 transition-colors ${selectedAssetId === asset.id ? 'border-gray-300 bg-gray-50' : 'border-gray-100 hover:border-gray-200'}`}
-                  >
-                    <p className="text-sm font-semibold text-gray-900 truncate">{asset.title}</p>
-                    <p className="text-[11px] text-gray-500 mt-1">{toLabel(asset.materialType)} • {fmt(asset.createdAt)} • {formatBytes(resolveAssetSizeBytes(asset, assetFileMap.get(asset.id) || []))}</p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${statusBadge(asset.status)}`}>{toLabel(asset.status)}</span>
-                      <span className="text-[10px] text-gray-500 font-bold">{asset.progressPct || 0}%</span>
-                    </div>
-                  </button>
+                  <div key={asset.id} className="relative">
+                    <button
+                      onClick={() => setSelectedAssetId(asset.id)}
+                      className={`w-full text-left rounded-xl border px-3 py-2 pl-8 transition-colors ${selectedAssetId === asset.id ? 'border-gray-300 bg-gray-50' : 'border-gray-100 hover:border-gray-200'}`}
+                    >
+                      <p className="text-sm font-semibold text-gray-900 truncate">{asset.title}</p>
+                      <p className="text-[11px] text-gray-500 mt-1">{toLabel(asset.materialType)} • {fmt(asset.createdAt)} • {formatBytes(resolveAssetSizeBytes(asset, assetFileMap.get(asset.id) || []))}</p>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${statusBadge(asset.status)}`}>{toLabel(asset.status)}</span>
+                        <span className="text-[10px] text-gray-500 font-bold">{asset.progressPct || 0}%</span>
+                      </div>
+                    </button>
+                    {/* Checkbox para Batch/Consolidate */}
+                    {(asset.status === 'completed' || asset.status === 'completed_warning') && (
+                       <div className="absolute left-3 top-3 cursor-pointer" onClick={(e) => toggleAssetSelection(e, asset.id)}>
+                         <div className={`w-3.5 h-3.5 border rounded-sm flex items-center justify-center ${selectedAssetsIds.has(asset.id) ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'}`}>
+                           {selectedAssetsIds.has(asset.id) && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                         </div>
+                       </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
+            
             <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 md:p-5 shadow-sm space-y-4">
               {selectedAsset ? (
                 <>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-lg font-bold text-gray-900">{selectedAsset.title}</h3>
+                      <p className="text-xs text-gray-500">{fmt(selectedAsset.createdAt)}</p>
                     </div>
                     <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${statusBadge(selectedAsset.status)}`}>{toLabel(selectedAsset.status)}</span>
                   </div>
-                  {/* Conteúdo detalhado do asset... */}
+                  
+                  {/* Visualizacao das Runs aplicadas a este Asset */}
+                  {selectedAssetRuns.length > 0 && (
+                     <div className="mt-4 pt-4 border-t border-gray-100">
+                        <h4 className="text-[11px] font-black uppercase tracking-wider text-gray-500 mb-3">Derivados Operacionais (Transformações)</h4>
+                        <div className="space-y-3">
+                          {selectedAssetRuns.map(run => {
+                             const snap = run.promptSnapshot || {} as any;
+                             const cost = run.estimatedCostUsd ? `$${Number(run.estimatedCostUsd).toFixed(4)}` : '-';
+                             const isSuccess = run.status === 'completed';
+                             const isErr = run.status === 'error';
+                             
+                             return (
+                               <div key={run.id} className="rounded-xl border border-gray-200 bg-gray-50/50 p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                     <div className="flex items-center gap-2">
+                                        <p className="text-sm font-bold text-gray-800">{snap.title || 'Prompt'}</p>
+                                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${isSuccess?'bg-green-100 text-green-700':isErr?'bg-red-100 text-red-700':'bg-blue-100 text-blue-700'}`}>{run.status}</span>
+                                     </div>
+                                     <span className="text-[10px] text-gray-400 font-semibold">{fmt(run.createdAt)}</span>
+                                  </div>
+                                  
+                                  {isSuccess && run.resultText && (
+                                     <div className="mt-2 text-xs text-gray-700 whitespace-pre-wrap bg-white border border-gray-100 rounded-lg p-3">
+                                        {run.resultText}
+                                     </div>
+                                  )}
+                                  
+                                  {isErr && (
+                                     <div className="mt-2 text-[11px] text-red-600">
+                                       Erro: {run.errorMessage}
+                                     </div>
+                                  )}
+                                  
+                                  <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-500 font-semibold">
+                                     <span>Modo: {run.executionScope}</span>
+                                     {run.tokensIn && <span>Tokens In: {run.tokensIn}</span>}
+                                     {run.tokensOut && <span>Tokens Out: {run.tokensOut}</span>}
+                                     <span>Custo: {cost}</span>
+                                     {run.latencyMs && <span>Latência: {(run.latencyMs/1000).toFixed(1)}s</span>}
+                                     {run.wasTruncated && <span className="text-amber-600">⚠ Truncado</span>}
+                                  </div>
+                               </div>
+                             )
+                          })}
+                        </div>
+                     </div>
+                  )}
+                  
+                  {selectedOutputs.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                         <h4 className="text-[11px] font-black uppercase tracking-wider text-gray-500 mb-3">Texto Bruto / Transcrição</h4>
+                         <div className="space-y-2 max-h-[400px] overflow-auto">
+                            {selectedOutputs.map((out) => (
+                               <div key={out.id} className="rounded-xl border border-gray-200 p-3 bg-white">
+                                  <p className="text-[10px] font-bold uppercase text-gray-400 mb-1">{toLabel(out.outputType)}</p>
+                                  <p className="text-xs text-gray-700 whitespace-pre-wrap">{out.contentText || 'Sem texto.'}</p>
+                               </div>
+                            ))}
+                         </div>
+                      </div>
+                  )}
+                  
                 </>
-              ) : <div className="text-sm text-gray-500">Selecione um asset para visualizar.</div>}
+              ) : <div className="text-sm text-gray-500">Selecione um ativo para visualizar.</div>}
             </div>
+            
+            {/* Modal de Aplicar Prompt (Transformacao Operacional) */}
+            {showPromptModal && (
+               <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
+                  <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
+                     <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                        <h2 className="text-sm font-black uppercase tracking-wider text-gray-800">Transformar Conteúdo</h2>
+                        <button onClick={() => setShowPromptModal(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+                     </div>
+                     <div className="p-5 overflow-auto max-h-[70vh]">
+                        <p className="text-xs text-gray-500 mb-4">Você selecionou <strong className="text-gray-900">{selectedAssetsIds.size}</strong> ativo(s) do acervo. Escolha como deseja transformar esse material bruto. O processamento ocorrerá em nuvem.</p>
+                        
+                        <div className="space-y-4">
+                           <div>
+                              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Regra de Transformação (Prompt)</label>
+                              <div className="space-y-2">
+                                 {prompts.length === 0 ? (
+                                    <p className="text-xs text-amber-600">Nenhum prompt ativo encontrado no workspace. (Eles são inseridos via migration)</p>
+                                 ) : prompts.map(p => (
+                                    <label key={p.id} className={`flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-colors ${selectedPromptId === p.id ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200 hover:border-gray-300'}`}>
+                                       <input type="radio" name="prompt" checked={selectedPromptId === p.id} onChange={() => setSelectedPromptId(p.id)} className="mt-1" />
+                                       <div>
+                                          <p className="text-sm font-bold text-gray-800">{p.title}</p>
+                                          <p className="text-[10px] text-gray-500 leading-snug mt-0.5">{p.description || p.systemPrompt.slice(0, 80)+'...'}</p>
+                                       </div>
+                                    </label>
+                                 ))}
+                              </div>
+                           </div>
+                           
+                           {selectedAssetsIds.size > 1 && (
+                              <div>
+                                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Modo de Execução</label>
+                                 <div className="grid grid-cols-2 gap-2">
+                                    <label className={`p-3 border rounded-xl cursor-pointer text-center ${executionScope === 'consolidated' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+                                       <input type="radio" checked={executionScope === 'consolidated'} onChange={() => setExecutionScope('consolidated')} className="hidden" />
+                                       <p className="text-xs font-bold text-gray-800">1 Única Saída (Consolidado)</p>
+                                       <p className="text-[9px] text-gray-500 mt-1">Junta os textos e envia juntos (Max 200k chars)</p>
+                                    </label>
+                                    <label className={`p-3 border rounded-xl cursor-pointer text-center opacity-50 cursor-not-allowed ${executionScope === 'batch' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+                                       <input type="radio" disabled className="hidden" />
+                                       <p className="text-xs font-bold text-gray-800">1 Saída por Asset (Batch)</p>
+                                       <p className="text-[9px] text-gray-500 mt-1">Em breve na V1.1</p>
+                                    </label>
+                                 </div>
+                              </div>
+                           )}
+                        </div>
+                        {feedback && <div className="mt-4 text-xs rounded-lg bg-gray-100 text-gray-700 px-3 py-2 border border-gray-200">{feedback}</div>}
+                     </div>
+                     <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50">
+                        <button onClick={() => setShowPromptModal(false)} className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700">Cancelar</button>
+                        <button onClick={handleApplyPrompt} disabled={!selectedPromptId || isApplyingPrompt} className="px-5 py-2 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-black disabled:opacity-50">
+                           {isApplyingPrompt ? 'Iniciando...' : 'Gerar Derivado'}
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            )}
+            
           </div>
         )}
 
@@ -822,37 +1047,6 @@ const CIDView: React.FC<CIDViewProps> = ({ workspaceId, ownerUserId, userProfile
           </div>
         )}
 
-        {activeTab === 'intelligence' && (
-          <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-5">
-            <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 md:p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <SearchIcon className="w-4 h-4 text-gray-500" />
-                <input value={searchText} onChange={(ev) => setSearchText(ev.target.value)} className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm" placeholder="Buscar em todo o CID (mín. 3 caracteres)..." />
-              </div>
-              <div className="space-y-2 max-h-[70vh] overflow-auto pr-1">
-                {isSearching && <div className="text-xs text-gray-500 p-3">Buscando...</div>}
-                {!isSearching && !searchResults.length && (
-                    <div className="text-xs text-gray-500 rounded-xl bg-gray-50 border border-gray-100 p-3">
-                        {debouncedSearchText.length < 3 ? 'Digite ao menos 3 caracteres para buscar.' : 'Nenhum resultado para a busca atual.'}
-                    </div>
-                )}
-                {searchResults.map((row, idx) => (
-                  <div key={`${row.assetId}-${row.source}-${idx}`} className="rounded-xl border border-gray-100 p-3">
-                    <div className="flex items-center justify-between gap-2"><p className="text-sm font-semibold text-gray-900 truncate">{row.assetTitle}</p><span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{row.source}</span></div>
-                    <p className="text-xs text-gray-500 mb-1">{fmt(row.createdAt)}</p>
-                    <p className="text-xs text-gray-700 whitespace-pre-wrap">{row.text.slice(0, 420) || '-'}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-5 shadow-sm space-y-3">
-              <h3 className="text-sm font-black uppercase tracking-wider text-gray-800">Síntese Inteligente</h3>
-              <p className="text-xs text-gray-500">Gera uma consolidação com base no resultado da busca.</p>
-              <button onClick={generateIntelligenceInsight} disabled={isGeneratingInsight} className="w-full px-3 py-2 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 disabled:opacity-60">{isGeneratingInsight ? 'Gerando...' : 'Gerar Síntese'}</button>
-              <div className="rounded-xl border border-gray-100 p-3 min-h-[220px]"><p className="text-[11px] uppercase tracking-widest font-black text-gray-500 mb-2">Resultado</p><p className="text-xs text-gray-700 whitespace-pre-wrap">{insight || 'Ainda sem síntese.'}</p></div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

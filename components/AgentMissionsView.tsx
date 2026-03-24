@@ -4,6 +4,8 @@ import {
   AgentArtifact,
   AgentHandoff,
   AgentMission,
+  AgentMissionBlueprint,
+  AgentMissionEvent,
   AgentMissionStep
 } from '../types';
 import { BackIcon } from './Icon';
@@ -15,7 +17,10 @@ import {
   query,
   where
 } from '../services/supabase';
-import { createMissionWithSteps } from '../services/missionService';
+import { 
+  createMissionWithSteps,
+  loadMissionBlueprints 
+} from '../services/missionService';
 import {
   reprocessMissionStep,
   runMissionOrchestration
@@ -246,14 +251,24 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
 }) => {
   const scopedWorkspaceId = resolveWorkspaceId(workspaceId);
   const [initialInput, setInitialInput] = useState('');
+  const [blueprints, setBlueprints] = useState<AgentMissionBlueprint[]>([]);
+  const [selectedBlueprintId, setSelectedBlueprintId] = useState<string | null>(null);
   const [missions, setMissions] = useState<AgentMission[]>([]);
   const [steps, setSteps] = useState<AgentMissionStep[]>([]);
   const [artifacts, setArtifacts] = useState<AgentArtifact[]>([]);
   const [handoffs, setHandoffs] = useState<AgentHandoff[]>([]);
+  const [missionEvents, setMissionEvents] = useState<AgentMissionEvent[]>([]);
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [busyMissionId, setBusyMissionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [schemaMissing, setSchemaMissing] = useState(false);
+
+  useEffect(() => {
+    loadMissionBlueprints(scopedWorkspaceId).then((data) => {
+      setBlueprints(data);
+      if (data.length > 0) setSelectedBlueprintId(data[0].id);
+    });
+  }, [scopedWorkspaceId]);
 
   useEffect(() => {
     const missingPattern = /Could not find the table 'public\.(agent_missions|agent_mission_steps|agent_artifacts|agent_handoffs)'/i;
@@ -276,6 +291,11 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
     const handoffsQuery = query(
       collection(db, 'agent_handoffs'),
       where('workspaceId', '==', scopedWorkspaceId),
+      orderBy('createdAt', 'asc')
+    );
+
+    const eventsQuery = query(
+      collection(db, 'agent_mission_events'),
       orderBy('createdAt', 'asc')
     );
 
@@ -324,11 +344,22 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
       console.error('Erro ao carregar agent_handoffs:', error);
     });
 
+    const unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
+      setMissionEvents(snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: toDate(doc.data().createdAt)
+      }) as AgentMissionEvent));
+    }, (error) => {
+      console.error('Erro ao carregar eventos:', error);
+    });
+
     return () => {
       unsubscribeMissions();
       unsubscribeSteps();
       unsubscribeArtifacts();
       unsubscribeHandoffs();
+      unsubscribeEvents();
     };
   }, [scopedWorkspaceId]);
 
@@ -363,9 +394,26 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
     [handoffs, selectedMissionId]
   );
 
+  const currentMissionEvents = useMemo(
+    () => missionEvents.filter((ev) => ev.missionId === selectedMissionId),
+    [missionEvents, selectedMissionId]
+  );
+
   const timeline = useMemo(
-    () => buildTimeline(selectedMission, selectedMissionSteps, selectedMissionArtifacts, selectedMissionHandoffs),
-    [selectedMission, selectedMissionSteps, selectedMissionArtifacts, selectedMissionHandoffs]
+    () => {
+      if (currentMissionEvents.length > 0) {
+        return currentMissionEvents.map((ev) => ({
+          id: ev.id,
+          kind: 'step' as const,
+          timestamp: ev.createdAt,
+          title: ev.eventType,
+          note: ev.content || '',
+          status: ev.payload?.status || 'ok'
+        })).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      }
+      return buildTimeline(selectedMission, selectedMissionSteps, selectedMissionArtifacts, selectedMissionHandoffs);
+    },
+    [selectedMission, selectedMissionSteps, selectedMissionArtifacts, selectedMissionHandoffs, currentMissionEvents]
   );
 
   const missionStats = useMemo(() => ({
@@ -389,14 +437,15 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
   const handleRunPoc = async () => {
     const cleanedInput = initialInput.trim();
     if (!cleanedInput) {
-      setFeedback('Descreva a ideia inicial antes de executar a POC.');
+      setFeedback('Descreva a ideia bruta antes de disparar a Missão.');
       return;
     }
 
-    setFeedback('Criando missao e iniciando o runner...');
+    setFeedback('Criando missão e iniciando motor autônomo...');
     try {
       const created = await createMissionWithSteps({
         workspaceId: scopedWorkspaceId,
+        blueprintId: selectedBlueprintId,
         createdBy: ownerUserId,
         initialInput: cleanedInput,
         agents
@@ -452,11 +501,11 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
                 <BackIcon className="w-5 h-5" />
               </button>
               <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.34em] text-cyan-600">POC DE ORQUESTRACAO NATIVA</p>
-                <h1 className="text-5xl font-black tracking-tight text-slate-950">Missoes</h1>
+                <p className="text-[10px] font-black uppercase tracking-[0.34em] text-cyan-600">MOTOR DE TIMES AUTÔNOMOS</p>
+                <h1 className="text-5xl font-black tracking-tight text-slate-950">Missões</h1>
                 <p className="max-w-3xl text-sm leading-7 text-slate-600">
-                  Runner deterministico para validar a cadeia nativa de 3 agentes no SagB:
-                  descoberta e requisitos, escopo de produto e arquitetura tecnica.
+                  Execução autônoma de times baseada em blueprints. 
+                  Coordene fluxos complexos com rastreabilidade total e handoffs formais.
                 </p>
               </div>
             </div>
@@ -498,25 +547,29 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
               <textarea
                 value={initialInput}
                 onChange={(event) => setInitialInput(event.target.value)}
-                placeholder="Descreva a ideia bruta que deve passar pelos 3 agentes..."
+                placeholder="Descreva a ideia bruta para o time autônomo..."
                 className="w-full min-h-[180px] rounded-3xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm leading-7 text-slate-700 outline-none focus:border-cyan-300 focus:bg-white"
               />
 
-              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Cadeia oficial</p>
-                <div className="mt-3 space-y-3 text-sm text-slate-700">
-                  <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <span className="font-semibold">1. Analista de Descoberta e Requisitos</span>
-                    <span className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700">requirements_brief</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <span className="font-semibold">2. Estrategista de Produto</span>
-                    <span className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700">product_scope</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                    <span className="font-semibold">3. Arquiteto Tecnico</span>
-                    <span className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700">technical_architecture</span>
-                  </div>
+              <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Time / Blueprint</p>
+                <div className="flex flex-wrap gap-2">
+                  {blueprints.length === 0 && (
+                    <div className="text-xs text-slate-400 italic">Nenhum blueprint disponível.</div>
+                  )}
+                  {blueprints.map((bp) => (
+                    <button
+                      key={bp.id}
+                      onClick={() => setSelectedBlueprintId(bp.id)}
+                      className={`rounded-2xl border px-4 py-3 text-xs font-bold transition ${
+                        selectedBlueprintId === bp.id
+                          ? 'border-cyan-200 bg-cyan-50 text-cyan-800'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      {bp.title}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -525,7 +578,7 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
                 disabled={Boolean(busyMissionId) || schemaMissing}
                 className="w-full rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white transition hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {busyMissionId ? 'Executando POC...' : 'Executar POC'}
+                {busyMissionId ? 'Disparando Missão...' : 'Lançar Missão Autônoma'}
               </button>
 
               {feedback && (
@@ -752,15 +805,19 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
               </div>
 
               <div className="rounded-[1.75rem] border border-slate-200 bg-white/90 p-6 shadow-[0_18px_48px_rgba(15,23,42,0.06)]">
-                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400">Timeline</p>
-                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Rastreabilidade</h3>
+                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400">Log de Inteligência</p>
+                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Eventos da Missão</h3>
                 <div className="mt-5 space-y-3 max-h-[560px] overflow-y-auto pr-1">
                   {timeline.map((event) => (
-                    <div key={event.id} className="rounded-3xl border border-slate-200 bg-slate-50/80 px-4 py-4">
+                    <div key={event.id} className={`rounded-3xl border px-4 py-4 ${
+                      event.kind === 'mission' ? 'border-cyan-200 bg-cyan-50/30' : 'border-slate-200 bg-slate-50/80'
+                    }`}>
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-sm font-bold text-slate-900">{event.title}</p>
-                          <p className="mt-1 text-sm text-slate-600">{event.note}</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-600 mb-1">
+                            {event.title.replace(/_/g, ' ')}
+                          </p>
+                          <p className="text-sm font-bold text-slate-900">{event.note}</p>
                         </div>
                         <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${badgeClasses(event.status)}`}>
                           {statusLabel(event.status)}

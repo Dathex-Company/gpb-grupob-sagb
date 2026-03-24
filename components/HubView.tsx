@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { BusinessUnit, TabId, Agent } from '../types';
 import { Avatar } from './Avatar';
+import { deriveOperationalStatus, getOperationalStatusLabel, isAgentOperationallyBlocked } from '../utils/agentOperational';
 
 interface HubViewProps {
   businessUnits: BusinessUnit[];
@@ -115,11 +116,12 @@ const HubView: React.FC<HubViewProps> = ({ businessUnits, activeBU, onSelectBU, 
                 ) : (
                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar flex flex-col gap-1">
                         {buAgents.map(agent => (
-                            <div key={agent.id} onClick={(e) => { e.stopPropagation(); if (onSelectAgent) onSelectAgent(agent); }} className="bg-white p-1.5 rounded-lg border border-gray-100 shadow-sm hover:border-gray-300 hover:shadow-md transition-all flex items-center gap-2 w-full cursor-pointer group/card">
+                            <div key={agent.id} onClick={(e) => { e.stopPropagation(); if (!isAgentOperationallyBlocked(agent) && onSelectAgent) onSelectAgent(agent); }} className={`bg-white p-1.5 rounded-lg border border-gray-100 shadow-sm transition-all flex items-center gap-2 w-full group/card ${isAgentOperationallyBlocked(agent) ? 'opacity-55 cursor-not-allowed' : 'hover:border-gray-300 hover:shadow-md cursor-pointer'}`}>
                                 <Avatar name={agent.name} url={agent.avatarUrl} className="w-6 h-6 rounded-md shadow-sm" />
                                 <div className="text-left min-w-0 flex-1">
                                     <p className="text-[10px] font-bold text-gray-800 leading-tight truncate group-hover/card:text-bitrix-nav">{agent.name}</p>
                                     <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider truncate">{agent.officialRole}</p>
+                                    <p className="text-[7px] font-black uppercase tracking-wider text-gray-400">{getOperationalStatusLabel(deriveOperationalStatus(agent))}</p>
                                 </div>
                             </div>
                         ))}

@@ -14,6 +14,9 @@ import {
   AgentArtifact,
   AgentHandoff,
   AgentMission,
+  AgentMissionBlueprint,
+  AgentMissionBlueprintRole,
+  AgentMissionEvent,
   AgentMissionStep
 } from '../types';
 import {
@@ -24,8 +27,10 @@ import { resolveWorkspaceId } from '../utils/supabaseChat';
 
 type CreateMissionParams = {
   workspaceId?: string | null;
+  blueprintId?: string | null;
   title?: string;
   initialInput: string;
+  missionMode?: AgentMission['missionMode'];
   createdBy?: string | null;
   agents: Agent[];
 };
@@ -106,47 +111,41 @@ const runOnce = <T,>(ref: any, mapper: (snapshot: any) => T, fallback: T): Promi
 
 export const createMissionWithSteps = async ({
   workspaceId,
+  blueprintId,
   title,
   initialInput,
+  missionMode = 'autonomous',
   createdBy,
   agents
 }: CreateMissionParams): Promise<{ mission: AgentMission; steps: AgentMissionStep[] }> => {
   const scopedWorkspaceId = resolveWorkspaceId(workspaceId);
   const now = new Date();
-  const missionRef = await addDoc(collection(db, 'agent_missions'), {
+  
+  const missionData: Partial<AgentMission> = {
     workspaceId: scopedWorkspaceId,
+    blueprintId: blueprintId || null,
     title: title || createMissionTitle(initialInput),
     initialInput,
     status: 'queued',
     currentStepIndex: 1,
+    missionMode,
     createdBy: createdBy || null,
     startedAt: null,
     finishedAt: null,
     createdAt: now,
     updatedAt: now,
     payload: {
-      missionType: 'poc_three_agents',
-      stageCount: POC_MISSION_STAGE_BLUEPRINTS.length
-    }
-  });
-
-  const mission: AgentMission = {
-    id: missionRef.id,
-    workspaceId: scopedWorkspaceId,
-    title: title || createMissionTitle(initialInput),
-    initialInput,
-    status: 'queued',
-    currentStepIndex: 1,
-    createdBy: createdBy || null,
-    startedAt: null,
-    finishedAt: null,
-    createdAt: now,
-    updatedAt: now,
-    payload: {
-      missionType: 'poc_three_agents',
+      missionType: blueprintId ? 'blueprint_based' : 'poc_three_agents',
       stageCount: POC_MISSION_STAGE_BLUEPRINTS.length
     }
   };
+
+  const missionRef = await addDoc(collection(db, 'agent_missions'), missionData);
+
+  const mission: AgentMission = {
+    id: missionRef.id,
+    ...missionData
+  } as AgentMission;
 
   const steps = await Promise.all(
     POC_MISSION_STAGE_BLUEPRINTS.map(async (blueprint) => {
@@ -266,6 +265,51 @@ export const createMissionHandoff = async ({
     acceptedAt: status === 'accepted' ? createdAt : null,
     payload: payload || {}
   };
+};
+
+export const loadMissionBlueprints = async (workspaceId?: string | null): Promise<AgentMissionBlueprint[]> => {
+  const scopedWorkspaceId = resolveWorkspaceId(workspaceId);
+  const q = query(
+    collection(db, 'agent_mission_blueprints'),
+    where('workspaceId', 'in', [scopedWorkspaceId, '00000000-0000-0000-0000-000000000000']),
+    where('isActive', '==', true),
+    orderBy('createdAt', 'desc')
+  );
+
+  return runOnce(q, (snapshot) => snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: toDate(doc.data().createdAt),
+    updatedAt: toDate(doc.data().updatedAt)
+  }) as AgentMissionBlueprint), []);
+};
+
+export const createMissionEvent = async (event: Omit<AgentMissionEvent, 'id' | 'createdAt'>): Promise<AgentMissionEvent> => {
+  const now = new Date();
+  const ref = await addDoc(collection(db, 'agent_mission_events'), {
+    ...event,
+    createdAt: now
+  });
+
+  return {
+    id: ref.id,
+    ...event,
+    createdAt: now
+  };
+};
+
+export const loadMissionEvents = async (missionId: string): Promise<AgentMissionEvent[]> => {
+  const q = query(
+    collection(db, 'agent_mission_events'),
+    where('missionId', '==', missionId),
+    orderBy('createdAt', 'asc')
+  );
+
+  return runOnce(q, (snapshot) => snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: toDate(doc.data().createdAt)
+  }) as AgentMissionEvent), []);
 };
 
 export const loadMissionBundle = async ({

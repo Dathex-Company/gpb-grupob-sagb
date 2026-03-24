@@ -127,3 +127,43 @@ export const PencilIcon = ({ className }: { className?: string }) => (
 export const CheckIcon = ({ className }: { className?: string }) => (
   <BaseIcon d="M20 6L9 17l-5-5" className={className} />
 );
+
+export const FilterIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" className={className} />
+);
+
+export const ClockIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" className={className} />
+);
+
+export const SaveIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" className={className} />
+);
+
+export const PlayIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M5 3l14 9-14 9V3z" className={className} />
+);
+
+export const PauseIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M6 4h4v16H6zM14 4h4v16h-4z" className={className} />
+);
+
+export const DownloadIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5 5l5-5m-5 5V3" className={className} />
+);
+
+export const MessageSquareIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" className={className} />
+);
+
+export const VideoIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M23 7l-7 5 7 5V7z M1 5h15v14H1V5z" className={className} />
+);
+
+export const ArrowRightIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M5 12h14m-7-7l7 7-7 7" className={className} />
+);
+
+export const AlertCircleIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" className={className} />
+);

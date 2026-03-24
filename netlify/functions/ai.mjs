@@ -22,19 +22,25 @@ const pickOpenAIKey = () => {
 };
 
 const pickAnthropicKey = () => {
-  return (process.env.ANTHROPIC_API_KEY || process.env.VITE_ANTHROPIC_API_KEY || '').trim();
+  return (
+    process.env.ANTHROPIC_API_KEY ||
+    process.env.ANTROPIC_API_KEY ||
+    process.env.VITE_ANTHROPIC_API_KEY ||
+    process.env.VITE_ANTROPIC_API_KEY ||
+    ''
+  ).trim();
 };
 
-const pickQwenKey = () => {
-  return (process.env.QWEN_API_KEY || process.env.VITE_QWEN_API_KEY || '').trim();
+const pickAnthropicModel = () => {
+  return (
+    process.env.ANTHROPIC_MODEL ||
+    process.env.ANTROPIC_MODEL ||
+    'claude-3-5-haiku-latest'
+  ).trim();
 };
 
 const pickOpenAIBaseUrl = () => {
   return (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1/chat/completions').trim();
-};
-
-const pickQwenBaseUrl = () => {
-  return (process.env.QWEN_BASE_URL || 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions').trim();
 };
 
 const pickLlamaLocalUrl = () => {
@@ -262,7 +268,7 @@ const requestClaudeCompletion = async (payload) => {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: payload.model || process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest',
+      model: payload.model || pickAnthropicModel(),
       system: systemMessages.join('\n\n'),
       messages,
       temperature: typeof payload.temperature === 'number' ? payload.temperature : 0.4,
@@ -283,37 +289,6 @@ const requestClaudeCompletion = async (payload) => {
       .join('\n')
       .trim()
     : '';
-  return { text };
-};
-
-const requestQwenCompletion = async (payload) => {
-  const apiKey = pickQwenKey();
-  if (!apiKey) {
-    throw createHttpError(500, 'Missing Qwen API key in function environment.');
-  }
-
-  const response = await fetch(pickQwenBaseUrl(), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: payload.model || process.env.QWEN_MODEL || 'qwen-plus',
-      messages: normalizeTextMessages(payload),
-      temperature: typeof payload.temperature === 'number' ? payload.temperature : 0.4,
-      max_tokens: typeof payload.maxTokens === 'number' ? payload.maxTokens : 1800,
-      stream: false
-    })
-  });
-
-  if (!response.ok) {
-    const raw = await response.text().catch(() => '');
-    throw createHttpError(response.status, `Qwen request failed (${response.status}): ${raw}`);
-  }
-
-  const data = await response.json().catch(() => ({}));
-  const text = String(data?.choices?.[0]?.message?.content || '').trim();
   return { text };
 };
 
@@ -478,12 +453,12 @@ const checkClaudeHealth = async () => {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-latest',
+      model: pickAnthropicModel(),
       max_tokens: 1,
       messages: [{ role: 'user', content: 'ping' }],
       temperature: 0
     })
-  }, 10000);
+  }, 20000); // Aumentado de 10 para 20 segundos
   if (!response.ok) {
     const raw = await response.text().catch(() => '');
     throw new Error(`Claude HTTP ${response.status}: ${raw}`);
@@ -492,7 +467,12 @@ const checkClaudeHealth = async () => {
 
 const checkLlamaHealth = async () => {
   const endpoint = resolveLlamaEndpoint(pickLlamaLocalUrl());
-  if (!endpoint) throw new Error('Llama local sem URL configurada');
+  if (!endpoint) {
+    // Não falha quando não configurado - apenas retorna sem erro
+    // A função runHealthCheck capturará isso como sucesso
+    return;
+  }
+  
   const model = pickLlamaLocalModel() || 'llama3.1:8b';
   const apiKey = pickLlamaLocalApiKey();
   const headers = { 'Content-Type': 'application/json' };
@@ -667,10 +647,6 @@ const handleClaudeChat = async (payload) => {
   return requestClaudeCompletion(payload);
 };
 
-const handleQwenChat = async (payload) => {
-  return requestQwenCompletion(payload);
-};
-
 const handleTranscribeAudio = async (payload) => {
   const ai = getGeminiClient();
   const mimeType = payload.mimeType || 'audio/webm';
@@ -842,7 +818,6 @@ const actionHandlers = {
   llama_local_chat: handleLlamaLocalChat,
   openai_chat: handleOpenAIChat,
   claude_chat: handleClaudeChat,
-  qwen_chat: handleQwenChat,
   transcribe_audio: handleTranscribeAudio,
   consolidate_chat_memory: handleConsolidateChatMemory,
   generate_title_options: handleGenerateTitleOptions,

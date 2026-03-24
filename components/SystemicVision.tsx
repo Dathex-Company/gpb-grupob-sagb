@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Agent, Message, Sender, BusinessUnit, AgentTier, AgentStatus, Topic, PersonaConfig, UserProfile, ModelProvider } from '../types';
+import { Agent, Message, Sender, BusinessUnit, AgentTier, AgentStatus, Topic, PersonaConfig, UserProfile, ModelProvider, VaultItem, ChatAttachment } from '../types';
 import { startAgentSession, generateTitleOptions, transcribeAudio, generateTaskSuggestions, consolidateChatMemory } from '../services/gemini';
 import { streamDeepSeekResponse, DeepSeekMessage } from '../services/deepseek';
 import { streamLlamaLocalResponse, LlamaMessage } from '../services/llamaLocal';
@@ -17,10 +17,12 @@ import {
     startIntelligenceFlow
 } from '../services/intelligenceFlow';
 import { retrieveRelevantContext, retrieveLearnedMemory } from '../services/knowledge';
+import { buildChatStoragePath, getSupabasePublicUrl, uploadBlobToSupabaseStorage } from '../services/storage';
 import { db, collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from '../services/supabase';
-import { SendIcon, NewChatIcon, MicIcon, StopCircleIcon, BackIcon, FolderIcon, PlusIcon, FileTextIcon, CloudUploadIcon, PaperclipIcon, XIcon, BookIcon, BotIcon, PencilIcon, CheckIcon, TrashIcon } from './Icon';
+import { SendIcon, NewChatIcon, MicIcon, StopCircleIcon, BackIcon, FolderIcon, PlusIcon, FileTextIcon, CloudUploadIcon, PaperclipIcon, XIcon, BookIcon, BotIcon, PencilIcon, CheckIcon, TrashIcon, SearchIcon } from './Icon';
 import { Avatar } from './Avatar';
 import ChatMessage from './ChatMessage';
+import ChatAttachmentCard from './ChatAttachmentCard';
 
 
 interface SystemicVisionProps {
@@ -40,6 +42,7 @@ interface SystemicVisionProps {
     viewMode?: 'bu' | 'global';
     userProfile?: UserProfile | null;
     activeWorkspaceId?: string | null;
+    vaultItems?: VaultItem[];
 }
 
 // Interface para Sessão
@@ -50,9 +53,152 @@ interface ChatSession {
     createdAt: number;
     lastMessageAt: number;
     participantIds?: string[];
+    selectedVaultDocumentIds?: string[];
 }
 
-const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdateAgents, activeBU, onAddAgent, onApproveAgent, onPlanAgent, onEnterRoom, businessUnits = [], totalGlobalAgents = 0, forcedAgent, forcedSessionId, onBack, onConvertToTopic, viewMode = 'bu', userProfile, activeWorkspaceId }) => {
+type VaultDocumentOption = {
+    id: string;
+    title: string;
+    content: string;
+    mimeType: string;
+    payload?: Record<string, any>;
+    uploadedAt?: string;
+};
+
+const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdateAgents, activeBU, onAddAgent, onApproveAgent, onPlanAgent, onEnterRoom, businessUnits = [], totalGlobalAgents = 0, forcedAgent, forcedSessionId, onBack, onConvertToTopic, viewMode = 'bu', userProfile, activeWorkspaceId, vaultItems = [] }) => {
+
+    const createAttachmentId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const attachmentScopeVersionRef = useRef(0);
+    const cancelledAttachmentIdsRef = useRef<Set<string>>(new Set());
+
+    const isAttachmentContextValid = useCallback((localId: string, scopeVersion: number) => {
+        return scopeVersion === attachmentScopeVersionRef.current && !cancelledAttachmentIdsRef.current.has(localId);
+    }, []);
+
+    const resetAttachmentWorkflow = useCallback(() => {
+        attachmentScopeVersionRef.current += 1;
+        cancelledAttachmentIdsRef.current = new Set();
+        setAttachments([]);
+    }, []);
+
+    const extractMediaMetadata = useCallback((file: File) => new Promise<{ durationSec?: number; previewOverride?: string }>((resolve) => {
+        const mime = String(file.type || '').toLowerCase();
+        if (!mime.startsWith('audio/') && !mime.startsWith('video/')) {
+            resolve({});
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        const media = document.createElement(mime.startsWith('video/') ? 'video' : 'audio');
+        media.preload = 'metadata';
+        media.src = objectUrl;
+        media.muted = true;
+
+        const cleanup = () => {
+            media.pause();
+            media.removeAttribute('src');
+            media.load();
+            URL.revokeObjectURL(objectUrl);
+        };
+
+        const resolveAudio = () => {
+            const durationSec = Number.isFinite(media.duration) ? Math.round(media.duration) : undefined;
+            cleanup();
+            resolve({ durationSec });
+        };
+
+        const resolveVideo = () => {
+            const durationSec = Number.isFinite(media.duration) ? Math.round(media.duration) : undefined;
+            const video = media as HTMLVideoElement;
+
+            const finishWithFallback = () => {
+                cleanup();
+                resolve({ durationSec });
+            };
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 320;
+            canvas.height = video.videoHeight || 180;
+
+            const context = canvas.getContext('2d');
+            if (!context || !video.videoWidth || !video.videoHeight) {
+                finishWithFallback();
+                return;
+            }
+
+            const handleSeeked = () => {
+                try {
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const previewOverride = canvas.toDataURL('image/jpeg', 0.82);
+                    cleanup();
+                    resolve({ durationSec, previewOverride });
+                } catch {
+                    finishWithFallback();
+                }
+            };
+
+            video.addEventListener('seeked', handleSeeked, { once: true });
+            try {
+                video.currentTime = Math.min(0.1, Math.max(video.duration || 0, 0.1));
+            } catch {
+                finishWithFallback();
+            }
+        };
+
+        media.onloadedmetadata = () => {
+            if (mime.startsWith('video/')) {
+                resolveVideo();
+                return;
+            }
+            resolveAudio();
+        };
+
+        media.onerror = () => {
+            cleanup();
+            resolve({});
+        };
+    }), []);
+
+    const buildDocumentSummary = (content: string, title: string) => {
+        const normalized = String(content || '').replace(/\r/g, '').trim();
+        if (!normalized) return `Arquivo ${title}: sem preview inline disponível.`;
+
+        const lines = normalized
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .slice(0, 6);
+
+        const firstChunk = lines.join(' ').replace(/\s+/g, ' ').trim();
+        return firstChunk.length > 420 ? `${firstChunk.slice(0, 420)}...` : firstChunk;
+    };
+
+    const renderChatAmbient = () => (
+        <>
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute inset-y-0 left-0 w-[20vw] min-w-[180px] bg-gradient-to-r from-[#EEF2FF]/52 via-white/18 to-transparent" />
+                <div className="absolute inset-y-0 right-0 w-[20vw] min-w-[180px] bg-gradient-to-l from-[#ECFEF7]/46 via-white/16 to-transparent" />
+                <div className="absolute left-[-10%] top-[12%] h-[34rem] w-[34rem] rounded-full bg-[radial-gradient(circle,_rgba(31,41,55,0.03)_0%,_rgba(31,41,55,0.012)_40%,_transparent_72%)]" />
+                <div className="absolute right-[-11%] bottom-[-6%] h-[32rem] w-[32rem] rounded-full bg-[radial-gradient(circle,_rgba(16,185,129,0.04)_0%,_rgba(16,185,129,0.014)_42%,_transparent_72%)]" />
+                <div className="absolute left-[4%] top-1/2 hidden -translate-y-1/2 xl:block">
+                    <div className="relative flex h-72 w-72 items-center justify-center rounded-full border border-slate-200/22 bg-white/5 backdrop-blur-[1px]">
+                        <div className="absolute inset-6 rounded-full border border-slate-300/18" />
+                        <div className="absolute inset-14 rounded-full border border-slate-300/12" />
+                        <div className="text-[6.4rem] font-black tracking-[-0.14em] text-slate-900/[0.03]">SB</div>
+                    </div>
+                </div>
+                <div className="absolute right-[5%] top-[18%] hidden xl:block">
+                    <div className="grid grid-cols-3 gap-3 opacity-[0.08]">
+                        {Array.from({ length: 9 }).map((_, idx) => (
+                            <span key={idx} className="h-2 w-2 rounded-full bg-slate-400" />
+                        ))}
+                    </div>
+                </div>
+                <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(15,23,42,0.008)_18%,transparent_32%,transparent_68%,rgba(16,185,129,0.01)_82%,transparent_100%)]" />
+            </div>
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0)_0%,_rgba(248,250,252,0.08)_56%,_rgba(241,245,249,0.3)_100%)]" />
+        </>
+    );
 
     const CURRENT_USER = useMemo(() => ({
         name: userProfile?.name || "Usuário",
@@ -78,10 +224,15 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
     const [showHistorySidebar, setShowHistorySidebar] = useState(false);
     const [titleOptions, setTitleOptions] = useState<string[] | null>(null);
     const [taskSuggestions, setTaskSuggestions] = useState<string[] | null>(null);
+    const [isSuggestionPanelVisible, setIsSuggestionPanelVisible] = useState(false);
 
     // --- MULTI-AGENT STATE ---
     const [activeParticipants, setActiveParticipants] = useState<Agent[]>([]);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
+    const [vaultSearchTerm, setVaultSearchTerm] = useState('');
+    const [selectedVaultDocumentIds, setSelectedVaultDocumentIds] = useState<string[]>([]);
+    const [previewVaultDoc, setPreviewVaultDoc] = useState<VaultDocumentOption | null>(null);
 
     // --- EDITING STATE REMOVED (NOW LOCAL IN COMPONENT) ---
     // A lógica de edição agora é controlada diretamente pelo handleUpdateAndRegenerate
@@ -96,7 +247,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // --- CHAT ATTACHMENT & DRAG/DROP STATE ---
-    const [attachments, setAttachments] = useState<Array<{ data: string, mimeType: string, preview: string, name?: string, sizeBytes?: number }>>([]);
+    const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const chatAttachmentRef = useRef<HTMLInputElement>(null);
 
@@ -260,6 +411,14 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
     }, [selectedAgent?.id, currentSessionId]);
 
     useEffect(() => {
+        setIsSuggestionPanelVisible(false);
+    }, [selectedAgent?.id, currentSessionId]);
+
+    useEffect(() => {
+        resetAttachmentWorkflow();
+    }, [selectedAgent?.id, currentSessionId, resetAttachmentWorkflow]);
+
+    useEffect(() => {
         let cancelled = false;
         let intervalId: number | null = null;
 
@@ -288,24 +447,19 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         const modelId = resolveProvider(forcedProvider || selectedModelProvider) === 'gemini'
             ? 'gemini-2.5-flash'
             : 'gemini-2.5-flash';
-        // Busca memória de longo prazo
         const longTerm = retrieveLearnedMemory(agent);
-
-        // INVENTÁRIO DE DOCUMENTOS (Para o agente saber o que tem)
-        const docsInventory = agent.globalDocuments
-            ? agent.globalDocuments.map(d => `- ${d.title}`).join('\n')
-            : "Nenhum documento vinculado.";
+        const docsInventory = buildAgentDocsInventory(agent);
 
         const gs = startAgentSession(
             agent.id,
-            resolveAgentBasePrompt(agent),
+            buildSystemInstructionForAgent(agent),
             agent.knowledgeBase || [],
             modelId,
             history.length > 0 ? history : undefined,
             CURRENT_USER,
-            undefined, // RAG context inicial vazio
-            longTerm, // Memória consolidada
-            docsInventory // Inventário para o prompt do sistema
+            undefined,
+            longTerm,
+            docsInventory
         );
         return gs;
     };
@@ -355,7 +509,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                 title: "Nova Conversa",
                 status: "active",
                 buId: activeBU.id,
-                payload: { participantAgentIds: [] },
+                payload: { participantAgentIds: [], selectedVaultDocumentIds: [] },
                 createdAt: now,
                 updatedAt: now,
                 lastMessageAt: now
@@ -363,7 +517,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
             setCurrentSessionId(sessionRef.id);
             setTitleOptions(null);
             setTaskSuggestions(null);
-            setAttachments([]);
+            resetAttachmentWorkflow();
             setActiveParticipants([]);
 
             const randomGreeting = HUMAN_GREETINGS[Math.floor(Math.random() * HUMAN_GREETINGS.length)];
@@ -398,7 +552,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         setCurrentSessionId(sessionId);
         setTitleOptions(null);
         setTaskSuggestions(null);
-        setAttachments([]);
+        resetAttachmentWorkflow();
         setActiveParticipants([]);
 
         setActiveMessages([]);
@@ -415,6 +569,22 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
             console.error("Erro ao sugerir título:", e);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleToggleSuggestionPanel = async () => {
+        const nextVisible = !isSuggestionPanelVisible;
+        setIsSuggestionPanelVisible(nextVisible);
+
+        if (!nextVisible || taskSuggestions || activeMessages.length < 2) return;
+
+        try {
+            const suggestionsContext = activeMessages.slice(-12).map((message) => message.text).join('\n\n');
+            const suggestions = await generateTaskSuggestions(suggestionsContext);
+            setTaskSuggestions(suggestions.length > 0 ? suggestions : []);
+        } catch (error) {
+            console.error('Erro ao gerar sugestões manuais:', error);
+            setTaskSuggestions([]);
         }
     };
 
@@ -465,7 +635,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         setActiveMessages([]);
         setTitleOptions(null);
         setTaskSuggestions(null);
-        setAttachments([]);
+        resetAttachmentWorkflow();
         setActiveParticipants([]);
     };
 
@@ -498,7 +668,10 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                     title: String(data.title || "Nova Conversa"),
                     createdAt: toMillis(data.createdAt),
                     lastMessageAt: toMillis(data.lastMessageAt || data.updatedAt || data.createdAt),
-                    participantIds: participantAgentIds
+                    participantIds: participantAgentIds,
+                    selectedVaultDocumentIds: Array.isArray(payload.selectedVaultDocumentIds)
+                        ? payload.selectedVaultDocumentIds.map((id: any) => String(id))
+                        : []
                 } as ChatSession;
             }).sort((a, b) => b.lastMessageAt - a.lastMessageAt);
 
@@ -539,6 +712,15 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         );
         setActiveParticipants(hydratedParticipants);
     }, [currentSessionId, selectedAgent?.id, sessions, dynamicAgents]);
+
+    useEffect(() => {
+        if (!currentSessionId) {
+            setSelectedVaultDocumentIds([]);
+            return;
+        }
+        const activeSession = sessions.find((session) => session.id === currentSessionId);
+        setSelectedVaultDocumentIds(activeSession?.selectedVaultDocumentIds || []);
+    }, [currentSessionId, sessions]);
 
     useEffect(() => {
         if (!useSupabaseChat || !workspaceId || !selectedAgent || !currentSessionId) return;
@@ -583,7 +765,8 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                     isStreaming: Boolean(payload.isStreaming),
                     participantName: data.participantName ? String(data.participantName) : undefined,
                     attachment: normalizedAttachments[0],
-                    attachments: normalizedAttachments
+                    attachments: normalizedAttachments,
+                    payload
                 } as Message;
             });
             setActiveMessages(loaded);
@@ -616,18 +799,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
 
     const persistSessionParticipants = async (sessionId: string, participantIds: string[]) => {
         const normalizedIds = Array.from(new Set((participantIds || []).map((id) => String(id).trim()).filter(Boolean)));
-        setSessions((prev) => prev.map((s) => (
-            s.id === sessionId ? { ...s, participantIds: normalizedIds } : s
-        )));
-
-        try {
-            await updateDoc(doc(db, "chat_sessions", sessionId), {
-                payload: { participantAgentIds: normalizedIds },
-                updatedAt: new Date()
-            });
-        } catch (error) {
-            console.error("Erro ao persistir participantes da sessão:", error);
-        }
+        await patchSessionPayload(sessionId, { participantAgentIds: normalizedIds });
     };
 
     const handleCloseChat = () => {
@@ -712,7 +884,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
 
         try {
             // --- LOGICA DE GERAÇÃO (Cópia da handleSendMessage adaptada) ---
-            const ragContext = retrieveRelevantContext(selectedAgent, newText);
+            const { runtimeContext } = buildRuntimeContextForTurn(selectedAgent, newText);
             let finalBotText = '';
             const providerForMessage = resolveProvider(selectedModelProvider);
 
@@ -726,11 +898,11 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                     deepSeekHistory.push({ role: 'user', content: editedAttachmentText });
                 }
 
-                if (ragContext) {
-                    deepSeekHistory.push({ role: 'system', content: ragContext });
+                if (runtimeContext) {
+                    deepSeekHistory.push({ role: 'system', content: runtimeContext });
                 }
 
-                const stream = streamDeepSeekResponse(deepSeekHistory, resolveAgentBasePrompt(selectedAgent));
+                const stream = streamDeepSeekResponse(deepSeekHistory, buildSystemInstructionForAgent(selectedAgent));
                 let fullText = "";
 
                 for await (const chunk of stream) {
@@ -749,11 +921,11 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                 if (editedAttachmentText) {
                     llamaHistory.push({ role: 'user', content: editedAttachmentText });
                 }
-                if (ragContext) {
-                    llamaHistory.push({ role: 'system', content: ragContext });
+                if (runtimeContext) {
+                    llamaHistory.push({ role: 'system', content: runtimeContext });
                 }
 
-                const stream = streamLlamaLocalResponse(llamaHistory, resolveAgentBasePrompt(selectedAgent) || '');
+                const stream = streamLlamaLocalResponse(llamaHistory, buildSystemInstructionForAgent(selectedAgent) || '');
                 let fullText = "";
 
                 for await (const chunk of stream) {
@@ -772,11 +944,11 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                 if (editedAttachmentText) {
                     proxyHistory.push({ role: 'user', content: editedAttachmentText });
                 }
-                if (ragContext) {
-                    proxyHistory.push({ role: 'system', content: ragContext });
+                if (runtimeContext) {
+                    proxyHistory.push({ role: 'system', content: runtimeContext });
                 }
 
-                const stream = streamProxyProviderResponse(providerForMessage, proxyHistory, resolveAgentBasePrompt(selectedAgent) || '');
+                const stream = streamProxyProviderResponse(providerForMessage, proxyHistory, buildSystemInstructionForAgent(selectedAgent) || '');
                 let fullText = '';
 
                 for await (const chunk of stream) {
@@ -798,8 +970,8 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                 const session = initializeSession(selectedAgent, geminiHistory, 'gemini');
 
                 let messagePayload: any = newText;
-                if (ragContext) {
-                    messagePayload = `${ragContext}\n\n[MENSAGEM DO USUÁRIO]:\n${newText}`;
+                if (runtimeContext) {
+                    messagePayload = `${runtimeContext}\n\n[MENSAGEM DO USUÁRIO]:\n${newText}`;
                 }
                 if (activeParticipants.length > 0) {
                     messagePayload = `[MESA: ${activeParticipants.map(p => p.name).join(', ')}]\n${messagePayload}`;
@@ -1089,21 +1261,60 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         handleChatAttachmentSelect(e);
     };
 
-    const readFileAsAttachment = (file: File) => new Promise<{ data: string, mimeType: string, preview: string, name?: string, sizeBytes?: number }>((resolve, reject) => {
+    const uploadAttachmentToStorage = async (file: File, localId: string) => {
+        if (!workspaceId || !currentSessionId) {
+            throw new Error('Sessão ou Workspace não definido para upload.');
+        }
+
+        const bucket = 'sagb_chat_attachments';
+        const path = buildChatStoragePath({
+            workspaceId,
+            sessionId: currentSessionId,
+            fileName: file.name
+        });
+
+        await uploadBlobToSupabaseStorage({
+            bucket,
+            path,
+            blob: file,
+            mimeType: file.type
+        });
+
+        return {
+            storagePath: path,
+            url: getSupabasePublicUrl(bucket, path)
+        };
+    };
+
+    const readFileAsAttachment = (file: File, localId: string) => new Promise<ChatAttachment>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (ev) => {
+        reader.onload = async (ev) => {
             if (!ev.target?.result) {
                 reject(new Error('Falha ao ler arquivo'));
                 return;
             }
             const dataUrl = ev.target.result as string;
-            resolve({
-                data: dataUrl.split(',')[1] || '',
-                mimeType: file.type || 'application/octet-stream',
-                preview: dataUrl,
-                name: file.name,
-                sizeBytes: file.size
-            });
+            const metadata = await extractMediaMetadata(file);
+            
+            try {
+                // Realiza o upload real para o Supabase Storage
+                const storageInfo = await uploadAttachmentToStorage(file, localId);
+
+                resolve({
+                    localId,
+                    data: '', // Base64 agora é removido do payload final
+                    storagePath: storageInfo.storagePath,
+                    url: storageInfo.url,
+                    mimeType: file.type || 'application/octet-stream',
+                    preview: metadata.previewOverride || dataUrl,
+                    name: file.name,
+                    sizeBytes: file.size,
+                    durationSec: metadata.durationSec,
+                    uploadStatus: 'success'
+                });
+            } catch (error) {
+                reject(error);
+            }
         };
         reader.onerror = () => reject(new Error('Falha ao ler arquivo'));
         reader.readAsDataURL(file);
@@ -1112,10 +1323,48 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
     const appendAttachments = async (files: FileList | File[]) => {
         const fileArray = Array.from(files || []);
         if (fileArray.length === 0) return;
-        const loaded = await Promise.all(fileArray.map((file) => readFileAsAttachment(file).catch(() => null)));
-        const valid = loaded.filter(Boolean) as Array<{ data: string, mimeType: string, preview: string, name?: string, sizeBytes?: number }>;
-        if (valid.length === 0) return;
-        setAttachments((prev) => [...prev, ...valid]);
+        const scopeVersion = attachmentScopeVersionRef.current;
+
+        const staged: ChatAttachment[] = fileArray.map((file) => ({
+            localId: createAttachmentId(),
+            data: '',
+            mimeType: file.type || 'application/octet-stream',
+            preview: '',
+            name: file.name,
+            sizeBytes: file.size,
+            uploadStatus: 'pending'
+        }));
+
+        setAttachments((prev) => [...prev, ...staged]);
+
+        await Promise.all(staged.map(async (draft, index) => {
+            const sourceFile = fileArray[index];
+
+            if (!draft.localId || !isAttachmentContextValid(draft.localId, scopeVersion)) return;
+
+            setAttachments((prev) => prev.map((item) => (
+                item.localId === draft.localId ? { ...item, uploadStatus: 'uploading' } : item
+            )));
+
+            try {
+                const loaded = await readFileAsAttachment(sourceFile, String(draft.localId));
+                if (!draft.localId || !isAttachmentContextValid(draft.localId, scopeVersion)) return;
+                setAttachments((prev) => prev.map((item) => (
+                    item.localId === draft.localId ? loaded : item
+                )));
+            } catch (error: any) {
+                if (!draft.localId || !isAttachmentContextValid(draft.localId, scopeVersion)) return;
+                setAttachments((prev) => prev.map((item) => (
+                    item.localId === draft.localId
+                        ? {
+                            ...item,
+                            uploadStatus: 'error',
+                            uploadError: String(error?.message || 'Falha ao processar arquivo')
+                        }
+                        : item
+                )));
+            }
+        }));
     };
 
     const handleChatAttachmentSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1125,8 +1374,9 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         e.target.value = '';
     };
 
-    const handleRemoveAttachment = (index: number) => {
-        setAttachments((prev) => prev.filter((_, i) => i !== index));
+    const handleRemoveAttachment = (localId?: string) => {
+        if (localId) cancelledAttachmentIdsRef.current.add(localId);
+        setAttachments((prev) => prev.filter((item) => item.localId !== localId));
     };
 
     const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
@@ -1195,10 +1445,12 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                     reader.onload = (ev) => {
                         if (ev.target?.result) {
                             setAttachments((prev) => [...prev, {
+                                localId: createAttachmentId(),
                                 data: (ev.target.result as string).split(',')[1],
                                 mimeType: blob.type,
                                 preview: ev.target.result as string,
-                                name: `clipboard-image-${Date.now()}.png`
+                                name: `clipboard-image-${Date.now()}.png`,
+                                uploadStatus: 'success'
                             }]);
                         }
                     };
@@ -1210,7 +1462,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
 
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if ((!input.trim() && attachments.length === 0) || isLoading || !selectedAgent) return;
+        if ((!input.trim() && attachments.filter((item) => item.uploadStatus === 'success').length === 0) || isLoading || !selectedAgent) return;
 
         if (!workspaceId || !currentSessionId) {
             alert("Workspace ou sessão não definidos. Abra uma nova conversa.");
@@ -1218,12 +1470,15 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         }
 
         const userText = input.trim();
-        const currentAttachments = attachments;
+        const hasPendingUploads = attachments.some((item) => item.uploadStatus === 'pending' || item.uploadStatus === 'uploading');
+        if (hasPendingUploads) return;
+        const currentAttachments = attachments.filter((item) => item.uploadStatus === 'success');
         const canPersistChat = Boolean(workspaceId && currentSessionId);
         const now = new Date();
         const providerForMessage = resolveProvider(selectedModelProvider);
         const turnId = getTurnIdFromMessages(activeMessages);
         const attachmentTextShared = extractTextFromAttachments(currentAttachments);
+        const vaultContextShared = selectedVaultPromptBlock;
         const userDisplayText = currentAttachments.length > 0
             ? (userText ? `${userText} 📎 [${currentAttachments.length} arquivo(s) anexado(s)]` : `📎 [${currentAttachments.length} arquivo(s) enviado(s)]`)
             : userText;
@@ -1283,7 +1538,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         }
 
         setInput('');
-        setAttachments([]);
+        resetAttachmentWorkflow();
         setAutoScrollEnabled(true);
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
@@ -1308,7 +1563,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                         message_kind: 'user_input',
                         ...createMessageTelemetry({
                             provider: providerForMessage,
-                            promptText: [userText, attachmentTextShared].filter(Boolean).join('\n\n'),
+                            promptText: [userText, attachmentTextShared, vaultContextShared].filter(Boolean).join('\n\n'),
                             completionText: '',
                             latencyMs: 0
                         })
@@ -1340,14 +1595,15 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
             actionType: 'question',
             status: 'ok',
             modelUsed: providerForMessage,
-            tokensIn: Math.ceil(([userText, attachmentTextShared].filter(Boolean).join('\n\n').length || 1) / 4),
+            tokensIn: Math.ceil(([userText, attachmentTextShared, vaultContextShared].filter(Boolean).join('\n\n').length || 1) / 4),
             tokensOut: 0,
             latencyMs: 0,
             estimatedCost: 0,
             note: userText || `Mensagem com ${currentAttachments.length} anexo(s)`,
             eventTime: now,
             payload: {
-                attachmentsCount: currentAttachments.length
+                attachmentsCount: currentAttachments.length,
+                selectedVaultDocumentsCount: selectedVaultDocuments.length
             }
         });
 
@@ -1434,142 +1690,117 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                 }]);
 
                 try {
-                    const ragContext = retrieveRelevantContext(speaker, userText);
+                    const { ragContext, runtimeContext } = buildRuntimeContextForTurn(speaker, userText);
                     let finalBotText = '';
+                    let actualProviderExecuted = providerForMessage;
+                    let fallbackTriggered = false;
+                    let fallbackReason = '';
 
-                    if (isDeepSeekProvider(providerForMessage)) {
-                        const deepSeekHistory = activeMessages
-                            .concat(userMsg)
-                            .concat(generatedReplies)
-                            .map((message) => ({
-                                role: message.sender === Sender.User ? 'user' : 'assistant',
-                                content: message.text
-                            })) as DeepSeekMessage[];
-                        const attachmentText = attachmentTextShared;
-                        if (attachmentText) {
-                            deepSeekHistory.push({ role: 'user', content: attachmentText });
-                        }
+                    const runModelGeneration = async (targetProvider: ModelProvider): Promise<{ text: string, tokens?: number }> => {
+                        let resultText = '';
+                        let tokens: number | undefined;
 
-                        if (ragContext) {
-                            deepSeekHistory.push({ role: 'system', content: ragContext });
-                        }
-                        if (participantsLabel) {
-                            deepSeekHistory.push({ role: 'system', content: participantsLabel });
-                        }
+                        if (isDeepSeekProvider(targetProvider)) {
+                            const deepSeekHistory = activeMessages
+                                .concat(userMsg)
+                                .concat(generatedReplies)
+                                .map((message) => ({
+                                    role: message.sender === Sender.User ? 'user' : 'assistant',
+                                    content: message.text
+                                })) as DeepSeekMessage[];
+                            if (attachmentTextShared) deepSeekHistory.push({ role: 'user', content: attachmentTextShared });
+                            if (runtimeContext) deepSeekHistory.push({ role: 'system', content: runtimeContext });
+                            if (participantsLabel) deepSeekHistory.push({ role: 'system', content: participantsLabel });
 
-                        const stream = streamDeepSeekResponse(deepSeekHistory, resolveAgentBasePrompt(speaker));
-                        for await (const chunk of stream) {
-                            const text = (chunk as any)?.text || '';
-                            if (typeof (chunk as any)?.completionTokens === 'number') {
-                                completionTokensFromProvider = Number((chunk as any).completionTokens);
+                            const stream = streamDeepSeekResponse(deepSeekHistory, buildSystemInstructionForAgent(speaker));
+                            for await (const chunk of stream) {
+                                const text = (chunk as any)?.text || '';
+                                if (typeof (chunk as any)?.completionTokens === 'number') tokens = Number((chunk as any).completionTokens);
+                                resultText += text;
+                                setActiveMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, text: resultText } : m));
                             }
-                            finalBotText += text;
-                            setActiveMessages((prev) => prev.map((message) => (
-                                message.id === botMsgId ? { ...message, text: finalBotText } : message
-                            )));
-                        }
-                    } else if (isLlamaLocalProvider(providerForMessage)) {
-                        const llamaHistory = activeMessages
-                            .concat(userMsg)
-                            .concat(generatedReplies)
-                            .map((message) => ({
-                                role: message.sender === Sender.User ? 'user' : 'assistant',
-                                content: message.text
-                            })) as LlamaMessage[];
+                        } else if (isLlamaLocalProvider(targetProvider)) {
+                            const llamaHistory = activeMessages
+                                .concat(userMsg)
+                                .concat(generatedReplies)
+                                .map((message) => ({ role: message.sender === Sender.User ? 'user' : 'assistant', content: message.text })) as LlamaMessage[];
+                            if (attachmentTextShared) llamaHistory.push({ role: 'user', content: attachmentTextShared });
+                            if (runtimeContext) llamaHistory.push({ role: 'system', content: runtimeContext });
+                            if (participantsLabel) llamaHistory.push({ role: 'system', content: participantsLabel });
 
-                        const attachmentText = attachmentTextShared;
-                        if (attachmentText) {
-                            llamaHistory.push({ role: 'user', content: attachmentText });
-                        }
-                        if (ragContext) {
-                            llamaHistory.push({ role: 'system', content: ragContext });
-                        }
-                        if (participantsLabel) {
-                            llamaHistory.push({ role: 'system', content: participantsLabel });
-                        }
+                            const stream = streamLlamaLocalResponse(llamaHistory, buildSystemInstructionForAgent(speaker) || '');
+                            for await (const chunk of stream) {
+                                resultText += chunk.text;
+                                setActiveMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, text: resultText } : m));
+                            }
+                        } else if (isProxyProvider(targetProvider)) {
+                            const proxyHistory = activeMessages
+                                .concat(userMsg)
+                                .concat(generatedReplies)
+                                .map((message) => ({ role: message.sender === Sender.User ? 'user' : 'assistant', content: message.text })) as ProxyProviderMessage[];
+                            if (attachmentTextShared) proxyHistory.push({ role: 'user', content: attachmentTextShared });
+                            if (runtimeContext) proxyHistory.push({ role: 'system', content: runtimeContext });
+                            if (participantsLabel) proxyHistory.push({ role: 'system', content: participantsLabel });
 
-                        const stream = streamLlamaLocalResponse(llamaHistory, resolveAgentBasePrompt(speaker) || '');
-                        for await (const chunk of stream) {
-                            finalBotText += chunk.text;
-                            setActiveMessages((prev) => prev.map((message) => (
-                                message.id === botMsgId ? { ...message, text: finalBotText } : message
-                            )));
-                        }
-                    } else if (isProxyProvider(providerForMessage)) {
-                        const proxyHistory = activeMessages
-                            .concat(userMsg)
-                            .concat(generatedReplies)
-                            .map((message) => ({
-                                role: message.sender === Sender.User ? 'user' : 'assistant',
-                                content: message.text
-                            })) as ProxyProviderMessage[];
+                            const stream = streamProxyProviderResponse(targetProvider, proxyHistory, buildSystemInstructionForAgent(speaker) || '');
+                            for await (const chunk of stream) {
+                                resultText += chunk.text;
+                                setActiveMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, text: resultText } : m));
+                            }
+                        } else {
+                            const modelId = 'gemini-2.5-flash';
+                            const historyForSpeaker = activeMessages
+                                .concat(userMsg)
+                                .concat(generatedReplies)
+                                .filter((m) => m.sender !== Sender.System)
+                                .map((m) => ({ role: m.sender === Sender.User ? 'user' : 'model', parts: [{ text: m.text }] }));
 
-                        const attachmentText = attachmentTextShared;
-                        if (attachmentText) {
-                            proxyHistory.push({ role: 'user', content: attachmentText });
-                        }
-                        if (ragContext) {
-                            proxyHistory.push({ role: 'system', content: ragContext });
-                        }
-                        if (participantsLabel) {
-                            proxyHistory.push({ role: 'system', content: participantsLabel });
-                        }
+                            const longTermMemory = retrieveLearnedMemory(speaker);
+                            const docsInventory = buildAgentDocsInventory(speaker);
+                            const speakerSession = startAgentSession(
+                                speaker.id,
+                                buildSystemInstructionForAgent(speaker) || '',
+                                speaker.knowledgeBase || [],
+                                modelId,
+                                historyForSpeaker,
+                                CURRENT_USER,
+                                undefined,
+                                longTermMemory,
+                                docsInventory
+                            );
 
-                        const stream = streamProxyProviderResponse(providerForMessage, proxyHistory, resolveAgentBasePrompt(speaker) || '');
-                        for await (const chunk of stream) {
-                            finalBotText += chunk.text;
-                            setActiveMessages((prev) => prev.map((message) => (
-                                message.id === botMsgId ? { ...message, text: finalBotText } : message
-                            )));
-                        }
-                    } else {
-                        const modelId = 'gemini-2.5-flash';
-                        const historyForSpeaker = activeMessages
-                            .concat(userMsg)
-                            .concat(generatedReplies)
-                            .filter((message) => message.sender !== Sender.System)
-                            .map((message) => ({
-                                role: message.sender === Sender.User ? 'user' : 'model',
-                                parts: [{ text: message.text }]
-                            }));
+                            let messagePayload: any = userText;
+                            if (runtimeContext) messagePayload = `${runtimeContext}\n\n[MENSAGEM DO USUÁRIO]:\n${userText}`;
+                            if (participantsLabel) messagePayload = `${participantsLabel}\n${messagePayload}`;
+                            if (currentAttachments.length > 0) {
+                                const textPart = { text: typeof messagePayload === 'string' ? messagePayload : userText };
+                                const inlineParts = currentAttachments.map((f) => ({ inlineData: { mimeType: f.mimeType, data: f.data } }));
+                                messagePayload = [textPart, ...inlineParts];
+                            }
 
-                        const longTermMemory = retrieveLearnedMemory(speaker);
-                        const docsInventory = speaker.globalDocuments
-                            ? speaker.globalDocuments.map((doc) => `- ${doc.title}`).join('\n')
-                            : "Nenhum documento vinculado.";
-                        const speakerSession = startAgentSession(
-                            speaker.id,
-                            resolveAgentBasePrompt(speaker) || '',
-                            speaker.knowledgeBase || [],
-                            modelId,
-                            historyForSpeaker,
-                            CURRENT_USER,
-                            undefined,
-                            longTermMemory,
-                            docsInventory
-                        );
+                            const result = await speakerSession.sendMessageStream({ message: messagePayload });
+                            for await (const chunk of result) {
+                                const text = (chunk as any).text || '';
+                                resultText += text;
+                                setActiveMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, text: resultText } : m));
+                            }
+                        }
+                        return { text: resultText, tokens };
+                    };
 
-                        let messagePayload: any = userText;
-                        if (ragContext) {
-                            messagePayload = `${ragContext}\n\n[MENSAGEM DO USUÁRIO]:\n${userText}`;
-                        }
-                        if (participantsLabel) {
-                            messagePayload = `${participantsLabel}\n${messagePayload}`;
-                        }
-                        if (currentAttachments.length > 0) {
-                            const textPart = { text: typeof messagePayload === 'string' ? messagePayload : userText };
-                            const inlineParts = currentAttachments.map((file) => ({ inlineData: { mimeType: file.mimeType, data: file.data } }));
-                            messagePayload = [textPart, ...inlineParts];
-                        }
+                    try {
+                        const primaryResult = await runModelGeneration(providerForMessage);
+                        finalBotText = primaryResult.text;
+                        completionTokensFromProvider = primaryResult.tokens || null;
+                    } catch (primaryError: any) {
+                        console.warn(`Falha no provider principal (${providerForMessage}). Iniciando fallback para Gemini...`, primaryError);
+                        fallbackTriggered = true;
+                        fallbackReason = String(primaryError?.message || 'timeout/unreachable');
+                        actualProviderExecuted = 'gemini';
 
-                        const result = await speakerSession.sendMessageStream({ message: messagePayload });
-                        for await (const chunk of result) {
-                            const text = (chunk as any).text || '';
-                            finalBotText += text;
-                            setActiveMessages((prev) => prev.map((message) => (
-                                message.id === botMsgId ? { ...message, text: finalBotText } : message
-                            )));
-                        }
+                        const fallbackResult = await runModelGeneration('gemini');
+                        finalBotText = fallbackResult.text;
+                        completionTokensFromProvider = fallbackResult.tokens || null;
                     }
 
                     const summonMatch = finalBotText.match(/<<<CALL: (.*?)>>>/);
@@ -1587,12 +1818,15 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                     }
                     finalBotText = finalBotText.replace(/<<<CALL:\s*.*?>>>/g, '').trim();
 
-                    const promptForTelemetry = [userText, attachmentTextShared, ragContext || '', participantsLabel || '']
+                    const promptForTelemetry = [userText, attachmentTextShared, vaultContextShared, ragContext || '', participantsLabel || '']
                         .filter(Boolean)
                         .join('\n\n');
                     const latencyMs = Date.now() - speakerStartedAt;
                     const messageTelemetry = createMessageTelemetry({
-                        provider: providerForMessage,
+                        provider: actualProviderExecuted,
+                        providerSelected: providerForMessage,
+                        fallbackTriggered,
+                        fallbackReason,
                         promptText: promptForTelemetry,
                         completionText: finalBotText,
                         latencyMs,
@@ -1624,7 +1858,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                         actorName: speaker.name,
                         actionType: 'response',
                         status: statusFromText(finalBotText),
-                        modelUsed: providerForMessage,
+                        modelUsed: actualProviderExecuted,
                         workflowVersion: 'chat-v2',
                         policyVersion: 'governance-v1',
                         dnaVersion: speaker.version || null,
@@ -1682,6 +1916,10 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                             payload: {
                                 isStreaming: false,
                                 turn_id: turnId,
+                                provider_selected: providerForMessage,
+                                provider_executed: actualProviderExecuted,
+                                fallback_triggered: fallbackTriggered,
+                                fallback_reason: fallbackReason,
                                 ...messageTelemetry,
                                 quality_events_logged: botEvents.length
                             }
@@ -1695,7 +1933,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                             conversationId: currentSessionId,
                             turnId,
                             agent: speaker,
-                            modelUsed: providerForMessage,
+                            modelUsed: actualProviderExecuted,
                             workflowVersion: 'quality-sensor-v1',
                             policyVersion: 'governance-v1'
                         }, botEvents);
@@ -1755,9 +1993,9 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                         actorType: 'agent',
                         actorId: speaker.id,
                         actorName: speaker.name,
-                        actionType: 'error',
-                        status: 'error',
-                        modelUsed: providerForMessage,
+                        actionType: 'analysis',
+                        status: 'ok',
+                        modelUsed: actualProviderExecuted,
                         workflowVersion: 'chat-v2',
                         policyVersion: 'governance-v1',
                         dnaVersion: speaker.version || null,
@@ -1776,7 +2014,8 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
 
             const suggestionsContext = [userText, ...generatedReplies.map((message) => message.text)].join('\n\n');
             const suggestions = await generateTaskSuggestions(suggestionsContext);
-            setTaskSuggestions(suggestions.length > 0 ? suggestions : null);
+            setTaskSuggestions(suggestions.length > 0 ? suggestions : []);
+            setIsSuggestionPanelVisible(false);
 
             if (intelligenceFlowId && flowPersistenceEnabled) {
                 const finalAction = inferFlowFinalAction({
@@ -1872,6 +2111,205 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         return sessions.filter((session) => session.title.toLowerCase().includes(normalizedSessionSearch));
     }, [sessions, normalizedSessionSearch]);
 
+    const availableVaultDocuments = useMemo<VaultDocumentOption[]>(() => {
+        return (vaultItems || []).map((item) => {
+            const payload = (item.payload && typeof item.payload === 'object') ? item.payload : {};
+            const previewContent = typeof payload.previewData === 'string' ? payload.previewData : '';
+            const updatedAt = item.updatedAt instanceof Date ? item.updatedAt.toISOString() : String(item.updatedAt || '');
+            return {
+                id: item.id,
+                title: item.name,
+                content: previewContent || 'Conteúdo protegido. Consulte o Cofre Black.',
+                mimeType: String(payload.mimeType || item.itemType || 'text/plain'),
+                payload,
+                uploadedAt: updatedAt
+            };
+        });
+    }, [vaultItems]);
+
+    const filteredVaultDocuments = useMemo(() => {
+        const term = vaultSearchTerm.trim().toLowerCase();
+        if (!term) return availableVaultDocuments;
+        return availableVaultDocuments.filter((doc) => doc.title.toLowerCase().includes(term));
+    }, [availableVaultDocuments, vaultSearchTerm]);
+
+    const selectedVaultDocuments = useMemo(() => {
+        const lookup = new Set(selectedVaultDocumentIds);
+        return availableVaultDocuments.filter((doc) => lookup.has(doc.id));
+    }, [availableVaultDocuments, selectedVaultDocumentIds]);
+
+    const selectedVaultContext = useMemo(() => {
+        if (selectedVaultDocuments.length === 0) return '';
+        const docs = selectedVaultDocuments.map((doc, index) => {
+            const content = String(doc.content || '').trim();
+            return `--- ARQUIVO ${index + 1}: ${doc.title} ---\n${content || 'Conteúdo não disponível para preview inline.'}`;
+        }).join('\n\n');
+        return `[ARQUIVOS DO COFRE BLACK SELECIONADOS PARA ESTA CONVERSA]\nUse estes documentos como contexto prioritário quando forem relevantes.\n\n${docs}`;
+    }, [selectedVaultDocuments]);
+
+    const selectedVaultSummary = useMemo(() => {
+        if (selectedVaultDocuments.length === 0) return '';
+        return selectedVaultDocuments
+            .map((doc, index) => `• Arquivo ${index + 1} (${doc.title}): ${buildDocumentSummary(doc.content, doc.title)}`)
+            .join('\n');
+    }, [selectedVaultDocuments]);
+
+    const selectedVaultPromptBlock = useMemo(() => {
+        if (!selectedVaultContext) return '';
+        const summaryBlock = selectedVaultSummary
+            ? `\n[RESUMO DOS ARQUIVOS SELECIONADOS NESTE CHAT]\n${selectedVaultSummary}\n`
+            : '';
+
+        return `
+[FONTES EXPLICITAS DO CHAT - PRIORIDADE MAXIMA]
+O usuario selecionou ${selectedVaultDocuments.length} arquivo(s) do Cofre Black especificamente para ESTA conversa.
+Voce deve usar esses arquivos como fonte principal da resposta.
+Antes de recorrer ao DNA do agente, memoria, inventario geral ou outros documentos, consulte primeiro estes arquivos selecionados.
+Se houver conflito entre arquivos selecionados no chat e outros contextos gerais, priorize os arquivos selecionados no chat.
+Quando a pergunta pedir analise, sintese ou resumo, resuma primeiro os arquivos selecionados e baseie a resposta neles.
+${summaryBlock}
+${selectedVaultContext}
+`.trim();
+    }, [selectedVaultContext, selectedVaultDocuments.length, selectedVaultSummary]);
+
+    const buildAgentDocsInventory = useCallback((agent: Agent) => {
+        const docs = agent.globalDocuments
+            ? agent.globalDocuments.map((doc) => `- ${doc.title}`).join('\n')
+            : '';
+
+        if (!docs) {
+            return selectedVaultPromptBlock
+                ? 'Nenhum documento de DNA listado. Os arquivos escolhidos no chat devem ser tratados como fonte principal.'
+                : 'Nenhum documento vinculado.';
+        }
+
+        if (!selectedVaultPromptBlock) return docs;
+
+        return [
+            'ATENCAO: os documentos abaixo pertencem ao DNA/permissoes gerais do agente e sao contexto secundario nesta conversa.',
+            'Priorize primeiro os arquivos explicitamente selecionados no chat pelo usuario.',
+            docs
+        ].join('\n');
+    }, [selectedVaultPromptBlock]);
+
+    const buildSystemInstructionForAgent = useCallback((agent: Agent) => {
+        return [selectedVaultPromptBlock, resolveAgentBasePrompt(agent)]
+            .filter(Boolean)
+            .join('\n\n');
+    }, [selectedVaultPromptBlock]);
+
+    const buildRuntimeContextForTurn = useCallback((agent: Agent, userText: string) => {
+        const userContextBlock = `[Contexto Sistêmico]: O usuário interagindo nesta conversa é ${CURRENT_USER.name} (${CURRENT_USER.role}). Responda diretamente a ele.`;
+        const prioritizedContext = selectedVaultPromptBlock ? [userContextBlock, selectedVaultPromptBlock] : [userContextBlock];
+        const ragContext = selectedVaultPromptBlock ? '' : retrieveRelevantContext(agent, userText);
+        const runtimeContext = [...prioritizedContext, ragContext].filter(Boolean).join('\n\n');
+
+        return {
+            ragContext,
+            runtimeContext
+        };
+    }, [selectedVaultPromptBlock, CURRENT_USER]);
+
+    const patchSessionPayload = async (sessionId: string, partialPayload: Record<string, any>) => {
+        const session = sessions.find((item) => item.id === sessionId);
+        const nextParticipantIds = Array.isArray(partialPayload.participantAgentIds)
+            ? partialPayload.participantAgentIds.map((id: any) => String(id))
+            : (session?.participantIds || []);
+        const nextSelectedVaultDocumentIds = Array.isArray(partialPayload.selectedVaultDocumentIds)
+            ? partialPayload.selectedVaultDocumentIds.map((id: any) => String(id))
+            : (session?.selectedVaultDocumentIds || []);
+
+        setSessions((prev) => prev.map((item) => (
+            item.id === sessionId
+                ? {
+                    ...item,
+                    participantIds: nextParticipantIds,
+                    selectedVaultDocumentIds: nextSelectedVaultDocumentIds
+                }
+                : item
+        )));
+
+        try {
+            await updateDoc(doc(db, "chat_sessions", sessionId), {
+                payload: {
+                    participantAgentIds: nextParticipantIds,
+                    selectedVaultDocumentIds: nextSelectedVaultDocumentIds
+                },
+                updatedAt: new Date()
+            });
+        } catch (error) {
+            console.error("Erro ao persistir payload da sessão:", error);
+        }
+    };
+
+    const persistSelectedVaultDocuments = async (sessionId: string, documentIds: string[]) => {
+        await patchSessionPayload(sessionId, { selectedVaultDocumentIds: documentIds });
+    };
+
+    const toggleVaultDocument = (documentId: string) => {
+        setSelectedVaultDocumentIds((prev) => {
+            const exists = prev.includes(documentId);
+            const next = exists ? prev.filter((id) => id !== documentId) : [...prev, documentId];
+            if (currentSessionId) {
+                void persistSelectedVaultDocuments(currentSessionId, next);
+            }
+            return next;
+        });
+    };
+
+    const renderVaultPreview = () => {
+        if (!previewVaultDoc) return null;
+
+        const mime = String(previewVaultDoc.mimeType || '').toLowerCase();
+        const previewContent = String(previewVaultDoc.content || '');
+
+        const renderContent = () => {
+            if (!previewContent) {
+                return (
+                    <div className="bg-white p-10 rounded-2xl shadow-lg flex flex-col items-center gap-3 max-w-xl">
+                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                            <FileTextIcon className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-gray-700">Nenhum preview disponível</h3>
+                        <p className="text-xs text-gray-500 text-center">O documento está registrado no Cofre, mas não possui visualização inline.</p>
+                    </div>
+                );
+            }
+            if (mime.startsWith('image/')) {
+                return <img src={previewContent} alt={previewVaultDoc.title} className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-lg" />;
+            }
+            if (mime.startsWith('audio/')) {
+                return <audio controls src={previewContent} className="w-80" />;
+            }
+            if (mime.startsWith('video/')) {
+                return <video controls src={previewContent} className="max-w-full max-h-[80vh] rounded-lg shadow-lg" />;
+            }
+            if (mime === 'application/pdf' && previewContent.startsWith('data:')) {
+                return <iframe src={previewContent} className="w-full h-[80vh] rounded-lg border border-gray-200" title={previewVaultDoc.title}></iframe>;
+            }
+            return (
+                <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-4xl h-[80vh] flex flex-col">
+                    <h3 className="text-lg font-black text-bitrix-nav uppercase mb-4 border-b pb-4">{previewVaultDoc.title}</h3>
+                    <pre className="flex-1 overflow-auto custom-scrollbar text-xs font-mono text-gray-700 whitespace-pre-wrap leading-relaxed">{previewContent}</pre>
+                </div>
+            );
+        };
+
+        return (
+            <div className="fixed inset-0 z-[130] bg-bitrix-nav/90 backdrop-blur-sm flex items-center justify-center p-6 animate-msg" onClick={() => setPreviewVaultDoc(null)}>
+                <div className="relative w-full max-w-6xl flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => setPreviewVaultDoc(null)} className="absolute -top-12 right-0 text-white/70 hover:text-white transition-colors">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold uppercase tracking-widest">Fechar</span>
+                            <div className="w-8 h-8 rounded-full border border-white/30 flex items-center justify-center"><XIcon className="w-4 h-4" /></div>
+                        </div>
+                    </button>
+                    {renderContent()}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div
             className="flex-1 h-full bg-[#FAFAFA] overflow-hidden flex flex-col relative font-nunito"
@@ -1880,6 +2318,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         >
             <input type="file" ref={fileInputRef} className="hidden" accept=".txt,.md,.json,.csv,.js,.ts,.tsx,.py,.html,.css,.xml,.env,.yml,.yaml" onChange={handleFileSelect} />
             <input type="file" ref={chatAttachmentRef} className="hidden" multiple accept="image/*,audio/*,application/pdf,.txt,.md,.json,.csv,.xml,.yaml,.yml" onChange={handleChatAttachmentSelect} />
+            {renderVaultPreview()}
 
             {!forcedAgent && (
                 <div className="px-6 md:px-12 py-6 border-b border-gray-100 flex justify-between items-end shrink-0 bg-white z-10">
@@ -1974,14 +2413,15 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
             )}
 
             {selectedAgent && (
-                <div className="fixed inset-0 z-[100] bg-white overflow-hidden">
-                    <div className="relative bg-white w-full h-full overflow-hidden flex">
+                <div className="fixed inset-0 z-[100] overflow-hidden bg-[linear-gradient(180deg,#F8FAFC_0%,#F4F7FB_100%)]">
+                    <div className="relative w-full h-full overflow-hidden flex">
+                        {renderChatAmbient()}
 
                         <div
                             ref={sidebarRef}
                             style={{ width: sidebarWidth }}
                             className={`
-                    flex-shrink-0 relative bg-[#F7F8FA] border-r border-gray-200 z-20 flex flex-col transition-all duration-75
+                    flex-shrink-0 relative bg-[linear-gradient(180deg,rgba(248,250,252,0.98)_0%,rgba(244,247,251,0.96)_100%)] border-r border-slate-200/80 z-20 flex flex-col transition-all duration-75
                     ${showHistorySidebar ? 'absolute inset-y-0 left-0 shadow-xl w-[88vw] max-w-[380px]' : 'hidden md:flex'}
                 `}
                         >
@@ -1990,10 +2430,10 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                 onMouseDown={startResizing}
                             />
 
-                            <div className="p-4 h-full flex flex-col gap-2">
-                                <div className="flex items-center justify-between">
+                            <div className="flex h-full flex-col gap-3 p-4 md:p-5">
+                                <div className="flex items-center justify-between pb-1">
                                     <div className="flex gap-4">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-bitrix-nav border-b-2 border-bitrix-nav pb-1">
+                                        <span className="border-b border-bitrix-nav/70 pb-1 text-[10px] font-black uppercase tracking-[0.28em] text-bitrix-nav/90">
                                             Histórico
                                         </span>
                                     </div>
@@ -2002,32 +2442,38 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                     </button>
                                 </div>
 
-                                <div className="relative">
+                                <div className="rounded-[1.15rem] border border-white/80 bg-white/72 p-2 shadow-[0_10px_28px_rgba(15,23,42,0.04)] backdrop-blur-md">
+                                    <div className="mb-2 px-2 text-[9px] font-black uppercase tracking-[0.26em] text-slate-400">Busca rápida</div>
                                     <input
                                         value={sessionSearch}
                                         onChange={(e) => setSessionSearch(e.target.value)}
                                         placeholder="Buscar conversa..."
-                                        className="w-full h-10 rounded-xl border border-gray-200 bg-white px-3 text-xs font-medium text-gray-600 outline-none focus:border-bitrix-nav/50"
+                                        className="h-10 w-full rounded-xl border border-slate-200/80 bg-white px-3 text-[12px] font-semibold text-slate-600 outline-none transition-all placeholder:text-slate-300 focus:border-slate-300 focus:ring-2 focus:ring-slate-200/60"
                                     />
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0.5 pr-1">
-                                    {sessions.length === 0 && <p className="text-center text-[10px] text-gray-300 mt-10">Nenhum histórico.</p>}
-                                    {sessions.length > 0 && visibleSessions.length === 0 && <p className="text-center text-[10px] text-gray-400 mt-10">Nenhuma conversa encontrada.</p>}
+                                <div className="px-1 pt-1 text-[9px] font-black uppercase tracking-[0.24em] text-slate-400">Conversas</div>
+
+                                <div className="flex-1 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+                                    {sessions.length === 0 && <p className="mt-10 text-center text-[10px] font-semibold text-slate-300">Nenhum histórico.</p>}
+                                    {sessions.length > 0 && visibleSessions.length === 0 && <p className="mt-10 text-center text-[10px] font-semibold text-slate-400">Nenhuma conversa encontrada.</p>}
                                     {visibleSessions.map(session => (
-                                        <div key={session.id} className="relative group/session mb-0.5">
+                                        <div key={session.id} className="group/session relative">
                                             <button
                                                 onClick={() => selectSession(session.id, selectedAgent)}
-                                                className={`w-full text-left py-2 pl-3 pr-9 rounded-lg transition-all border ${currentSessionId === session.id
-                                                    ? 'bg-white border-gray-200 shadow-sm'
-                                                    : 'border-transparent hover:bg-white text-gray-500'
+                                                className={`w-full rounded-[1rem] border px-3 py-3 pr-9 text-left transition-all ${currentSessionId === session.id
+                                                    ? 'border-slate-200 bg-white shadow-[0_12px_24px_rgba(15,23,42,0.06)]'
+                                                    : 'border-transparent bg-white/44 hover:border-white/90 hover:bg-white/84 text-gray-500'
                                                     }`}
                                             >
                                                 <div className="w-full min-w-0">
-                                                    <h4 className={`text-[10px] font-bold truncate ${currentSessionId === session.id ? 'text-bitrix-nav' : 'text-gray-600'
+                                                    <h4 className={`truncate text-[11px] font-black tracking-[0.01em] ${currentSessionId === session.id ? 'text-slate-800' : 'text-slate-600'
                                                         }`}>
                                                         {session.title}
                                                     </h4>
+                                                    <p className={`mt-1 truncate text-[9px] font-semibold uppercase tracking-[0.18em] ${currentSessionId === session.id ? 'text-slate-400' : 'text-slate-300 group-hover/session:text-slate-400'}`}>
+                                                        {currentSessionId === session.id ? 'Conversa ativa' : 'Histórico salvo'}
+                                                    </p>
                                                 </div>
                                             </button>
 
@@ -2060,21 +2506,22 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                     ))}
                                 </div>
 
-                                <div className="mt-auto pt-3 border-t border-gray-200/80">
+                                <div className="mt-auto border-t border-slate-200/80 pt-4">
                                     <button
                                         onClick={() => createNewSession(selectedAgent)}
-                                        className="flex items-center justify-center gap-2 w-full h-11 bg-bitrix-nav text-white rounded-xl shadow-lg hover:bg-black transition-all group"
+                                        className="group flex h-11 w-full items-center justify-center gap-2 rounded-[1rem] bg-slate-900 text-white shadow-[0_14px_32px_rgba(15,23,42,0.16)] transition-all hover:-translate-y-[1px] hover:bg-black"
                                     >
                                         <PlusIcon className="w-3.5 h-3.5" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-white">Nova Conversa</span>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.22em] text-white">Nova Conversa</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex-1 flex flex-col bg-white h-full relative w-full min-w-0">
-                            <header className={`px-4 md:px-8 lg:px-10 py-3 md:py-4 border-b border-gray-100 flex flex-wrap gap-3 md:gap-4 justify-between items-center shrink-0 bg-white/95 backdrop-blur ${selectedAgent.status === 'STAGING' ? 'bg-yellow-50/90' : ''}`}>
-                                <div className="flex items-center gap-3 md:gap-5 min-w-0">
+                        <div className="flex-1 flex flex-col h-full relative w-full min-w-0">
+                            <header className={`relative z-10 shrink-0 border-b border-white/70 bg-white/76 px-4 py-4 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-xl md:px-8 md:py-5 lg:px-10 ${selectedAgent.status === 'STAGING' ? 'bg-yellow-50/88' : ''}`}>
+                                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                                <div className="flex min-w-0 items-center gap-3 md:gap-5">
                                     <button onClick={() => setShowHistorySidebar(true)} className="md:hidden p-2 -ml-2 text-gray-400 hover:text-bitrix-nav">
                                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h7" /></svg>
                                     </button>
@@ -2090,17 +2537,23 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                         ))}
                                     </div>
 
-                                    <div className="min-w-0">
-                                        <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-                                            <h2 className="text-lg md:text-2xl font-black text-bitrix-nav uppercase tracking-tighter leading-none truncate">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            <h2 className="truncate text-[1.15rem] font-black leading-none tracking-[-0.03em] text-slate-900 md:text-[1.55rem]">
                                                 {activeParticipants.length > 0 ? 'Mesa de Reunião' : selectedAgent.name}
                                             </h2>
-                                            <div className="flex items-center gap-2 ml-2">
-                                                <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Modelo</span>
+                                        </div>
+
+                                        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2">
+                                            <p className="max-w-[320px] truncate text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 md:max-w-none">
+                                                {activeParticipants.length > 0 ? `${activeParticipants.length + 1} Especialistas na Mesa` : selectedAgent.officialRole}
+                                            </p>
+                                            <div className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-2.5 py-1 shadow-[0_6px_18px_rgba(15,23,42,0.04)]">
+                                                <span className="text-[8px] font-black uppercase tracking-[0.24em] text-slate-400">Modelo</span>
                                                 <select
                                                     value={selectedModelProvider}
                                                     onChange={(e) => setSelectedModelProvider(e.target.value as ModelProvider)}
-                                                    className="h-7 min-w-[130px] rounded-full border border-gray-200 bg-gray-50 px-3 text-[10px] font-black uppercase tracking-widest text-gray-700 outline-none focus:border-gray-400"
+                                                    className="h-6 min-w-[120px] bg-transparent pr-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700 outline-none"
                                                 >
                                                     {MODEL_PROVIDER_OPTIONS.map((option) => (
                                                         <option key={option.value} value={option.value}>
@@ -2109,47 +2562,55 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                                     ))}
                                                 </select>
                                             </div>
-                                        </div>
-
-                                        <div className="flex gap-2 items-center mt-1">
-                                            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400 truncate max-w-[200px] md:max-w-none">
-                                                {activeParticipants.length > 0 ? `${activeParticipants.length + 1} Especialistas na Mesa` : selectedAgent.officialRole}
-                                            </p>
                                             {!activeParticipants.length && (
-                                                <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${getProviderHealthBadge(selectedModelProvider) === '🟢' ? 'bg-emerald-100 text-emerald-700' : getProviderHealthBadge(selectedModelProvider) === '🔴' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                    {getProviderHealthBadge(selectedModelProvider)} API
+                                                <span className={`rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-[0.22em] ${getProviderHealthBadge(selectedModelProvider) === '🟢' ? 'bg-emerald-100 text-emerald-700' : getProviderHealthBadge(selectedModelProvider) === '🔴' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                    {getProviderHealthBadge(selectedModelProvider)} {getProviderHealthBadge(selectedModelProvider) === '⚪' ? 'VERIFICANDO' : getProviderHealthBadge(selectedModelProvider) === '🟢' ? 'ONLINE' : 'OFFLINE'}
                                                 </span>
                                             )}
-                                            {selectedAgent.status === 'STAGING' && <span className="text-[8px] bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded font-black uppercase tracking-widest animate-pulse">Homologação</span>}
+                                            {selectedAgent.status === 'STAGING' && <span className="rounded-full bg-yellow-400 px-2 py-1 text-[8px] font-black uppercase tracking-[0.22em] text-yellow-900 animate-pulse">Homologação</span>}
                                         </div>
                                         {providerHealthError && (
-                                            <p className="text-[8px] font-bold text-red-500 mt-1">{providerHealthError}</p>
+                                            <p className="mt-2 text-[8px] font-bold text-red-500">{providerHealthError}</p>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 md:gap-3 overflow-x-auto max-w-full pb-1">
+                                <div className="flex max-w-full items-center gap-2 overflow-x-auto pb-1 xl:justify-end">
                                     <button
-                                        onClick={() => setIsInviteModalOpen(true)}
-                                        className="h-10 px-3 md:px-4 rounded-xl bg-gray-100 text-gray-500 hover:bg-bitrix-nav hover:text-white transition-all flex items-center gap-2 shadow-sm border border-gray-200 shrink-0"
-                                        title="Convocar Agente para a Sala"
+                                        onClick={() => setIsVaultModalOpen(true)}
+                                        className="flex h-9 shrink-0 items-center gap-2 rounded-xl border border-slate-200/80 bg-white/82 px-3 text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:text-slate-900"
+                                        title="Selecionar arquivos do Cofre Black"
                                     >
-                                        <PlusIcon className="w-3.5 h-3.5" />
-                                        <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">Participantes</span>
+                                        <FolderIcon className="w-3.5 h-3.5" />
+                                        <span className="hidden text-[8px] font-black uppercase tracking-[0.18em] sm:inline">Arquivos do Cofre</span>
+                                        {selectedVaultDocumentIds.length > 0 && (
+                                            <span className="min-w-5 h-5 px-1 rounded-full bg-bitrix-nav text-white text-[8px] font-black flex items-center justify-center">
+                                                {selectedVaultDocumentIds.length}
+                                            </span>
+                                        )}
                                     </button>
 
                                     <button
-                                        onClick={handleManualSuggestTitle}
-                                        className="h-10 px-3 md:px-4 bg-white border border-gray-200 text-gray-600 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-widest hover:border-bitrix-nav hover:text-bitrix-nav transition-all shadow-sm flex items-center gap-2 shrink-0"
+                                        onClick={() => setIsInviteModalOpen(true)}
+                                        className="flex h-9 shrink-0 items-center gap-2 rounded-xl border border-slate-200/70 bg-white/60 px-3 text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:bg-white hover:text-slate-800"
+                                        title="Convocar Agente para a Sala"
+                                    >
+                                        <PlusIcon className="w-3.5 h-3.5" />
+                                        <span className="hidden text-[8px] font-black uppercase tracking-[0.18em] sm:inline">Participantes</span>
+                                    </button>
+
+                                    <button
+                                        onClick={handleToggleSuggestionPanel}
+                                        className="flex h-9 shrink-0 items-center gap-2 rounded-xl border border-slate-200/70 bg-white/60 px-3 text-[8px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-white hover:text-slate-900 md:text-[9px]"
                                     >
                                         <BotIcon className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">Sugerir Título</span>
+                                        <span className="hidden sm:inline">Sugerir pauta</span>
                                     </button>
 
                                     {onConvertToTopic && (
                                         <button
                                             onClick={() => openTaskModal()}
-                                            className="h-10 px-3 md:px-4 bg-white border border-gray-200 text-gray-600 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-widest hover:border-bitrix-nav hover:text-bitrix-nav transition-all shadow-sm flex items-center gap-2 shrink-0"
+                                            className="flex h-9 shrink-0 items-center gap-2 rounded-xl border border-slate-200/70 bg-white/60 px-3 text-[8px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-white hover:text-slate-900 md:text-[9px]"
                                         >
                                             <BookIcon className="w-3.5 h-3.5" />
                                             <span className="hidden sm:inline">Gerar Pauta</span>
@@ -2158,7 +2619,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
 
                                     <button
                                         onClick={handleCloseChat}
-                                        className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl border border-red-100 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                                        className="flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-red-600 shadow-sm transition-all hover:bg-red-500 hover:text-white md:px-4"
                                     >
                                         {forcedAgent ? (
                                             <>
@@ -2173,9 +2634,10 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                         )}
                                     </button>
                                 </div>
+                                </div>
                             </header>
 
-                            <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC] relative">
+                            <div className="flex-1 flex flex-col overflow-hidden relative">
                                 {isInviteModalOpen && (
                                     <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex items-center justify-center animate-msg p-10">
                                         <div className="bg-white w-full max-w-2xl h-[500px] shadow-2xl rounded-[2.5rem] border border-gray-100 overflow-hidden flex flex-col">
@@ -2212,6 +2674,74 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                                 {dynamicAgents.filter(a => a.status === 'ACTIVE').length <= 1 && (
                                                     <p className="text-center text-gray-400 text-xs mt-10">Nenhum outro agente ativo disponível.</p>
                                                 )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {isVaultModalOpen && (
+                                    <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex items-center justify-center animate-msg p-10">
+                                        <div className="bg-white w-full max-w-5xl h-[560px] shadow-2xl rounded-[2.5rem] border border-gray-100 overflow-hidden flex flex-col">
+                                            <header className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                                                <div>
+                                                    <h3 className="text-lg font-black text-bitrix-nav uppercase tracking-tight">Arquivos do Cofre Black</h3>
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Selecione um ou mais arquivos para usar neste chat</p>
+                                                </div>
+                                                <button onClick={() => setIsVaultModalOpen(false)} className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors">
+                                                    <XIcon className="w-4 h-4" />
+                                                </button>
+                                            </header>
+                                            <div className="p-6 border-b border-gray-100 bg-white flex items-center justify-between gap-4">
+                                                <div className="bg-white px-4 py-3 rounded-xl shadow-sm border border-gray-200 flex items-center gap-2 w-full max-w-sm">
+                                                    <SearchIcon className="w-4 h-4 text-gray-400" />
+                                                    <input
+                                                        value={vaultSearchTerm}
+                                                        onChange={(e) => setVaultSearchTerm(e.target.value)}
+                                                        className="bg-transparent outline-none text-xs font-medium w-full"
+                                                        placeholder="Pesquisar arquivos..."
+                                                    />
+                                                </div>
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                                    {selectedVaultDocumentIds.length} selecionado(s)
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar flex flex-col gap-2 bg-gray-50/30">
+                                                {filteredVaultDocuments.length === 0 && (
+                                                    <div className="text-center py-16 opacity-50">
+                                                        <p className="text-sm font-bold">Nenhum documento encontrado.</p>
+                                                    </div>
+                                                )}
+                                                {filteredVaultDocuments.map((doc) => {
+                                                    const isSelected = selectedVaultDocumentIds.includes(doc.id);
+                                                    return (
+                                                        <div
+                                                            key={doc.id}
+                                                            className={`flex items-center h-12 px-4 rounded-xl border transition-all gap-4 group ${isSelected ? 'bg-green-50 border-green-200 shadow-sm' : 'bg-white border-gray-100 hover:border-gray-300 hover:shadow-sm'}`}
+                                                        >
+                                                            <div
+                                                                onClick={() => toggleVaultDocument(doc.id)}
+                                                                className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all cursor-pointer ${isSelected ? 'bg-green-500 border-green-500 text-white' : 'bg-gray-50 border-gray-300 text-transparent hover:border-green-400'}`}
+                                                            >
+                                                                <CheckIcon className="w-3 h-3" />
+                                                            </div>
+                                                            <div
+                                                                onClick={() => setPreviewVaultDoc(doc)}
+                                                                className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer hover:opacity-80 bg-gray-100 text-gray-500"
+                                                            >
+                                                                <FileTextIcon className="w-4 h-4" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setPreviewVaultDoc(doc)}>
+                                                                <h4 className={`text-xs font-bold truncate ${isSelected ? 'text-green-800' : 'text-gray-700'} hover:underline`}>{doc.title}</h4>
+                                                            </div>
+                                                            <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest bg-gray-100 text-gray-400">Arquivo</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="p-5 border-t border-gray-100 bg-white flex justify-end">
+                                                <button onClick={() => setIsVaultModalOpen(false)} className="px-6 py-3 bg-bitrix-nav text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg">
+                                                    Usar neste chat
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -2271,9 +2801,18 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                 <div
                                     ref={messagesScrollRef}
                                     onScroll={handleMessagesScroll}
-                                    className="flex-1 overflow-y-auto px-3 md:px-6 lg:px-8 py-4 md:py-6 space-y-0 custom-scrollbar"
+                                    className="flex-1 overflow-y-auto px-4 py-6 md:px-10 md:py-8 xl:px-16 custom-scrollbar"
                                 >
-                                    <div className="w-full">
+                                    <div className="mx-auto w-full max-w-[860px]">
+                                        <div className="mb-7 rounded-[1.8rem] border border-white/70 bg-white/52 px-5 py-4 shadow-[0_18px_52px_rgba(15,23,42,0.05)] backdrop-blur-xl md:px-7 md:py-5">
+                                            <div className="mb-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.32em] text-slate-400">
+                                                <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                                                Ambiente SagB
+                                            </div>
+                                            <p className="max-w-xl text-[12px] font-semibold leading-6 text-slate-500 md:text-[13px]">
+                                                Conversa centralizada para leitura confortável, com laterais tratadas como moldura institucional sutil e foco total na operação.
+                                            </p>
+                                        </div>
                                         {activeMessages.map(msg => (
                                             <ChatMessage
                                                 key={msg.id}
@@ -2281,12 +2820,13 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                                 directors={directorsList}
                                                 agentContext={selectedAgent ? { name: selectedAgent.name, avatarUrl: selectedAgent.avatarUrl } : undefined}
                                                 onEdit={handleUpdateAndRegenerate}
+                                                userProfile={CURRENT_USER}
                                             />
                                         ))}
 
                                         {titleOptions && (
-                                            <div className="flex flex-col items-center gap-4 animate-msg pt-6 pb-6 border-t border-dashed border-gray-200 mt-6">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Qual destas opções define melhor esta pauta?</p>
+                                            <div className="mt-7 flex flex-col items-center gap-4 border-t border-dashed border-gray-200 pt-6 pb-6 animate-msg">
+                                                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Qual destas opções define melhor esta pauta?</p>
                                                 <div className="flex flex-wrap justify-center gap-3">
                                                     {titleOptions.map((title, idx) => (
                                                         <button
@@ -2300,21 +2840,27 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                                 </div>
                                             </div>
                                         )}
-                                        {taskSuggestions && (
-                                            <div className="flex flex-col items-center gap-4 animate-msg pt-4 pb-6 mt-4">
-                                                <p className="text-[10px] font-black text-green-600 uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full border border-green-100">Sugestão de Tarefa</p>
-                                                <div className="flex flex-wrap justify-center gap-3">
-                                                    {taskSuggestions.map((title, idx) => (
-                                                        <button
-                                                            key={idx}
-                                                            onClick={() => handleSuggestionClick(title)}
-                                                            className="px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:border-green-500 hover:text-green-600 hover:shadow-md transition-all shadow-sm flex items-center gap-2"
-                                                        >
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                                            {title}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                        {isSuggestionPanelVisible && (
+                                            <div className="mt-5 flex flex-col items-center gap-4 pt-4 pb-6 animate-msg">
+                                                <p className="rounded-full border border-green-100 bg-green-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-green-600">Sugestões acionadas manualmente</p>
+                                                {taskSuggestions && taskSuggestions.length > 0 ? (
+                                                    <div className="flex flex-wrap justify-center gap-3">
+                                                        {taskSuggestions.map((title, idx) => (
+                                                            <button
+                                                                key={idx}
+                                                                onClick={() => handleSuggestionClick(title)}
+                                                                className="px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:border-green-500 hover:text-green-600 hover:shadow-md transition-all shadow-sm flex items-center gap-2"
+                                                            >
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                                {title}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-5 py-4 text-center text-[11px] font-bold text-gray-400">
+                                                        Nenhuma sugestão disponível para este trecho da conversa.
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -2322,33 +2868,50 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                     <div ref={chatEndRef} />
                                 </div>
 
-                                <div className="p-3 md:p-5 lg:p-6 bg-white/95 backdrop-blur border-t border-gray-100">
-                                    {attachments.length > 0 && (
+                                <div className="relative z-10 border-t border-white/70 bg-white/74 backdrop-blur-xl shadow-[0_-12px_28px_rgba(15,23,42,0.04)]">
+                                    <div className="mx-auto w-full max-w-[860px] p-3 md:p-4 lg:p-5">
+                                    {selectedVaultDocuments.length > 0 && (
                                         <div className="w-full mb-3 flex items-start animate-msg gap-2 flex-wrap">
-                                            {attachments.map((file, idx) => (
-                                                <div key={`${file.name || 'file'}-${idx}`} className="relative group">
-                                                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl border border-gray-200 overflow-hidden bg-gray-50 shadow-sm flex items-center justify-center">
-                                                        {file.mimeType.startsWith('image/') ? (
-                                                            <img src={file.preview} alt={file.name || 'Upload Preview'} className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <FileTextIcon className="w-5 h-5 text-gray-500" />
-                                                        )}
-                                                    </div>
-                                                    <button
-                                                        onClick={() => handleRemoveAttachment(idx)}
-                                                        className="absolute -top-1 -right-1 w-4 h-4 bg-gray-700 text-white rounded-full flex items-center justify-center shadow-sm hover:bg-black transition-colors"
-                                                        title="Remover anexo"
-                                                    >
-                                                        <XIcon className="w-2.5 h-2.5" />
+                                            {selectedVaultDocuments.map((doc) => (
+                                                <div key={doc.id} className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 px-3 py-2 rounded-xl shadow-sm">
+                                                    <button type="button" onClick={() => setPreviewVaultDoc(doc)} className="text-left text-[10px] font-black uppercase tracking-wider hover:underline">
+                                                        {doc.title}
+                                                    </button>
+                                                    <button type="button" onClick={() => toggleVaultDocument(doc.id)} className="text-blue-400 hover:text-red-500">
+                                                        <XIcon className="w-3.5 h-3.5" />
                                                     </button>
                                                 </div>
                                             ))}
                                         </div>
                                     )}
 
+                                    {selectedVaultSummary && (
+                                        <div className="w-full mb-3 rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3">
+                                            <div className="mb-2 flex items-center justify-between gap-3">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-700">Resumo dos arquivos usados neste chat</span>
+                                                <button type="button" onClick={() => setIsVaultModalOpen(true)} className="text-[9px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-700">
+                                                    editar arquivos
+                                                </button>
+                                            </div>
+                                            <pre className="whitespace-pre-wrap text-[11px] leading-5 text-blue-900 font-semibold">{selectedVaultSummary}</pre>
+                                        </div>
+                                    )}
+
+                                    {attachments.length > 0 && (
+                                        <div className="w-full mb-3 flex items-start animate-msg gap-2 flex-wrap">
+                                            {attachments.map((file, idx) => (
+                                                <ChatAttachmentCard
+                                                    key={file.localId || `${file.name || 'file'}-${idx}`}
+                                                    attachment={file}
+                                                    onRemove={() => handleRemoveAttachment(file.localId)}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <div
-                                        className={`w-full flex items-end gap-2 md:gap-4 p-2 md:p-2.5 rounded-[1.5rem] md:rounded-[2rem] relative transition-all duration-300 bg-white border border-gray-200 ${isDragging ? 'shadow-xl ring-2 ring-blue-100' : ''}`}
-                                        style={{ boxShadow: isDragging ? 'none' : '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03)' }}
+                                        className={`relative w-full flex items-end gap-2 rounded-[1.4rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.97)_0%,rgba(248,250,252,0.95)_100%)] p-2.5 transition-all duration-300 md:gap-3 md:rounded-[1.75rem] md:p-2.5 ${isDragging ? 'shadow-xl ring-2 ring-emerald-100' : ''}`}
+                                        style={{ boxShadow: isDragging ? 'none' : '0 18px 45px -18px rgba(15, 23, 42, 0.24), 0 10px 24px -18px rgba(15, 23, 42, 0.16)' }}
                                         onDragOver={handleDragOver}
                                         onDragEnter={handleDragEnter}
                                         onDragLeave={handleDragLeave}
@@ -2364,7 +2927,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                         <button
                                             type="button"
                                             onClick={() => chatAttachmentRef.current?.click()}
-                                            className="w-10 h-10 rounded-full flex items-center justify-center text-gray-300 hover:text-gray-500 transition-all shrink-0 mb-1"
+                                            className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-300 transition-all hover:text-gray-500"
                                                 title="Anexar arquivos (imagem, texto, áudio, PDF)"
                                         >
                                             <PaperclipIcon className="w-5 h-5" />
@@ -2387,7 +2950,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                             onPaste={handlePaste}
                                             rows={1}
                                             placeholder={isLoading ? "Gerando resposta..." : isTranscribing ? "Transcrevendo áudio..." : "Pode digitar aqui..."}
-                                            className="flex-1 bg-transparent px-2 md:px-4 py-3 md:py-3.5 text-[13px] md:text-[14px] font-medium outline-none disabled:opacity-50 text-gray-700 placeholder:text-gray-300 resize-none max-h-[150px] overflow-y-auto"
+                                            className="max-h-[140px] flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2.5 text-[13px] font-medium text-gray-700 outline-none placeholder:text-gray-300 disabled:opacity-50 md:px-3 md:text-[14px]"
                                             disabled={isLoading || isTranscribing}
                                         />
 
@@ -2396,7 +2959,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                                 type="button"
                                                 onClick={handleToggleRecording}
                                                 disabled={isLoading || isTranscribing}
-                                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isRecording
+                                                className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${isRecording
                                                     ? 'text-red-600 bg-red-50 ring-4 ring-red-100 animate-pulse scale-110'
                                                     : 'text-gray-300 hover:text-gray-500'
                                                     } disabled:opacity-30`}
@@ -2410,19 +2973,20 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                                         </div>
 
                                         {isLoading ? (
-                                            <div className="w-10 h-10 flex items-center justify-center mb-1">
+                                            <div className="mb-1 flex h-9 w-9 items-center justify-center">
                                                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
                                             </div>
                                         ) : (
                                             <button
                                                 type="button"
                                                 onClick={handleSendMessage}
-                                                className="w-10 h-10 flex items-center justify-center transition-all hover:scale-110 disabled:opacity-50 disabled:scale-100 shrink-0 text-emerald-600 mb-1 hover:text-emerald-700"
-                                                disabled={(!input.trim() && attachments.length === 0) || isTranscribing}
+                                                className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center text-emerald-600 transition-all hover:scale-110 hover:text-emerald-700 disabled:scale-100 disabled:opacity-50"
+                                                disabled={(!input.trim() && attachments.filter((item) => item.uploadStatus === 'success').length === 0) || isTranscribing}
                                             >
                                                 <SendIcon className="w-6 h-6" />
                                             </button>
                                         )}
+                                    </div>
                                     </div>
                                 </div>
                             </div>

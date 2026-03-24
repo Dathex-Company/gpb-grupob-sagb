@@ -1,83 +1,44 @@
-# Modulo 05 - Cadastro e DNA de Agentes
+# 05. Cadastro e DNA de Agentes
 
-## Objetivo
+## Escopo
 
-Registrar agentes do ecossistema, sua estrutura organizacional, estados, atributos operacionais e parte do seu DNA configuravel.
+Modulo responsavel por criar e dar personalidade aos agentes do sistema. Abrange desde o cadastro estrutural de pessoas/agentes (Quadro de Elite) ate a edicao profunda de comportamento e vinculos operacionais.
 
-## Papel dentro do SagB
+## Arquivos Principais
 
-### Fato observado
+- `components/AgentFactory.tsx` -> Interface do Quadro de Elite (cadastro estrutural e importacao).
+- `services/agentDna.ts` -> Logica de montagem e composicao de DNA (base + contexto + regras).
+- Tabelas:
+  - `agents` -> Registro mestre (estrutural) do agente.
+  - `agent_dna_profiles` -> Configuracao de prompt individual (personalidade base).
+  - `agent_dna_effective` -> Versao final e compilada do prompt (incluindo Governanca), usada em runtime.
 
-- `AgentFactory.tsx` e um cadastro robusto com importacao CSV/JSON e varios campos estruturais.
-- `App.tsx` tambem sincroniza `agents`, `agent_configs`, `agent_memories` e `agent_quality_events`.
+## Principais Mecanicas
 
-### Inferencia
+### 1. Quadro de Elite (Cadastro Estrutural)
 
-- O SagB trata agentes como entidade central de sistema, nao como simples persona textual.
+A tela `AgentFactory` foi projetada para ser o registro unificado do ciclo de vida de colaboradores (humanos, agentes, hibridos). Ela possui as seguintes logicas operacionais:
 
-## Arquivos principais
+- **Listagem Otimizada**: Visao em tabela com a capacidade de intercalar colunas essenciais e avancadas para reduzir sobrecarga cognitiva no uso diario.
+- **Validacoes Criticas**: E impossivel salvar um agente sem Nome, Venture, Funcao Principal e, pelo menos, uma Stack LLM associada. Se houver um "Modelo Preferencial", ele **deve** pertencer a lista de Stacks Permitidas do agente.
+- **Clareza Semantica**: A persistencia foi ajustada para evitar cruzamento falso entre *funcao* e *cargo-base universal*. A UI deixa explicito os impactos no roteamento do agente atraves da mudanca do "Status Estrutural".
+- **Importacao em Lote**: Suporte robusto para criar varios agentes via arquivo CSV/JSON.
 
-- `components/AgentFactory.tsx`
-- `types.ts`
-- `App.tsx`
-- `supabase/migrations/20260307000102_agents_rls_hotfix.sql`
-- `services/supabase.ts`
-- `netlify/functions/ai.mjs` no handler `create_agent_from_scratch`
+### 2. Edicao de DNA (Via Governanca)
 
-## Dependencias
+O conteudo do DNA do agente **nao e exposto diretamente** no Quadro de Elite.
 
-- `agents`
-- `agent_configs`
-- `agent_memories`
-- `agent_quality_events`
+- A UI indica o status do DNA (ex: "Sem DNA", "Revisar") no grid principal do cadastro.
+- Existe um redirecionamento direto (deep link) para a tela de Governanca (`GovernanceView.tsx`) sempre que o gestor decide editar a "Inteligencia" do agente.
 
-## Fluxos principais
+### 3. As 3 Camadas de Identidade
 
-1. Cadastrar ou editar agente manualmente
-2. Importar lote
-3. Definir status e metadados estruturais
-4. Sincronizar configuracao de DNA em `agent_configs`
-5. Usar o agente em chats e modulos do sistema
+1. **Constituicao (Global)**: Cultura e restricoes master do GrupoB. Vem da colecao `governance_global_culture`.
+2. **Contexto (Venture/Macro)**: O que o agente precisa saber sobre onde atua.
+3. **Identidade (Micro)**: O "Quem sou eu" do agente (Tone of voice, regras especificas da funcao). Fica na tabela `agent_dna_profiles`.
 
-## Dados usados
+Ao carregar o agente na memoria (runtime), o arquivo `services/agentDna.ts` funde essas 3 camadas em um unico **Effective Prompt**. O resultado combinado e guardado temporariamente na `agent_dna_effective` para auditoria e logica rapida de inferencia nas conversas.
 
-- Nome, cargo, role, BU, area, venture
-- Stack de modelo, mentor, status e campos customizados
-- Avatar e URL publica
-- DNA textual em `fullPrompt`
+## Fluxo de Estado de IA
 
-## Status atual
-
-- Operacional, com separacao parcial entre cadastro e DNA.
-
-## O que ja esta pronto
-
-- Cadastro amplo
-- Edicao visual
-- Importacao em lote
-- Uso transversal no app
-
-## O que ainda falta
-
-- Unificar melhor cadastro estrutural e configuracao de DNA
-- Clarificar o uso do handler `create_agent_from_scratch`
-- Endurecer politicas de seguranca de `agents`
-
-## Riscos e lacunas
-
-- Hotfix de RLS permissivo em `agents`
-- Split entre `agents` e `agent_configs` pode gerar deriva
-- Nem todo DNA e editado pela mesma superficie
-
-## Modulos tocados
-
-- Core Conversacional
-- Governanca
-- Hub
-- Operacao
-- Qualidade
-
-## Arquivos de apoio recomendados
-
-- `docs/CASSIO_HANDOFF_GOVERNANCA_AI_PROXY.md`
-- `tests/configuration.test.mjs`
+`Agent (Quadro de Elite) -> AgentConfig (DNA) -> EffectiveDNA -> Inferencia (Gemini/Proxy)`

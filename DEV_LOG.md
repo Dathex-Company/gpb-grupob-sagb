@@ -48,6 +48,34 @@ As telas abaixo foram aprovadas pelo Chairman e **NÃO DEVEM** ser alteradas em 
 
 ## 4. Histórico de Mudanças (Changelog)
 
+### [v1.6.8] - Integração do Cadastro com Governança (ET-02)
+- **Sincronização de Status de DNA**: O status do DNA do Agente no Quadro de Elite (`components/AgentFactory.tsx`) agora é atualizado automaticamente para `DNA_COMPLETO` quando um gestor finaliza a edição da identidade dele pelo Núcleo de Governança.
+- **Proteção do Pipeline**: O conteúdo real do DNA não trafega de volta para o grid de cadastro, garantindo que `agents` lide apenas com master data e `agent_dna_effective` permaneça cego para o frontend geral, mas o pipeline entenda por ID que o agente já tem instrução.
+
+### [v1.6.7] - Personalização Ativa (Human-Centered)
+- **Top Bar**: Dashboard Home agora exibe `Bem-vindo, [Nome do Usuário]` de forma dinâmica.
+- **Sidebar**: O perfil inferior exibe o nome, cargo (Tier) e a foto (Avatar) real salva no banco de dados.
+- **Chat Interativo**: Tanto no Canal Direto (App.tsx) quanto nas Salas Sistêmicas (SystemicVision.tsx), os avatares nas mensagens refletem a imagem real do usuário humano logado.
+- **DNA Dinâmico**: Injetado automaticamente no prompt base o `[Contexto Sistêmico]: O usuário interagindo nesta conversa é [NOME] ([CARGO]). Responda diretamente a ele.` Isso garante que agentes saibam exatamente com quem estão falando.
+
+### [v1.6.6] - Quadro de Elite (clareza estrutural + qualidade de cadastro)
+- **Listagem com foco operacional**: adicionada alternância entre **Colunas Essenciais** e **Colunas Avançadas** no Quadro de Elite para reduzir sobrecarga visual no uso diário.
+- **Validação reforçada de cadastro**:
+  - função principal obrigatória;
+  - pelo menos 1 stack permitida;
+  - modelo preferencial precisa pertencer à stack permitida.
+- **Semântica de campos ajustada**:
+  - `officialRole` passa a refletir diretamente `functionName` (função principal);
+  - `baseRoleUniversal` deixa de usar fallback silencioso e passa a ser opcional explícito.
+- **UX de status melhorada**: adicionado texto de impacto operacional por `status estrutural` no formulário para orientar preenchimento.
+- **Nomenclatura de formulário clarificada**:
+  - “Função” -> “Função principal”
+  - “Cargo-base universal” -> “Cargo-base (taxonomia)”
+  - “Papel” -> “Papel de atuação”
+  - “Status DNA (somente status)” -> “Status DNA (indicador de cadastro)”
+- **Arquivo principal alterado**:
+  - `components/AgentFactory.tsx`
+
 ### [v1.6.5] - Whisper Local para Transcrição
 - **Transcrição local habilitada**: fluxo de áudio pode operar sem Gemini API para transcrição.
 - **Servidor local**: criado `tools/local_whisper_server.py` (FastAPI + faster-whisper), endpoint compatível `/v1/audio/transcriptions`.

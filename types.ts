@@ -5,6 +5,22 @@ export enum Sender {
   System = 'system'
 }
 
+export type UploadStatus = 'pending' | 'uploading' | 'success' | 'error';
+
+export interface ChatAttachment {
+  localId?: string;
+  data: string; // Mantido para compatibilidade legado (Base64)
+  storagePath?: string; // Novo: Caminho no Supabase Storage
+  url?: string; // Novo: URL pública/assinada do arquivo
+  mimeType: string;
+  preview: string;
+  name?: string;
+  sizeBytes?: number;
+  durationSec?: number;
+  uploadStatus?: UploadStatus;
+  uploadError?: string;
+}
+
 export type AgentTier = 'ESTRATÉGICO' | 'TÁTICO' | 'OPERACIONAL' | 'CONTROLE';
 
 export type AgentStatus = 'PLANNED' | 'STAGING' | 'ACTIVE' | 'MAINTENANCE' | 'BLOCKED';
@@ -12,7 +28,7 @@ export type AgentStatus = 'PLANNED' | 'STAGING' | 'ACTIVE' | 'MAINTENANCE' | 'BL
 export type ModelProvider = 'gemini' | 'deepseek' | 'llama_local' | 'openai' | 'claude' | 'qwen'; // Opções de Cérebro
 
 // V4.2 - Adicionado 'home' como Dashboard Inicial
-export type TabId = 'home' | 'ecosystem' | 'team' | 'conversations' | 'management' | 'programmers-room' | 'redir' | 'vault' | 'fabrica-ca' | 'governance' | 'missions' | 'nagi' | 'radar-connections' | 'cid' | 'quality' | 'intelligence-flow' | 'continuous-memory' | 'methodology' | 'hub' | 'alignment' | 'market' | 'sales' | 'expansion' | '3forb-home' | 'audacus-home' | 'startyb-home' | 'requests' | 'unit-room' | 'chat-room' | 'ventures';
+export type TabId = 'home' | 'ecosystem' | 'team' | 'conversations' | 'management' | 'programmers-room' | 'redir' | 'vault' | 'fabrica-ca' | 'governance' | 'missions' | 'nagi' | 'ric' | 'cid' | 'quality' | 'intelligence-flow' | 'continuous-memory' | 'studio' | 'methodology' | 'hub' | 'alignment' | 'market' | 'sales' | 'expansion' | '3forb-home' | 'audacus-home' | 'startyb-home' | 'requests' | 'unit-room' | 'chat-room' | 'ventures' | 'monitoramento';
 
 export type BUType = 'CORE' | 'VENTURY' | 'PERSONAL' | 'METHODOLOGY';
 
@@ -359,16 +375,76 @@ export type AgentHandoffStatus = 'created' | 'accepted' | 'failed';
 export interface AgentMission {
   id: string;
   workspaceId: string;
+  blueprintId?: string | null;
   title: string;
   initialInput: string;
   status: AgentMissionStatus;
   currentStepIndex: number;
+  missionMode: 'autonomous' | 'supervised';
+  currentPhase?: string | null;
   createdBy?: string | null;
   startedAt?: Date | null;
   finishedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
   payload?: Record<string, any>;
+}
+
+export interface AgentMissionBlueprint {
+  id: string;
+  workspaceId: string;
+  title: string;
+  description?: string | null;
+  category: string;
+  flowConfig: any[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AgentMissionBlueprintRole {
+  id: string;
+  blueprintId: string;
+  roleKey: string;
+  roleName: string;
+  requiredSkills: string[];
+  suggestedAgentId?: string | null;
+  metadata: Record<string, any>;
+  createdAt: Date;
+}
+
+export type AgentMissionEventType =
+  | 'step_started'
+  | 'step_completed'
+  | 'step_failed'
+  | 'internal_comment'
+  | 'objection'
+  | 'artifact_created'
+  | 'waiting_human_approval'
+  | 'handoff_accepted'
+  | 'system_log';
+
+export interface AgentMissionEvent {
+  id: string;
+  missionId: string;
+  eventType: AgentMissionEventType | string;
+  actorId?: string | null;
+  actorName?: string | null;
+  actorType: 'agent' | 'human' | 'system';
+  content?: string | null;
+  payload: Record<string, any>;
+  createdAt: Date;
+}
+
+export interface AgentMissionCheckpoint {
+  id: string;
+  missionId: string;
+  stepId?: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewerId?: string | null;
+  note?: string | null;
+  createdAt: Date;
+  reviewedAt?: Date | null;
 }
 
 export interface AgentMissionStep {
@@ -595,6 +671,78 @@ export interface CidBatchItem {
   createdAt: Date;
   updatedAt: Date;
   payload?: Record<string, any>;
+}
+
+export type CidPromptType = 'extract' | 'summarize' | 'classify' | 'structure' | 'rewrite' | string;
+export type CidOutputFormat = 'plain_text' | 'bullets' | 'markdown' | 'json' | string;
+export type CidExecutionScope = 'single' | 'batch' | 'consolidated' | string;
+
+export interface CidPrompt {
+  id: string;
+  workspaceId: string;
+  title: string;
+  description?: string | null;
+  systemPrompt: string;
+  userPromptTemplate: string;
+  promptType: CidPromptType;
+  outputFormat: CidOutputFormat;
+  executionMode: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy?: string | null;
+}
+
+export interface CidPromptRun {
+  id: string;
+  workspaceId: string;
+  promptId?: string | null;
+  executionScope: CidExecutionScope;
+  status: string;
+  promptSnapshot: Record<string, any>;
+  promptSnapshotVersion: number;
+  sourceTotalChars?: number | null;
+  sourceProcessedChars?: number | null;
+  wasTruncated: boolean;
+  warningMessage?: string | null;
+  resultText?: string | null;
+  resultJson?: Record<string, any> | null;
+  errorMessage?: string | null;
+  modelUsed?: string | null;
+  tokensIn?: number | null;
+  tokensOut?: number | null;
+  estimatedCostUsd?: number | null;
+  latencyMs?: number | null;
+  retryCount: number;
+  startedAt?: Date | null;
+  completedAt?: Date | null;
+  createdAt: Date;
+  createdBy?: string | null;
+  // helper opcional para frontend (N para N)
+  items?: CidPromptRunItem[];
+}
+
+export interface CidPromptRunItem {
+  id: string;
+  runId: string;
+  assetId: string;
+  sequenceOrder: number;
+  status: string;
+  sourceTextExcerpt?: string | null;
+  sourceTotalChars?: number | null;
+  sourceProcessedChars?: number | null;
+  wasTruncated: boolean;
+  warningMessage?: string | null;
+  resultText?: string | null;
+  resultJson?: Record<string, any> | null;
+  errorMessage?: string | null;
+  tokensIn?: number | null;
+  tokensOut?: number | null;
+  latencyMs?: number | null;
+  completedAt?: Date | null;
+  createdAt: Date;
+  // helper opcional para exibir nome do asset
+  assetTitle?: string;
 }
 
 export type ContinuousMemorySessionStatus =
@@ -855,6 +1003,7 @@ export interface Agent {
   baseRoleUniversal?: string;
   roleType?: 'LIDERANCA' | 'CONSULTORIA' | 'AUDITORIA' | 'EXECUCAO' | 'MENTORIA' | 'APOIO';
   structuralStatus?: 'ESTRUTURAL' | 'EM_CONFIGURACAO' | 'HOMOLOGACAO' | 'ATIVO' | 'ARQUIVADO';
+  operationalStatus?: 'ESTRUTURAL' | 'DISPONIVEL' | 'ATIVO';
   operationalActivation?: 'ATIVO_NASCIMENTO' | 'PREVISTO_GATILHO' | 'RESERVADO_FUTURO' | 'COMPARTILHADO';
   dnaStatus?: 'SEM_DNA' | 'DNA_BASE' | 'DNA_PARCIAL' | 'DNA_COMPLETO' | 'REVISAR';
   operationalClass?: 'ECONOMICA' | 'BALANCEADA' | 'PREMIUM' | 'CRITICA';
@@ -862,6 +1011,8 @@ export interface Agent {
   preferredModel?: ModelProvider;
   aiMentor?: string;
   humanOwner?: string;
+  email?: string;
+  usesEmail?: boolean;
   customFields?: Record<string, string>;
 
   // V2.0 - IDENTIDADE VISUAL OBRIGATÓRIA
@@ -881,8 +1032,9 @@ export interface Message {
   isStreaming?: boolean;
   isDecision?: boolean;
   participantName?: string;
-  attachment?: { data: string, mimeType: string, preview: string, name?: string, sizeBytes?: number };
-  attachments?: { data: string, mimeType: string, preview: string, name?: string, sizeBytes?: number }[];
+  attachment?: ChatAttachment;
+  attachments?: ChatAttachment[];
+  payload?: Record<string, any>; // Metadados de execução (provider, fallback, etc)
 }
 
 export interface PersonaConfig {

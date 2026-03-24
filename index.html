@@ -8,19 +8,33 @@
     <link rel="shortcut icon" type="image/png" href="https://static.wixstatic.com/media/64c3dc_866011d493924761b15d6162e82c4948~mv2.png" />
     <link rel="apple-touch-icon" href="https://static.wixstatic.com/media/64c3dc_866011d493924761b15d6162e82c4948~mv2.png" />
     <title>SagB - GrupoB</title>
+    <!-- 🟢 [1] CARREGA O TAILWIND VIA CDN + PLUGIN TYPOGRAPHY -->
+    <!-- 🟢 Use esta linha se quiser remover/adicionar plugins globais do Tailwind -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+
+    <!-- 🟢 [2] OTIMIZAÇÃO DE FONTES (PRECONNECT) -->
+    <!-- 🟢 Mantém o carregamento da fonte mais rápido -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Nunito+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- 🟢 [3] FONTE GLOBAL BAIXADA DO GOOGLE FONTS -->
+    <!-- 🟢 Aqui você troca a família (ex.: Inter, Rubik, Poppins...) e os pesos disponíveis -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
+      // 🟢 [4] CONFIGURAÇÃO GLOBAL DO TAILWIND (INLINE)
+      // 🟢 Tudo aqui impacta o sistema inteiro
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'], // Inter como padrão global (Apple-like)
-              nunito: ['Nunito Sans', 'sans-serif'],
+              // 🟢 [4.1] FONTE PADRÃO UTILIZADA QUANDO UMA TELA USA "font-sans"
+              sans: ['Inter', 'sans-serif'],
+              // 🟢 [4.2] Alias "font-nunito" também apontando para Inter
+              // 🟢 Se quiser separar no futuro, altere só esta linha
+              nunito: ['Inter', 'sans-serif'],
             },
             colors: {
+              // 🟢 [4.3] PALETA DE CORES CUSTOMIZADA DO SISTEMA
               bitrix: {
                 nav: '#111827', // Dark Gray (Quase preto, mais elegante que Teal)
                 accent: '#7C3AED', // Vivid Violet (Moderno)
@@ -31,6 +45,7 @@
               }
             },
             boxShadow: {
+              // 🟢 [4.4] SOMBRAS CUSTOMIZADAS REUTILIZÁVEIS
               'soft': '0 2px 10px rgba(0, 0, 0, 0.03)',
               'hover': '0 20px 40px rgba(0, 0, 0, 0.04)',
             }
@@ -39,18 +54,23 @@
       }
     </script>
     <style>
+      /* 🟢 [5] ESTILO GLOBAL DA BARRA DE SCROLL */
       ::-webkit-scrollbar { width: 6px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
       ::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
       
+      /* 🟢 [6] ESTILOS GLOBAIS DO BODY (APLICA NA APP INTEIRA) */
+      /* 🟢 Aqui é o ponto principal para trocar fonte global manualmente */
       body { 
+        font-family: 'Inter', sans-serif;
         -webkit-font-smoothing: antialiased; 
         -moz-osx-font-smoothing: grayscale;
         background-color: #F9FAFB; /* Gray 50 - Pure Clean Base */
         color: #1F2937;
       }
 
+      /* 🟢 [7] ANIMAÇÃO PADRÃO DE ENTRADA DE MENSAGENS/CARDS */
       @keyframes slideUp {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -59,13 +79,14 @@
         animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
 
+      /* 🟢 [8] AJUSTES DE TIPOGRAFIA PARA CONTEÚDO RICO (MARKDOWN/PROSE) */
       .prose {
         max-width: none;
       }
       .prose p { margin-bottom: 0.75rem; line-height: 1.7; }
       .prose strong { color: #111827; font-weight: 600; }
       
-      /* Smooth Inputs */
+      /* 🟢 [9] SUAVIZAÇÃO DE INPUTS E FOCO GLOBAL */
       input, textarea, select {
         transition: all 0.2s ease;
       }
@@ -88,6 +109,8 @@
 </script>
 
 </head>
+  <!-- 🟢 [10] CLASSES BASE DO BODY VIA TAILWIND -->
+  <!-- 🟢 h-screen/overflow-hidden/bg/text controlam o layout base da aplicação -->
   <body class="h-screen overflow-hidden bg-gray-50 text-gray-900">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>

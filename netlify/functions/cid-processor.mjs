@@ -168,7 +168,17 @@ export async function handler(event) {
     if (jobError) console.warn(`Não foi possível encontrar um job para o asset ${assetId}`);
     const jobId = job?.id;
 
-    // 2. Download do Arquivo
+    // 2. Download do Arquivo (Apenas se necessário)
+    // Se a ação for apenas armazenar, não precisamos baixar o arquivo nem extrair texto.
+    if (asset.desired_action === 'store_only') {
+        const finalStatus = 'completed';
+        await safeUpdate(supabaseAdmin, 'cid_assets', assetId, { status: finalStatus, progress_pct: 100, completed_at: new Date().toISOString() });
+        if (jobId) await safeUpdate(supabaseAdmin, 'cid_processing_jobs', jobId, { status: finalStatus, progress_pct: 100, completed_at: new Date().toISOString() });
+        
+        console.log(`[CID Processor] Sucesso (Armazenado apenas) para o assetId: ${assetId}`);
+        return json(200, { ok: true, message: `Asset ${assetId} stored successfully.` });
+    }
+
     const { data: fileBlob, error: downloadError } = await supabaseAdmin.storage.from(assetFile.bucket).download(assetFile.path);
     if (downloadError) throw new Error(`Falha no download do arquivo: ${downloadError.message}`);
 

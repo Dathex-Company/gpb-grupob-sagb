@@ -1,0 +1,94 @@
+RIC - Radar de Inteligência Conectiva
+Especificação Canônica do Projeto
+Versão: 3.0
+Status: Documento padrão de referência
+Data: 2026-03-23
+
+0. Como usar este documento
+
+Este documento substitui a especificação anterior de "Radar de Conexões" como referência oficial do módulo RIC.
+
+Papel do RIC dentro do ecossistema SagB:
+
+CID (Prepara) > RIC (Interpreta) > NAGI (Governa)
+
+O RIC é o motor interpretativo que transforma material bruto e fragmentado em inteligência conectiva qualificada para a governança.
+
+
+1. Posicionamento do Módulo
+
+O RIC (Radar de Inteligência Conectiva) deixa de ser apenas uma tela de blueprint conceitual para se tornar um motor real de leitura estratégica.
+
+Sua proposta de valor central é:
+Não olhar para documentos isolados, mas para a rede de significados entre eles.
+
+Interpretamos documentos internos para encontrar conexões, padrões, tensões e sinergias que não são visíveis em leituras individuais.
+
+
+2. Fontes de Análise (Insumos)
+
+O RIC trabalha sobre o material já preparado e organizado pelo CID (Centro de Inteligência Documental):
+
+- Documentos técnicos e estratégicos (PDF, DOCX)
+- Transcrições de reuniões e falas
+- Memórias operacionais contínuas
+- Ativos de conhecimento
+
+Funcionalidade: Seleção múltipla de materiais para criação de "Conjuntos de Análise".
+
+
+3. Objetivo da Leitura e Lentes de Análise
+
+O usuário define o que quer descobrir ao aplicar uma "Lente de Leitura" específica sobre o conjunto de documentos:
+
+- Oportunidade: Identifica novos caminhos de negócio ou produto.
+- Risco: Detecta ameaças, gargalos ou redundâncias críticas.
+- Sinergia: Encontra pontos de união entre projetos e áreas diferentes.
+- Contradição: Identifica tensões ou informações conflitantes.
+- Reaproveitamento: Aponta módulos ou processos que podem ser usados em outras frentes.
+- Conexão Metodológica: Relaciona práticas e frameworks (ex: GERAC + MAV).
+- Padrão Recorrente: Identifica temas ou dores que se repetem no ecossistema.
+
+
+4. Motor de Análise (Processamento)
+
+O motor do RIC executa o cruzamento entre conteúdos buscando:
+
+- Temas em comum
+- Conflitos de diretrizes
+- Complementariedades técnicas ou comerciais
+- Genealogia de ideias (origem e destino)
+
+
+5. Evidências e Rastreabilidade
+
+Cada conexão encontrada pelo RIC deve ser sustentada por:
+- Identificação dos documentos de origem.
+- Trechos específicos (excertos) que justificam a leitura.
+
+
+6. Saídas Estratégicas (Outputs)
+
+O resultado da interpretação do RIC gera artefatos prontos para o NAGI:
+
+- Conexões Principais: Mapa de dependências e genealogias.
+- Hipóteses: Suposições estratégicas para teste.
+- Recomendações: Ações sugeridas (ex: criar spin-off, unificar frentes).
+- Próximos Passos: Encaminhamentos para a Mesa de Decisão do NAGI.
+
+
+7. Memória de Análise
+
+O sistema mantém um histórico de leituras para:
+- Reabrir análises passadas.
+- Comparar evoluções de contexto ao longo do tempo.
+- Evitar retrabalho interpretativo.
+
+
+8. Estratégia de Implantação
+
+Fase 1 (Atual): Foco total em materiais internos. Cruzamento assistido por interface operacional.
+Fase 2: Integração real com LLM para extração automatizada de conexões baseada em prompts de lentes.
+Fase 3: Expansão para Radar Externo (vigilância de mercado e sinais fracos).
+
+Este arquivo define o padrão oficial do projeto RIC dentro do SagB.

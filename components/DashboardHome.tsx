@@ -10,6 +10,7 @@ interface DashboardHomeProps {
   businessUnits: BusinessUnit[];
   onNavigate: (tab: any) => void;
   activeWorkspaceId?: string | null;
+  userDisplayName?: string;
 }
 
 const GERAC_SEAL = "https://static.wixstatic.com/media/64c3dc_6d0ef8c33da846cd9a3527cb01f6a1f7~mv2.png";
@@ -84,7 +85,7 @@ const statusBadgeClass = (status: string) => {
   return 'bg-gray-100 text-gray-600';
 };
 
-const DashboardHome: React.FC<DashboardHomeProps> = ({ agents, tasks, businessUnits, onNavigate, activeWorkspaceId }) => {
+const DashboardHome: React.FC<DashboardHomeProps> = ({ agents, tasks, businessUnits, onNavigate, activeWorkspaceId, userDisplayName }) => {
   const [dailyStats, setDailyStats] = useState({ conversations: 0, messages: 0 });
   const [intelligenceFlowRows, setIntelligenceFlowRows] = useState<CommandFlow[]>([]);
   const [flowTableMissing, setFlowTableMissing] = useState(false);
@@ -227,7 +228,8 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ agents, tasks, businessUn
       {/* HEADER BI */}
       <header className="mb-10 flex flex-col md:flex-row justify-between items-end border-b border-gray-200 pb-6 gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter mb-2">BI • Ecossistema</h1>
+          <p className="text-sm font-bold text-gray-500 mb-1">Bem-vindo, {userDisplayName || 'Usuário'}</p>
+          <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter mb-2">CENTRO DE COMANDO B</h1>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Business Intelligence GrupoB</p>
         </div>
         

@@ -327,31 +327,31 @@ const INITIATIVES: NagiInitiative[] = [
     documentsAndDecisions: ['Camada de gestão futura, não backlog bruto']
   },
   {
-    id: 'radar-connections',
-    title: 'Radar de Conexões e Radar Externo',
-    shortDescription: 'Sistema para entender o portfólio, detectar relações internas, vigiar sinais externos e converter tudo isso em ação estratégica.',
-    heroDescription: 'Espinha dorsal de inteligência de ecossistema para ler o que existe, o que conecta e o que o mundo sinaliza.',
-    status: 'Estruturação',
-    category: 'Gestão de portfólio',
+    id: 'ric',
+    title: 'RIC - Radar de Inteligência Conectiva',
+    shortDescription: 'Sistema de leitura estratégica que cruza documentos internos, encontra conexões e gera inteligência orientada a ação.',
+    heroDescription: 'Motor de inteligência conectiva que encontra relações entre temas, metodologias e contextos organizacionais.',
+    status: 'Em teste',
+    category: 'Organização estratégica',
     priority: 'Alta',
     operationalState: 'active',
-    value: 'Transforma o NAGI em cérebro de portfólio, descoberta e expansão, e não apenas em um lugar para listar iniciativas.',
-    currentStage: 'Documento canônico consolidado e módulo estratégico já materializado no SagB como base de implantação.',
+    value: 'Lê o que o CID prepara e gera inteligência qualificada para que o NAGI governe as frentes e decisões.',
+    currentStage: 'Transição da interface de blueprint para motor real de leitura estratégica interna.',
     overview: [
-      'Esta frente une Radar de Conexões, Radar Externo, Central de Distribuição, Mesa de Decisão, Memória Estratégica e Base de Ativos Reutilizáveis.',
-      'O objetivo não é apenas mostrar conexões bonitas, mas criar um sistema capaz de detectar sinergias, riscos, subprodutos, spin-offs, sinais de mercado e rotas reais de ação.',
-      'Ela posiciona o NAGI como sistema de inteligência estratégica de ecossistema, capaz de organizar o que existe, ler o que emerge e redistribuir oportunidade.'
+      'O RIC atua como ponte inteligente entre o CID e o NAGI.',
+      'Sua função primária hoje é cruzar materiais internos (documentos, transcrições e memórias) aplicando lentes de leitura (riscos, oportunidades, metodologias).',
+      'O objetivo é identificar padrões recorrentes, tensões e sinergias, saindo da visão isolada de documento para uma visão de conexões ativas.'
     ],
     structure: {
-      inputs: ['Projetos, ideias, módulos e ativos do ecossistema', 'Sinais externos de mercado, IA, jurisprudência e movimentos setoriais', 'Histórico de decisões, distribuições e aprovações'],
-      processing: ['Ontologia do ecossistema', 'Mapeamento semântico de relações', 'Classificação de sinais e scoring estratégico', 'Roteamento para áreas e Mesa de Decisão'],
-      outputs: ['Mapa de relações e genealogias', 'Oportunidades priorizadas', 'Distribuições acionáveis', 'Linhas-mãe, metaprojetos e spin-offs candidatos'],
-      integrations: ['NAGI', 'Governança', 'CID', 'Fluxo de Inteligência', 'Hub de Ventures', 'Sala Dev']
+      inputs: ['Múltiplos documentos preparados pelo CID', 'Lentes de análise definidas pelo usuário', 'Filtros de conteúdo interno'],
+      processing: ['Cruzamento de documentos', 'Detecção de padrões e temas em comum', 'Identificação de conflitos e complementaridades'],
+      outputs: ['Evidências e trechos conectados', 'Saídas estratégicas (hipóteses, recomendações)', 'Memória de análise salva para histórico'],
+      integrations: ['CID', 'NAGI', 'Memória Contínua', 'Hub de Ventures']
     },
-    completed: ['Leitura total do projeto-base', 'Especificação canônica do Radar de Conexões', 'Blueprint executivo consolidado', 'Tela estruturada dentro do SagB'],
-    nextSteps: ['Definir ontologia oficial', 'Modelar entidades e relações', 'Criar Radar de Conexões V1', 'Criar Radar Externo V1', 'Abrir a Central de Distribuição e a Mesa de Decisão'],
-    documentsAndDecisions: ['O projeto não deve nascer como feed ou mural de cards', 'A tríade oficial é Dentro / Entre / Fora', 'A base estrutural exige ontologia, scoring e rastreabilidade'],
-    routeTab: 'radar-connections',
+    completed: ['Evolução de Radar de Conexões para RIC', 'Estruturação base da tela orientada a motor de leitura', 'Conceito do ecossistema CID > RIC > NAGI consolidado'],
+    nextSteps: ['Implementar motor real de cruzamento de conteúdos do CID', 'Habilitar seleção múltipla de documentos', 'Integrar saídas estratégicas ao NAGI para priorização'],
+    documentsAndDecisions: ['O foco da V1 é puramente interno, sem acessar fontes externas', 'Não é apenas um mural estático, deve operar como lente ativa de leitura', 'Decidido fluxo oficial: CID prepara, RIC interpreta, NAGI governa'],
+    routeTab: 'ric',
     featured: true
   }
 ];

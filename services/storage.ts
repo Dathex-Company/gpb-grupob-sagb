@@ -67,3 +67,18 @@ export const buildCidStoragePath = (params: {
   const safeName = sanitizePathSegment(params.fileName) || `asset-${params.assetId}`;
   return `${params.workspaceId}/${year}/${month}/${day}/${params.assetId}/original/${safeName}`;
 };
+
+export const buildChatStoragePath = (params: {
+  workspaceId: string;
+  sessionId: string;
+  fileName: string;
+}) => {
+  const safeSessionId = sanitizePathSegment(params.sessionId);
+  const safeName = sanitizePathSegment(params.fileName) || `file-${Date.now()}`;
+  return `${params.workspaceId}/${safeSessionId}/${Date.now()}-${safeName}`;
+};
+
+export const getSupabasePublicUrl = (bucket: string, path: string) => {
+  if (!supabaseUrl) return '';
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
+};

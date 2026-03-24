@@ -427,6 +427,7 @@ const normalizeRecordForTable = (table: string, record: Record<string, any>) => 
       active: status !== 'PLANNED' && status !== 'BLOCKED',
       status,
       structuralStatus: structuralStatus || undefined,
+      operationalStatus: String(pick(r, 'operationalStatus', 'operational_status') ?? pick(payload, 'operationalStatus', 'operational_status') ?? ''),
       operationalActivation: String(pick(r, 'operationalActivation', 'operational_activation') ?? pick(payload, 'operationalActivation', 'operational_activation') ?? ''),
       dnaStatus: String(pick(r, 'dnaStatus', 'dna_status') ?? pick(payload, 'dnaStatus', 'dna_status') ?? ''),
       version: String(pick(r, 'version') ?? pick(payload, 'version') ?? '1.0'),
@@ -446,6 +447,8 @@ const normalizeRecordForTable = (table: string, record: Record<string, any>) => 
       ),
       aiMentor: pick(r, 'aiMentor', 'ai_mentor') ?? pick(payload, 'aiMentor', 'ai_mentor') ?? undefined,
       humanOwner: pick(r, 'humanOwner', 'human_owner') ?? pick(payload, 'humanOwner', 'human_owner') ?? undefined,
+      email: String(pick(r, 'email') ?? pick(payload, 'email') ?? ''),
+      usesEmail: Boolean(pick(r, 'usesEmail', 'uses_email') ?? pick(payload, 'usesEmail', 'uses_email') ?? false),
       customFields: pick(r, 'customFields', 'custom_fields') ?? pick(payload, 'customFields', 'custom_fields') ?? undefined,
       avatarUrl: pick(r, 'avatarUrl', 'avatar_url') ?? pick(payload, 'avatarUrl', 'avatar_url') ?? undefined,
       ambientPhotoUrl: pick(r, 'ambientPhotoUrl', 'ambient_photo_url') ?? pick(payload, 'ambientPhotoUrl', 'ambient_photo_url') ?? undefined,
@@ -918,6 +921,43 @@ const normalizeRecordForTable = (table: string, record: Record<string, any>) => 
     };
   }
 
+  if (table === 'studio_sessions') {
+    return {
+      id: String(r.id),
+      workspaceId: r.workspace_id,
+      title: String(r.title ?? ''),
+      captureMode: String(r.capture_mode ?? 'audio_video'),
+      chunkIntervalMin: Number(r.chunk_interval_min ?? 5),
+      status: String(r.status ?? 'recording'),
+      rawVideoPath: r.raw_video_path ?? undefined,
+      totalDurationSeconds: Number(r.total_duration_seconds ?? 0),
+      createdBy: r.created_by ?? undefined,
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt')) ?? new Date(),
+      updatedAt: asJsDate(pick(r, 'updated_at', 'updatedAt')) ?? new Date(),
+      payload: r.payload ?? undefined
+    };
+  }
+
+  if (table === 'studio_chunks') {
+    return {
+      id: String(r.id),
+      sessionId: String(r.session_id ?? ''),
+      workspaceId: r.workspace_id,
+      chunkIndex: Number(r.chunk_index ?? 0),
+      status: String(r.status ?? 'pending'),
+      audioPath: r.audio_path ?? undefined,
+      durationSeconds: Number(r.duration_seconds ?? 0),
+      transcriptionText: r.transcription_text ?? undefined,
+      cidAssetId: r.cid_asset_id ?? undefined,
+      startedAt: asJsDate(pick(r, 'started_at', 'startedAt')),
+      endedAt: asJsDate(pick(r, 'ended_at', 'endedAt')),
+      errorMessage: r.error_message ?? undefined,
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt')) ?? new Date(),
+      updatedAt: asJsDate(pick(r, 'updated_at', 'updatedAt')) ?? new Date(),
+      payload: r.payload ?? undefined
+    };
+  }
+
   if (table === 'audit_events') {
     return {
       id: String(r.id),
@@ -1282,6 +1322,8 @@ const normalizePayloadForTable = (table: string, payload: Record<string, any>) =
         'roleType',
         'structural_status',
         'structuralStatus',
+        'operational_status',
+        'operationalStatus',
         'operational_activation',
         'operationalActivation',
         'dna_status',
@@ -1301,6 +1343,9 @@ const normalizePayloadForTable = (table: string, payload: Record<string, any>) =
         'aiMentor',
         'human_owner',
         'humanOwner',
+        'email',
+        'uses_email',
+        'usesEmail',
         'custom_fields',
         'customFields',
         'model_provider',
@@ -1375,6 +1420,10 @@ const normalizePayloadForTable = (table: string, payload: Record<string, any>) =
         p.structural_status = p.structuralStatus;
         delete p.structuralStatus;
       }
+      if (p.operationalStatus !== undefined && p.operational_status === undefined) {
+        p.operational_status = p.operationalStatus;
+        delete p.operationalStatus;
+      }
       if (p.operationalActivation !== undefined && p.operational_activation === undefined) {
         p.operational_activation = p.operationalActivation;
         delete p.operationalActivation;
@@ -1406,6 +1455,10 @@ const normalizePayloadForTable = (table: string, payload: Record<string, any>) =
       if (p.humanOwner !== undefined && p.human_owner === undefined) {
         p.human_owner = p.humanOwner;
         delete p.humanOwner;
+      }
+      if (p.usesEmail !== undefined && p.uses_email === undefined) {
+        p.uses_email = p.usesEmail;
+        delete p.usesEmail;
       }
       if (p.customFields !== undefined && p.custom_fields === undefined) {
         p.custom_fields = p.customFields;
@@ -1826,6 +1879,36 @@ const normalizePayloadForTable = (table: string, payload: Record<string, any>) =
     if (p.linkedEntityId !== undefined) { p.linked_entity_id = p.linkedEntityId; delete p.linkedEntityId; }
     if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
     delete p.createdAt;
+  }
+
+  if (table === 'studio_sessions') {
+    if (p.workspaceId !== undefined) { p.workspace_id = p.workspaceId; delete p.workspaceId; }
+    if (p.captureMode !== undefined) { p.capture_mode = p.captureMode; delete p.captureMode; }
+    if (p.chunkIntervalMin !== undefined) { p.chunk_interval_min = p.chunkIntervalMin; delete p.chunkIntervalMin; }
+    if (p.rawVideoPath !== undefined) { p.raw_video_path = p.rawVideoPath; delete p.rawVideoPath; }
+    if (p.totalDurationSeconds !== undefined) { p.total_duration_seconds = p.totalDurationSeconds; delete p.totalDurationSeconds; }
+    if (p.createdBy !== undefined) { p.created_by = p.createdBy; delete p.createdBy; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    if (p.updatedAt !== undefined && p.updated_at === undefined) { p.updated_at = p.updatedAt; }
+    delete p.createdAt;
+    delete p.updatedAt;
+  }
+
+  if (table === 'studio_chunks') {
+    if (p.sessionId !== undefined) { p.session_id = p.sessionId; delete p.sessionId; }
+    if (p.workspaceId !== undefined) { p.workspace_id = p.workspaceId; delete p.workspaceId; }
+    if (p.chunkIndex !== undefined) { p.chunk_index = p.chunkIndex; delete p.chunkIndex; }
+    if (p.audioPath !== undefined) { p.audio_path = p.audioPath; delete p.audioPath; }
+    if (p.durationSeconds !== undefined) { p.duration_seconds = p.durationSeconds; delete p.durationSeconds; }
+    if (p.transcriptionText !== undefined) { p.transcription_text = p.transcriptionText; delete p.transcriptionText; }
+    if (p.cidAssetId !== undefined) { p.cid_asset_id = p.cidAssetId; delete p.cidAssetId; }
+    if (p.startedAt !== undefined) { p.started_at = p.startedAt; delete p.startedAt; }
+    if (p.endedAt !== undefined) { p.ended_at = p.endedAt; delete p.endedAt; }
+    if (p.errorMessage !== undefined) { p.error_message = p.errorMessage; delete p.errorMessage; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    if (p.updatedAt !== undefined && p.updated_at === undefined) { p.updated_at = p.updatedAt; }
+    delete p.createdAt;
+    delete p.updatedAt;
   }
 
   if (table === 'audit_events') {

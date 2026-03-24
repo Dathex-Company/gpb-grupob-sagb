@@ -139,6 +139,9 @@ const estimateCostUsd = (provider: ModelProvider | string | null | undefined, pr
 
 export const createMessageTelemetry = (params: {
   provider?: ModelProvider | string | null;
+  providerSelected?: ModelProvider | string | null;
+  fallbackTriggered?: boolean;
+  fallbackReason?: string | null;
   promptText?: string;
   completionText?: string;
   latencyMs?: number;
@@ -152,6 +155,9 @@ export const createMessageTelemetry = (params: {
 
   return {
     model_used: params.provider || null,
+    provider_selected: params.providerSelected || null,
+    fallback_triggered: Boolean(params.fallbackTriggered),
+    fallback_reason: params.fallbackReason || null,
     latency_ms: Number(params.latencyMs || 0),
     prompt_tokens_estimated: promptTokens,
     completion_tokens_estimated: completionTokens,

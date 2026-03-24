@@ -8,20 +8,22 @@ import BacklogView from './components/BacklogView';
 import HubView from './components/HubView';
 import DashboardHome from './components/DashboardHome'; // NEW IMPORT
 import VenturesView from './components/VenturesView'; // NEW MODULE v1.5.0
+import StudioView from './components/StudioView';
 import AlignmentView from './components/AlignmentView';
 import ThreeForBView from './components/ThreeForBView';
 import AudacusView from './components/AudacusView';
 import StartyBView from './components/StartyBView'; // NEW MODULE
 import ManagementView from './components/ManagementView';
-import ProgrammersRoomView from './components/ProgrammersRoomView';
+import DevRoomView from './components/DevRoomView';
 import GovernanceView from './components/GovernanceView';
 import QualitySensorView from './components/QualitySensorView';
 import IntelligenceFlowView from './components/IntelligenceFlowView';
 import AgentMissionsView from './components/AgentMissionsView';
 import CIDView from './components/CIDView';
 import ContinuousMemoryView from './components/ContinuousMemoryView';
+import MonitoramentoView from './components/MonitoramentoView';
 import NAGIView from './components/NAGIView';
-import RadarConnectionsView from './components/RadarConnectionsView';
+import RICView from './components/RICView';
 import UnitView from './components/UnitView';
 import ConversationsView from './components/ConversationsView';
 import Auth from './components/Auth'; // NOVA IMPORTAÇÃO
@@ -34,6 +36,8 @@ import {
   transcribeAudio
 } from './services/gemini';
 import { composeEffectivePrompt, resolveAgentBasePrompt } from './services/agentDna';
+import { deriveOperationalStatus, isAgentOperationallyActive, isAgentOperationallyAvailable, isAgentOperationallyBlocked } from './utils/agentOperational';
+import { resolveAuthenticatedUserProfile } from './utils/authenticatedUser';
 import metadata from './metadata.json';
 import { db, auth, onAuthStateChanged, signOut, User } from './services/supabase';
 import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, setDoc, query, where, orderBy, Timestamp } from './services/supabase';
@@ -170,6 +174,7 @@ const App: React.FC = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [ventures, setVentures] = useState<Venture[]>([]); // NEW STATE v1.5.0
+  const [allUserProfiles, setAllUserProfiles] = useState<UserProfile[]>([]);
   const [cultureEntries, setCultureEntries] = useState<GovernanceCulture[]>([]);
   const [complianceRules, setComplianceRules] = useState<ComplianceRule[]>([]);
   const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
@@ -238,6 +243,21 @@ const App: React.FC = () => {
     const payload = (userProfile as any)?.payload;
     return payload && typeof payload === 'object' ? payload : {};
   }, [userProfile]);
+
+  const authenticatedUserProfile = useMemo(
+    () => resolveAuthenticatedUserProfile(user, userProfile),
+    [user, userProfile]
+  );
+
+  const authUsersByEmail = useMemo(() => {
+    const map: Record<string, { id: string; email: string }> = {};
+    allUserProfiles.forEach((profile) => {
+      const email = String(profile.email || '').trim().toLowerCase();
+      if (!email) return;
+      map[email] = { id: profile.uid, email };
+    });
+    return map;
+  }, [allUserProfiles]);
 
   const uiPrefs = useMemo<AppUiPrefs>(() => {
     const raw = userPayload.uiPrefs;
@@ -362,6 +382,7 @@ const asDate = (v: any): Date | undefined => {
     let unsubscribeTopics: (() => void) | undefined;
     let unsubscribeTasks: (() => void) | undefined;
     let unsubscribeVentures: (() => void) | undefined;
+    let unsubscribeUsers: (() => void) | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -458,6 +479,17 @@ if (userId) {
             setVentures(loadedVentures);
           }
         );
+
+        unsubscribeUsers = onSnapshot(
+          collection(db, "users"),
+          (snapshot) => {
+            const loadedUsers = snapshot.docs.map(doc => ({
+              ...(doc.data() as UserProfile),
+              uid: (doc.data() as any)?.uid || doc.id
+            } as UserProfile));
+            setAllUserProfiles(loadedUsers);
+          }
+        );
       } else {
         if (unsubscribeProfile) unsubscribeProfile();
         if (unsubscribeTopics) unsubscribeTopics();
@@ -467,6 +499,7 @@ if (userId) {
         setTopics([]);
         setTasks([]);
         setVentures([]);
+        setAllUserProfiles([]);
         setIsInitializing(false);
       }
     });
@@ -477,6 +510,7 @@ if (userId) {
       if (unsubscribeTopics) unsubscribeTopics();
       if (unsubscribeTasks) unsubscribeTasks();
       if (unsubscribeVentures) unsubscribeVentures();
+      if (unsubscribeUsers) unsubscribeUsers();
     };
   }, []);
 
@@ -927,6 +961,10 @@ if (userId) {
 
   // V4.5 - Roteamento Inteligente de Agente
   const handleAgentInteraction = (agent: Agent) => {
+    if (isAgentOperationallyBlocked(agent)) {
+      window.alert(`O agente ${agent.name} existe no cadastro, mas ainda está bloqueado para operação porque está sem DNA válido.`);
+      return;
+    }
     if (agent.status === 'PLANNED') {
       // Se planejado, vai para RH (Fábrica) para contratar
       setAgentToOnboard(agent);
@@ -940,6 +978,10 @@ if (userId) {
   };
 
   const handleOpenAgentSession = (agent: Agent, sessionId: string) => {
+    if (isAgentOperationallyBlocked(agent)) {
+      window.alert(`O agente ${agent.name} ainda não pode operar porque está sem DNA válido.`);
+      return;
+    }
     if (agent.status === 'PLANNED') {
       setAgentToOnboard(agent);
       setActiveTab('fabrica-ca');
@@ -974,7 +1016,9 @@ if (userId) {
     const minimalAgentPatch: Record<string, any> = {
       name: updatedAgent.name,
       description: updatedAgent.officialRole || updatedAgent.description || null,
-      status: updatedAgent.status
+      status: updatedAgent.status,
+      dnaStatus: 'DNA_COMPLETO',
+      operationalStatus: updatedAgent.status === 'ACTIVE' ? 'ATIVO' : 'DISPONIVEL'
     };
     if (updatedAgent.ventureId) {
       minimalAgentPatch.ventureId = updatedAgent.ventureId;
@@ -1304,7 +1348,7 @@ if (userId) {
           context: latestCultureEntry?.summary,
           compliance: activeComplianceRule?.ruleMd
         });
-        return {
+        const hydratedAgent = {
           ...agent,
           fullPrompt: config?.fullPrompt ?? agent.fullPrompt ?? '',
           dnaIndividualPrompt: dnaProfile?.individualPrompt ?? basePrompt,
@@ -1312,6 +1356,11 @@ if (userId) {
           globalDocuments: config?.globalDocuments ?? agent.globalDocuments,
           docCount: config?.docCount ?? agent.docCount,
           learnedMemory: Array.from(new Set(memories.filter(Boolean)))
+        };
+
+        return {
+          ...hydratedAgent,
+          operationalStatus: deriveOperationalStatus(hydratedAgent)
         };
       });
 
@@ -1340,17 +1389,23 @@ if (userId) {
     ? activatedAgents
     : activatedAgents.filter(a => activeBU && a.buId === activeBU.id);
 
+  const operationalAgents = useMemo(
+    () => activatedAgents.filter((agent) => isAgentOperationallyAvailable(agent)),
+    [activatedAgents]
+  );
+
   const filteredMessages = messages.filter(m => activeBU && m.buId === activeBU.id);
   const currentBlueprint = activeBU ? (blueprints[activeBU.id] || {}) : {};
   const ownerUserId = userProfile?.uid || (user as any)?.id || (user as any)?.uid || null;
-  const currentUserDisplayName = userProfile?.name || userProfile?.nickname || 'Usuário';
+  const currentUserDisplayName = authenticatedUserProfile?.name || authenticatedUserProfile?.nickname || 'Usuário';
+  const activeSessionEmail = authenticatedUserProfile?.email || user?.email || null;
   const audacusGatewayByBu = (uiPrefs.audacusGatewayByBu && typeof uiPrefs.audacusGatewayByBu === 'object')
     ? uiPrefs.audacusGatewayByBu
     : {};
 
   const directChannelAgent = useMemo(() => {
     const buScoped = activatedAgents.filter((agent) =>
-      agent?.status === 'ACTIVE' && (agent?.buId === activeBU.id || activeBU.id === 'grupob')
+      isAgentOperationallyActive(agent) && (agent?.buId === activeBU.id || activeBU.id === 'grupob')
     );
     if (buScoped.length === 0) return null;
 
@@ -1579,10 +1634,11 @@ if (userId) {
     }
 
     // ROTA STARTYB
-    if (activeBU.id === 'startyb' && activeTab === 'startyb-home') return <StartyBView activeBU={activeBU} agents={activatedAgents} onBack={handleReturnToHub} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
+    if (activeBU.id === 'startyb' && activeTab === 'startyb-home') return <StartyBView activeBU={activeBU} agents={operationalAgents} onBack={handleReturnToHub} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
 
     switch (activeTab) {
-      case 'home': return <DashboardHome agents={activatedAgents} tasks={tasks} businessUnits={businessUnits} onNavigate={setActiveTab} activeWorkspaceId={activeWorkspaceId} />;
+      case 'home':
+        return <DashboardHome agents={activatedAgents} tasks={tasks} businessUnits={businessUnits} onNavigate={setActiveTab} activeWorkspaceId={activeWorkspaceId} userDisplayName={currentUserDisplayName} />;
 
       // FIX: HUB VIEW SEMPRE RECEBE LISTA COMPLETA DE AGENTES (activatedAgents)
       case 'ecosystem': return <HubView businessUnits={businessUnits} activeBU={activeBU} onSelectBU={handleSelectBU} onNavigate={setActiveTab} agents={activatedAgents} onSelectAgent={handleAgentInteraction} />;
@@ -1591,7 +1647,7 @@ if (userId) {
 
       case 'management': return <ManagementView tasks={tasks} onAddTask={handleAddTask} onUpdateTaskStatus={handleUpdateTaskStatus} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
       case 'programmers-room':
-        return <ProgrammersRoomView onBack={() => setActiveTab('ecosystem')} />;
+        return <DevRoomView onBack={() => setActiveTab('ecosystem')} />;
       case 'unit-room': return <UnitView activeBU={activeBU} agents={activatedAgents} onBack={handleBackNavigation} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
 
       // NOVA ROTA: CONVERSAS (HISTÓRICO)
@@ -1620,14 +1676,6 @@ if (userId) {
           onDeleteKnowledgeNode={handleDeleteKnowledgeNode}
         />
       );
-      case 'quality':
-        return (
-          <QualitySensorView
-            qualityEvents={agentQualityEvents}
-            workspaceId={activeWorkspaceId}
-            onBack={() => setActiveTab('ecosystem')}
-          />
-        );
       case 'intelligence-flow':
         return (
           <IntelligenceFlowView
@@ -1640,7 +1688,7 @@ if (userId) {
           <AgentMissionsView
             workspaceId={activeWorkspaceId}
             ownerUserId={ownerUserId}
-            agents={activatedAgents}
+            agents={operationalAgents}
             onBack={() => setActiveTab('ecosystem')}
           />
         );
@@ -1651,14 +1699,14 @@ if (userId) {
             onOpenTab={(tab) => setActiveTab(tab)}
           />
         );
-      case 'radar-connections':
-        return <RadarConnectionsView onBack={() => setActiveTab('nagi')} />;
+      case 'ric':
+        return <RICView onBack={() => setActiveTab('nagi')} />;
       case 'cid':
         return (
           <CIDView
             workspaceId={activeWorkspaceId}
             ownerUserId={ownerUserId}
-            userProfile={userProfile}
+            userProfile={authenticatedUserProfile}
             ventures={ventures}
             onBack={() => setActiveTab('ecosystem')}
           />
@@ -1668,8 +1716,26 @@ if (userId) {
           <ContinuousMemoryView
             workspaceId={activeWorkspaceId}
             ownerUserId={ownerUserId}
-            userProfile={userProfile}
+            userProfile={authenticatedUserProfile}
             ventures={ventures}
+            onBack={() => setActiveTab('ecosystem')}
+          />
+        );
+      case 'studio':
+        return (
+          <StudioView
+            workspaceId={activeWorkspaceId}
+            ownerUserId={ownerUserId}
+            userProfile={authenticatedUserProfile}
+            onBack={() => setActiveTab('ecosystem')}
+          />
+        );
+
+      case 'monitoramento':
+        return (
+          <MonitoramentoView
+            qualityEvents={agentQualityEvents}
+            workspaceId={activeWorkspaceId}
             onBack={() => setActiveTab('ecosystem')}
           />
         );
@@ -1687,6 +1753,8 @@ if (userId) {
           activeWorkspaceId={activeWorkspaceId}
           businessUnits={businessUnits}
           ventures={ventures} // NOVO v1.5.0
+          authUsersByEmail={authUsersByEmail}
+          activeSessionEmail={activeSessionEmail}
           onManageIntelligence={(agent) => {
             // NOVO HANDLER: Redireciona para Governança/Inteligência
             setGovernanceTargetId(agent.id);
@@ -1696,10 +1764,10 @@ if (userId) {
       );
 
       // NOVA ROTA: EQUIPE GLOBAL (VISÃO DE TODOS OS AGENTES PARA CHAT)
-      case 'team': return <SystemicVision dynamicAgents={activatedAgents} onUpdateAgents={setActivatedAgents} activeBU={activeBU} businessUnits={businessUnits} onBack={handleBackNavigation} onConvertToTopic={handleCreateTopicFromChat} viewMode="global" userProfile={userProfile} activeWorkspaceId={activeWorkspaceId} />;
+      case 'team': return <SystemicVision dynamicAgents={operationalAgents} onUpdateAgents={setActivatedAgents} activeBU={activeBU} businessUnits={businessUnits} onBack={handleBackNavigation} onConvertToTopic={handleCreateTopicFromChat} viewMode="global" userProfile={authenticatedUserProfile} activeWorkspaceId={activeWorkspaceId} vaultItems={activeVaultEntries} />;
 
       // RESTORED: CHAT ROOM (Systemic Vision Logic) with onConvertToTopic prop
-      case 'chat-room': return <SystemicVision dynamicAgents={activatedAgents} onUpdateAgents={setActivatedAgents} activeBU={activeBU} businessUnits={businessUnits} forcedAgent={chatTargetAgent} forcedSessionId={chatTargetSessionId} onBack={handleBackNavigation} onConvertToTopic={handleCreateTopicFromChat} userProfile={userProfile} activeWorkspaceId={activeWorkspaceId} />;
+      case 'chat-room': return <SystemicVision dynamicAgents={operationalAgents} onUpdateAgents={setActivatedAgents} activeBU={activeBU} businessUnits={businessUnits} forcedAgent={chatTargetAgent} forcedSessionId={chatTargetSessionId} onBack={handleBackNavigation} onConvertToTopic={handleCreateTopicFromChat} userProfile={authenticatedUserProfile} activeWorkspaceId={activeWorkspaceId} vaultItems={activeVaultEntries} />;
 
       case 'vault':
         return <BacklogView
@@ -1734,7 +1802,7 @@ if (userId) {
                   <div key={msg.id} className={`flex ${msg.sender === Sender.User ? 'flex-row-reverse' : 'flex-row'} items-start gap-4 animate-msg group`}>
                     <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm shrink-0 border border-gray-200 bg-white flex items-center justify-center mt-2">
                       {msg.sender === Sender.User ? (
-                        <img src={userProfile?.avatarUrl || USER_FALLBACK_IMAGE} className="w-full h-full object-cover" />
+                        <img src={authenticatedUserProfile?.avatarUrl || USER_FALLBACK_IMAGE} className="w-full h-full object-cover" />
                       ) : (
                         directChannelProfile.imageUrl ? (
                           <img src={directChannelProfile.imageUrl} className="w-full h-full object-cover" />
@@ -1815,7 +1883,7 @@ if (userId) {
         );
 
       // DEFAULT FALLBACK: Sempre renderiza Home se a tab for desconhecida
-      default: return <DashboardHome agents={activatedAgents} tasks={tasks} businessUnits={businessUnits} onNavigate={setActiveTab} activeWorkspaceId={activeWorkspaceId} />;
+      default: return <DashboardHome agents={activatedAgents} tasks={tasks} businessUnits={businessUnits} onNavigate={setActiveTab} activeWorkspaceId={activeWorkspaceId} userDisplayName={currentUserDisplayName} />;
     }
   };
 
@@ -1845,7 +1913,7 @@ if (userId) {
           version={version}
           onReset={handleReturnToHub}
           onLogout={handleLogout}
-          userProfile={userProfile}
+          userProfile={authenticatedUserProfile}
         />
       )}
       <main className="flex-1 flex flex-col overflow-hidden relative bg-violet-100">{renderContent()}</main>

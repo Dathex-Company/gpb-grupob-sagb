@@ -15,6 +15,51 @@ Documento de rastreabilidade macro por modulo.
 
 ## Entradas iniciais
 
+### 2026-03-21 - Personalizacao baseada no usuario logado (Humano autenticado)
+
+- Modulo: 01-plataforma-base-e-shell / 03-nucleo-conversacional / 02-home-dashboard-e-hub
+- Mudanca:
+  - topbar do DashboardHome refatorada para saudar explicitamente o usuario autenticado ("Bem-vindo, Nome").
+  - Sidebar agora reflete o nome, cargo (tier) e avatar real persistido no banco de dados (`users` table).
+  - chat multiagente (`SystemicVision.tsx`) e Componente de mensagem (`ChatMessage.tsx`) exibem corretamente a foto de avatar real do humano que esta logado, substituindo o fallback fixo.
+  - prompt principal (`SystemicVision.tsx` e `App.tsx` no canal direto) foi ajustado. Os agentes agora recebem o contexto dinamico `[Contexto Sistemico]: O usuario interagindo nesta conversa e [NOME] ([CARGO]). Responda diretamente a ele.`
+- Tipo: ui / fluxo
+- Arquivos/tabelas afetados:
+  - `App.tsx`
+  - `components/Sidebar.tsx`
+  - `components/DashboardHome.tsx`
+  - `components/SystemicVision.tsx`
+  - `components/ChatMessage.tsx`
+- Status: concluido
+
+### 2026-03-21 - Quadro de Elite: Sincronização Automática do Status DNA (ET-02)
+
+- Modulo: 05-cadastro-e-dna-de-agentes
+- Mudanca:
+  - Adicionado `dnaStatus: 'DNA_COMPLETO'` no update de agente do fluxo de salvar DNA (`handleUpdateAgentData`).
+  - Agentes nascem "SEM_DNA" e passam a "DNA_COMPLETO" assim que a Governança atualiza as instruções (`agent_dna_profiles` / `agent_dna_effective`).
+  - O conteúdo do DNA continua não trafegando no cadastro e protegido no RLS de `agent_configs/effective`. Apenas o ponteiro refletiu na tabela de listagem do Quadro.
+- Tipo: fluxo / dados
+- Arquivos/tabelas afetados:
+  - `App.tsx`
+  - tabela `agents`
+- Status: concluido
+
+### 2026-03-21 - Quadro de Elite (cadastro estrutural) com melhoria de clareza e qualidade
+
+- Modulo: 05-cadastro-e-dna-de-agentes
+- Mudanca:
+  - adicao de alternancia entre colunas essenciais e avancadas na listagem de agentes do Quadro de Elite;
+  - reforco de validacoes de cadastro (funcao principal obrigatoria, stack permitida obrigatoria e coerencia do modelo preferencial);
+  - ajuste semantico de persistencia para evitar fallback silencioso entre funcao principal e cargo-base;
+  - melhoria de microcopy no formulario para reduzir ambiguidade de conceitos;
+  - adicao de mensagem de impacto por status estrutural para orientar decisao operacional.
+- Tipo: fluxo
+- Arquivos/tabelas afetados:
+  - `components/AgentFactory.tsx`
+  - tabela `agents`
+- Status: concluido
+
 ### 2026-03-13 - Mapeamento modular consolidado
 
 - Modulo: Plataforma geral (todos)

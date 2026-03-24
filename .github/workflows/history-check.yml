@@ -1,0 +1,56 @@
+name: Enforce History Compliance
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-history:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Buscar histórico completo para git diff funcionar
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Get Changed Files
+        id: files
+        run: |
+          # Identifica os arquivos modificados neste PR comparado à branch base
+          git diff --name-only origin/${{ github.base_ref }}...HEAD > changed_files.txt
+          echo "Arquivos modificados:"
+          cat changed_files.txt
+
+      - name: Run History Check
+        run: |
+          # Simula o git diff --cached para o script de node consumi-lo (substituindo o core getStagedFiles)
+          # Para ambiente CI, vamos usar uma flag ou variável de ambiente caso necessário.
+          # Aqui faremos uma checagem local por bash para travar o CI.
+          
+          HAS_CORE_CHANGES=false
+          HAS_HISTORY_CHANGES=false
+          
+          while IFS= read -r file; do
+            if [[ "$file" == components/* ]] || [[ "$file" == services/* ]] || [[ "$file" == supabase/* ]] || [[ "$file" == netlify/* ]] || [[ "$file" == "App.tsx" ]] || [[ "$file" == "types.ts" ]]; then
+              HAS_CORE_CHANGES=true
+            fi
+            
+            if [[ "$file" == "docs/modular-map/HISTORICO_MODULOS.md" ]] || [[ "$file" == "DEV_LOG.md" ]] || [[ "$file" == "CHANGELOG.md" ]]; then
+              HAS_HISTORY_CHANGES=true
+            fi
+          done < changed_files.txt
+          
+          if [ "$HAS_CORE_CHANGES" = true ] && [ "$HAS_HISTORY_CHANGES" = false ]; then
+            echo "::error::❌ BLOQUEIO DATHEX/GRUPOB: Alterações de código exigem registro de histórico. Você modificou arquivos core mas não atualizou DEV_LOG.md ou HISTORICO_MODULOS.md."
+            exit 1
+          else
+            echo "✅ Validação de histórico aprovada."
+          fi
