@@ -50,7 +50,7 @@ const MonitoramentoView: React.FC<MonitoramentoViewProps> = ({ onBack, qualityEv
   const renderSectionContent = () => {
     if (loading) {
       return (
-        <div className="p-20 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <div className="p-20 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
           <p className="mt-4 text-sm text-slate-500">Carregando telemetria...</p>
         </div>
@@ -59,7 +59,7 @@ const MonitoramentoView: React.FC<MonitoramentoViewProps> = ({ onBack, qualityEv
 
     if (error) {
       return (
-        <div className="p-20 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
+        <div className="p-20 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm">
           <div className="text-rose-500 text-lg font-bold">Erro ao carregar dados</div>
           <p className="mt-2 text-sm text-slate-500">{error}</p>
           <button 
@@ -121,21 +121,21 @@ const MonitoramentoView: React.FC<MonitoramentoViewProps> = ({ onBack, qualityEv
               </MetricCard>
             </div>
             
-            <div className="p-5 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <div className="p-5 bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-[#1F2937]/50 flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Últimas Escritas</h4>
+                  <h4 className="text-xs font-black text-slate-500 dark:text-gray-400 uppercase tracking-widest">Últimas Escritas</h4>
                   <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] font-black rounded uppercase">Real</span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded">Live</span>
+                <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded">Live</span>
               </div>
               <table className="w-full text-left text-sm">
                 <tbody>
                   {telemetryData.recentWrites.map((row, i) => (
-                    <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
+                    <tr key={i} className="border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-slate-50/50 dark:hover:bg-white/5">
                       <td className="py-3 px-5 text-xs text-slate-400 font-bold">{new Date(row.timeRaw).toLocaleTimeString()}</td>
-                      <td className="py-3 px-5 font-semibold text-slate-700">{row.tipo}</td>
-                      <td className="py-3 px-5 text-slate-500 text-xs">{row.origem}</td>
+                      <td className="py-3 px-5 font-semibold text-slate-700 dark:text-white">{row.tipo}</td>
+                      <td className="py-3 px-5 text-slate-500 dark:text-gray-400 text-xs">{row.origem}</td>
                       <td className="py-3 px-5 text-right"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span></td>
                     </tr>
                   ))}
@@ -189,15 +189,15 @@ const MonitoramentoView: React.FC<MonitoramentoViewProps> = ({ onBack, qualityEv
               className="border-l-8 border-l-rose-500"
             />
             
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden">
               {criticals.length === 0 ? (
                 <div className="p-10 text-center text-sm text-slate-400">Sistema nominal. Nenhum alerta.</div>
               ) : (
-                <table className="w-full text-left text-sm divide-y divide-slate-100">
+                <table className="w-full text-left text-sm divide-y divide-slate-100 dark:divide-white/5">
                   {criticals.map((ev, i) => (
-                    <tr key={i} className="hover:bg-rose-50/50">
+                    <tr key={i} className="hover:bg-rose-50/50 dark:hover:bg-rose-900/20">
                       <td className="p-4 text-xs font-bold text-slate-400">{new Date(ev.createdAt).toLocaleTimeString()}</td>
-                      <td className="p-4 font-bold text-slate-700 uppercase text-xs">{ev.eventType}</td>
+                      <td className="p-4 font-bold text-slate-700 dark:text-white uppercase text-xs">{ev.eventType}</td>
                       <td className="p-4 text-right"><span className="px-2 py-0.5 bg-rose-100 text-rose-600 text-[9px] font-black rounded uppercase">{ev.severity}</span></td>
                     </tr>
                   ))}
@@ -308,18 +308,18 @@ const MonitoramentoView: React.FC<MonitoramentoViewProps> = ({ onBack, qualityEv
       case 'eventos':
       case 'ideias_producao':
         return (
-          <div className="p-20 text-center bg-white rounded-3xl border border-slate-200 shadow-sm opacity-60 flex flex-col items-center">
-            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">⚙️</div>
-            <h3 className="text-lg font-black text-slate-400 uppercase tracking-widest">Painel em Construção</h3>
+          <div className="p-20 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm opacity-60 flex flex-col items-center">
+            <div className="w-12 h-12 bg-slate-50 dark:bg-[#1F2937] rounded-full flex items-center justify-center mb-4">⚙️</div>
+            <h3 className="text-lg font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">Painel em Construção</h3>
             <p className="text-xs text-slate-400 mt-2">Indicadores para {activeSection} sendo mapeados.</p>
           </div>
         );
         
       default:
         return (
-          <div className="p-20 text-center bg-white rounded-3xl border border-slate-200 shadow-sm opacity-60 flex flex-col items-center">
-            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">⚙️</div>
-            <h3 className="text-lg font-black text-slate-400 uppercase tracking-widest">Painel em Construção</h3>
+          <div className="p-20 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm opacity-60 flex flex-col items-center">
+            <div className="w-12 h-12 bg-slate-50 dark:bg-[#1F2937] rounded-full flex items-center justify-center mb-4">⚙️</div>
+            <h3 className="text-lg font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">Painel em Construção</h3>
             <p className="text-xs text-slate-400 mt-2">Indicadores para {activeSection} sendo mapeados.</p>
           </div>
         );
@@ -327,11 +327,11 @@ const MonitoramentoView: React.FC<MonitoramentoViewProps> = ({ onBack, qualityEv
   };
 
   return (
-    <div className="flex-1 h-full bg-slate-50 flex flex-col font-nunito overflow-hidden">
-      <header className="h-20 px-8 flex items-center justify-between bg-slate-900 text-white shrink-0 z-10">
+    <div className="flex-1 h-full bg-gray-50 dark:bg-sagb-bg flex flex-col font-nunito transition-colors duration-300 overflow-hidden">
+      <header className="h-20 px-8 flex items-center justify-between bg-slate-900 dark:bg-sagb-panel text-white shrink-0 z-10 border-b dark:border-white/5">
         <div className="flex items-center gap-4">
           {onBack && (
-            <button onClick={onBack} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors"><BackIcon className="w-6 h-6" /></button>
+            <button onClick={onBack} className="p-2 hover:bg-slate-800 dark:hover:bg-white/10 rounded-lg text-slate-400 transition-colors"><BackIcon className="w-6 h-6" /></button>
           )}
           <div>
             <h2 className="text-xl font-black uppercase tracking-tighter text-cyan-400">SagB Telemetry</h2>
@@ -345,19 +345,19 @@ const MonitoramentoView: React.FC<MonitoramentoViewProps> = ({ onBack, qualityEv
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <aside className="w-72 bg-slate-50 flex flex-col p-4 gap-1 overflow-y-auto custom-scrollbar border-r border-slate-200">
+        <aside className="w-72 bg-gray-50 dark:bg-sagb-panel flex flex-col p-4 gap-1 overflow-y-auto custom-scrollbar border-r border-slate-200 dark:border-white/5 transition-colors duration-300">
           {['Saúde da Operação', 'Saúde da Inteligência', 'Resposta e Histórico', 'Leitura Gerencial'].map((cat) => (
             <div key={cat} className="mb-4">
-              <div className="px-4 py-2 border-b border-slate-200/50 mb-2">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{cat}</span>
+              <div className="px-4 py-2 border-b border-slate-200/50 dark:border-white/5 mb-2">
+                <span className="text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">{cat}</span>
               </div>
               <div className="space-y-0.5">
                 {menuItems.filter(i => i.category === cat).map((item) => {
                   const isActive = activeSection === item.id;
                   return (
-                    <button key={item.id} onClick={() => setActiveSection(item.id)} className={`flex items-center w-full gap-3 px-4 py-2.5 rounded-xl transition-all ${isActive ? 'bg-white text-indigo-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:bg-white/50 hover:text-slate-700 border border-transparent'}`}>
-                      <svg className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-500' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d={item.icon} strokeLinecap="round" strokeLinejoin="round" /></svg>
-                      <span className={`text-[11px] uppercase tracking-wide font-bold ${isActive ? 'text-indigo-900' : ''}`}>{item.label}</span>
+                    <button key={item.id} onClick={() => setActiveSection(item.id)} className={`flex items-center w-full gap-3 px-4 py-2.5 rounded-xl transition-all ${isActive ? 'bg-white dark:bg-sagb-bg-2 text-indigo-700 dark:text-white shadow-sm border border-slate-200 dark:border-white/10' : 'text-slate-500 hover:bg-white/50 dark:hover:bg-white/5 hover:text-slate-700 dark:hover:text-sagb-muted border border-transparent'}`}>
+                      <svg className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-500 dark:text-sagb-blue' : 'text-slate-400 dark:text-gray-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d={item.icon} strokeLinecap="round" strokeLinejoin="round" /></svg>
+                      <span className={`text-[11px] uppercase tracking-wide font-bold ${isActive ? 'text-indigo-900 dark:text-white' : ''}`}>{item.label}</span>
                     </button>
                   );
                 })}
@@ -366,12 +366,12 @@ const MonitoramentoView: React.FC<MonitoramentoViewProps> = ({ onBack, qualityEv
           ))}
         </aside>
 
-        <main className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-slate-100/30">
+        <main className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-slate-100/30 dark:bg-sagb-bg">
           <div className="max-w-5xl mx-auto">
-             <div className="mb-6 flex items-center justify-between border-b border-slate-200 pb-4">
+             <div className="mb-6 flex items-center justify-between border-b border-slate-200 dark:border-white/5 pb-4">
                 <div>
-                  <h3 className="text-xl font-black text-slate-800 uppercase flex items-center gap-2">{currentItem?.label}</h3>
-                  <p className="text-xs text-slate-500 font-bold mt-1 uppercase tracking-widest">{currentItem?.idea}</p>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase flex items-center gap-2">{currentItem?.label}</h3>
+                  <p className="text-xs text-slate-500 dark:text-gray-500 font-bold mt-1 uppercase tracking-widest">{currentItem?.idea}</p>
                 </div>
                 <div className="flex gap-2">
                   <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded uppercase">Real</span>

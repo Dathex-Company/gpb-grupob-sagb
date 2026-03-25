@@ -1,30 +1,30 @@
-export interface RICMetric {
+export interface NICMetric {
   label: string;
   value: string;
   note: string;
 }
 
-export interface RICLens {
+export interface NICLens {
   id: string;
   name: string;
   description: string;
   icon: string;
 }
 
-export interface RICAnalysisBlock {
+export interface NICAnalysisBlock {
   title: string;
   items: string[];
 }
 
-export const ricMetrics: RICMetric[] = [
+export const nicMetrics: NICMetric[] = [
   {
-    label: 'Tese Central',
-    value: 'Inteligência Conectiva',
-    note: 'Interpretar e conectar materiais internos para gerar vantagem estratégica'
+    label: 'Fluxo Operacional',
+    value: 'CID > NIC > NAGI',
+    note: 'Preparar > Interpretar > Governar'
   },
   {
     label: 'Fluxo Operacional',
-    value: 'CID > RIC > NAGI',
+    value: 'CID > NIC > NAGI',
     note: 'Preparar > Interpretar > Governar'
   },
   {
@@ -34,7 +34,7 @@ export const ricMetrics: RICMetric[] = [
   }
 ];
 
-export const ricLenses: RICLens[] = [
+export const nicLenses: NICLens[] = [
   { id: 'opportunity', name: 'Oportunidade', description: 'Identifica novos caminhos de negócio ou produto', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
   { id: 'risk', name: 'Risco', description: 'Detecta ameaças, gargalos ou redundâncias críticas', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
   { id: 'synergy', name: 'Sinergia', description: 'Pontos de união entre projetos e áreas diferentes', icon: 'M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122' },
@@ -43,7 +43,7 @@ export const ricLenses: RICLens[] = [
   { id: 'pattern', name: 'Padrão Recorrente', description: 'Temas ou dores que se repetem em múltiplos contextos', icon: 'M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z' }
 ];
 
-export const ricMotorComponents: RICAnalysisBlock[] = [
+export const nicMotorComponents: NICAnalysisBlock[] = [
   {
     title: 'Cruzamento Semântico',
     items: ['Análise de termos comuns entre documentos', 'Identificação de proximidade de temas', 'Mapeamento de citações indiretas']
@@ -58,7 +58,7 @@ export const ricMotorComponents: RICAnalysisBlock[] = [
   }
 ];
 
-export const ricStrategicOutputs: RICAnalysisBlock[] = [
+export const nicStrategicOutputs: NICAnalysisBlock[] = [
   {
     title: 'Conexões Principais',
     items: ['Genealogia de ideias (de onde veio, para onde vai)', 'Dependências críticas entre frentes']
@@ -73,7 +73,7 @@ export const ricStrategicOutputs: RICAnalysisBlock[] = [
   }
 ];
 
-export const ricHistoryExamples = [
+export const nicHistoryExamples = [
   { id: '1', date: '2026-03-20', title: 'Análise de Sinergia: 3forB & StartyB', documents: 4, lens: 'Sinergia' },
   { id: '2', date: '2026-03-18', title: 'Mapeamento de Riscos: Infra Nuexus', documents: 3, lens: 'Risco' },
   { id: '3', date: '2026-03-15', title: 'Conexão Metodológica: GERAC & M.A.V', documents: 2, lens: 'Metodologias' }

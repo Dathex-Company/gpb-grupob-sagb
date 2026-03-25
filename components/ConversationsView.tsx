@@ -143,21 +143,21 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents, onOpenCha
   };
 
   return (
-    <div className="flex-1 h-full bg-[#FAFAFA] flex flex-col font-nunito overflow-hidden">
+    <div className="flex-1 h-full bg-gray-50 dark:bg-sagb-bg flex flex-col font-nunito transition-colors duration-300 overflow-hidden">
         {/* HEADER */}
-        <header className="h-24 px-8 md:px-12 flex flex-col justify-center border-b border-gray-100 bg-white shrink-0">
-            <h1 className="text-2xl font-black text-bitrix-nav uppercase tracking-tighter">Central de Mensagens</h1>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mt-1">Histórico de Comunicação</p>
+        <header className="h-24 px-8 md:px-12 flex flex-col justify-center border-b border-gray-100 dark:border-white/5 bg-white dark:bg-sagb-panel shrink-0 transition-colors duration-300">
+            <h1 className="text-2xl font-black text-bitrix-nav dark:text-sagb-text uppercase tracking-tighter">Central de Mensagens</h1>
+            <p className="text-[10px] font-bold text-gray-400 dark:text-sagb-muted uppercase tracking-[0.3em] mt-1">Histórico de Comunicação</p>
         </header>
 
         {/* SEARCH BAR */}
         <div className="px-8 md:px-12 py-6 shrink-0">
-            <div className="flex items-center bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm focus-within:border-bitrix-nav/30 focus-within:shadow-md transition-all">
-                <SearchIcon className="w-5 h-5 text-gray-400" />
+            <div className="flex items-center bg-white dark:bg-sagb-bg-2 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 shadow-sm focus-within:border-bitrix-nav/30 dark:focus-within:border-white/20 focus-within:shadow-md transition-all">
+                <SearchIcon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input 
                     type="text" 
                     placeholder="Pesquisar por nome ou assunto..." 
-                    className="bg-transparent text-sm font-medium text-gray-700 outline-none w-full ml-3 placeholder:text-gray-300"
+                    className="bg-transparent text-sm font-medium text-gray-700 dark:text-white outline-none w-full ml-3 placeholder:text-gray-300 dark:placeholder:text-gray-600"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -196,26 +196,26 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents, onOpenCha
                                 }
                                 onOpenChat(agent);
                             }}
-                            className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all cursor-pointer group flex items-center gap-4 animate-msg"
+                            className="bg-white dark:bg-sagb-panel p-4 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-md dark:hover:bg-sagb-bg-2 hover:border-gray-200 transition-all cursor-pointer group flex items-center gap-4 animate-msg"
                         >
                             {/* Avatar */}
                             <div className="relative shrink-0">
                                 <Avatar name={session.agentName} url={session.agentAvatar} className="w-12 h-12 rounded-xl" />
-                                <div className="absolute -bottom-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-white"></div>
+                                <div className={`absolute -bottom-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-white dark:border-[#111827]`}></div>
                             </div>
 
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-baseline mb-1">
-                                    <h3 className="text-sm font-black text-gray-800 truncate group-hover:text-bitrix-nav transition-colors">{session.agentName}</h3>
-                                    <span className="text-[10px] font-bold text-gray-400">{formatTime(session.lastMessageAt)}</span>
+                                    <h3 className="text-sm font-black text-gray-800 dark:text-white truncate group-hover:text-bitrix-nav dark:group-hover:text-indigo-400 transition-colors">{session.agentName}</h3>
+                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">{formatTime(session.lastMessageAt)}</span>
                                 </div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 truncate">{session.title}</p>
-                                <p className="text-xs text-gray-500 truncate leading-relaxed">{session.preview}</p>
+                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 truncate">{session.title}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate leading-relaxed">{session.preview}</p>
                             </div>
 
                             {/* Arrow */}
-                            <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-bitrix-nav group-hover:text-white transition-all shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-gray-50 dark:bg-sagb-bg flex items-center justify-center text-gray-300 dark:text-gray-600 group-hover:bg-bitrix-nav dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-gray-900 transition-all shrink-0">
                                 <ChevronRightIcon className="w-4 h-4" />
                             </div>
                         </div>

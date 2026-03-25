@@ -2487,6 +2487,11 @@ export const deleteDoc = async (docRef: DocRef) => {
   await restFetch(docRef.table, { method: 'DELETE', query: params });
 };
 
+export const getDocs = async (queryRef: CollectionRef | QueryRef) => {
+  const data = await runQuery(queryRef);
+  return buildCollectionSnapshot(data || [], queryRef.table);
+};
+
 // Compat Firebase Auth helpers (mantidos para o Auth.tsx)
 export const signInWithEmailAndPassword = async (_auth: typeof auth, email: string, password: string) => {
   const { data, error } = await auth.signInWithPassword({ email, password });

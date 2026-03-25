@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Agent, AgentStatus, AgentTier, BusinessUnit, ModelProvider, Venture } from '../types';
 import { Avatar } from './Avatar';
-import { BackIcon, BotIcon, CloudUploadIcon, PencilIcon, PlusIcon, SearchIcon, TrashIcon, XIcon } from './Icon';
+import { BackIcon, BotIcon, CloudUploadIcon, PencilIcon, PlusIcon, SearchIcon, TrashIcon, XIcon, CheckIcon, MailIcon, UserPlusIcon } from './Icon';
 import { auth, db } from '../services/supabase';
 import { addDoc, collection, deleteDoc, doc, Timestamp, updateDoc } from '../services/supabase';
 import { deriveOperationalStatus, getOperationalStatusLabel, isAgentOperationallyBlocked } from '../utils/agentOperational';
 import { getAgentAuthEmail, getHumanAccessStatusLabel, isHumanStructuralEntity, resolveHumanAccessStatus } from '../utils/humanIdentity';
+import { authAdminService } from '../services/authAdmin';
 
 interface AgentFactoryProps {
     onNavigateToEcosystem: () => void;
@@ -59,9 +60,8 @@ interface AgentFormState {
     preferredModel: ModelProvider | '';
     aiMentor: string;
     humanOwner: string;
-    documentCount: string;
-    startDate: string;
-    salary: string;
+    projectId: string;
+    authUserId: string;
     customFields: FormCustomField[];
 }
 
@@ -284,9 +284,8 @@ const createEmptyForm = (activeBU: BusinessUnit, ventures: Venture[]): AgentForm
     preferredModel: 'deepseek',
     aiMentor: '',
     humanOwner: '',
-    documentCount: '0',
-    startDate: '',
-    salary: '',
+    projectId: '',
+    authUserId: '',
     customFields: []
 });
 
@@ -321,11 +320,24 @@ const agentToForm = (agent: Agent, activeBU: BusinessUnit, ventures: Venture[]):
         preferredModel,
         aiMentor: agent.aiMentor || '',
         humanOwner: agent.humanOwner || '',
-        documentCount: String(agent.docCount ?? 0),
-        startDate: agent.startDate || '',
-        salary: agent.salary || '',
+        projectId: agent.projectId || '',
+        authUserId: agent.authUserId || '',
         customFields: fromCustomFieldObject(agent.customFields)
     };
+};
+
+const HelpTooltip = ({ text }: { text: string }) => {
+    return (
+        <div className="group relative ml-2 inline-flex items-center justify-center align-middle">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-3.5 w-3.5 text-gray-400 cursor-help hover:text-indigo-500 transition-colors">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+            </svg>
+            <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-50 w-56 p-2 bg-gray-900 text-white text-[10px] font-medium rounded-lg shadow-xl text-center leading-relaxed whitespace-normal break-words">
+                {text}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            </div>
+        </div>
+    );
 };
 
 const AgentFactory: React.FC<AgentFactoryProps> = ({
@@ -352,6 +364,12 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
     const [batchOrigin, setBatchOrigin] = useState('Importacao StartyB');
     const [batchVentureId, setBatchVentureId] = useState('');
     const [importFeedback, setImportFeedback] = useState('');
+    const [isAuthorizing, setIsAuthorizing] = useState(false);
+    const [authorizationResult, setAuthorizationResult] = useState<{
+        success: boolean;
+        message: string;
+        userId?: string;
+    } | null>(null);
 
     const shouldRequireEmail = useMemo(() => {
         if (form.entityType === 'HUMANO' || form.entityType === 'HIBRIDO') return true;
@@ -532,12 +550,11 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
             modelProvider: preferredModel,
             aiMentor: draft.aiMentor || undefined,
             humanOwner: draft.humanOwner || undefined,
+            projectId: draft.projectId || undefined,
+            authUserId: draft.authUserId || undefined,
             division: draft.unitName.trim() || undefined,
             sector: draft.area.trim() || undefined,
             collaboratorType: mapEntityToCollaboratorType(draft.entityType),
-            docCount: Number(draft.documentCount || 0),
-            startDate: draft.startDate || undefined,
-            salary: draft.salary || undefined,
             avatarUrl: draft.avatarUrl || undefined,
             customFields: toCustomFieldObject(draft.customFields),
             status,
@@ -734,9 +751,7 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
             preferredModel: preferredModel || (parsedStacks[0] || draft.preferredModel),
             aiMentor: readByAliases(row, ['mentor ia', 'ai_mentor']),
             humanOwner: readByAliases(row, ['responsavel humano', 'human_owner']),
-            documentCount: readByAliases(row, ['documentos vinculados', 'doc_count']) || '0',
-            startDate: readByAliases(row, ['inicio', 'start_date']),
-            salary: readByAliases(row, ['salario', 'salary']),
+            projectId: readByAliases(row, ['projeto', 'project_id']),
             customFields: []
         };
     };
@@ -791,6 +806,58 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
         }
     };
 
+    const handleAuthorizeHuman = async (agent: Agent, method: 'create' | 'invite' = 'invite') => {
+        if (isAuthorizing) return;
+        
+        setIsAuthorizing(true);
+        setAuthorizationResult(null);
+        
+        try {
+            const result = await authAdminService.authorizeHuman(agent, method);
+            
+            setAuthorizationResult(result);
+            
+            if (result.success && result.userId) {
+                // Atualizar o agente com o authUserId
+                const updatedAgent = {
+                    ...agent,
+                    authUserId: result.userId
+                };
+                
+                // Atualizar no banco de dados
+                await updateDoc(doc(db, 'agents', agent.id), {
+                    authUserId: result.userId,
+                    updatedAt: Timestamp.now(),
+                    updatedBy: (auth as any)?.currentUser?.id
+                });
+                
+                // Atualizar o formulário se estiver editando este agente
+                if (editingAgentId === agent.id && isFormOpen) {
+                    setForm(prev => ({
+                        ...prev,
+                        authUserId: result.userId
+                    }));
+                }
+                
+                // Notificar o componente pai
+                onActivate(updatedAgent);
+                
+                window.alert(`Autorização realizada com sucesso! ${result.message}`);
+            } else {
+                window.alert(`Falha na autorização: ${result.message}`);
+            }
+        } catch (error: any) {
+            console.error('Erro ao autorizar humano:', error);
+            setAuthorizationResult({
+                success: false,
+                message: error?.message || 'Erro desconhecido durante autorização'
+            });
+            window.alert(`Erro: ${error?.message || 'Falha ao autorizar humano'}`);
+        } finally {
+            setIsAuthorizing(false);
+        }
+    };
+
     const renderBadge = (label: string, tone: 'default' | 'green' | 'yellow' | 'purple' | 'gray' = 'default') => {
         const toneClass = {
             default: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -803,8 +870,8 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
     };
 
     return (
-        <div className="flex h-full flex-col overflow-hidden bg-[#F9FAFB] font-nunito">
-            <header className="flex h-20 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-8">
+        <div className="flex h-full flex-col overflow-hidden bg-gray-50 dark:bg-sagb-bg font-nunito transition-colors duration-300">
+            <header className="flex h-20 shrink-0 items-center justify-between border-b border-gray-100 dark:border-white/5 bg-white dark:bg-sagb-panel px-8 transition-colors duration-300">
                 <div className="flex items-center gap-4">
                     <button onClick={onNavigateToEcosystem} className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100">
                         <BackIcon className="h-6 w-6" />
@@ -820,23 +887,23 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                 </button>
             </header>
 
-            <div className={`grid flex-1 gap-0 overflow-hidden ${isFormOpen ? 'grid-cols-[1fr_440px]' : 'grid-cols-1'}`}>
-                <section className="flex min-w-0 flex-col overflow-hidden border-r border-gray-100 bg-white">
-                    <div className="flex flex-wrap items-end gap-3 border-b border-gray-100 px-6 py-4">
+            <div className="grid flex-1 gap-0 overflow-hidden grid-cols-1">
+                <section className="flex min-w-0 flex-col overflow-hidden bg-white dark:bg-sagb-panel transition-colors duration-300">
+                    <div className="flex flex-wrap items-end gap-3 border-b border-gray-100 dark:border-white/5 px-6 py-4">
                         <label className="relative min-w-[280px] flex-1">
                             <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                            <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Buscar por nome, area, funcao, origem..." className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-xs font-semibold text-gray-700 outline-none transition focus:border-indigo-300" />
+                            <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Buscar por nome, area, funcao, origem..." className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-sagb-bg-2 py-2.5 pl-10 pr-3 text-xs font-semibold text-gray-700 dark:text-sagb-text outline-none focus:border-indigo-300" />
                         </label>
                         <div className="grid min-w-[240px] gap-1">
                             <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Venture do lote</span>
-                            <select value={batchVentureId} onChange={(event) => setBatchVentureId(event.target.value)} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-300">
+                            <select value={batchVentureId} onChange={(event) => setBatchVentureId(event.target.value)} className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-sagb-bg-2 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-sagb-text outline-none focus:border-indigo-300">
                                 <option value="">Selecionar...</option>
                                 {ventures.map((venture) => <option key={venture.id} value={venture.id}>{venture.name}</option>)}
                             </select>
                         </div>
                         <div className="grid min-w-[220px] gap-1">
                             <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400">Origem do lote</span>
-                            <input value={batchOrigin} onChange={(event) => setBatchOrigin(event.target.value)} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-300" />
+                            <input value={batchOrigin} onChange={(event) => setBatchOrigin(event.target.value)} className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-sagb-bg-2 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-sagb-text outline-none focus:border-indigo-300" />
                         </div>
                         <input ref={batchInputRef} type="file" accept=".csv,.json" className="hidden" onChange={handleBatchFile} />
                         <button onClick={() => batchInputRef.current?.click()} disabled={isImporting} className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50">
@@ -854,8 +921,8 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
 
                     <div className="flex-1 overflow-auto">
                         <table className={`${showAdvancedColumns ? 'min-w-[1700px]' : 'min-w-[1120px]'} table-fixed border-collapse`}>
-                            <thead className="sticky top-0 z-10 bg-white shadow-sm">
-                                <tr className="border-b border-gray-100 text-left text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">
+                            <thead className="sticky top-0 z-10 bg-white dark:bg-sagb-panel shadow-sm">
+                                <tr className="border-b border-gray-100 dark:border-white/5 text-left text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">
                                     <th className="px-3 py-3">Nome</th>
                                     <th className="px-3 py-3">Tipo</th>
                                     <th className="px-3 py-3">Venture</th>
@@ -893,13 +960,13 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                                     const isBlocked = isAgentOperationallyBlocked(agent);
                                     const humanAccessStatus = resolveHumanAccessStatus(agent, authUsersByEmail, activeSessionEmail);
                                     return (
-                                        <tr key={agent.id} className={`border-b border-gray-100 text-[12px] text-gray-700 hover:bg-gray-50 ${isBlocked ? 'opacity-55' : ''}`}>
+                                        <tr key={agent.id} className={`border-b border-gray-100 dark:border-white/5 text-[12px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors ${isBlocked ? 'opacity-55' : ''}`}>
                                             <td className="px-3 py-2">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar name={agent.name} url={agent.avatarUrl} className="h-9 w-9" />
                                                     <div className="min-w-0">
-                                                        <p className="truncate text-[12px] font-bold text-gray-800">{agent.name}</p>
-                                                        <p className="truncate text-[10px] font-semibold text-gray-400">{agent.shortDescription || agent.officialRole || '-'}</p>
+                                                        <p className="truncate text-[12px] font-bold text-gray-800 dark:text-white">{agent.name}</p>
+                                                        <p className="truncate text-[10px] font-semibold text-gray-400 dark:text-gray-500">{agent.shortDescription || agent.officialRole || '-'}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -928,6 +995,20 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                                                     <button onClick={() => handleOpenEdit(agent)} className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:bg-blue-50 hover:text-blue-600" title="Editar"><PencilIcon className="h-3.5 w-3.5" /></button>
                                                     {onManageIntelligence && <button onClick={() => onManageIntelligence(agent)} className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:bg-purple-50 hover:text-purple-600" title="Status DNA"><BotIcon className="h-3.5 w-3.5" /></button>}
                                                     {onRemove && <button onClick={() => handleDelete(agent)} className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:bg-red-50 hover:text-red-600" title="Excluir"><TrashIcon className="h-3.5 w-3.5" /></button>}
+                                                    {isHumanStructuralEntity(agent) && !agent.authUserId && agent.email && (
+                                                        <button 
+                                                            onClick={() => handleAuthorizeHuman(agent, 'invite')}
+                                                            disabled={isAuthorizing}
+                                                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:bg-green-50 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            title="Autorizar Usuário"
+                                                        >
+                                                            {isAuthorizing ? (
+                                                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-green-500"></div>
+                                                            ) : (
+                                                                <UserPlusIcon className="h-3.5 w-3.5" />
+                                                            )}
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -940,52 +1021,268 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                 </section>
 
                 {isFormOpen && (
-                    <aside className="flex h-full flex-col overflow-hidden bg-[#FCFCFE]">
-                        <div className="flex items-start justify-between border-b border-gray-100 px-6 py-5">
-                            <div>
-                                <h2 className="text-lg font-black uppercase tracking-tight text-bitrix-nav">{editingAgentId ? 'Editar cadastro' : 'Novo cadastro'}</h2>
-                                <p className="mt-1 text-[11px] font-semibold text-gray-500">Quadro estrutural sem exposicao de DNA, cultura ou compliance.</p>
-                            </div>
-                            <button onClick={() => setIsFormOpen(false)} className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"><XIcon className="h-5 w-5" /></button>
-                        </div>
-                        <div className="flex-1 space-y-6 overflow-auto px-6 py-5">
-                            <section className="space-y-3">
-                                <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Identidade</h3>
-                                <div className="grid grid-cols-1 gap-3">
-                                    <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Nome *</span><input value={form.name} onChange={(e) => setFormField('name', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Tipo *</span><select value={form.entityType} onChange={(e) => handleEntityTypeChange(e.target.value as EntityType)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{ENTITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-                                        <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Origem</span><input value={form.origin} onChange={(e) => setFormField('origin', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label>
-                                    </div>
-                                    {(form.entityType === 'AGENTE') && (
-                                        <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Agente usa e-mail próprio?</span><select value={form.usesEmail ? 'sim' : 'nao'} onChange={(e) => handleUsesEmailChange(e.target.value === 'sim')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="nao">Não</option><option value="sim">Sim</option></select><p className="text-[10px] font-semibold text-gray-500">Defina se este agente terá identidade operacional por e-mail para ações externas.</p></label>
-                                    )}
-                                    {(form.entityType !== 'AGENTE' || form.usesEmail) && (
-                                        <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">E-mail {shouldRequireEmail ? '*' : ''}</span><input type="email" value={form.email} onChange={(e) => setFormField('email', e.target.value)} placeholder={form.entityType === 'AGENTE' ? 'agente@grupob.com.br' : 'humano@grupob.com.br'} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /><p className="text-[10px] font-semibold text-gray-500">{form.entityType === 'AGENTE' ? 'E-mail estrutural do agente para comunicação e operação externa.' : 'E-mail estrutural e principal da identidade humana.'}</p></label>
-                                    )}
-                                    <label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Descricao curta</span><textarea value={form.shortDescription} onChange={(e) => setFormField('shortDescription', e.target.value)} rows={2} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label>
-                                    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
-                                        <Avatar name={form.name || 'Novo Cadastro'} url={form.avatarUrl} className="h-12 w-12" />
-                                        <div className="min-w-0 flex-1"><p className="truncate text-xs font-bold text-gray-700">Avatar / Foto</p><p className="truncate text-[10px] font-semibold text-gray-400">Imagem publica para visualizacao de lista</p></div>
-                                        <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-                                        <button onClick={() => avatarInputRef.current?.click()} className="rounded-lg border border-gray-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-600 transition hover:bg-gray-50">Selecionar</button>
-                                    </div>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-200">
+                        <div className="flex h-full max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] bg-white dark:bg-sagb-panel shadow-2xl transition-colors duration-300">
+                            <div className="flex items-start justify-between border-b border-gray-100 dark:border-white/5 px-8 py-6 bg-gray-50/50 dark:bg-sagb-bg-2 transition-colors duration-300">
+                                <div>
+                                    <h2 className="text-xl font-black uppercase tracking-tight text-bitrix-nav dark:text-sagb-text">{editingAgentId ? 'Editar cadastro' : 'Novo cadastro'}</h2>
+                                    <p className="mt-1 text-[11px] font-semibold text-gray-500">Quadro estrutural sem exposição de DNA, cultura ou compliance.</p>
                                 </div>
-                            </section>
-                            <section className="space-y-3"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Estrutura organizacional</h3><div className="grid grid-cols-1 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Venture *</span><select value={form.ventureId} onChange={(e) => setFormField('ventureId', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{ventures.map((venture) => <option key={venture.id} value={venture.id}>{venture.name}</option>)}</select></label><div className="grid grid-cols-2 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Unidade</span><input value={form.unitName} onChange={(e) => setFormField('unitName', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Area</span><input value={form.area} onChange={(e) => setFormField('area', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label></div><div className="grid grid-cols-2 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Funcao principal *</span><input value={form.functionName} onChange={(e) => setFormField('functionName', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Cargo-base (taxonomia)</span><input value={form.baseRoleUniversal} onChange={(e) => setFormField('baseRoleUniversal', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label></div><div className="grid grid-cols-2 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Nivel</span><select value={form.level} onChange={(e) => setFormField('level', e.target.value as AgentTier)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{LEVEL_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Papel de atuacao</span><select value={form.roleType} onChange={(e) => setFormField('roleType', e.target.value as RoleType)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{ROLE_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div></div></section>
-                            <section className="space-y-3"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Status</h3><div className="grid grid-cols-1 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status estrutural</span><select value={form.structuralStatus} onChange={(e) => setFormField('structuralStatus', e.target.value as StructuralStatus)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{STRUCTURAL_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><p className="text-[10px] font-semibold text-gray-500">{STRUCTURAL_STATUS_IMPACT[form.structuralStatus]}</p></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status operacional</span><select value={form.operationalStatus} onChange={(e) => setFormField('operationalStatus', e.target.value as OperationalStatus)} disabled={form.dnaStatus !== 'DNA_COMPLETO'} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300 disabled:bg-gray-100 disabled:text-gray-400">{OPERATIONAL_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><p className="text-[10px] font-semibold text-gray-500">{form.dnaStatus === 'DNA_COMPLETO' ? 'Com DNA válido, o agente pode ficar disponível ou ativo.' : 'Sem DNA válido, o agente permanece estrutural e bloqueado para operação.'}</p></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Ativacao operacional</span><select value={form.operationalActivation} onChange={(e) => setFormField('operationalActivation', e.target.value as OperationalActivation)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{OPERATIONAL_ACTIVATION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status DNA (indicador de cadastro)</span><select value={form.dnaStatus} onChange={(e) => setFormField('dnaStatus', e.target.value as DnaStatus)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{DNA_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div></section>
-                            <section className="space-y-3"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Operacao</h3><div className="grid grid-cols-1 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Classe operacional</span><select value={form.operationalClass} onChange={(e) => setFormField('operationalClass', e.target.value as OperationalClass)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{OPERATIONAL_CLASS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><div className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Stack permitida (multiplos)</span><div className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 bg-white p-2">{STACK_OPTIONS.map((option) => (<label key={option.value} className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"><input type="checkbox" checked={form.allowedStacks.includes(option.value)} onChange={() => toggleStack(option.value)} className="h-3.5 w-3.5" />{option.label}</label>))}</div></div><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Modelo preferencial</span><select value={form.preferredModel} onChange={(e) => setFormField('preferredModel', e.target.value as ModelProvider | '')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{STACK_OPTIONS.filter((option) => form.allowedStacks.includes(option.value)).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div></section>
-                            <section className="space-y-3"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Vinculos e documentos</h3><div className="grid grid-cols-1 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Mentor IA</span><select value={form.aiMentor} onChange={(e) => setFormField('aiMentor', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{mentorCandidates.map((candidate) => <option key={candidate.id} value={candidate.name}>{candidate.name}</option>)}</select></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Responsavel humano</span><select value={form.humanOwner} onChange={(e) => setFormField('humanOwner', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{mentorCandidates.map((candidate) => <option key={candidate.id} value={candidate.name}>{candidate.name}</option>)}</select></label><div className="grid grid-cols-3 gap-3"><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Documentos vinculados</span><input type="number" min="0" value={form.documentCount} onChange={(e) => setFormField('documentCount', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Inicio</span><input type="date" value={form.startDate} onChange={(e) => setFormField('startDate', e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label><label className="space-y-1"><span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Salario</span><input value={form.salary} onChange={(e) => setFormField('salary', e.target.value)} placeholder="R$ 0,00" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /></label></div></div></section>
-                            <section className="space-y-3"><div className="flex items-center justify-between"><h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Campos customizados</h3><button onClick={addCustomField} className="rounded-lg border border-gray-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-gray-600 hover:bg-gray-50">+ Campo</button></div><div className="space-y-2">{form.customFields.length === 0 && <p className="rounded-lg border border-dashed border-gray-200 px-3 py-3 text-[11px] font-semibold text-gray-400">Nenhum campo customizado adicionado.</p>}{form.customFields.map((field, index) => (<div key={`${index}-${field.key}`} className="grid grid-cols-[1fr_1fr_auto] gap-2"><input value={field.key} onChange={(e) => upsertCustomField(index, { key: e.target.value })} placeholder="Chave" className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /><input value={field.value} onChange={(e) => upsertCustomField(index, { value: e.target.value })} placeholder="Valor" className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" /><button onClick={() => removeCustomField(index)} className="rounded-lg border border-red-100 px-2 text-red-500 hover:bg-red-50"><XIcon className="h-4 w-4" /></button></div>))}</div></section>
-                        </div>
-                        <div className="flex shrink-0 items-center justify-between border-t border-gray-100 bg-white px-6 py-4">
-                            <p className="text-[10px] font-semibold text-gray-400">{editingAgentId ? 'Edicao de cadastro estrutural.' : 'Cadastro novo para escalar o ecossistema.'}</p>
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => setIsFormOpen(false)} className="rounded-xl border border-gray-200 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-gray-600 hover:bg-gray-50">Cancelar</button>
-                                <button onClick={handleSave} disabled={isSaving} className="rounded-xl bg-bitrix-nav px-5 py-2 text-[10px] font-black uppercase tracking-wider text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-50">{isSaving ? 'Salvando...' : 'Salvar cadastro'}</button>
+                                <button onClick={() => setIsFormOpen(false)} className="rounded-xl p-2 text-gray-400 transition hover:bg-gray-200 hover:text-gray-700"><XIcon className="h-6 w-6" /></button>
+                            </div>
+                            <div className="flex-1 space-y-8 overflow-y-auto px-8 py-6 custom-scrollbar">
+                                <section className="space-y-4">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400 border-b border-gray-100 pb-2">Identidade</h3>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Nome *<HelpTooltip text="Nome principal de apresentação na plataforma" /></span>
+                                            <input value={form.name} onChange={(e) => setFormField('name', e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-sagb-bg-2 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-sagb-text outline-none focus:border-indigo-300" />
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <label className="space-y-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Tipo *<HelpTooltip text="Define se a entidade é um Agente IA, um Humano da equipe, ou modelo Híbrido" /></span>
+                                                <select value={form.entityType} onChange={(e) => handleEntityTypeChange(e.target.value as EntityType)} className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1F2937] px-4 py-3 text-sm font-semibold text-gray-700 dark:text-white outline-none focus:border-indigo-300">{ENTITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+                                            </label>
+                                            <label className="space-y-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Origem<HelpTooltip text="Sistema, lote ou fluxo pelo qual este cadastro foi criado" /></span>
+                                                <input value={form.origin} onChange={(e) => setFormField('origin', e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1F2937] px-4 py-3 text-sm font-semibold text-gray-700 dark:text-white outline-none focus:border-indigo-300" />
+                                            </label>
+                                        </div>
+                                        {(form.entityType === 'AGENTE') && (
+                                            <label className="space-y-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Agente usa e-mail próprio?<HelpTooltip text="Agentes que interagem externamente podem precisar de uma conta de e-mail própria" /></span>
+                                                <select value={form.usesEmail ? 'sim' : 'nao'} onChange={(e) => handleUsesEmailChange(e.target.value === 'sim')} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="nao">Não</option><option value="sim">Sim</option></select>
+                                                <p className="text-[10px] font-semibold text-gray-500">Defina se este agente terá identidade operacional por e-mail para ações externas.</p>
+                                            </label>
+                                        )}
+                                        {(form.entityType !== 'AGENTE' || form.usesEmail) && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <label className="space-y-1">
+                                                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">E-mail {shouldRequireEmail ? '*' : ''}<HelpTooltip text="Obrigatório para Humanos autenticarem no sistema" /></span>
+                                                    <input type="email" value={form.email} onChange={(e) => setFormField('email', e.target.value)} placeholder={form.entityType === 'AGENTE' ? 'agente@grupob.com.br' : 'humano@grupob.com.br'} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" />
+                                                    <p className="text-[10px] font-semibold text-gray-500">{form.entityType === 'AGENTE' ? 'E-mail estrutural para ações externas.' : 'E-mail base. O sistema usa fallback por e-mail caso não haja ID vinculado.'}</p>
+                                                </label>
+                                                {form.entityType !== 'AGENTE' && (
+                                                    <label className="space-y-1">
+                                                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">ID Real do Usuário (Supabase Auth)<HelpTooltip text="Vínculo definitivo e seguro para cruzar o Auth User com este Perfil Humano, sem depender apenas do E-mail" /></span>
+                                                        <select value={form.authUserId} onChange={(e) => setFormField('authUserId', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">
+                                                            <option value="">Não Vinculado (Fallback por E-mail)</option>
+                                                            {Object.values(authUsersByEmail).map((u) => (
+                                                                <option key={u.id} value={u.id}>{u.email} ({u.id.substring(0, 8)}...)</option>
+                                                            ))}
+                                                        </select>
+                                                        <p className="text-[10px] font-semibold text-gray-500">Selecione uma conta existente no sistema para vínculo forte.</p>
+                                                    </label>
+                                                )}
+                                            </div>
+                                        )}
+                                        {form.entityType !== 'AGENTE' && !form.authUserId && form.email && (
+                                            <div className="space-y-3 rounded-2xl border border-gray-200 bg-gray-50/50 p-4">
+                                                <h4 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-600">Autorização de Usuário</h4>
+                                                <p className="text-[10px] font-semibold text-gray-500 mb-3">Transforme este humano em um usuário autorizado do sistema com autenticação segura.</p>
+                                                
+                                                <div className="flex flex-col gap-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            onClick={() => handleAuthorizeHuman(currentEditingAgent || form, 'invite')}
+                                                            disabled={isAuthorizing || !form.email}
+                                                            className="inline-flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-green-700 transition hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            {isAuthorizing ? (
+                                                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-green-500"></div>
+                                                            ) : (
+                                                                <MailIcon className="h-3.5 w-3.5" />
+                                                            )}
+                                                            Enviar Convite por E-mail
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleAuthorizeHuman(currentEditingAgent || form, 'create')}
+                                                            disabled={isAuthorizing || !form.email}
+                                                            className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            {isAuthorizing ? (
+                                                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-500"></div>
+                                                            ) : (
+                                                                <UserPlusIcon className="h-3.5 w-3.5" />
+                                                            )}
+                                                            Criar Usuário com Senha
+                                                        </button>
+                                                    </div>
+                                                    
+                                                    {authorizationResult && (
+                                                        <div className={`rounded-xl border p-3 text-[11px] font-semibold ${authorizationResult.success ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
+                                                            {authorizationResult.message}
+                                                            {authorizationResult.userId && (
+                                                                <div className="mt-1 text-[10px] font-medium text-gray-600">
+                                                                    ID do usuário: {authorizationResult.userId.substring(0, 8)}...
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className="text-[10px] font-medium text-gray-500 space-y-1">
+                                                        <p><strong>Enviar Convite:</strong> Mais seguro. O usuário recebe um e-mail para configurar sua própria senha.</p>
+                                                        <p><strong>Criar Usuário:</strong> Cria uma conta imediatamente com senha gerada automaticamente.</p>
+                                                        <p className="text-[9px] font-bold text-gray-400">Após autorização, o campo "ID Real do Usuário" será preenchido automaticamente.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Descrição curta<HelpTooltip text="Resumo rápido visível nas listas e headers do chat" /></span>
+                                            <textarea value={form.shortDescription} onChange={(e) => setFormField('shortDescription', e.target.value)} rows={2} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" />
+                                        </label>
+                                        <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-gray-50/50 dark:bg-sagb-bg-2 p-4 transition-colors">
+                                            <Avatar name={form.name || 'Novo Cadastro'} url={form.avatarUrl} className="h-16 w-16 shadow-md" />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-bold text-gray-800 dark:text-white">Avatar / Foto <HelpTooltip text="A foto aparecerá nos chats e no sistema para Humanos e Agentes" /></p>
+                                                <p className="truncate text-[10px] font-semibold text-gray-500 dark:text-gray-400">Imagem pública para visualização de lista</p>
+                                            </div>
+                                            <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                                            <button onClick={() => avatarInputRef.current?.click()} className="rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-sagb-panel px-4 py-2 text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 shadow-sm transition hover:bg-gray-50 dark:hover:bg-white/10">Alterar Foto</button>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section className="space-y-4">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400 border-b border-gray-100 pb-2">Estrutura organizacional</h3>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Venture *<HelpTooltip text="A qual negócio/venture o agente/humano pertence principalmente" /></span>
+                                            <select value={form.ventureId} onChange={(e) => setFormField('ventureId', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{ventures.map((venture) => <option key={venture.id} value={venture.id}>{venture.name}</option>)}</select>
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <label className="space-y-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Unidade<HelpTooltip text="Departamento ou divisão interna" /></span>
+                                                <input value={form.unitName} onChange={(e) => setFormField('unitName', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" />
+                                            </label>
+                                            <label className="space-y-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Área<HelpTooltip text="Setor específico de atuação" /></span>
+                                                <input value={form.area} onChange={(e) => setFormField('area', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" />
+                                            </label>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <label className="space-y-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Função principal *<HelpTooltip text="O cargo ou função oficial que será listado" /></span>
+                                                <input value={form.functionName} onChange={(e) => setFormField('functionName', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" />
+                                            </label>
+                                            <label className="space-y-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Cargo-base (taxonomia)<HelpTooltip text="Mapeamento universal para cruzamento de dados" /></span>
+                                                <input value={form.baseRoleUniversal} onChange={(e) => setFormField('baseRoleUniversal', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" />
+                                            </label>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <label className="space-y-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Nível<HelpTooltip text="O nível hierárquico define como o motor trata a autoridade desta entidade" /></span>
+                                                <select value={form.level} onChange={(e) => setFormField('level', e.target.value as AgentTier)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{LEVEL_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+                                            </label>
+                                            <label className="space-y-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Papel de atuação<HelpTooltip text="A natureza primária das entregas" /></span>
+                                                <select value={form.roleType} onChange={(e) => setFormField('roleType', e.target.value as RoleType)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{ROLE_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section className="space-y-4">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400 border-b border-gray-100 pb-2">Status</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status estrutural<HelpTooltip text="O status macro de ciclo de vida do cadastro" /></span>
+                                            <select value={form.structuralStatus} onChange={(e) => setFormField('structuralStatus', e.target.value as StructuralStatus)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{STRUCTURAL_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+                                            <p className="text-[10px] font-semibold text-gray-500">{STRUCTURAL_STATUS_IMPACT[form.structuralStatus]}</p>
+                                        </label>
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status DNA (indicador)<HelpTooltip text="Reflete a situação atual do DNA na Governança. Se não estiver completo, o operacional ficará bloqueado." /></span>
+                                            <select value={form.dnaStatus} onChange={(e) => setFormField('dnaStatus', e.target.value as DnaStatus)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{DNA_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+                                        </label>
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Status operacional<HelpTooltip text="Disponibilidade real para uso nas interfaces de orquestração" /></span>
+                                            <select value={form.operationalStatus} onChange={(e) => setFormField('operationalStatus', e.target.value as OperationalStatus)} disabled={form.dnaStatus !== 'DNA_COMPLETO'} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300 disabled:bg-gray-100 disabled:text-gray-400">{OPERATIONAL_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+                                            <p className="text-[10px] font-semibold text-gray-500">{form.dnaStatus === 'DNA_COMPLETO' ? 'Com DNA válido, pode operar.' : 'Sem DNA válido, operação bloqueada.'}</p>
+                                        </label>
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Ativação operacional<HelpTooltip text="Regra que dita como o agente acorda" /></span>
+                                            <select value={form.operationalActivation} onChange={(e) => setFormField('operationalActivation', e.target.value as OperationalActivation)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{OPERATIONAL_ACTIVATION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+                                        </label>
+                                    </div>
+                                </section>
+
+                                <section className="space-y-4">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400 border-b border-gray-100 pb-2">Operação</h3>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Classe operacional<HelpTooltip text="Determina SLAs de resposta, prioridade de processamento e recursos dedicados" /></span>
+                                            <select value={form.operationalClass} onChange={(e) => setFormField('operationalClass', e.target.value as OperationalClass)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">{OPERATIONAL_CLASS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+                                        </label>
+                                        <div className="space-y-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Stack permitida (múltiplos)<HelpTooltip text="Quais motores/modelos de IA esta entidade está autorizada a utilizar" /></span>
+                                            <div className="flex flex-wrap gap-2 rounded-xl border border-gray-200 bg-white p-3">
+                                                {STACK_OPTIONS.map((option) => (
+                                                    <label key={option.value} className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-200 transition-all">
+                                                        <input type="checkbox" checked={form.allowedStacks.includes(option.value)} onChange={() => toggleStack(option.value)} className="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500" />
+                                                        {option.label}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Modelo preferencial<HelpTooltip text="O modelo padrão escolhido caso o orquestrador não force uma stack específica" /></span>
+                                            <select value={form.preferredModel} onChange={(e) => setFormField('preferredModel', e.target.value as ModelProvider | '')} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Selecionar...</option>{STACK_OPTIONS.filter((option) => form.allowedStacks.includes(option.value)).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+                                        </label>
+                                    </div>
+                                </section>
+
+                                <section className="space-y-4">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400 border-b border-gray-100 pb-2">Governança e Responsabilidade</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Mentor IA<HelpTooltip text="Agente responsável por on-boarding e correção deste agente" /></span>
+                                            <select value={form.aiMentor} onChange={(e) => setFormField('aiMentor', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Nenhum...</option>{mentorCandidates.map((candidate) => <option key={candidate.id} value={candidate.name}>{candidate.name}</option>)}</select>
+                                        </label>
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Responsável humano<HelpTooltip text="O humano do time responsável por auditar o DNA e comportamento desta entidade" /></span>
+                                            <select value={form.humanOwner} onChange={(e) => setFormField('humanOwner', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300"><option value="">Nenhum...</option>{mentorCandidates.filter((c) => isHumanStructuralEntity(c)).map((candidate) => <option key={candidate.id} value={candidate.name}>{candidate.name}</option>)}</select>
+                                        </label>
+                                    </div>
+                                </section>
+
+                                <section className="space-y-4">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400 border-b border-gray-100 pb-2">Integração Operacional</h3>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <label className="space-y-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Projeto Vinculado (Opcional)<HelpTooltip text="Vincula a entidade nativamente a um projeto no sistema para roteamento de memória" /></span>
+                                            <input value={form.projectId} onChange={(e) => setFormField('projectId', e.target.value)} placeholder="ID ou Nome do Projeto" className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" />
+                                        </label>
+                                    </div>
+                                </section>
+
+                                <section className="space-y-4 pb-10">
+                                    <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                        <h3 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Campos customizados</h3>
+                                        <button onClick={addCustomField} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-600 shadow-sm transition hover:bg-gray-50">+ Campo</button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {form.customFields.length === 0 && <p className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-4 py-4 text-center text-[11px] font-semibold text-gray-400">Nenhum campo customizado adicionado.</p>}
+                                        {form.customFields.map((field, index) => (
+                                            <div key={`${index}-${field.key}`} className="flex items-center gap-3">
+                                                <input value={field.key} onChange={(e) => upsertCustomField(index, { key: e.target.value })} placeholder="Chave" className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" />
+                                                <input value={field.value} onChange={(e) => upsertCustomField(index, { value: e.target.value })} placeholder="Valor" className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300" />
+                                                <button onClick={() => removeCustomField(index)} className="rounded-xl border border-red-100 bg-red-50 p-3 text-red-500 transition hover:bg-red-500 hover:text-white"><TrashIcon className="h-4 w-4" /></button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            </div>
+                            <div className="flex shrink-0 items-center justify-between border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-sagb-bg-2 px-8 py-5 transition-colors">
+                                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{editingAgentId ? 'Edicao de cadastro estrutural.' : 'Cadastro novo para escalar o ecossistema.'}</p>
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => setIsFormOpen(false)} className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-sagb-panel px-5 py-2.5 text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-white/10 transition-all">Cancelar</button>
+                                    <button onClick={handleSave} disabled={isSaving} className="rounded-xl bg-bitrix-nav px-6 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md hover:bg-black hover:shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50">{isSaving ? 'Salvando...' : 'Salvar cadastro'}</button>
+                                </div>
                             </div>
                         </div>
-                    </aside>
+                    </div>
                 )}
             </div>
         </div>

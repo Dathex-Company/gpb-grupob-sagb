@@ -24,6 +24,7 @@
       // 🟢 [4] CONFIGURAÇÃO GLOBAL DO TAILWIND (INLINE)
       // 🟢 Tudo aqui impacta o sistema inteiro
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
@@ -36,16 +37,41 @@
             colors: {
               // 🟢 [4.3] PALETA DE CORES CUSTOMIZADA DO SISTEMA
               bitrix: {
-                nav: '#111827', // Dark Gray (Quase preto, mais elegante que Teal)
-                accent: '#7C3AED', // Vivid Violet (Moderno)
-                text: '#1F2937', // Gray 800
+                nav: '#111827',
+                accent: '#7C3AED',
+                text: '#1F2937',
                 secondary: '#6B7280',
                 border: '#E5E7EB',
                 surface: '#FFFFFF'
+              },
+              // [4.4] SAGB OFFICIAL TOKENS (CSS VARIABLES)
+              sagb: {
+                bg: 'var(--sagb-bg)',
+                'bg-2': 'var(--sagb-bg-2)',
+                panel: 'var(--sagb-panel)',
+                'panel-2': 'var(--sagb-panel-2)',
+                line: 'var(--sagb-line)',
+                text: 'var(--sagb-text)',
+                muted: 'var(--sagb-muted)',
+                blue: 'var(--sagb-blue)',
+                'blue-2': 'var(--sagb-blue-2)',
+                green: 'var(--sagb-green)',
+                amber: 'var(--sagb-amber)',
+                red: 'var(--sagb-red)',
               }
             },
+            backgroundImage: {
+              'gradient-panels': 'var(--sagb-gradient-panels)',
+              'gradient-brand': 'var(--sagb-gradient-brand)',
+              'gradient-menu-active': 'var(--sagb-gradient-menu-active)',
+              'gradient-search': 'linear-gradient(180deg, #20242b, #1f2329)',
+              'gradient-button': 'linear-gradient(180deg, #262a31, #23272e)',
+              'gradient-tag': 'linear-gradient(180deg, #20242a, #1e2228)',
+              'gradient-switch-off': 'linear-gradient(180deg, #23262d, #1f2329)',
+              'gradient-switch-on': 'linear-gradient(180deg, #0d67c5, #0a84ff)',
+              'gradient-switch-handle': 'linear-gradient(180deg, #fbfcff, #d8dfeb)',
+            },
             boxShadow: {
-              // 🟢 [4.4] SOMBRAS CUSTOMIZADAS REUTILIZÁVEIS
               'soft': '0 2px 10px rgba(0, 0, 0, 0.03)',
               'hover': '0 20px 40px rgba(0, 0, 0, 0.04)',
             }
@@ -54,20 +80,63 @@
       }
     </script>
     <style>
+      :root {
+        /* Light Mode Defaults */
+        --sagb-bg: #F9FAFB;
+        --sagb-bg-2: #F3F4F6;
+        --sagb-panel: #FFFFFF;
+        --sagb-panel-2: #F9FAFB;
+        --sagb-line: rgba(0,0,0,.05);
+        --sagb-text: #1F2937;
+        --sagb-muted: #6B7280;
+        --sagb-blue: #3B82F6;
+        --sagb-blue-2: #2563EB;
+        --sagb-green: #10B981;
+        --sagb-amber: #F59E0B;
+        --sagb-red: #EF4444;
+
+        --sagb-gradient-panels: linear-gradient(180deg, #FFFFFF, #F9FAFB);
+        --sagb-gradient-brand: linear-gradient(135deg, #3B82F6, #2563EB);
+        --sagb-gradient-menu-active: linear-gradient(180deg, #EFF6FF, #DBEAFE);
+      }
+
+      .dark {
+        --sagb-bg: #1b1d22;
+        --sagb-bg-2: #202329;
+        --sagb-panel: #24272e;
+        --sagb-panel-2: #292d35;
+        --sagb-line: rgba(255,255,255,.04);
+        --sagb-text: #edf2fb;
+        --sagb-muted: #96a0ae;
+        --sagb-blue: #0a84ff;
+        --sagb-blue-2: #005fcc;
+        --sagb-green: #32d17d;
+        --sagb-amber: #f5a623;
+        --sagb-red: #ff5a5f;
+        
+        --sagb-gradient-panels: linear-gradient(180deg, #24272e, #292d35);
+        --sagb-gradient-brand: linear-gradient(135deg, #0a84ff, #005fcc);
+        --sagb-gradient-menu-active: linear-gradient(180deg, #1d3558, #17304f);
+      }
+
       /* 🟢 [5] ESTILO GLOBAL DA BARRA DE SCROLL */
       ::-webkit-scrollbar { width: 6px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
-      ::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
       
       /* 🟢 [6] ESTILOS GLOBAIS DO BODY (APLICA NA APP INTEIRA) */
-      /* 🟢 Aqui é o ponto principal para trocar fonte global manualmente */
       body { 
         font-family: 'Inter', sans-serif;
         -webkit-font-smoothing: antialiased; 
         -moz-osx-font-smoothing: grayscale;
-        background-color: #F9FAFB; /* Gray 50 - Pure Clean Base */
-        color: #1F2937;
+        background-color: var(--sagb-bg);
+        color: var(--sagb-text);
+        background-image: 
+          radial-gradient(circle at 10% 10%, rgba(10,132,255,0.16) 0%, transparent 40%),
+          radial-gradient(circle at 90% 90%, rgba(10,132,255,0.07) 0%, transparent 40%),
+          linear-gradient(180deg, #1a1c21 0%, #16181d 100%);
+        background-attachment: fixed;
       }
 
       /* 🟢 [7] ANIMAÇÃO PADRÃO DE ENTRADA DE MENSAGENS/CARDS */
@@ -93,6 +162,83 @@
       input:focus, textarea:focus, select:focus {
         box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
       }
+
+      /* 🟢 [10] ESTILOS DE FALLBACK PARA O COMPONENTE AUTH */
+      /* 🟢 Garante que o componente de login seja visível mesmo se o Tailwind falhar */
+      .auth-fallback {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f9fafb;
+        padding: 1.5rem;
+      }
+      .auth-fallback.dark {
+        background-color: #0b0f19;
+      }
+      .auth-card {
+        width: 100%;
+        max-width: 28rem;
+        background-color: white;
+        border-radius: 2.5rem;
+        padding: 2.5rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+      }
+      .auth-card.dark {
+        background-color: #24272e;
+        border-color: rgba(255, 255, 255, 0.05);
+      }
+      .auth-title {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: #111827;
+        margin-bottom: 0.5rem;
+        text-align: center;
+      }
+      .auth-title.dark {
+        color: #edf2fb;
+      }
+      .auth-input {
+        width: 100%;
+        background-color: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        padding: 1rem 1.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        outline: none;
+        margin-bottom: 1rem;
+      }
+      .auth-input.dark {
+        background-color: #202329;
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #edf2fb;
+      }
+      .auth-input:focus {
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+      }
+      .auth-button {
+        width: 100%;
+        background-color: #111827;
+        color: white;
+        font-weight: 900;
+        padding: 1rem;
+        border-radius: 1rem;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+      }
+      .auth-button:hover {
+        background-color: #1f2937;
+      }
+      .auth-button:active {
+        transform: scale(0.98);
+      }
     </style>
   <script type="importmap">
 {
@@ -111,8 +257,42 @@
 </head>
   <!-- 🟢 [10] CLASSES BASE DO BODY VIA TAILWIND -->
   <!-- 🟢 h-screen/overflow-hidden/bg/text controlam o layout base da aplicação -->
-  <body class="h-screen overflow-hidden bg-gray-50 text-gray-900">
+  <body class="h-screen overflow-hidden bg-gray-50 text-gray-900 dark:bg-[#0B0F19] dark:text-white transition-colors duration-300">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
+  <script>
+    // Script de diagnóstico para verificar carregamento do Tailwind
+    window.addEventListener('load', function() {
+      console.log('Página carregada - verificando Tailwind...');
+      
+      // Verifica se o Tailwind está carregado
+      setTimeout(function() {
+        const testElement = document.createElement('div');
+        testElement.className = 'hidden';
+        document.body.appendChild(testElement);
+        
+        const computedStyle = window.getComputedStyle(testElement);
+        const displayValue = computedStyle.display;
+        
+        console.log('Teste Tailwind:', {
+          displayValue: displayValue,
+          tailwindLoaded: displayValue === 'none',
+          bodyClasses: document.body.className,
+          rootElement: document.getElementById('root') ? 'present' : 'missing'
+        });
+        
+        document.body.removeChild(testElement);
+        
+        // Verifica se há erros no console
+        if (typeof tailwind === 'undefined') {
+          console.error('Tailwind não carregado via CDN!');
+          // Aplica estilos de fallback
+          document.body.classList.add('auth-fallback');
+        } else {
+          console.log('Tailwind carregado com sucesso');
+        }
+      }, 1000);
+    });
+  </script>
 </body>
 </html>

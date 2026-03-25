@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback, Suspense } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { SendIcon, MicIcon, StopCircleIcon, PaperclipIcon, XIcon, FileTextIcon } from './components/Icon';
 import Sidebar from './components/Sidebar';
@@ -23,11 +23,12 @@ import CIDView from './components/CIDView';
 import ContinuousMemoryView from './components/ContinuousMemoryView';
 import MonitoramentoView from './components/MonitoramentoView';
 import NAGIView from './components/NAGIView';
-import RICView from './components/RICView';
 import UnitView from './components/UnitView';
 import ConversationsView from './components/ConversationsView';
 import Auth from './components/Auth'; // NOVA IMPORTAÇÃO
-import { Message, Sender, TabId, Agent, Topic, Venture, BusinessUnit, BusinessBlueprint, Task, UserProfile, GovernanceCulture, ComplianceRule, VaultItem, KnowledgeNode, WorkspaceMember, AgentQualityEvent, AgentDnaProfile, AgentDnaEffective } from './types';
+import { getModuleRoutes } from './src/core/modules/moduleRegistry';
+import { Message, Sender, TabId, Agent, Topic, Venture, BusinessUnit, BusinessBlueprint, Task, UserProfile, GovernanceCulture, ComplianceRule, VaultItem, KnowledgeNode, WorkspaceMember, AgentQualityEvent, AgentDnaProfile, AgentDnaEffective, AppUiPrefs } from './types';
+import { useTheme } from './src/core/context/ThemeContext';
 import {
   sendMessageStream,
   startMainSession,
@@ -45,12 +46,6 @@ import { appendMessage, createSession, findLatestSession, loadSessionMessages, t
 
 // --- CONFIGURAÇÃO DE VERSÃO E PERSISTÊNCIA ---
 //const APP_VERSION = "1.8.1"; // VERSÃO FIXA (RESTORED)
-type AppUiPrefs = {
-  navTab?: TabId;
-  navBuId?: string;
-  customUnits?: BusinessUnit[];
-  audacusGatewayByBu?: Record<string, string>;
-};
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 // O projeto usa IDs "uuid-like" sintéticos em alguns workspaces legados.
@@ -153,6 +148,7 @@ const getTierRank = (tier?: string | null) => {
 
 const App: React.FC = () => {
   const version = metadata.version;
+  const { theme, setTheme } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -245,8 +241,8 @@ const App: React.FC = () => {
   }, [userProfile]);
 
   const authenticatedUserProfile = useMemo(
-    () => resolveAuthenticatedUserProfile(user, userProfile),
-    [user, userProfile]
+    () => resolveAuthenticatedUserProfile(user, userProfile, activatedAgents),
+    [user, userProfile, activatedAgents]
   );
 
   const authUsersByEmail = useMemo(() => {
@@ -364,6 +360,7 @@ const App: React.FC = () => {
 
   // --- VERIFICAÇÃO DE LOGIN SUPABASE ---
   useEffect(() => {
+    console.log('App: Iniciando verificação de autenticação...');
 
 // Helpers locais para migração Firebase -> Supabase
 const getUserId = (u: any): string | null => (u && ((u as any).id || (u as any).uid)) || null;
@@ -385,53 +382,64 @@ const asDate = (v: any): Date | undefined => {
     let unsubscribeUsers: (() => void) | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      console.log('App: onAuthStateChanged chamado, usuário:', currentUser ? 'presente' : 'ausente');
       setUser(currentUser);
 
       if (currentUser) {
-// Buscar perfil no banco de dados (public.users). Se não existir ainda, seguimos com um fallback.
-const userId = getUserId(currentUser);
-if (userId) {
-  unsubscribeProfile = onSnapshot(
-    doc(db, "users", userId),
-    (snapshot) => {
-      if (snapshot.exists()) {
-        setUserProfile(snapshot.data() as UserProfile);
-      } else {
-        // Perfil ainda não criado em public.users
-        setUserProfile({
-          uid: userId,
-          email: (currentUser as any)?.email || '',
-          name: '',
-          nickname: '',
-          role: 'member',
-          avatarUrl: '',
-          company: 'GrupoB',
-          tier: 'TÁTICO',
-          createdAt: new Date()
-        } as any);
-      }
-      setIsInitializing(false);
-    },
-    (err) => {
-      console.error("Erro ao carregar perfil (public.users):", err);
-      setUserProfile({
-        uid: userId,
-        email: (currentUser as any)?.email || '',
-        name: '',
-        nickname: '',
-        role: 'member',
-        avatarUrl: '',
-        company: 'GrupoB',
-        tier: 'TÁTICO',
-        createdAt: new Date()
-      } as any);
-      setIsInitializing(false);
-    }
-  );
-} else {
-  setUserProfile(null);
-  setIsInitializing(false);
-}// V1.4.0 - Sincronização de Pautas (Topics)
+        console.log('App: Usuário autenticado:', { 
+          id: getUserId(currentUser),
+          email: (currentUser as any)?.email 
+        });
+        
+        // Buscar perfil no banco de dados (public.users). Se não existir ainda, seguimos com um fallback.
+        const userId = getUserId(currentUser);
+        if (userId) {
+          unsubscribeProfile = onSnapshot(
+            doc(db, "users", userId),
+            (snapshot) => {
+              if (snapshot.exists()) {
+                console.log('App: Perfil carregado do banco de dados:', snapshot.data());
+                setUserProfile(snapshot.data() as UserProfile);
+              } else {
+                // Perfil ainda não criado em public.users
+                console.log('App: Perfil não encontrado no banco, criando fallback');
+                setUserProfile({
+                  uid: userId,
+                  email: (currentUser as any)?.email || '',
+                  name: '',
+                  nickname: '',
+                  role: 'member',
+                  avatarUrl: '',
+                  company: 'GrupoB',
+                  tier: 'TÁTICO',
+                  createdAt: new Date()
+                } as any);
+              }
+              setIsInitializing(false);
+            },
+            (err) => {
+              console.error("App: Erro ao carregar perfil (public.users):", err);
+              setUserProfile({
+                uid: userId,
+                email: (currentUser as any)?.email || '',
+                name: '',
+                nickname: '',
+                role: 'member',
+                avatarUrl: '',
+                company: 'GrupoB',
+                tier: 'TÁTICO',
+                createdAt: new Date()
+              } as any);
+              setIsInitializing(false);
+            }
+          );
+        } else {
+          console.log('App: userId não encontrado no usuário atual');
+          setUserProfile(null);
+          setIsInitializing(false);
+        }
+        
+        // V1.4.0 - Sincronização de Pautas (Topics)
         unsubscribeTopics = onSnapshot(
           query(collection(db, "topics"), orderBy("timestamp", "desc")),
           (snapshot) => {
@@ -491,6 +499,7 @@ if (userId) {
           }
         );
       } else {
+        console.log('App: Nenhum usuário autenticado, limpando estado');
         if (unsubscribeProfile) unsubscribeProfile();
         if (unsubscribeTopics) unsubscribeTopics();
         if (unsubscribeTasks) unsubscribeTasks();
@@ -505,6 +514,7 @@ if (userId) {
     });
 
     return () => {
+      console.log('App: Limpando listeners de autenticação');
       unsubscribeAuth();
       if (unsubscribeProfile) unsubscribeProfile();
       if (unsubscribeTopics) unsubscribeTopics();
@@ -569,6 +579,10 @@ if (userId) {
       if (found) setActiveBU(found);
     }
 
+    if (uiPrefs.theme && uiPrefs.theme !== theme) {
+      setTheme(uiPrefs.theme);
+    }
+
     // Não restaura navTab automaticamente para evitar corrida de navegação
     // que pode tirar o usuário do chat durante a sessão.
 
@@ -616,7 +630,8 @@ if (userId) {
     const nextPrefs: AppUiPrefs = {
       navTab: activeTab,
       navBuId: activeBU.id,
-      customUnits
+      customUnits,
+      theme
     };
     const currentPrefs = uiPrefs && typeof uiPrefs === 'object' ? uiPrefs : {};
     if (JSON.stringify(currentPrefs) === JSON.stringify({ ...currentPrefs, ...nextPrefs })) return;
@@ -1613,9 +1628,9 @@ if (userId) {
 
     if (isTransitioning) {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center bg-white">
-          <div className="w-12 h-12 rounded-xl border-4 border-gray-100 border-t-bitrix-accent animate-spin mb-4"></div>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">Sincronizando Ambiente...</p>
+        <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-[#0B0F19] transition-colors duration-300">
+          <div className="w-12 h-12 rounded-xl border-4 border-gray-100 dark:border-white/5 border-t-blue-500 animate-spin mb-4"></div>
+          <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em]">Sincronizando Ambiente...</p>
         </div>
       );
     }
@@ -1635,6 +1650,12 @@ if (userId) {
 
     // ROTA STARTYB
     if (activeBU.id === 'startyb' && activeTab === 'startyb-home') return <StartyBView activeBU={activeBU} agents={operationalAgents} onBack={handleReturnToHub} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
+
+    // Módulos Registrados Dinamicamente
+    const moduleRoutes = getModuleRoutes();
+    if (moduleRoutes[activeTab]) {
+      return moduleRoutes[activeTab].element;
+    }
 
     switch (activeTab) {
       case 'home':
@@ -1699,8 +1720,10 @@ if (userId) {
             onOpenTab={(tab) => setActiveTab(tab)}
           />
         );
-      case 'ric':
-        return <RICView onBack={() => setActiveTab('nagi')} />;
+      case 'nic':
+        // O roteamento modular cuidará disso se o ID do manifesto for 'nic', 
+        // mas mantemos o fallback aqui se necessário ou removemos se o moduleRegistry já resolver.
+        return null; 
       case 'cid':
         return (
           <CIDView
@@ -1889,9 +1912,9 @@ if (userId) {
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
-        <div className="w-12 h-12 rounded-xl border-4 border-gray-100 border-t-black animate-spin mb-4"></div>
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">Iniciando Protocolos...</p>
+      <div className="min-h-screen bg-white dark:bg-sagb-bg flex flex-col items-center justify-center transition-colors duration-300">
+        <div className="w-12 h-12 rounded-xl border-4 border-gray-100 dark:border-white/5 border-t-sagb-blue animate-spin mb-4"></div>
+        <p className="text-[10px] font-black text-gray-400 dark:text-sagb-muted uppercase tracking-[0.4em]">Iniciando Protocolos...</p>
       </div>
     );
   }
@@ -1903,7 +1926,7 @@ if (userId) {
   const safeBU = activeBU || INITIAL_BUSINESS_UNITS[0];
 
   return (
-    <div className="flex h-screen bg-violet-200 font-nunito text-bitrix-text overflow-hidden">
+    <div className="flex h-screen bg-gray-50 dark:bg-sagb-bg font-nunito text-gray-900 dark:text-sagb-text transition-colors duration-300 overflow-hidden">
       {!isImmersiveMode && (
         <Sidebar
           activeTab={activeTab}
@@ -1916,7 +1939,15 @@ if (userId) {
           userProfile={authenticatedUserProfile}
         />
       )}
-      <main className="flex-1 flex flex-col overflow-hidden relative bg-violet-100">{renderContent()}</main>
+      <main className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-sagb-bg transition-colors duration-300">
+        <Suspense fallback={
+          <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-sagb-bg">
+            <div className="w-10 h-10 border-4 border-gray-100 dark:border-white/10 border-t-sagb-blue rounded-full animate-spin"></div>
+          </div>
+        }>
+          {renderContent()}
+        </Suspense>
+      </main>
     </div>
   );
 };

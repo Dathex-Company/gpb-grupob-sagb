@@ -161,4 +161,4 @@ const useTelemetryData = (workspaceId) => {
 
 O `MonitoramentoView.tsx` é um componente sólido que serve como base excelente para um sistema de telemetria. Com as melhorias propostas, pode se tornar uma ferramenta ainda mais poderosa para monitoramento operacional do ecossistema SagB.
 
-**Recomendação**: Começar pela refatoração e otimização de performance, seguida pela implementação gradual das seções faltantes com dados reais.
+**Recomendação**: Começar pela refatoração e otimização de performance, seguida pela implementação gradual das seções faltantes com dados reais.++

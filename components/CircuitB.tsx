@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 const CircuitB: React.FC = () => {
@@ -24,7 +23,7 @@ const CircuitB: React.FC = () => {
         <div className="w-[400px] p-8 bg-white/5 border border-white/10 rounded-[40px] text-center relative group overflow-hidden animate-msg">
           <div className="absolute inset-0 bg-bitrix-accent/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
           <span className="text-[9px] font-black text-white/30 uppercase tracking-widest block mb-2">Filtro de Governança</span>
-          <h3 className="text-white font-black uppercase text-2xl tracking-tighter">CONSTITUIÇÃO GRUPOB</h2>
+          <h3 className="text-white font-black uppercase text-2xl tracking-tighter">CONSTITUIÇÃO GRUPOB</h3>
           <div className="flex justify-center gap-4 mt-4">
              {['TOM BOARDROOM', 'SECO', 'SEM ROBÔS'].map(t => (
                <span key={t} className="text-[8px] bg-white/10 text-white/60 px-2 py-1 rounded-full">{t}</span>

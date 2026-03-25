@@ -28,7 +28,7 @@ export type AgentStatus = 'PLANNED' | 'STAGING' | 'ACTIVE' | 'MAINTENANCE' | 'BL
 export type ModelProvider = 'gemini' | 'deepseek' | 'llama_local' | 'openai' | 'claude' | 'qwen'; // Opções de Cérebro
 
 // V4.2 - Adicionado 'home' como Dashboard Inicial
-export type TabId = 'home' | 'ecosystem' | 'team' | 'conversations' | 'management' | 'programmers-room' | 'redir' | 'vault' | 'fabrica-ca' | 'governance' | 'missions' | 'nagi' | 'ric' | 'cid' | 'quality' | 'intelligence-flow' | 'continuous-memory' | 'studio' | 'methodology' | 'hub' | 'alignment' | 'market' | 'sales' | 'expansion' | '3forb-home' | 'audacus-home' | 'startyb-home' | 'requests' | 'unit-room' | 'chat-room' | 'ventures' | 'monitoramento';
+export type TabId = 'home' | 'ecosystem' | 'team' | 'conversations' | 'management' | 'programmers-room' | 'redir' | 'vault' | 'fabrica-ca' | 'governance' | 'missions' | 'nagi' | 'nic' | 'rai' | 'mentorias' | 'cid' | 'quality' | 'intelligence-flow' | 'continuous-memory' | 'studio' | 'methodology' | 'hub' | 'alignment' | 'market' | 'sales' | 'expansion' | '3forb-home' | 'audacus-home' | 'startyb-home' | 'requests' | 'unit-room' | 'chat-room' | 'ventures' | 'monitoramento' | 'agenda-inteligente';
 
 export type BUType = 'CORE' | 'VENTURY' | 'PERSONAL' | 'METHODOLOGY';
 
@@ -1013,7 +1013,13 @@ export interface Agent {
   humanOwner?: string;
   email?: string;
   usesEmail?: boolean;
+  authUserId?: string; // NOVO: Vínculo forte com autenticação
   customFields?: Record<string, string>;
+
+  // V2.2 - Preparacao de Integracao (TaskZei / Memoria)
+  projectId?: string;
+  memoryLayersReady?: boolean;
+  taskzeiReady?: boolean;
 
   // V2.0 - IDENTIDADE VISUAL OBRIGATÓRIA
   avatarUrl?: string; // Base64 Image Data (Face/Rosto)
@@ -1067,4 +1073,60 @@ export interface UserProfile {
   tier: AgentTier;
   createdAt: Date;
 }
+
+export type OfficialStatus = 'Oficial' | 'Homologado' | 'Recomendado' | 'Experimental' | 'Legado' | 'Proibido';
+
+export interface OfficialProtocol {
+  id: string;
+  workspaceId: string;
+  code: string;
+  name: string;
+  family: 'GERAC-I' | 'GERAC-D' | 'GERAC-G' | 'GERAC-S' | 'GERAC-O';
+  category: string;
+  shortDescription: string;
+  fullDescription: string;
+  objective: string;
+  criticality: 'Baixa' | 'Média' | 'Alta' | 'Crítica';
+  mandatory: boolean;
+  priority: number;
+  status: OfficialStatus;
+  responsibleArea: string;
+  impactedModules: string[];
+  version: number;
+  lastReviewDate: Date;
+  isActive: boolean;
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  payload?: Record<string, any>;
+}
+
+export interface OfficialPattern {
+  id: string;
+  workspaceId: string;
+  patternType: 'Stack' | 'Design Token' | 'Fonte' | 'Paleta' | 'Componente' | 'Biblioteca' | 'Plataforma' | 'Naming' | 'Arquitetura' | 'Outro';
+  name: string;
+  category: string;
+  description: string;
+  valueOrDefinition: string;
+  status: OfficialStatus;
+  responsibleArea: string;
+  version: number;
+  lastReviewDate: Date;
+  isActive: boolean;
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  payload?: Record<string, any>;
+}
+
+export type AppUiPrefs = {
+  navTab?: TabId;
+  navBuId?: string;
+  customUnits?: BusinessUnit[];
+  audacusGatewayByBu?: Record<string, string>;
+  theme?: 'light' | 'dark';
+};
 

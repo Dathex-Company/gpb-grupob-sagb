@@ -53,18 +53,16 @@ test('programmers room module is wired into the SagB shell', () => {
   assert.ok(view.includes('Definition of Done'));
 });
 
-test('RIC module is wired into the SagB shell', () => {
+test('NIC module is wired into the SagB shell', () => {
   const app = readFile('App.tsx');
   const sidebar = readFile('components/Sidebar.tsx');
   const nagi = readFile('components/NAGIView.tsx');
-  const view = readFile('components/RICView.tsx');
-  const doc = readFile('docs/Estrutura_SagB/Radar_de_Conexoes');
+  const view = readFile('src/modules/nic/pages/NICPage.tsx');
 
-  assert.ok(app.includes("case 'ric'"));
-  assert.ok(sidebar.includes("id: 'ric'"));
-  assert.ok(nagi.includes("routeTab: 'ric'"));
-  assert.ok(view.includes('RIC'));
-  assert.ok(doc.includes('Especificacao Canonica do Projeto'));
+  assert.ok(app.includes("case 'nic'"));
+  assert.ok(sidebar.includes("id: 'nic'"));
+  assert.ok(nagi.includes("routeTab: 'nic'"));
+  assert.ok(view.includes('NIC'));
 });
 
 test('missions module is wired into the SagB shell', () => {

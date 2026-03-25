@@ -83,7 +83,7 @@ const INITIATIVES: NagiInitiative[] = [
       inputs: ['Áudio contínuo de microfone', 'Contexto da sessão, venture, projeto e sensibilidade'],
       processing: ['Chunking de 3 a 5 minutos', 'Persistência em storage', 'Transcrição por bloco', 'Timeline operacional com retry'],
       outputs: ['Áudio original por chunk', 'Transcrição estruturada', 'Jobs rastreáveis', 'Extrações iniciais e labels'],
-      integrations: ['CID', 'Fluxo de Inteligência', 'Agentes', 'Radar de Inteligência']
+      integrations: ['CID', 'Fluxo de Inteligência', 'Agentes', 'NIC']
     },
     completed: ['Captação contínua V1', 'Chunking temporal', 'Transcrição por bloco', 'Timeline do dia', 'Reprocessamento por chunk'],
     nextSteps: ['Classificação automática mais robusta', 'Resumos por sessão/manhã/tarde/dia', 'Extrações validadas por contexto', 'Leitura futura por agentes'],
@@ -216,7 +216,7 @@ const INITIATIVES: NagiInitiative[] = [
       inputs: ['Streams de câmeras IP', 'Metadados de local, tempo e contexto'],
       processing: ['Armazenamento em nuvem', 'Segmentação temporal', 'Indexação de eventos'],
       outputs: ['Clipes organizados', 'Timeline visual', 'Base para análise futura'],
-      integrations: ['CID', 'Radar de Inteligência', 'Leitura de Movimento e Presença']
+      integrations: ['CID', 'NIC', 'Leitura de Movimento e Presença']
     },
     completed: ['Escopo inicial posicionado no NAGI'],
     nextSteps: ['Definir arquitetura técnica', 'Modelar storage e retenção', 'Avaliar caminho comercial'],
@@ -268,7 +268,7 @@ const INITIATIVES: NagiInitiative[] = [
       inputs: ['Vídeos de treinamentos e apresentações', 'Contexto de sessão e gravação'],
       processing: ['Segmentação visual', 'Mapeamento de gesto e presença', 'Leitura de padrões'],
       outputs: ['Sinais comportamentais', 'Recortes multimodais', 'Base para análise futura'],
-      integrations: ['Câmeras IP com Nuvem Inteligente', 'Radar de Inteligência', 'Treinamentos']
+      integrations: ['Câmeras IP com Nuvem Inteligente', 'NIC', 'Treinamentos']
     },
     completed: ['Frente mapeada dentro do portfólio NAGI'],
     nextSteps: ['Explorar viabilidade técnica', 'Definir casos de uso prioritários', 'Modelar camada multimodal'],
@@ -327,8 +327,8 @@ const INITIATIVES: NagiInitiative[] = [
     documentsAndDecisions: ['Camada de gestão futura, não backlog bruto']
   },
   {
-    id: 'ric',
-    title: 'RIC - Radar de Inteligência Conectiva',
+    id: 'nic',
+    title: 'NIC - Núcleo de Inteligência Conectiva',
     shortDescription: 'Sistema de leitura estratégica que cruza documentos internos, encontra conexões e gera inteligência orientada a ação.',
     heroDescription: 'Motor de inteligência conectiva que encontra relações entre temas, metodologias e contextos organizacionais.',
     status: 'Em teste',
@@ -338,7 +338,7 @@ const INITIATIVES: NagiInitiative[] = [
     value: 'Lê o que o CID prepara e gera inteligência qualificada para que o NAGI governe as frentes e decisões.',
     currentStage: 'Transição da interface de blueprint para motor real de leitura estratégica interna.',
     overview: [
-      'O RIC atua como ponte inteligente entre o CID e o NAGI.',
+      'O NIC atua como ponte inteligente entre o CID e o NAGI.',
       'Sua função primária hoje é cruzar materiais internos (documentos, transcrições e memórias) aplicando lentes de leitura (riscos, oportunidades, metodologias).',
       'O objetivo é identificar padrões recorrentes, tensões e sinergias, saindo da visão isolada de documento para uma visão de conexões ativas.'
     ],
@@ -348,10 +348,10 @@ const INITIATIVES: NagiInitiative[] = [
       outputs: ['Evidências e trechos conectados', 'Saídas estratégicas (hipóteses, recomendações)', 'Memória de análise salva para histórico'],
       integrations: ['CID', 'NAGI', 'Memória Contínua', 'Hub de Ventures']
     },
-    completed: ['Evolução de Radar de Conexões para RIC', 'Estruturação base da tela orientada a motor de leitura', 'Conceito do ecossistema CID > RIC > NAGI consolidado'],
+    completed: ['Evolução de Radar de Conexões para NIC', 'Estruturação base da tela orientada a motor de leitura', 'Conceito do ecossistema CID > NIC > NAGI consolidado'],
     nextSteps: ['Implementar motor real de cruzamento de conteúdos do CID', 'Habilitar seleção múltipla de documentos', 'Integrar saídas estratégicas ao NAGI para priorização'],
-    documentsAndDecisions: ['O foco da V1 é puramente interno, sem acessar fontes externas', 'Não é apenas um mural estático, deve operar como lente ativa de leitura', 'Decidido fluxo oficial: CID prepara, RIC interpreta, NAGI governa'],
-    routeTab: 'ric',
+    documentsAndDecisions: ['O foco da V1 é puramente interno, sem acessar fontes externas', 'Não é apenas um mural estático, deve operar como lente ativa de leitura', 'Decidido fluxo oficial: CID prepara, NIC interpreta, NAGI governa'],
+    routeTab: 'nic',
     featured: true
   }
 ];

@@ -48,6 +48,11 @@ As telas abaixo foram aprovadas pelo Chairman e **NÃO DEVEM** ser alteradas em 
 
 ## 4. Histórico de Mudanças (Changelog)
 
+### [v1.7.0] - Modularização do NIC (Núcleo de Inteligência Conectiva)
+- **Nomenclatura Oficial**: O antigo módulo RIC foi oficialmente renomeado para **NIC** (Núcleo de Inteligência Conectiva). Todas as referências visuais, rotas e documentação interna foram atualizadas.
+- **Arquitetura Modular**: O módulo foi extraído para `src/modules/nic/`, seguindo o novo padrão plugável do SagB. Possui manifesto próprio, rotas independentes e estrutura preparada para extração futura.
+- **Padronização**: Alinhamento com o ecossistema `CID > NIC > NAGI`, consolidando o NIC como a camada de inteligência interpretativa e conectiva.
+
 ### [v1.6.8] - Integração do Cadastro com Governança (ET-02)
 - **Sincronização de Status de DNA**: O status do DNA do Agente no Quadro de Elite (`components/AgentFactory.tsx`) agora é atualizado automaticamente para `DNA_COMPLETO` quando um gestor finaliza a edição da identidade dele pelo Núcleo de Governança.
 - **Proteção do Pipeline**: O conteúdo real do DNA não trafega de volta para o grid de cadastro, garantindo que `agents` lide apenas com master data e `agent_dna_effective` permaneça cego para o frontend geral, mas o pipeline entenda por ID que o agente já tem instrução.

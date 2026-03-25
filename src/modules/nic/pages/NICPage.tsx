@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
-import { BackIcon, BookIcon, CheckIcon, FileTextIcon, SearchIcon, FilterIcon, ClockIcon, SaveIcon } from './Icon';
+import { BackIcon, CheckIcon, FileTextIcon, SearchIcon, FilterIcon, ClockIcon, SaveIcon } from '../../../../components/Icon';
 import {
-  ricMetrics,
-  ricLenses,
-  ricMotorComponents,
-  ricStrategicOutputs,
-  ricHistoryExamples,
-  RICLens
-} from '../data/ricBlueprint';
+  nicMetrics,
+  nicLenses,
+  nicMotorComponents,
+  nicStrategicOutputs,
+  nicHistoryExamples
+} from '../data/nicBlueprint';
 
-interface RICViewProps {
+interface NICPageProps {
   onBack?: () => void;
 }
 
-const RICView: React.FC<RICViewProps> = ({ onBack }) => {
+const NICPage: React.FC<NICPageProps> = ({ onBack }) => {
   const [selectedLens, setSelectedLens] = useState<string | null>(null);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'motor' | 'history'>('motor');
@@ -66,12 +65,12 @@ const RICView: React.FC<RICViewProps> = ({ onBack }) => {
                 )}
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-400">Módulo Interpretativo</span>
-                  <h1 className="text-4xl md:text-5xl font-black tracking-tight mt-1">RIC</h1>
+                  <h1 className="text-4xl md:text-5xl font-black tracking-tight mt-1">NIC</h1>
                 </div>
               </div>
-              <p className="text-lg text-slate-300 font-medium">Radar de Inteligência Conectiva</p>
+              <p className="text-lg text-slate-300 font-medium">Núcleo de Inteligência Conectiva</p>
               <p className="text-slate-400 leading-relaxed max-w-2xl">
-                O motor interpretativo do SagB. O RIC cruza documentos internos preparados pelo CID para encontrar conexões, padrões e oportunidades que sustentam a governança do NAGI.
+                O motor interpretativo do SagB. O NIC cruza documentos internos preparados pelo CID para encontrar conexões, padrões e oportunidades que sustentam a governança do NAGI.
               </p>
               <div className="flex items-center gap-4 pt-2">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
@@ -83,7 +82,7 @@ const RICView: React.FC<RICViewProps> = ({ onBack }) => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 min-w-[400px]">
-              {ricMetrics.map((metric) => (
+              {nicMetrics.map((metric) => (
                 <div key={metric.label} className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{metric.label}</span>
                   <div className="text-xl font-black text-cyan-100">{metric.value}</div>
@@ -159,7 +158,7 @@ const RICView: React.FC<RICViewProps> = ({ onBack }) => {
               <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
                 <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">Lente de Leitura</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {ricLenses.map(lens => (
+                  {nicLenses.map(lens => (
                     <button 
                       key={lens.id}
                       onClick={() => setSelectedLens(lens.id)}
@@ -219,7 +218,7 @@ const RICView: React.FC<RICViewProps> = ({ onBack }) => {
                 <div className="h-full flex flex-col items-center justify-center border-2 border-slate-200 rounded-[40px] p-12 text-center space-y-8 bg-white shadow-inner">
                   <div className="relative">
                     <div className="w-24 h-24 rounded-full border-4 border-slate-100 border-t-cyan-500 animate-spin" />
-                    <div className="absolute inset-0 flex items-center justify-center font-black text-cyan-600">RIC</div>
+                    <div className="absolute inset-0 flex items-center justify-center font-black text-cyan-600">NIC</div>
                   </div>
                   <div className="space-y-3">
                     <h4 className="text-2xl font-black text-slate-900 animate-pulse">Cruzando Informações</h4>
@@ -246,7 +245,7 @@ const RICView: React.FC<RICViewProps> = ({ onBack }) => {
                         <span className="bg-cyan-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">CONCLUÍDO</span>
                       </div>
                       <div className="space-y-6">
-                        {ricMotorComponents.map(block => (
+                        {nicMotorComponents.map(block => (
                           <div key={block.title} className="space-y-3">
                             <h4 className="text-xs font-black uppercase tracking-widest text-cyan-600">{block.title}</h4>
                             <div className="grid gap-2">
@@ -294,10 +293,10 @@ const RICView: React.FC<RICViewProps> = ({ onBack }) => {
                   <section className="rounded-[40px] border border-slate-200 bg-white p-10 shadow-2xl space-y-8">
                     <div className="text-center space-y-2">
                       <h3 className="text-3xl font-black text-slate-900 tracking-tight">Saídas Estratégicas</h3>
-                      <p className="text-slate-500 font-medium">Direcionamentos gerados pelo RIC para ação imediata no NAGI</p>
+                      <p className="text-slate-500 font-medium">Direcionamentos gerados pelo NIC para ação imediata no NAGI</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                      {ricStrategicOutputs.map(block => (
+                      {nicStrategicOutputs.map(block => (
                         <div key={block.title} className="space-y-4">
                           <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2">{block.title}</h4>
                           <div className="space-y-3">
@@ -337,7 +336,7 @@ const RICView: React.FC<RICViewProps> = ({ onBack }) => {
                 </div>
               </div>
               <div className="space-y-4">
-                {ricHistoryExamples.map(item => (
+                {nicHistoryExamples.map(item => (
                   <div key={item.id} className="group p-6 rounded-[24px] border border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-cyan-200 hover:bg-white transition-all hover:shadow-md">
                     <div className="flex items-start gap-5">
                       <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-cyan-500 group-hover:border-cyan-100 transition-colors">
@@ -364,4 +363,4 @@ const RICView: React.FC<RICViewProps> = ({ onBack }) => {
   );
 };
 
-export default RICView;
+export default NICPage;

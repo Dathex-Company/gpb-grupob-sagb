@@ -24,71 +24,85 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         return 'OPERACIONAL';
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-        try {
-            if (isLogin) {
-                await signInWithEmailAndPassword(auth, email, password);
-            } else {
-                if (!name || !role) {
-                    setError('Nome e Cargo são obrigatórios para novos usuários.');
-                    setLoading(false);
-                    return;
-                }
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                const userId = (user as any)?.id || (user as any)?.uid;
-
-                // CRIAR PERFIL NO BANCO DE DADOS
-                const rawUserProfile = {
-                    uid: userId,
-                    email: (user as any)?.email || '',
-                    name: name || '',
-                    nickname: (name || '').split(' ')[0] || 'User',
-                    role: role || 'Colaborador',
-                    company: 'GrupoB',
-                    tier: inferTier(role || ''),
-                    createdAt: new Date()
-                };
-
-                // Limpeza de campos undefined para evitar invalid-argument
-                const payload = Object.fromEntries(
-                    Object.entries(rawUserProfile).filter(([_, v]) => v !== undefined)
-                );
-
-                if (!userId) {
-                    throw { code: 'auth/invalid-user', message: 'Usuário criado sem ID válido.' };
-                }
-
-                await setDoc(doc(db, "users", userId), payload);
-            }
-            onAuthSuccess();
-        } catch (err: any) {
-            console.error(err);
-            if (err.code === 'auth/user-not-found') setError('Usuário não encontrado.');
-            else if (err.code === 'auth/wrong-password') setError('Senha incorreta.');
-            else if (err.code === 'auth/invalid-credentials') setError('E-mail ou senha inválidos.');
-            else if (err.code === 'auth/invalid-email') setError('E-mail inválido.');
-            else if (err.code === 'auth/email-already-in-use') setError('Este e-mail já está em uso.');
-            else if (err.code === 'auth/weak-password') setError('A senha deve ter pelo menos 6 caracteres.');
-            else if (err.code === 'auth/configuration-not-found') setError('Configuração não encontrada. Verifique se a Identity Toolkit API está ativa no Google Cloud para este projeto.');
-            else setError(`Erro ao autenticar (${err.code}). Verifique sua conexão e se o login por e-mail está ativo no Supabase.`);
-        } finally {
-            setLoading(false);
+    try {
+      console.log('Tentando autenticação com:', { email, isLogin });
+      
+      if (isLogin) {
+        console.log('Chamando signInWithEmailAndPassword...');
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        console.log('Login bem-sucedido:', result);
+      } else {
+        if (!name || !role) {
+          setError('Nome e Cargo são obrigatórios para novos usuários.');
+          setLoading(false);
+          return;
         }
-    };
+        console.log('Criando novo usuário...');
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userId = (user as any)?.id || (user as any)?.uid;
+        console.log('Usuário criado:', { userId, email: user.email });
+
+        // CRIAR PERFIL NO BANCO DE DADOS
+        const rawUserProfile = {
+          uid: userId,
+          email: (user as any)?.email || '',
+          name: name || '',
+          nickname: (name || '').split(' ')[0] || 'User',
+          role: role || 'Colaborador',
+          company: 'GrupoB',
+          tier: inferTier(role || ''),
+          createdAt: new Date()
+        };
+
+        // Limpeza de campos undefined para evitar invalid-argument
+        const payload = Object.fromEntries(
+          Object.entries(rawUserProfile).filter(([_, v]) => v !== undefined)
+        );
+
+        if (!userId) {
+          throw { code: 'auth/invalid-user', message: 'Usuário criado sem ID válido.' };
+        }
+
+        console.log('Criando perfil no banco de dados:', payload);
+        await setDoc(doc(db, "users", userId), payload);
+        console.log('Perfil criado com sucesso');
+      }
+      onAuthSuccess();
+    } catch (err: any) {
+      console.error('Erro na autenticação:', err);
+      console.error('Detalhes do erro:', err.code, err.message, err.status);
+      
+      if (err.code === 'auth/user-not-found') setError('Usuário não encontrado.');
+      else if (err.code === 'auth/wrong-password') setError('Senha incorreta.');
+      else if (err.code === 'auth/invalid-credentials') setError('E-mail ou senha inválidos.');
+      else if (err.code === 'auth/invalid-email') setError('E-mail inválido.');
+      else if (err.code === 'auth/email-already-in-use') setError('Este e-mail já está em uso.');
+      else if (err.code === 'auth/weak-password') setError('A senha deve ter pelo menos 6 caracteres.');
+      else if (err.code === 'auth/configuration-not-found') setError('Configuração não encontrada. Verifique se a Identity Toolkit API está ativa no Google Cloud para este projeto.');
+      else if (err.code === 'auth/http-400') setError('Erro de conexão com o servidor de autenticação. Verifique as credenciais.');
+      else if (err.code === 'auth/http-401') setError('Credenciais inválidas ou expiradas.');
+      else if (err.code === 'auth/http-403') setError('Acesso negado ao servidor de autenticação.');
+      else if (err.code === 'auth/http-500') setError('Erro interno do servidor de autenticação.');
+      else setError(`Erro ao autenticar (${err.code || 'desconhecido'}). Verifique sua conexão e se o login por e-mail está ativo no Supabase.`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] p-6 font-nunito">
-            <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 p-10">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-sagb-bg p-6 font-nunito transition-colors duration-300">
+            <div className="w-full max-w-md bg-white dark:bg-sagb-panel rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-white/5 p-10 transition-colors duration-300">
                 <div className="flex flex-col items-center mb-10">
-                    <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mb-6 shadow-xl">
+                    <div className="w-16 h-16 bg-black dark:bg-gradient-to-br dark:from-[#0a84ff] dark:to-[#005fcc] rounded-2xl flex items-center justify-center mb-6 shadow-xl">
                         <span className="text-white font-black text-2xl tracking-tighter">B</span>
                     </div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-2">
+                    <h1 className="text-2xl font-black text-gray-900 dark:text-sagb-text tracking-tight mb-2">
                         {isLogin ? 'Bem-vindo ao SagB' : 'Criar Nova Conta'}
                     </h1>
                     <p className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em]">
@@ -110,7 +124,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-black/5 transition-all text-sm font-medium"
+                                    className="w-full bg-gray-50 dark:bg-sagb-bg-2 border border-gray-100 dark:border-white/10 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/5 transition-all text-sm font-medium dark:text-sagb-text"
                                     placeholder="Ex: Nome Sobrenome"
                                     required
                                 />
@@ -121,7 +135,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                                     type="text"
                                     value={role}
                                     onChange={(e) => setRole(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-black/5 transition-all text-sm font-medium"
+                                    className="w-full bg-gray-50 dark:bg-sagb-bg-2 border border-gray-100 dark:border-white/10 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/5 transition-all text-sm font-medium dark:text-sagb-text"
                                     placeholder="Ex: Diretor de Operações"
                                     required
                                 />
@@ -135,7 +149,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-black/5 transition-all text-sm font-medium"
+                            className="w-full bg-gray-50 dark:bg-sagb-bg-2 border border-gray-100 dark:border-white/10 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/5 transition-all text-sm font-medium dark:text-sagb-text"
                             placeholder="seu@grupob.com.br"
                             required
                         />
@@ -147,7 +161,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-black/5 transition-all text-sm font-medium"
+                            className="w-full bg-gray-50 dark:bg-sagb-bg-2 border border-gray-100 dark:border-white/10 rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/5 transition-all text-sm font-medium dark:text-sagb-text"
                             placeholder="••••••••"
                             required
                         />

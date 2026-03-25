@@ -1,10 +1,13 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Agent, BusinessUnit, GovernanceCulture, ComplianceRule, VaultItem, KnowledgeNode } from '../types';
-import { BackIcon, BookIcon, CloudUploadIcon, CloudDownloadIcon, LockIcon, ScaleIcon, SearchIcon, FolderIcon, PlusIcon, FileTextIcon, TrashIcon, CheckIcon, XIcon } from './Icon';
+import { BackIcon, BookIcon, CloudUploadIcon, CloudDownloadIcon, LockIcon, ScaleIcon, SearchIcon, FolderIcon, PlusIcon, FileTextIcon, TrashIcon, CheckIcon, XIcon, ShieldCheckIcon, CubeIcon } from './Icon';
 
 import MethodologyView from './MethodologyView';
 import { Avatar } from './Avatar'; // IMPORTAÇÃO DO AVATAR
+import { PremiumSurface, PremiumHeader, PremiumCard, PremiumBadge, PremiumButton, PremiumInput, PremiumSelect, BadgeStatus } from './ui/Premium';
+import { OfficialProtocol, OfficialPattern } from '../types';
+import { fetchOfficialProtocols, createOfficialProtocol, updateOfficialProtocol, deleteOfficialProtocol, fetchOfficialPatterns, createOfficialPattern, updateOfficialPattern, deleteOfficialPattern } from '../services/officialBase';
 
 type VaultItemInput = {
   name: string;
@@ -50,7 +53,7 @@ interface GovernanceViewProps {
 
 
 
-type GovernanceViewMode = 'dashboard' | 'constitution' | 'backup' | 'black-vault' | 'compliance' | 'intelligence' | 'context' | 'methodology';
+type GovernanceViewMode = 'dashboard' | 'constitution' | 'backup' | 'black-vault' | 'compliance' | 'intelligence' | 'context' | 'methodology' | 'padroes' | 'protocolos';
 
 // Interface para Documento Global
 interface VaultDocument {
@@ -125,8 +128,107 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
   // Editor States
     const [cultureDraft, setCultureDraft] = useState('');
   const [complianceDraft, setComplianceDraft] = useState(''); 
+  const [padroesDraft, setPadroesDraft] = useState('stack oficial\nfront-end oficial\nback-end oficial\ndeploy oficial\nfontes\npaletas\ncomponentes\ndesign system\nnaming\nestrutura de módulos\nplataformas homologadas');
+  const [protocolos, setProtocolos] = useState<OfficialProtocol[]>([]);
+  const [padroes, setPadroes] = useState<OfficialPattern[]>([]);
   const [isSavingCulture, setIsSavingCulture] = useState(false);
   const [isSavingCompliance, setIsSavingCompliance] = useState(false);
+  const [isLoadingOfficial, setIsLoadingOfficial] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const activeWorkspaceId = cultureEntry?.workspaceId || '00000000-0000-0000-0000-000000000000'; // Default fallback
+
+  useEffect(() => {
+      if (isUnlocked && (currentView === 'dashboard' || currentView === 'protocolos' || currentView === 'padroes')) {
+          const loadOfficialData = async () => {
+              setIsLoadingOfficial(true);
+              try {
+                const [prots, pads] = await Promise.all([
+                    fetchOfficialProtocols(activeWorkspaceId),
+                    fetchOfficialPatterns(activeWorkspaceId)
+                ]);
+                setProtocolos(prots);
+                setPadroes(pads);
+              } finally {
+                setIsLoadingOfficial(false);
+              }
+          };
+          loadOfficialData();
+      }
+  }, [isUnlocked, currentView, activeWorkspaceId]);
+
+  const handleSeedInitialData = async () => {
+      setIsSeeding(true);
+      await createOfficialProtocol({
+          workspaceId: activeWorkspaceId,
+          code: 'GERAC-G01',
+          name: 'DAI (Decisão Artificial Inteligente)',
+          family: 'GERAC-G',
+          category: 'Autonomia',
+          shortDescription: 'Regula a autonomia de decisão e os limites de ação dos agentes nas interações diretas com processos core.',
+          fullDescription: 'Define até onde um agente pode atuar sem supervisão humana.',
+          objective: 'Garantir controle e segurança',
+          criticality: 'Alta',
+          mandatory: true,
+          priority: 1,
+          status: 'Oficial',
+          responsibleArea: 'Governança AI',
+          impactedModules: ['Missions', 'Studio'],
+          lastReviewDate: new Date(),
+          isActive: true
+      });
+      await createOfficialProtocol({
+          workspaceId: activeWorkspaceId,
+          code: 'GERAC-G02',
+          name: 'Rastreabilidade de Decisão',
+          family: 'GERAC-G',
+          category: 'Auditoria',
+          shortDescription: 'Garante que toda ação do sistema seja traçável até a origem da inteligência ou usuário.',
+          fullDescription: 'Mantém o log unificado e imutável de quem fez o que.',
+          objective: 'Auditoria transparente',
+          criticality: 'Crítica',
+          mandatory: true,
+          priority: 2,
+          status: 'Homologado',
+          responsibleArea: 'Governança AI',
+          impactedModules: ['Core', 'Memory'],
+          lastReviewDate: new Date(),
+          isActive: true
+      });
+      await createOfficialPattern({
+          workspaceId: activeWorkspaceId,
+          patternType: 'Stack',
+          name: 'Vite + React',
+          category: 'Frontend',
+          description: 'Framework base para todas as interfaces web do SagB',
+          valueOrDefinition: 'React 18 + Vite 6',
+          status: 'Oficial',
+          responsibleArea: 'Arquitetura',
+          lastReviewDate: new Date(),
+          isActive: true
+      });
+      await createOfficialPattern({
+          workspaceId: activeWorkspaceId,
+          patternType: 'Paleta',
+          name: 'Dark Premium',
+          category: 'UI/UX',
+          description: 'Paleta base oficial para a interface de cockpit executivo.',
+          valueOrDefinition: 'bg-[#0B0F19]',
+          status: 'Oficial',
+          responsibleArea: 'Design',
+          lastReviewDate: new Date(),
+          isActive: true
+      });
+      
+      const [prots, pads] = await Promise.all([
+          fetchOfficialProtocols(activeWorkspaceId),
+          fetchOfficialPatterns(activeWorkspaceId)
+      ]);
+      setProtocolos(prots);
+      setPadroes(pads);
+      setIsSeeding(false);
+      alert('Dados iniciais inseridos com sucesso!');
+  };
 
   // Vault State
   const [vaultSearchTerm, setVaultSearchTerm] = useState(''); 
@@ -609,75 +711,331 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
     </div>
   );
 
+  
+const DashboardCard = ({ title, desc, icon, count, updated, owner, status, onClick }: any) => {
+    return (
+        <PremiumCard onClick={onClick}>
+            <div className="flex justify-between items-start mb-4 relative z-10">
+                <div className="w-10 h-10 bg-slate-900/80 border border-slate-700 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue-400 group-hover:border-blue-500/30 transition-all">
+                    {icon}
+                </div>
+                <PremiumBadge status={status} />
+            </div>
+            
+            <div className="relative z-10 flex-1">
+                <h3 className="text-base font-bold text-slate-200 mb-1 group-hover:text-white transition-colors">{title}</h3>
+                <p className="text-[10px] text-slate-500 leading-relaxed group-hover:text-slate-400">{desc}</p>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-slate-700/50 flex justify-between items-center relative z-10">
+                <div className="flex gap-4">
+                    <div className="flex flex-col">
+                        <span className="text-[8px] uppercase tracking-widest text-slate-600 font-bold mb-0.5">Itens</span>
+                        <span className="text-xs font-mono text-slate-300">{count}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[8px] uppercase tracking-widest text-slate-600 font-bold mb-0.5">Resp.</span>
+                        <span className="text-[10px] font-medium text-slate-300">{owner}</span>
+                    </div>
+                </div>
+                <div className="flex flex-col items-end">
+                    <span className="text-[8px] uppercase tracking-widest text-slate-600 font-bold mb-0.5">Atualizado</span>
+                    <span className="text-[10px] text-slate-400 font-medium">{updated}</span>
+                </div>
+            </div>
+        </PremiumCard>
+    );
+};
+
   const renderDashboard = () => (
-      <div className="p-10 max-w-7xl mx-auto animate-msg">
-          <header className="mb-12">
-              <h1 className="text-3xl font-black text-bitrix-nav tracking-tighter uppercase mb-2">Painel de Governança</h1>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.4em]">Gestão Centralizada de Ativos e Regras</p>
-          </header>
+      <div className="p-10 max-w-7xl mx-auto animate-msg w-full relative z-10">
+          <PremiumHeader title="BASE OFICIAL" subtitle="Verdade Estrutural do SagB" />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* CARD 1: CULTURA */}
-              <button onClick={() => setCurrentView('constitution')} className="group bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:border-bitrix-nav/20 transition-all text-left relative overflow-hidden">
-                  <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-bitrix-nav group-hover:text-white transition-colors mb-6">
-                      <BookIcon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-black text-gray-800 uppercase mb-2 group-hover:text-bitrix-nav">Cultura Atual</h3>
-                  <p className="text-xs font-medium text-gray-400 leading-relaxed">Defina a identidade, tom de voz e visão estratégica global.</p>
-              </button>
-
-              {/* CARD 2: BACKUP */}
-              <button onClick={handleExportData} className="group bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:border-bitrix-nav/20 transition-all text-left relative overflow-hidden">
-                  <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-bitrix-nav group-hover:text-white transition-colors mb-6">
-                      <CloudDownloadIcon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-black text-gray-800 uppercase mb-2 group-hover:text-bitrix-nav">Backup do Sistema</h3>
-                  <p className="text-xs font-medium text-gray-400 leading-relaxed">Baixe uma cópia completa de todos os agentes, documentos e conversas.</p>
-              </button>
-
-              {/* CARD 3: COFRE BLACK */}
-              <button onClick={() => setCurrentView('black-vault')} className="group bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:border-bitrix-nav/20 transition-all text-left relative overflow-hidden">
-                  <div className="absolute top-6 right-6 flex items-center gap-2">
-                      <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">Secure</span>
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  </div>
-                  <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-bitrix-nav group-hover:text-white transition-colors mb-6">
-                      <LockIcon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-black text-gray-800 uppercase mb-2 group-hover:text-bitrix-nav">Cofre Black</h3>
-                  <p className="text-xs font-medium text-gray-400 leading-relaxed">Repositório Central de Documentos. Ingestão em massa de TXT/PDF.</p>
-              </button>
-
-              {/* CARD 4: COMPLIANCE */}
-              <button onClick={() => setCurrentView('compliance')} className="group bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:border-bitrix-nav/20 transition-all text-left relative overflow-hidden col-span-1 md:col-span-2">
-                  <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-bitrix-nav group-hover:text-white transition-colors mb-6">
-                      <ScaleIcon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-black text-gray-800 uppercase mb-2 group-hover:text-bitrix-nav">Diretrizes & Compliance</h3>
-                  <p className="text-xs font-medium text-gray-400 leading-relaxed">Protocolos de segurança e regras de bloqueio aplicadas a todos os agentes.</p>
-              </button>
-
-               {/* CARD 5: METODOLOGIAS */}
-               <button onClick={() => setCurrentView('methodology')} className="group bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:border-bitrix-nav/20 transition-all text-left relative overflow-hidden">
-                  <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-bitrix-nav group-hover:text-white transition-colors mb-6">
-                      <FolderIcon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-black text-gray-800 uppercase mb-2 group-hover:text-bitrix-nav">Metodologias Gerais</h3>
-                  <p className="text-xs font-medium text-gray-400 leading-relaxed">Árvore de processos gerais da empresa.</p>
-              </button>
-
-               {/* CARD 6: INTELLIGENCE */}
-               <button onClick={() => setCurrentView('intelligence')} className="group bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:border-bitrix-nav/20 transition-all text-left relative overflow-hidden">
-                  <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-bitrix-nav group-hover:text-white transition-colors mb-6">
-                      <SearchIcon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-black text-gray-800 uppercase mb-2 group-hover:text-bitrix-nav">Núcleo de Inteligência</h3>
-                  <p className="text-xs font-medium text-gray-400 leading-relaxed">Gestão de DNA e Permissões de Acesso (RAG) dos Agentes.</p>
-              </button>
+          <div className="mb-6 flex justify-between items-center bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 backdrop-blur-sm">
+             <div className="flex-1 max-w-md">
+                 <PremiumInput placeholder="Buscar na Base Oficial..." icon={<SearchIcon className="w-5 h-5" />} />
+             </div>
+             <div className="flex items-center gap-3 ml-4">
+                 <PremiumSelect>
+                     <option value="">Status</option>
+                     <option value="oficial">Oficial</option>
+                     <option value="homologado">Homologado</option>
+                     <option value="recomendado">Recomendado</option>
+                     <option value="experimental">Experimental</option>
+                     <option value="legado">Legado</option>
+                     <option value="proibido">Proibido</option>
+                 </PremiumSelect>
+                 <PremiumSelect>
+                     <option value="">Área</option>
+                     <option value="front">Front-end</option>
+                     <option value="back">Back-end</option>
+                 </PremiumSelect>
+             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <DashboardCard 
+                  title="Central de Padrões"
+                  desc="Stack, fontes, componentes e design system."
+                  icon={<CubeIcon className="w-6 h-6" />}
+                  count={padroes.length}
+                  updated={padroes.length > 0 ? new Date(Math.max(...padroes.map(p => p.updatedAt.getTime()))).toLocaleDateString() : '—'}
+                  owner="Arquitetura"
+                  status={padroes.some(p => p.status === 'Experimental') ? 'Experimental' : 'Oficial'}
+                  onClick={() => setCurrentView('padroes')}
+              />
+              <DashboardCard 
+                  title="Protocolos Oficiais"
+                  desc="Regras operacionais e decisórias do sistema."
+                  icon={<ShieldCheckIcon className="w-6 h-6" />}
+                  count={protocolos.length}
+                  updated={protocolos.length > 0 ? new Date(Math.max(...protocolos.map(p => p.updatedAt.getTime()))).toLocaleDateString() : '—'}
+                  owner="Governança"
+                  status={protocolos.some(p => p.status === 'Experimental') ? 'Experimental' : 'Oficial'}
+                  onClick={() => setCurrentView('protocolos')}
+              />
+              <DashboardCard 
+                  title="Governança"
+                  desc="Cultura atual, identidade e tom de voz."
+                  icon={<BookIcon className="w-6 h-6" />}
+                  count={1}
+                  updated="2 dias atrás"
+                  owner="Diretoria"
+                  status="Oficial"
+                  onClick={() => setCurrentView('constitution')}
+              />
+              <DashboardCard 
+                  title="Núcleo de Inteligência"
+                  desc="Gestão de DNA e permissões de agentes."
+                  icon={<SearchIcon className="w-6 h-6" />}
+                  count={agents.length}
+                  updated="Hoje"
+                  owner="AI Ops"
+                  status="Homologado"
+                  onClick={() => setCurrentView('intelligence')}
+              />
+              <DashboardCard 
+                  title="Metodologias Gerais"
+                  desc="Árvore de processos e frameworks corporativos."
+                  icon={<FolderIcon className="w-6 h-6" />}
+                  count={knowledgeNodes.length}
+                  updated="1 semana atrás"
+                  owner="Operações"
+                  status="Recomendado"
+                  onClick={() => setCurrentView('methodology')}
+              />
+              <DashboardCard 
+                  title="Diretrizes & Compliance"
+                  desc="Segurança, LGPD e regras de bloqueio."
+                  icon={<ScaleIcon className="w-6 h-6" />}
+                  count={1}
+                  updated="Mês passado"
+                  owner="Jurídico"
+                  status="Oficial"
+                  onClick={() => setCurrentView('compliance')}
+              />
+              <DashboardCard 
+                  title="Cofre Black"
+                  desc="Repositório seguro de arquivos críticos."
+                  icon={<LockIcon className="w-6 h-6" />}
+                  count={vaultItems.length}
+                  updated="Ontem"
+                  owner="Segurança"
+                  status="Homologado"
+                  onClick={() => setCurrentView('black-vault')}
+              />
+              <DashboardCard 
+                  title="Backup do Sistema"
+                  desc="Rotinas de salvamento e restore estrutural."
+                  icon={<CloudDownloadIcon className="w-6 h-6" />}
+                  count={0}
+                  updated="Semanal"
+                  owner="Infra"
+                  status="Oficial"
+                  onClick={handleExportData}
+              />
+          </div>
       </div>
   );
+
+
+  const renderProtocolos = () => (
+      <PremiumSurface className="flex flex-col p-8">
+          <div className="max-w-5xl mx-auto w-full flex flex-col h-full">
+              <PremiumHeader 
+                  title="Protocolos Oficiais" 
+                  subtitle="Regras, comportamentos, obrigatoriedades e auditoria"
+                  rightAction={
+                      <div className="flex gap-3">
+                          <PremiumButton variant="secondary" onClick={() => setCurrentView('dashboard')} icon={<BackIcon className="w-4 h-4" />}>
+                              Voltar
+                          </PremiumButton>
+                          {protocolos.length === 0 && (
+                            <PremiumButton variant="ghost" onClick={handleSeedInitialData} disabled={isSeeding}>
+                                Gerar Dados de Exemplo
+                            </PremiumButton>
+                          )}
+                          <PremiumButton icon={<PlusIcon className="w-4 h-4" />}>
+                              Novo Protocolo
+                          </PremiumButton>
+                      </div>
+                  }
+              />
+              
+              <div className="mb-6 flex gap-4">
+                  <div className="flex-1">
+                      <PremiumInput placeholder="Buscar protocolo por código, nome ou família..." icon={<SearchIcon className="w-4 h-4" />} />
+                  </div>
+                  <PremiumSelect className="w-40">
+                      <option value="">Todas as Famílias</option>
+                      <option value="GERAC-I">GERAC-I</option>
+                      <option value="GERAC-D">GERAC-D</option>
+                      <option value="GERAC-G">GERAC-G</option>
+                      <option value="GERAC-S">GERAC-S</option>
+                      <option value="GERAC-O">GERAC-O</option>
+                  </PremiumSelect>
+                  <PremiumSelect className="w-40">
+                      <option value="">Criticidade</option>
+                      <option value="Baixa">Baixa</option>
+                      <option value="Média">Média</option>
+                      <option value="Alta">Alta</option>
+                      <option value="Crítica">Crítica</option>
+                  </PremiumSelect>
+              </div>
+
+              {isLoadingOfficial ? (
+                  <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">Carregando protocolos...</div>
+              ) : protocolos.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center flex-col gap-4 text-slate-500">
+                      <ShieldCheckIcon className="w-12 h-12 opacity-20" />
+                      <p className="text-sm">Nenhum protocolo oficial cadastrado.</p>
+                  </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+                    {protocolos.map(prot => (
+                        <PremiumCard key={prot.id} hoverGlow={false} className="min-h-[250px]">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-slate-900/80 border border-slate-700 rounded-xl flex items-center justify-center text-blue-400">
+                                        <ShieldCheckIcon className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white tracking-tight">{prot.name}</h3>
+                                        <span className="text-[10px] font-mono text-slate-500">{prot.code} • {prot.family}</span>
+                                    </div>
+                                </div>
+                                <PremiumBadge status={prot.status} />
+                            </div>
+                            
+                            <p className="text-xs text-slate-400 mb-6 leading-relaxed flex-1">{prot.shortDescription}</p>
+                            
+                            <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 mb-4">
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <ScaleIcon className="w-3 h-3" /> Configuração
+                                </h4>
+                                <ul className="space-y-2">
+                                    <li className="flex justify-between items-center text-xs text-slate-300">
+                                        <span className="text-slate-500">Criticidade:</span>
+                                        <span className={`font-bold ${prot.criticality === 'Crítica' ? 'text-red-400' : prot.criticality === 'Alta' ? 'text-orange-400' : 'text-slate-300'}`}>{prot.criticality}</span>
+                                    </li>
+                                    <li className="flex justify-between items-center text-xs text-slate-300">
+                                        <span className="text-slate-500">Obrigatório:</span>
+                                        <span>{prot.mandatory ? 'Sim' : 'Não'}</span>
+                                    </li>
+                                    <li className="flex justify-between items-center text-xs text-slate-300">
+                                        <span className="text-slate-500">Módulos Impactados:</span>
+                                        <span>{prot.impactedModules?.join(', ') || 'Nenhum'}</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div className="flex items-center justify-between border-t border-slate-800 pt-4">
+                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                    Resp: <span className="text-slate-300">{prot.responsibleArea}</span>
+                                </div>
+                                <PremiumButton variant="ghost" className="!py-1.5 !px-3 text-[10px]">
+                                    Detalhes
+                                </PremiumButton>
+                            </div>
+                        </PremiumCard>
+                    ))}
+                </div>
+              )}
+          </div>
+      </PremiumSurface>
+  );
+
+  const renderPadroes = () => (
+    <PremiumSurface className="flex flex-col p-8">
+        <div className="max-w-5xl mx-auto w-full flex flex-col h-full">
+            <PremiumHeader 
+                title="Central de Padrões" 
+                subtitle="Stack oficial, design tokens, plataformas e nomenclaturas"
+                rightAction={
+                    <div className="flex gap-3">
+                        <PremiumButton variant="secondary" onClick={() => setCurrentView('dashboard')} icon={<BackIcon className="w-4 h-4" />}>
+                            Voltar
+                        </PremiumButton>
+                        {padroes.length === 0 && (
+                            <PremiumButton variant="ghost" onClick={handleSeedInitialData} disabled={isSeeding}>
+                                Gerar Dados de Exemplo
+                            </PremiumButton>
+                        )}
+                        <PremiumButton icon={<PlusIcon className="w-4 h-4" />}>
+                            Novo Padrão
+                        </PremiumButton>
+                    </div>
+                }
+            />
+            
+            <div className="mb-6 flex gap-4">
+                <div className="flex-1">
+                    <PremiumInput placeholder="Buscar padrão por nome, categoria ou valor..." icon={<SearchIcon className="w-4 h-4" />} />
+                </div>
+                <PremiumSelect className="w-40">
+                    <option value="">Todos os Tipos</option>
+                    <option value="Stack">Stack</option>
+                    <option value="Paleta">Paleta</option>
+                    <option value="Fonte">Fonte</option>
+                    <option value="Componente">Componente</option>
+                </PremiumSelect>
+            </div>
+
+            {isLoadingOfficial ? (
+                <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">Carregando padrões...</div>
+            ) : padroes.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center flex-col gap-4 text-slate-500">
+                    <CubeIcon className="w-12 h-12 opacity-20" />
+                    <p className="text-sm">Nenhum padrão oficial cadastrado.</p>
+                </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-20">
+                  {padroes.map(pad => (
+                      <PremiumCard key={pad.id} hoverGlow={true}>
+                          <div className="flex justify-between items-start mb-4">
+                              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{pad.patternType}</span>
+                              <PremiumBadge status={pad.status} />
+                          </div>
+                          
+                          <h3 className="text-lg font-bold text-white tracking-tight mb-2">{pad.name}</h3>
+                          <p className="text-xs text-slate-400 mb-4 line-clamp-2">{pad.description}</p>
+                          
+                          <div className="bg-slate-900/80 rounded-lg p-3 font-mono text-[10px] text-green-400 border border-slate-700/50 mb-4 break-all">
+                              {pad.valueOrDefinition}
+                          </div>
+
+                          <div className="flex items-center justify-between border-t border-slate-800 pt-4 mt-auto">
+                              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                  {pad.category}
+                              </div>
+                          </div>
+                      </PremiumCard>
+                  ))}
+              </div>
+            )}
+        </div>
+    </PremiumSurface>
+);
 
   // Editor Genérico
     const renderEditor = (
@@ -688,7 +1046,7 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
       placeholder: string,
       options: { isSaving?: boolean } = {}
   ) => (
-      <div className="flex-1 flex flex-col p-8 animate-msg h-full overflow-hidden">
+      <div className="flex-1 flex flex-col p-8 animate-msg h-full overflow-hidden bg-[#0B0F19] text-slate-200">
           <div className="max-w-5xl mx-auto w-full flex flex-col h-full">
             <header className="mb-6 flex justify-between items-center shrink-0">
                 <div className="flex items-center gap-4">
@@ -696,7 +1054,7 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
                         <BackIcon className="w-6 h-6" />
                     </button>
                     <div>
-                        <h2 className="text-xl font-black text-bitrix-nav uppercase tracking-tighter">{title}</h2>
+                        <h2 className="text-xl font-black text-white uppercase tracking-tighter">{title}</h2>
                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Edição Global</p>
                     </div>
                 </div>
@@ -709,11 +1067,11 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
                 </button>
             </header>
             
-            <div className="flex-1 bg-white rounded-[2rem] border border-gray-100 shadow-sm p-1 overflow-hidden">
+            <div className="flex-1 bg-slate-800/50 rounded-[2rem] border border-slate-700/50 shadow-sm p-1 overflow-hidden backdrop-blur-sm">
                 <textarea 
                     value={value}
                     onChange={e => setValue(e.target.value)}
-                    className="w-full h-full p-8 bg-white resize-none outline-none font-mono text-xs leading-relaxed text-gray-800 custom-scrollbar"
+                    className="w-full h-full p-8 bg-transparent resize-none outline-none font-mono text-xs leading-relaxed text-slate-300 custom-scrollbar"
                     spellCheck={false}
                     placeholder={placeholder}
                 />
@@ -731,7 +1089,7 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
 
 
       return (
-      <div className="flex-1 flex flex-col p-8 animate-msg h-full overflow-hidden relative">
+      <div className="flex-1 flex flex-col p-8 animate-msg h-full overflow-hidden relative bg-[#0B0F19] text-slate-200">
           {renderFilePreview()}
           
           <div className="max-w-6xl mx-auto w-full flex flex-col h-full">
@@ -741,7 +1099,7 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
                           <BackIcon className="w-6 h-6" />
                       </button>
                       <div>
-                          <h2 className="text-xl font-black text-bitrix-nav uppercase tracking-tighter">Cofre Black</h2>
+                          <h2 className="text-xl font-black text-white uppercase tracking-tighter">Cofre Black</h2>
                           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Repositório Central de Documentos</p>
                       </div>
                   </div>
@@ -843,7 +1201,7 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
         );
 
         return (
-            <div className="flex-1 flex flex-col p-8 animate-msg h-full overflow-hidden relative">
+            <div className="flex-1 flex flex-col p-8 animate-msg h-full overflow-hidden relative bg-[#0B0F19] text-slate-200">
                 {renderFilePreview()}
                 
                 <div className="max-w-6xl mx-auto w-full flex flex-col h-full bg-white rounded-[3rem] shadow-xl overflow-hidden border border-gray-100">
@@ -855,7 +1213,7 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
                                 <BackIcon className="w-6 h-6" />
                             </button>
                             <div>
-                                <h2 className="text-xl font-black text-bitrix-nav uppercase tracking-tighter">Editando: {editingAgent.name}</h2>
+                                <h2 className="text-xl font-black text-white uppercase tracking-tighter">Editando: {editingAgent.name}</h2>
                                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Gestão de Inteligência</p>
                             </div>
                         </div>
@@ -974,7 +1332,7 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
     const editableAgents = agents.filter(a => a.status === 'ACTIVE' || a.status === 'STAGING');
 
     return (
-        <div className="flex-1 flex flex-col p-8 animate-msg h-full overflow-hidden">
+        <div className="flex-1 flex flex-col p-8 animate-msg h-full overflow-hidden bg-[#0B0F19] text-slate-200">
             <div className="max-w-5xl mx-auto w-full flex flex-col h-full">
                 <header className="mb-8 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-4">
@@ -982,7 +1340,7 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
                             <BackIcon className="w-6 h-6" />
                         </button>
                         <div>
-                            <h2 className="text-xl font-black text-bitrix-nav uppercase tracking-tighter">Núcleo de Inteligência</h2>
+                            <h2 className="text-xl font-black text-white uppercase tracking-tighter">Núcleo de Inteligência</h2>
                             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Selecione um agente para gerenciar DNA e Conhecimento</p>
                         </div>
                     </div>
@@ -1000,7 +1358,10 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
                                 <Avatar name={agent.name} url={agent.avatarUrl} className={`w-12 h-12 rounded-xl shadow-sm ${agent.status === 'STAGING' ? 'grayscale opacity-70' : ''}`} />
                                 
                                 <div>
-                                    <h3 className="text-sm font-bold text-gray-800 group-hover:text-bitrix-nav transition-colors">{agent.name}</h3>
+                                    <h3 className="text-sm font-bold text-gray-800 group-hover:text-bitrix-nav transition-colors">
+                                        {agent.name}
+                                        {agent.entityType === 'HUMANO' && <span className="ml-2 text-[8px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold uppercase inline-block align-middle">Humano</span>}
+                                    </h3>
                                     <p className="text-[10px] text-gray-400 uppercase tracking-wider">{agent.officialRole}</p>
                                     {agent.status === 'STAGING' && <span className="text-[8px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold uppercase mt-1 inline-block">Homologação</span>}
                                     {agent.docCount && agent.docCount > 0 && <span className="ml-2 text-[8px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold uppercase mt-1 inline-block">{agent.docCount} Acessos</span>}
@@ -1018,13 +1379,15 @@ const GovernanceView: React.FC<GovernanceViewProps> = ({
 
   switch(currentView) {
       case 'dashboard': return (
-        <div className="flex-1 h-full bg-[#F9FAFB] flex flex-col font-nunito overflow-y-auto custom-scrollbar relative">
-             <button onClick={onBack} className="absolute top-8 right-8 text-gray-400 hover:text-bitrix-nav text-[9px] font-black uppercase tracking-widest">Voltar</button>
+        <PremiumSurface className="flex flex-col overflow-y-auto custom-scrollbar relative">
+             <button onClick={onBack} className="absolute top-8 right-8 text-slate-500 hover:text-blue-400 text-[9px] font-black uppercase tracking-widest transition-colors z-10">Voltar</button>
              {renderDashboard()}
-        </div>
+        </PremiumSurface>
       );
             case 'constitution': return renderEditor('Cultura Atual', cultureDraft, setCultureDraft, handleSaveConstitution, "Defina a Cultura...", { isSaving: isSavingCulture });
       case 'compliance': return renderEditor('Diretrizes & Compliance', complianceDraft, setComplianceDraft, handleSaveCompliance, "Defina os Protocolos de Bloqueio...", { isSaving: isSavingCompliance });
+      case 'padroes': return renderPadroes();
+      case 'protocolos': return renderProtocolos();
 
       case 'black-vault': return renderBlackVault();
       case 'intelligence': return renderAgentManager(); 
