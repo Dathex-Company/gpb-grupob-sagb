@@ -45,6 +45,14 @@ Com base em `package.json`, `netlify.toml`, `.github/workflows/*` e docs tecnica
 - `GEMINI_API_KEY`
 - `DEEPSEEK_API_KEY`
 
+### Supabase (producao) - nomes aceitos pelo runtime
+
+- URL: `VITE_SUPABASE_URL` (preferencial) ou `SUPABASE_URL`
+- Anon key (validacao de token): `VITE_SUPABASE_ANON_KEY` (preferencial) ou `SUPABASE_ANON_KEY`
+- Service role (admin server-side): `SUPABASE_SERVICE_ROLE_KEY` (preferencial) ou `SUPABASE_SERVICE_KEY`
+
+> Padrao recomendado no Netlify: manter os nomes preferenciais para reduzir ambiguidade.
+
 ### Observacoes
 
 - `SUPABASE_SERVICE_ROLE_KEY` nunca deve ir para o frontend.

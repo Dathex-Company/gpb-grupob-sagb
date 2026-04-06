@@ -4,14 +4,37 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const pickFirst = (...values) => values.find((value) => String(value || '').trim()) || '';
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase environment variables');
-}
+const resolveSupabaseRuntimeConfig = () => {
+  const supabaseUrl = pickFirst(
+    process.env.VITE_SUPABASE_URL,
+    process.env.SUPABASE_URL
+  );
 
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  const supabaseServiceKey = pickFirst(
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    process.env.SUPABASE_SERVICE_KEY,
+    process.env.SUPABASE_SECRET_KEY
+  );
+
+  const supabaseAnonKey = pickFirst(
+    process.env.VITE_SUPABASE_ANON_KEY,
+    process.env.SUPABASE_ANON_KEY
+  );
+
+  return { supabaseUrl, supabaseServiceKey, supabaseAnonKey };
+};
+
+const getMissingSupabaseVars = ({ supabaseUrl, supabaseServiceKey, supabaseAnonKey }) => {
+  const missing = [];
+  if (!supabaseUrl) missing.push('VITE_SUPABASE_URL (ou SUPABASE_URL)');
+  if (!supabaseServiceKey) missing.push('SUPABASE_SERVICE_ROLE_KEY (ou SUPABASE_SERVICE_KEY)');
+  if (!supabaseAnonKey) missing.push('VITE_SUPABASE_ANON_KEY (ou SUPABASE_ANON_KEY)');
+  return missing;
+};
+
+const createSupabaseAdmin = (supabaseUrl, supabaseServiceKey) => createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false
@@ -29,13 +52,25 @@ const jsonResponse = (statusCode, data) => ({
   body: JSON.stringify(data)
 });
 
+const failIfSupabaseMisconfigured = (cfg) => {
+  const missing = getMissingSupabaseVars(cfg);
+  if (!missing.length) return null;
+
+  console.error('[auth-admin] Missing Supabase environment variables:', missing.join(', '));
+  return jsonResponse(500, {
+    success: false,
+    error: 'Supabase environment variables missing',
+    missing
+  });
+};
+
 // Verifica se o usuário que faz a requisição tem permissão de admin
-const validateAdminPermission = async (authToken) => {
+const validateAdminPermission = async (authToken, cfg) => {
   if (!authToken) return false;
   
   try {
     // Verifica o token com a API pública (anon key)
-    const supabasePublic = createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY);
+    const supabasePublic = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
     const { data: { user }, error } = await supabasePublic.auth.getUser(authToken);
     
     if (error || !user) return false;
@@ -64,6 +99,12 @@ const generateSecurePassword = () => {
 };
 
 export async function handler(event) {
+  const cfg = resolveSupabaseRuntimeConfig();
+  const misconfiguredResponse = failIfSupabaseMisconfigured(cfg);
+  if (misconfiguredResponse) return misconfiguredResponse;
+
+  const supabaseAdmin = createSupabaseAdmin(cfg.supabaseUrl, cfg.supabaseServiceKey);
+
   // Verificar método
   if (event.httpMethod !== 'POST') {
     return jsonResponse(405, { 
@@ -86,7 +127,7 @@ export async function handler(event) {
   const authToken = authHeader.substring(7); // Remove "Bearer "
 
   // Validar permissão do usuário
-  const hasPermission = await validateAdminPermission(authToken);
+  const hasPermission = await validateAdminPermission(authToken, cfg);
   if (!hasPermission) {
     return jsonResponse(403, { 
       success: false, 

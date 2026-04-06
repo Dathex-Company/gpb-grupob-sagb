@@ -15,6 +15,21 @@ Documento de rastreabilidade macro por modulo.
 
 ## Entradas iniciais
 
+### 2026-04-05 - Hotfix deploy: auth-admin resiliente a variaveis Supabase ausentes
+
+- Modulo: Infra / Netlify Functions / Integracao Supabase
+- Mudanca:
+  - eliminacao do crash em cold-start da funcao `auth-admin` quando variaveis Supabase estao ausentes;
+  - criacao de validacao explicita de ambiente com retorno controlado `500` + lista de variaveis faltantes, substituindo erro opaco `502`;
+  - adicao de aliases seguros de leitura para runtime (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`) mantendo nomes preferenciais;
+  - documentacao padronizada das variaveis obrigatorias de producao no padrao de stack/infra.
+- Tipo: infra / correcao
+- Arquivos/tabelas afetados:
+  - `netlify/functions/auth-admin.mjs`
+  - `docs/standards/stack-e-infra.md`
+  - `docs/modular-map/HISTORICO_MODULOS.md`
+- Status: concluido
+
 ### 2026-03-21 - Personalizacao baseada no usuario logado (Humano autenticado)
 
 - Modulo: 01-plataforma-base-e-shell / 03-nucleo-conversacional / 02-home-dashboard-e-hub
