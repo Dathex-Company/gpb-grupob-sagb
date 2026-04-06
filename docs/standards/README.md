@@ -6,6 +6,7 @@ Padroes corporativos que devem ser reutilizados em todos os novos sistemas conec
 
 - `design-system.md` -> fontes, cores, tokens visuais e diretrizes de interface.
 - `stack-e-infra.md` -> padrao tecnico (frontend, backend, banco, deploy e CI/CD).
+- `deploy-ambientes-e-esteira.md` -> padrao oficial de ambientes (local/preview/producao), fluxo de publicacao, variaveis por ambiente, checklist pos-deploy e rollback.
 - `historico-e-auditoria.md` -> padrao de versionamento, dev log e rastreabilidade de mudanças (Golden Seal).
 
 ## Como usar
