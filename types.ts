@@ -28,7 +28,7 @@ export type AgentStatus = 'PLANNED' | 'STAGING' | 'ACTIVE' | 'MAINTENANCE' | 'BL
 export type ModelProvider = 'gemini' | 'deepseek' | 'llama_local' | 'openai' | 'claude' | 'qwen'; // Opções de Cérebro
 
 // V4.2 - Adicionado 'home' como Dashboard Inicial
-export type TabId = 'home' | 'ecosystem' | 'team' | 'conversations' | 'management' | 'programmers-room' | 'redir' | 'vault' | 'fabrica-ca' | 'governance' | 'missions' | 'nagi' | 'nic' | 'rai' | 'mentorias' | 'cid' | 'quality' | 'intelligence-flow' | 'continuous-memory' | 'studio' | 'methodology' | 'hub' | 'alignment' | 'market' | 'sales' | 'expansion' | '3forb-home' | 'audacus-home' | 'startyb-home' | 'requests' | 'unit-room' | 'chat-room' | 'ventures' | 'monitoramento' | 'agenda-inteligente';
+export type TabId = 'home' | 'ecosystem' | 'team' | 'conversations' | 'management' | 'programmers-room' | 'redir' | 'vault' | 'fabrica-ca' | 'governance' | 'missions' | 'nagi' | 'nic' | 'rai' | 'mentorias' | 'cid' | 'quality' | 'intelligence-flow' | 'continuous-memory' | 'studio' | 'methodology' | 'metodologias' | 'hub' | 'alignment' | 'market' | 'sales' | 'expansion' | '3forb-home' | 'audacus-home' | 'startyb-home' | 'requests' | 'unit-room' | 'chat-room' | 'ventures' | 'monitoramento' | 'agenda-inteligente';
 
 export type BUType = 'CORE' | 'VENTURY' | 'PERSONAL' | 'METHODOLOGY';
 

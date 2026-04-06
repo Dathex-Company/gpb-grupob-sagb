@@ -5,6 +5,8 @@ import { raiManifest, raiRoutes } from '../../modules/rai';
 import { mentoriasManifest, mentoriasRoutes } from '../../modules/mentorias';
 import { manifest as configManifest, routes as configRoutes } from '../../modules/configuracoes-ambiente';
 import { manifest as telasAvancadasManifest, routes as telasAvancadasRoutes } from '../../modules/telas-avancadas';
+import { monitoramentoManifest, monitoramentoRoutes } from '../../modules/monitoramento';
+import { metodologiasManifest, metodologiasRoutes } from '../../modules/metodologias';
 
 // Aqui definimos o registry central. Novos módulos devem ser registrados nesta array.
 export const moduleRegistry: PluggableModule[] = [
@@ -31,6 +33,14 @@ export const moduleRegistry: PluggableModule[] = [
   {
     manifest: telasAvancadasManifest,
     routes: telasAvancadasRoutes
+  },
+  {
+    manifest: monitoramentoManifest,
+    routes: monitoramentoRoutes
+  },
+  {
+    manifest: metodologiasManifest,
+    routes: metodologiasRoutes
   }
 ];
 

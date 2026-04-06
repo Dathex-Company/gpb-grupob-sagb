@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Mentoria } from '../types/mentorias.types';
-import { mentoriasService } from '../services/mentorias.service';
+import { useMentorias } from '../hooks/useMentorias';
 import { SearchIcon, FilterIcon, BookIcon, ArrowRightIcon } from '../../../../components/Icon';
 
 interface MentoriasLibraryPageProps {
@@ -8,16 +8,8 @@ interface MentoriasLibraryPageProps {
 }
 
 export const MentoriasLibraryPage: React.FC<MentoriasLibraryPageProps> = ({ onNavigate }) => {
-  const [mentorias, setMentorias] = useState<Mentoria[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    mentoriasService.getMentorias().then(data => {
-      setMentorias(data);
-      setIsLoading(false);
-    });
-  }, []);
+  const { mentorias, loading } = useMentorias();
 
   const filteredMentorias = mentorias.filter(m => 
     m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,7 +51,7 @@ export const MentoriasLibraryPage: React.FC<MentoriasLibraryPageProps> = ({ onNa
       </header>
 
       <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-        {isLoading ? (
+        {loading ? (
           <div className="flex flex-col items-center justify-center h-64">
              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Carregando Acervo...</p>

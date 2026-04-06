@@ -251,6 +251,7 @@ type QueryRef = {
   table: string;
   filters: Array<{ field: string; op: string; value: any }>;
   orders: Array<{ field: string; direction: 'asc' | 'desc' }>;
+  limit?: number;
 };
 
 type AnyRef = CollectionRef | DocRef | QueryRef;
@@ -1242,6 +1243,112 @@ const normalizeRecordForTable = (table: string, record: Record<string, any>) => 
     };
   }
 
+  if (table === 'mentorias') {
+    return {
+      id: String(r.id),
+      workspaceId: r.workspace_id,
+      title: String(r.title ?? ''),
+      description: r.description ?? undefined,
+      status: (r.status ?? 'draft') as any,
+      version: String(r.version ?? '1.0.0'),
+      type: (r.type ?? 'Outro') as any,
+      lastUpdate: asJsDate(pick(r, 'last_update', 'lastUpdate'))?.toISOString() ?? new Date().toISOString(),
+      isActive: Boolean(r.is_active ?? true),
+      payload: r.payload ?? undefined,
+      createdBy: r.created_by ?? undefined,
+      updatedBy: r.updated_by ?? undefined,
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt'))?.toISOString() ?? new Date().toISOString(),
+      updatedAt: asJsDate(pick(r, 'updated_at', 'updatedAt'))?.toISOString() ?? new Date().toISOString(),
+    };
+  }
+
+  if (table === 'mentorias_blocos') {
+    return {
+      id: String(r.id),
+      mentoriaId: String(r.mentoria_id ?? ''),
+      title: String(r.title ?? ''),
+      content: String(r.content ?? ''),
+      order: Number(r.order ?? 0),
+      isActive: Boolean(r.is_active ?? true),
+      createdBy: r.created_by ?? undefined,
+      updatedBy: r.updated_by ?? undefined,
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt'))?.toISOString() ?? new Date().toISOString(),
+      updatedAt: asJsDate(pick(r, 'updated_at', 'updatedAt'))?.toISOString() ?? new Date().toISOString(),
+    };
+  }
+
+  if (table === 'mentorias_materiais') {
+    return {
+      id: String(r.id),
+      mentoriaId: String(r.mentoria_id ?? ''),
+      name: String(r.name ?? ''),
+      type: (r.type ?? 'outro') as any,
+      url: String(r.url ?? ''),
+      storagePath: r.storage_path ?? undefined,
+      sizeBytes: r.size_bytes !== undefined && r.size_bytes !== null ? Number(r.size_bytes) : undefined,
+      isActive: Boolean(r.is_active ?? true),
+      createdBy: r.created_by ?? undefined,
+      updatedBy: r.updated_by ?? undefined,
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt'))?.toISOString() ?? new Date().toISOString(),
+      updatedAt: asJsDate(pick(r, 'updated_at', 'updatedAt'))?.toISOString() ?? new Date().toISOString(),
+    };
+  }
+
+  if (table === 'mentorias_sessoes') {
+    return {
+      id: String(r.id),
+      mentoriaId: String(r.mentoria_id ?? ''),
+      title: String(r.title ?? ''),
+      description: r.description ?? undefined,
+      order: Number(r.order ?? 0),
+      durationMinutes: r.duration_minutes !== undefined && r.duration_minutes !== null ? Number(r.duration_minutes) : undefined,
+      isActive: Boolean(r.is_active ?? true),
+      createdBy: r.created_by ?? undefined,
+      updatedBy: r.updated_by ?? undefined,
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt'))?.toISOString() ?? new Date().toISOString(),
+      updatedAt: asJsDate(pick(r, 'updated_at', 'updatedAt'))?.toISOString() ?? new Date().toISOString(),
+    };
+  }
+
+  if (table === 'mentorias_versoes') {
+    return {
+      id: String(r.id),
+      mentoriaId: String(r.mentoria_id ?? ''),
+      version: String(r.version ?? ''),
+      changes: r.changes ?? undefined,
+      authorId: r.author_id ?? undefined,
+      isActive: Boolean(r.is_active ?? true),
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt'))?.toISOString() ?? new Date().toISOString(),
+    };
+  }
+
+  if (table === 'mentorias_agentes') {
+    return {
+      id: String(r.id),
+      mentoriaId: String(r.mentoria_id ?? ''),
+      name: String(r.name ?? ''),
+      role: String(r.role ?? ''),
+      avatarUrl: r.avatar_url ?? undefined,
+      isActive: Boolean(r.is_active ?? true),
+      createdBy: r.created_by ?? undefined,
+      updatedBy: r.updated_by ?? undefined,
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt'))?.toISOString() ?? new Date().toISOString(),
+      updatedAt: asJsDate(pick(r, 'updated_at', 'updatedAt'))?.toISOString() ?? new Date().toISOString(),
+    };
+  }
+
+  if (table === 'mentorias_historico') {
+    return {
+      id: String(r.id),
+      mentoriaId: String(r.mentoria_id ?? ''),
+      action: String(r.action ?? ''),
+      description: r.description ?? undefined,
+      userId: r.user_id ?? undefined,
+      metadata: r.metadata ?? undefined,
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt'))?.toISOString() ?? new Date().toISOString(),
+    };
+  }
+
   return r;
 };
 
@@ -2137,6 +2244,83 @@ const normalizePayloadForTable = (table: string, payload: Record<string, any>) =
     delete p.createdAt;
   }
 
+  if (table === 'mentorias') {
+    if (p.workspaceId !== undefined) { p.workspace_id = p.workspaceId; delete p.workspaceId; }
+    if (p.lastUpdate !== undefined) { p.last_update = p.lastUpdate; delete p.lastUpdate; }
+    if (p.isActive !== undefined) { p.is_active = p.isActive; delete p.isActive; }
+    if (p.createdBy !== undefined) { p.created_by = p.createdBy; delete p.createdBy; }
+    if (p.updatedBy !== undefined) { p.updated_by = p.updatedBy; delete p.updatedBy; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    if (p.updatedAt !== undefined && p.updated_at === undefined) { p.updated_at = p.updatedAt; }
+    delete p.createdAt;
+    delete p.updatedAt;
+  }
+
+  if (table === 'mentorias_blocos') {
+    if (p.mentoriaId !== undefined) { p.mentoria_id = p.mentoriaId; delete p.mentoriaId; }
+    if (p.order !== undefined) { p.order = p.order; } // note: "order" is a reserved keyword in SQL, but column is named "order"
+    if (p.isActive !== undefined) { p.is_active = p.isActive; delete p.isActive; }
+    if (p.createdBy !== undefined) { p.created_by = p.createdBy; delete p.createdBy; }
+    if (p.updatedBy !== undefined) { p.updated_by = p.updatedBy; delete p.updatedBy; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    if (p.updatedAt !== undefined && p.updated_at === undefined) { p.updated_at = p.updatedAt; }
+    delete p.createdAt;
+    delete p.updatedAt;
+  }
+
+  if (table === 'mentorias_materiais') {
+    if (p.mentoriaId !== undefined) { p.mentoria_id = p.mentoriaId; delete p.mentoriaId; }
+    if (p.storagePath !== undefined) { p.storage_path = p.storagePath; delete p.storagePath; }
+    if (p.sizeBytes !== undefined) { p.size_bytes = p.sizeBytes; delete p.sizeBytes; }
+    if (p.isActive !== undefined) { p.is_active = p.isActive; delete p.isActive; }
+    if (p.createdBy !== undefined) { p.created_by = p.createdBy; delete p.createdBy; }
+    if (p.updatedBy !== undefined) { p.updated_by = p.updatedBy; delete p.updatedBy; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    if (p.updatedAt !== undefined && p.updated_at === undefined) { p.updated_at = p.updatedAt; }
+    delete p.createdAt;
+    delete p.updatedAt;
+  }
+
+  if (table === 'mentorias_sessoes') {
+    if (p.mentoriaId !== undefined) { p.mentoria_id = p.mentoriaId; delete p.mentoriaId; }
+    if (p.order !== undefined) { p.order = p.order; }
+    if (p.durationMinutes !== undefined) { p.duration_minutes = p.durationMinutes; delete p.durationMinutes; }
+    if (p.isActive !== undefined) { p.is_active = p.isActive; delete p.isActive; }
+    if (p.createdBy !== undefined) { p.created_by = p.createdBy; delete p.createdBy; }
+    if (p.updatedBy !== undefined) { p.updated_by = p.updatedBy; delete p.updatedBy; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    if (p.updatedAt !== undefined && p.updated_at === undefined) { p.updated_at = p.updatedAt; }
+    delete p.createdAt;
+    delete p.updatedAt;
+  }
+
+  if (table === 'mentorias_versoes') {
+    if (p.mentoriaId !== undefined) { p.mentoria_id = p.mentoriaId; delete p.mentoriaId; }
+    if (p.authorId !== undefined) { p.author_id = p.authorId; delete p.authorId; }
+    if (p.isActive !== undefined) { p.is_active = p.isActive; delete p.isActive; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    delete p.createdAt;
+  }
+
+  if (table === 'mentorias_agentes') {
+    if (p.mentoriaId !== undefined) { p.mentoria_id = p.mentoriaId; delete p.mentoriaId; }
+    if (p.avatarUrl !== undefined) { p.avatar_url = p.avatarUrl; delete p.avatarUrl; }
+    if (p.isActive !== undefined) { p.is_active = p.isActive; delete p.isActive; }
+    if (p.createdBy !== undefined) { p.created_by = p.createdBy; delete p.createdBy; }
+    if (p.updatedBy !== undefined) { p.updated_by = p.updatedBy; delete p.updatedBy; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    if (p.updatedAt !== undefined && p.updated_at === undefined) { p.updated_at = p.updatedAt; }
+    delete p.createdAt;
+    delete p.updatedAt;
+  }
+
+  if (table === 'mentorias_historico') {
+    if (p.mentoriaId !== undefined) { p.mentoria_id = p.mentoriaId; delete p.mentoriaId; }
+    if (p.userId !== undefined) { p.user_id = p.userId; delete p.userId; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    delete p.createdAt;
+  }
+
   return p;
 };
 
@@ -2153,12 +2337,14 @@ export const doc = (_dbOrCollection: typeof db | CollectionRef, tableOrId: strin
 
 export const orderBy = (field: string, direction: 'asc' | 'desc' = 'asc') => ({ type: 'orderBy' as const, field, direction });
 export const where = (field: string, op: string, value: any) => ({ type: 'where' as const, field, op, value });
+export const limit = (count: number) => ({ type: 'limit' as const, count });
 
-export const query = (collectionRef: CollectionRef, ...constraints: Array<ReturnType<typeof orderBy> | ReturnType<typeof where>>): QueryRef => {
+export const query = (collectionRef: CollectionRef, ...constraints: Array<ReturnType<typeof orderBy> | ReturnType<typeof where> | ReturnType<typeof limit>>): QueryRef => {
   const queryRef: QueryRef = { kind: 'query', table: collectionRef.table, filters: [], orders: [] };
   constraints.forEach((constraint) => {
     if (constraint.type === 'orderBy') queryRef.orders.push({ field: constraint.field, direction: constraint.direction });
     if (constraint.type === 'where') queryRef.filters.push({ field: constraint.field, op: constraint.op, value: constraint.value });
+    if (constraint.type === 'limit') queryRef.limit = constraint.count;
   });
   return queryRef;
 };
@@ -2198,6 +2384,10 @@ const runQuery = async (ref: CollectionRef | QueryRef) => {
         .map((item) => `${mapFieldForTable(ref.table, item.field)}.${item.direction}`)
         .join(',');
       params.set('order', orderValue);
+    }
+
+    if (ref.limit !== undefined) {
+      params.set('limit', String(ref.limit));
     }
   }
 
@@ -2354,6 +2544,15 @@ const getBasePollingMs = (ref: AnyRef) => {
     table === 'cid_batch_items'
   ) return 7000;
   if (table === 'topics' || table === 'tasks' || table === 'ventures') return 8000;
+  if (
+    table === 'mentorias' ||
+    table === 'mentorias_blocos' ||
+    table === 'mentorias_materiais' ||
+    table === 'mentorias_sessoes' ||
+    table === 'mentorias_versoes' ||
+    table === 'mentorias_agentes' ||
+    table === 'mentorias_historico'
+  ) return 8000;
   return ref.kind === 'doc' ? 7000 : 10000;
 };
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { TabId, BusinessUnit, UserProfile } from '../types';
 import { getRegisteredModules } from '../src/core/modules/moduleRegistry';
-import { SearchIcon } from './Icon';
+import { SearchIcon, MessageSquareIcon, FolderIcon, BookIcon, ShieldCheckIcon, CubeIcon, LockIcon, FileTextIcon, PlayIcon, MicIcon, VideoIcon, UserPlusIcon, AlertCircleIcon, PencilIcon } from './Icon';
 import { useTheme } from '../src/core/context/ThemeContext';
 
 interface SidebarProps {
@@ -29,6 +29,30 @@ const Sidebar: React.FC<SidebarProps> = ({
   const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&q=80&w=200&h=200";
   const displayName = userProfile?.name || userProfile?.nickname || "Neuro Command";
   const displayAvatar = userProfile?.avatarUrl || DEFAULT_AVATAR;
+
+  // Mapeamento de ícones para os itens do menu
+  const getIconForItem = (id: string) => {
+    const iconMap: Record<string, React.ReactNode> = {
+      'home': <FolderIcon className="w-4 h-4" />,
+      'nic': <UserPlusIcon className="w-4 h-4" />,
+      'intelligence-flow': <AlertCircleIcon className="w-4 h-4" />,
+      'nagi': <CubeIcon className="w-4 h-4" />,
+      'management': <FolderIcon className="w-4 h-4" />,
+      'governance': <ShieldCheckIcon className="w-4 h-4" />,
+      'ecosystem': <FolderIcon className="w-4 h-4" />,
+      'ventures': <FolderIcon className="w-4 h-4" />,
+      'conversations': <MessageSquareIcon className="w-4 h-4" />,
+      'team': <UserPlusIcon className="w-4 h-4" />,
+      'programmers-room': <PencilIcon className="w-4 h-4" />,
+      'vault': <LockIcon className="w-4 h-4" />,
+      'cid': <FileTextIcon className="w-4 h-4" />,
+      'continuous-memory': <BookIcon className="w-4 h-4" />,
+      'studio': <VideoIcon className="w-4 h-4" />,
+      'monitoramento': <MicIcon className="w-4 h-4" />,
+      'missions': <PlayIcon className="w-4 h-4" />,
+    };
+    return iconMap[id] || <FolderIcon className="w-4 h-4" />;
+  };
 
   const coreItems = [
     { id: 'home', label: 'Início', color: 'bg-blue-500' },
@@ -69,10 +93,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           ${isActive ? 'bg-white dark:bg-gradient-menu-active shadow-sm dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_10px_20px_rgba(0,0,0,0.2)] border border-gray-100 dark:border-white/5' : 'hover:bg-gray-100 dark:hover:bg-white/5 border border-transparent'}
         `}
       >
-        {/* STATUS DOT (LED STYLE) */}
-        <div className={`w-2 h-2 rounded-full ${item.color} mr-4 transition-all duration-500 ${isActive ? 'shadow-[0_0_12px_currentColor]' : 'opacity-40'}`} style={{ color: item.color.replace('bg-', '') }}></div>
+        {/* ÍCONE COM CONTORNO */}
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-all duration-300 ${isActive ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`}>
+          {getIconForItem(item.id)}
+        </div>
         
-        <span className={`text-[11px] font-bold flex-1 text-left tracking-tight ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500 group-hover:text-gray-900 dark:group-hover:text-sagb-text'}`}>
+        {/* TEXTO DO MENU - AUMENTADO PARA 12px E CLAREADO */}
+        <span className={`text-xs font-semibold flex-1 text-left tracking-tight ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-600 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-sagb-text'}`}>
           {item.label}
         </span>
 
@@ -83,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         {isActive && (
-          <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] ml-auto"></div>
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.5)] ml-auto"></div>
         )}
       </button>
     );

@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Mentoria } from '../types/mentorias.types';
-import { mentoriasService } from '../services/mentorias.service';
-import { BookIcon, ClockIcon, FileTextIcon, ArrowRightIcon, BackIcon, CheckIcon } from '../../../../components/Icon';
+import React, { useState } from 'react';
+import { useMentoriaDetail } from '../hooks/useMentoriaDetail';
+import { BookIcon, ClockIcon, FileTextIcon, BackIcon, CheckIcon } from '../../../../components/Icon';
 
 interface MentoriaDetailPageProps {
   id?: string;
@@ -11,20 +10,10 @@ interface MentoriaDetailPageProps {
 type TabType = 'estrutura' | 'materiais' | 'sessoes' | 'agentes' | 'historico';
 
 export const MentoriaDetailPage: React.FC<MentoriaDetailPageProps> = ({ id, onBack }) => {
-  const [mentoria, setMentoria] = useState<Mentoria | null>(null);
+  const { mentoria, loading } = useMentoriaDetail(id);
   const [activeTab, setActiveTab] = useState<TabType>('estrutura');
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (id) {
-      mentoriasService.getMentoriaById(id).then(data => {
-        setMentoria(data || null);
-        setIsLoading(false);
-      });
-    }
-  }, [id]);
-
-  if (isLoading) return (
+  if (loading) return (
     <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-[#0B0F19]">
       <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
     </div>

@@ -27,7 +27,7 @@
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "husky": "^9.1.7",
-    "supabase": "^2.78.1",
+    "supabase": "^2.84.10",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

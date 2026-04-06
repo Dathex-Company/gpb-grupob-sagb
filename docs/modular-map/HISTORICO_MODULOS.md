@@ -15,6 +15,35 @@ Documento de rastreabilidade macro por modulo.
 
 ## Entradas iniciais
 
+### 2026-04-06 - Expansao modular: Mentorias, Metodologias e Monitoramento (estrutura, rotas e dados)
+
+- Modulo: 06-mentorias / 10-metodologias / 11-monitoramento / Core de modulos / Infra Supabase
+- Mudanca:
+  - consolidacao do modulo de mentorias com hooks, servicos, tipos e paginas de detalhe/biblioteca;
+  - introducao do modulo metodologias com catalogo, edicao de ativo/canonico, comparacao, promocao assistida, relacoes visuais e lifecycle de snapshots;
+  - introducao do modulo monitoramento com manifest, rotas, paginas, componentes e servicos de catalogo;
+  - atualizacao do registro central de modulos e contratos de tipos compartilhados para acomodar os novos contextos;
+  - inclusao/ajuste de migracoes Supabase para mentorias e trilha canonica de metodologias (estruturacao, blocos, promocao, versionamento, snapshots e relacoes).
+- Tipo: arquitetura / fluxo / dados / infra
+- Arquivos/tabelas afetados:
+  - `src/core/modules/moduleRegistry.ts`
+  - `src/modules/mentorias/**`
+  - `src/modules/metodologias/**`
+  - `src/modules/monitoramento/**`
+  - `services/supabase.ts`
+  - `types.ts`
+  - `supabase/config.toml`
+  - `supabase/migrations/20260403000001_create_mentorias_tables.sql`
+  - `supabase/migrations/20260405000001_metodologias_fluxo_estruturacao.sql`
+  - `supabase/migrations/20260405000002_metodologias_blocos_estruturacao.sql`
+  - `supabase/migrations/20260405000003_metodologias_promocao_canonica.sql`
+  - `supabase/migrations/20260405000004_metodologias_blocos_canonicos.sql`
+  - `supabase/migrations/20260405000005_metodologias_versionamento_canonico_inicial.sql`
+  - `supabase/migrations/20260405000006_metodologias_snapshot_versao_canonica.sql`
+  - `supabase/migrations/20260406000007_metodologias_snapshot_canonico_lifecycle.sql`
+  - `supabase/migrations/20260406000008_metodologias_relacoes_canonicas.sql`
+- Status: concluido
+
 ### 2026-04-05 - Hotfix deploy: auth-admin resiliente a variaveis Supabase ausentes
 
 - Modulo: Infra / Netlify Functions / Integracao Supabase
