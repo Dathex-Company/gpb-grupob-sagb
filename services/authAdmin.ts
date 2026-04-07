@@ -7,6 +7,7 @@ export interface CreateUserRequest {
   email: string;
   name: string;
   agentId?: string;
+  workspaceId?: string;
 }
 
 export interface CreateUserResponse {
@@ -14,7 +15,13 @@ export interface CreateUserResponse {
   userId?: string;
   email?: string;
   name?: string;
-  password?: string;
+  existingUser?: boolean;
+  reconciled?: boolean;
+  linkStatus?: {
+    linked: boolean;
+    strategy?: string;
+    reason?: string;
+  };
   message?: string;
   error?: string;
 }
@@ -23,18 +30,28 @@ export interface InviteUserRequest {
   email: string;
   name: string;
   agentId?: string;
+  workspaceId?: string;
 }
 
 export interface InviteUserResponse {
   success: boolean;
   userId?: string;
   email?: string;
+  existingUser?: boolean;
+  reconciled?: boolean;
+  linkStatus?: {
+    linked: boolean;
+    strategy?: string;
+    reason?: string;
+  };
   message?: string;
   error?: string;
 }
 
 export interface LinkUserRequest {
   userId: string;
+  agentId?: string;
+  workspaceId?: string;
 }
 
 export interface LinkUserResponse {
@@ -49,6 +66,28 @@ export interface LinkUserResponse {
 export interface ListUsersRequest {
   page?: number;
   limit?: number;
+  workspaceId?: string;
+}
+
+export interface AuthAdminPermissions {
+  inviteUser: boolean;
+  createUser: boolean;
+  linkUser: boolean;
+  listUsers: boolean;
+}
+
+export interface GetPermissionsResponse {
+  success: boolean;
+  permissions: {
+    actions: AuthAdminPermissions;
+  };
+  context?: {
+    workspaceIds?: string[];
+    roles?: string[];
+    isSuperAdmin?: boolean;
+    memberships?: number;
+  };
+  error?: string;
 }
 
 export interface UserInfo {
@@ -192,6 +231,29 @@ class AuthAdminService {
     }
   }
 
+  async getPermissions(workspaceId?: string): Promise<AuthAdminPermissions> {
+    try {
+      const response = await this.makeRequest<GetPermissionsResponse>('get_permissions', {
+        workspaceId: workspaceId || undefined
+      });
+
+      return {
+        inviteUser: Boolean(response?.permissions?.actions?.inviteUser),
+        createUser: Boolean(response?.permissions?.actions?.createUser),
+        linkUser: Boolean(response?.permissions?.actions?.linkUser),
+        listUsers: Boolean(response?.permissions?.actions?.listUsers)
+      };
+    } catch (error) {
+      console.error('Error loading auth admin permissions:', error);
+      return {
+        inviteUser: false,
+        createUser: false,
+        linkUser: false,
+        listUsers: false
+      };
+    }
+  }
+
   // Método auxiliar para verificar se um humano pode ser autorizado
   canAuthorizeHuman(agent: any): { canAuthorize: boolean; reason?: string } {
     if (!agent) {
@@ -220,7 +282,11 @@ class AuthAdminService {
   }
 
   // Método para autorizar um humano (fluxo completo)
-  async authorizeHuman(agent: any, method: 'create' | 'invite' = 'invite'): Promise<{
+  async authorizeHuman(
+    agent: any,
+    method: 'create' | 'invite' = 'invite',
+    options?: { workspaceId?: string }
+  ): Promise<{
     success: boolean;
     userId?: string;
     message: string;
@@ -240,7 +306,8 @@ class AuthAdminService {
         const result = await this.createUser({
           email: agent.email,
           name: agent.name,
-          agentId: agent.id
+          agentId: agent.id,
+          ...(options?.workspaceId ? { workspaceId: options.workspaceId } : {})
         });
 
         if (result.success && result.userId) {
@@ -259,7 +326,8 @@ class AuthAdminService {
         const result = await this.inviteUser({
           email: agent.email,
           name: agent.name,
-          agentId: agent.id
+          agentId: agent.id,
+          ...(options?.workspaceId ? { workspaceId: options.workspaceId } : {})
         });
 
         if (result.success) {

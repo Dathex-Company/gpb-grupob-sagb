@@ -1,28 +1,50 @@
 // netlify/functions/auth-admin.mjs
-// Função segura server-side para operações administrativas de autenticação
+// Função server-side para operações administrativas de autenticação com RBAC real
 // Nunca expor service_role no frontend
 
 import { createClient } from '@supabase/supabase-js';
+import { randomBytes } from 'node:crypto';
+
+const ACTIONS = {
+  GET_PERMISSIONS: 'get_permissions',
+  CREATE_USER: 'create_user',
+  INVITE_USER: 'invite_user',
+  LINK_USER: 'link_user',
+  LIST_USERS: 'list_users'
+};
+
+const BASE_ROLES = new Set([
+  'owner',
+  'workspace_owner',
+  'admin',
+  'workspace_admin',
+  'manager',
+  'maintainer',
+  'security_admin'
+]);
+
+const ELEVATED_ROLES = new Set([
+  'owner',
+  'workspace_owner',
+  'admin',
+  'workspace_admin',
+  'security_admin',
+  'super_admin',
+  'root'
+]);
 
 const pickFirst = (...values) => values.find((value) => String(value || '').trim()) || '';
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+const normalizeRole = (value) => String(value || '').trim().toLowerCase();
 
 const resolveSupabaseRuntimeConfig = () => {
-  const supabaseUrl = pickFirst(
-    process.env.VITE_SUPABASE_URL,
-    process.env.SUPABASE_URL
-  );
-
+  const supabaseUrl = pickFirst(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_URL);
   const supabaseServiceKey = pickFirst(
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     process.env.SUPABASE_SERVICE_KEY,
     process.env.SUPABASE_SECRET_KEY
   );
-
-  const supabaseAnonKey = pickFirst(
-    process.env.VITE_SUPABASE_ANON_KEY,
-    process.env.SUPABASE_ANON_KEY
-  );
-
+  const supabaseAnonKey = pickFirst(process.env.VITE_SUPABASE_ANON_KEY, process.env.SUPABASE_ANON_KEY);
   return { supabaseUrl, supabaseServiceKey, supabaseAnonKey };
 };
 
@@ -34,20 +56,21 @@ const getMissingSupabaseVars = ({ supabaseUrl, supabaseServiceKey, supabaseAnonK
   return missing;
 };
 
-const createSupabaseAdmin = (supabaseUrl, supabaseServiceKey) => createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+const createSupabaseAdmin = (supabaseUrl, supabaseServiceKey) =>
+  createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
 
 const jsonResponse = (statusCode, data) => ({
   statusCode,
-  headers: { 
+  headers: {
     'Content-Type': 'application/json',
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0'
+    Pragma: 'no-cache',
+    Expires: '0'
   },
   body: JSON.stringify(data)
 });
@@ -64,38 +87,160 @@ const failIfSupabaseMisconfigured = (cfg) => {
   });
 };
 
-// Verifica se o usuário que faz a requisição tem permissão de admin
-const validateAdminPermission = async (authToken, cfg) => {
-  if (!authToken) return false;
-  
+const readWorkspaceIds = (payload, headers) => {
+  const payloadWorkspaceId = String(payload?.workspaceId || '').trim();
+  const headerWorkspaceId = String(headers?.['x-workspace-id'] || headers?.['X-Workspace-Id'] || '').trim();
+  const payloadWorkspaceIds = Array.isArray(payload?.workspaceIds)
+    ? payload.workspaceIds.map((id) => String(id || '').trim()).filter(Boolean)
+    : [];
+
+  const set = new Set([payloadWorkspaceId, headerWorkspaceId, ...payloadWorkspaceIds].filter(Boolean));
+  return Array.from(set);
+};
+
+const buildActionPermissions = ({ roles, isSuperAdmin }) => {
+  const normalizedRoles = (roles || []).map(normalizeRole);
+  const hasBaseRole = normalizedRoles.some((role) => BASE_ROLES.has(role));
+  const hasElevatedRole = normalizedRoles.some((role) => ELEVATED_ROLES.has(role));
+
+  const canInvite = isSuperAdmin || hasBaseRole;
+  const canCreate = isSuperAdmin || hasElevatedRole;
+
+  return {
+    canInvite,
+    canLink: canInvite,
+    canCreate,
+    canList: canCreate
+  };
+};
+
+const forbiddenForAction = (action, permissions) =>
+  jsonResponse(403, {
+    success: false,
+    error: 'Forbidden',
+    message: `Permissão insuficiente para ação: ${action}`,
+    permissions
+  });
+
+const validateAdminPermission = async (authToken, cfg, supabaseAdmin, workspaceIds) => {
+  if (!authToken) return { ok: false };
+
   try {
-    // Verifica o token com a API pública (anon key)
-    const supabasePublic = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-    const { data: { user }, error } = await supabasePublic.auth.getUser(authToken);
-    
-    if (error || !user) return false;
-    
-    // Aqui você pode adicionar lógica adicional para verificar se o usuário é admin
-    // Por exemplo, verificar em uma tabela de administradores
-    // Por enquanto, permitimos apenas se o usuário estiver autenticado
-    return true;
+    const supabasePublic = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+    const {
+      data: { user },
+      error
+    } = await supabasePublic.auth.getUser(authToken);
+
+    if (error || !user) return { ok: false };
+
+    const isSuperAdmin =
+      Boolean(user?.app_metadata?.is_super_admin) ||
+      Boolean(user?.user_metadata?.is_super_admin) ||
+      ELEVATED_ROLES.has(normalizeRole(user?.app_metadata?.role)) ||
+      ELEVATED_ROLES.has(normalizeRole(user?.user_metadata?.role));
+
+    let membershipRows = [];
+    let query = supabaseAdmin
+      .from('workspace_members')
+      .select('workspace_id, role, status')
+      .eq('user_id', user.id)
+      .eq('status', 'active');
+
+    if (workspaceIds.length === 1) {
+      query = query.eq('workspace_id', workspaceIds[0]);
+    } else if (workspaceIds.length > 1) {
+      query = query.in('workspace_id', workspaceIds);
+    }
+
+    const { data: memberships, error: membershipsError } = await query;
+    if (!membershipsError && Array.isArray(memberships)) {
+      membershipRows = memberships;
+    }
+
+    const roles = membershipRows.map((m) => normalizeRole(m.role));
+    const permissions = buildActionPermissions({ roles, isSuperAdmin });
+    const hasAnyPermission = permissions.canInvite || permissions.canCreate || permissions.canLink || permissions.canList;
+
+    return {
+      ok: hasAnyPermission,
+      user,
+      permissions,
+      context: {
+        workspaceIds,
+        roles,
+        isSuperAdmin,
+        memberships: membershipRows.length
+      }
+    };
   } catch (error) {
-    console.error('Error validating admin permission:', error);
-    return false;
+    console.error('[auth-admin] Error validating admin permission:', error);
+    return { ok: false };
   }
 };
 
 const generateSecurePassword = () => {
-  const length = 16;
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-  let password = '';
-  const crypto = globalThis.crypto || require('crypto');
-  
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(crypto.getRandomValues(new Uint32Array(1))[0] / (0xFFFFFFFF + 1) * charset.length);
-    password += charset.charAt(randomIndex);
+  const raw = randomBytes(24).toString('base64url');
+  const withSymbols = `${raw}#A1!`;
+  return withSymbols.slice(0, 20);
+};
+
+const isAlreadyRegisteredError = (message) => {
+  const normalized = String(message || '').toLowerCase();
+  return normalized.includes('already registered') || normalized.includes('already exists');
+};
+
+const findAuthUserByEmail = async (supabaseAdmin, email) => {
+  const target = normalizeEmail(email);
+  const perPage = 200;
+
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+
+    const users = data?.users || [];
+    const found = users.find((u) => normalizeEmail(u?.email) === target);
+    if (found) return found;
+
+    if (users.length < perPage) break;
   }
-  return password;
+
+  return null;
+};
+
+const tryLinkAgentAuthUser = async (supabaseAdmin, agentId, authUserId) => {
+  if (!agentId || !authUserId) return { linked: false, reason: 'missing_agent_or_user' };
+
+  const attempts = [
+    { column: 'auth_user_id', payload: { auth_user_id: authUserId, updated_at: new Date().toISOString() } },
+    { column: 'authUserId', payload: { authUserId: authUserId, updated_at: new Date().toISOString() } }
+  ];
+
+  for (const attempt of attempts) {
+    const { error } = await supabaseAdmin.from('agents').update(attempt.payload).eq('id', agentId);
+    if (!error) return { linked: true, strategy: attempt.column };
+
+    const message = String(error?.message || '').toLowerCase();
+    const isMissingColumn = message.includes('column') && message.includes('does not exist');
+    if (!isMissingColumn) {
+      return { linked: false, reason: error.message || 'update_failed' };
+    }
+  }
+
+  return { linked: false, reason: 'auth_link_column_not_found' };
+};
+
+const validateEmailAndName = (email, name) => {
+  if (!email || !name) {
+    return jsonResponse(400, {
+      success: false,
+      error: 'Bad Request',
+      message: 'Email e nome são obrigatórios'
+    });
+  }
+  return null;
 };
 
 export async function handler(event) {
@@ -105,187 +250,209 @@ export async function handler(event) {
 
   const supabaseAdmin = createSupabaseAdmin(cfg.supabaseUrl, cfg.supabaseServiceKey);
 
-  // Verificar método
   if (event.httpMethod !== 'POST') {
-    return jsonResponse(405, { 
-      success: false, 
+    return jsonResponse(405, {
+      success: false,
       error: 'Method not allowed',
       message: 'Apenas requisições POST são permitidas'
     });
   }
 
-  // Verificar autenticação
-  const authHeader = event.headers.authorization;
+  const authHeader = event.headers.authorization || event.headers.Authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return jsonResponse(401, { 
-      success: false, 
+    return jsonResponse(401, {
+      success: false,
       error: 'Unauthorized',
       message: 'Token de autenticação não fornecido'
     });
   }
 
-  const authToken = authHeader.substring(7); // Remove "Bearer "
-
-  // Validar permissão do usuário
-  const hasPermission = await validateAdminPermission(authToken, cfg);
-  if (!hasPermission) {
-    return jsonResponse(403, { 
-      success: false, 
-      error: 'Forbidden',
-      message: 'Permissão insuficiente para realizar esta operação'
-    });
-  }
+  const authToken = authHeader.substring(7);
 
   try {
     const payload = JSON.parse(event.body || '{}');
     const { action, email, name, agentId, userId } = payload;
 
-    // Validações básicas
     if (!action) {
-      return jsonResponse(400, { 
-        success: false, 
+      return jsonResponse(400, {
+        success: false,
         error: 'Bad Request',
         message: 'Ação não especificada'
       });
     }
 
-    switch (action) {
-      case 'create_user': {
-        // Criar usuário com senha gerada
-        if (!email || !name) {
-          return jsonResponse(400, { 
-            success: false, 
-            error: 'Bad Request',
-            message: 'Email e nome são obrigatórios'
-          });
-        }
+    const workspaceIds = readWorkspaceIds(payload, event.headers || {});
+    const authorization = await validateAdminPermission(authToken, cfg, supabaseAdmin, workspaceIds);
 
+    if (!authorization.ok) {
+      return jsonResponse(403, {
+        success: false,
+        error: 'Forbidden',
+        message: 'Permissão insuficiente para operações administrativas de Auth'
+      });
+    }
+
+    const permissions = authorization.permissions;
+
+    if (action === ACTIONS.GET_PERMISSIONS) {
+      return jsonResponse(200, {
+        success: true,
+        permissions: {
+          actions: {
+            inviteUser: Boolean(permissions.canInvite),
+            createUser: Boolean(permissions.canCreate),
+            linkUser: Boolean(permissions.canLink),
+            listUsers: Boolean(permissions.canList)
+          }
+        },
+        context: authorization.context
+      });
+    }
+
+    switch (action) {
+      case ACTIONS.CREATE_USER: {
+        if (!permissions.canCreate) return forbiddenForAction(action, permissions);
+
+        const validation = validateEmailAndName(email, name);
+        if (validation) return validation;
+
+        const normalizedEmail = normalizeEmail(email);
         const password = generateSecurePassword();
+
         const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
-          email: email.trim().toLowerCase(),
+          email: normalizedEmail,
           password,
-          email_confirm: true, // Confirmar email automaticamente
-          user_metadata: { 
-            name: name.trim(),
+          email_confirm: true,
+          user_metadata: {
+            name: String(name || '').trim(),
             agentId: agentId || null,
             created_via: 'quadro_de_elite'
           }
         });
 
         if (userError) {
-          console.error('Error creating user:', userError);
-          
-          // Tratar erros comuns
-          if (userError.message.includes('already registered')) {
-            return jsonResponse(409, { 
-              success: false, 
-              error: 'Conflict',
-              message: 'Usuário já registrado com este email'
-            });
+          if (isAlreadyRegisteredError(userError.message)) {
+            const existingUser = await findAuthUserByEmail(supabaseAdmin, normalizedEmail);
+            if (existingUser) {
+              const linkResult = await tryLinkAgentAuthUser(supabaseAdmin, agentId, existingUser.id);
+              return jsonResponse(200, {
+                success: true,
+                existingUser: true,
+                reconciled: true,
+                userId: existingUser.id,
+                email: existingUser.email,
+                message: 'Usuário já existia no Auth e foi reconciliado para vinculação.',
+                linkStatus: linkResult
+              });
+            }
           }
-          
           throw userError;
         }
 
-        // Registrar a criação para auditoria
-        console.log(`User created: ${userData.user.email} (${userData.user.id}) for agent: ${agentId || 'N/A'}`);
+        const linkResult = await tryLinkAgentAuthUser(supabaseAdmin, agentId, userData?.user?.id);
+        console.log(`[auth-admin] User created: ${userData?.user?.email} (${userData?.user?.id}) agent=${agentId || 'N/A'}`);
 
         return jsonResponse(200, {
           success: true,
-          userId: userData.user.id,
-          email: userData.user.email,
-          name: userData.user.user_metadata?.name || name,
-          password, // Retornar apenas para admin (em produção, considerar enviar por email separado)
-          message: 'Usuário criado com sucesso. A senha foi gerada automaticamente.'
+          userId: userData?.user?.id,
+          email: userData?.user?.email,
+          name: userData?.user?.user_metadata?.name || name,
+          message: 'Usuário criado com sucesso.',
+          linkStatus: linkResult
         });
       }
 
-      case 'invite_user': {
-        // Enviar convite por email (mais seguro)
-        if (!email || !name) {
-          return jsonResponse(400, { 
-            success: false, 
-            error: 'Bad Request',
-            message: 'Email e nome são obrigatórios'
-          });
-        }
+      case ACTIONS.INVITE_USER: {
+        if (!permissions.canInvite) return forbiddenForAction(action, permissions);
 
-        const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email.trim().toLowerCase(), {
-          data: { 
-            name: name.trim(),
+        const validation = validateEmailAndName(email, name);
+        if (validation) return validation;
+
+        const normalizedEmail = normalizeEmail(email);
+        const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(normalizedEmail, {
+          data: {
+            name: String(name || '').trim(),
             agentId: agentId || null,
             invited_via: 'quadro_de_elite'
           }
         });
 
         if (inviteError) {
-          console.error('Error inviting user:', inviteError);
-          
-          if (inviteError.message.includes('already registered')) {
-            return jsonResponse(409, { 
-              success: false, 
-              error: 'Conflict',
-              message: 'Usuário já registrado com este email'
-            });
+          if (isAlreadyRegisteredError(inviteError.message)) {
+            const existingUser = await findAuthUserByEmail(supabaseAdmin, normalizedEmail);
+            if (existingUser) {
+              const linkResult = await tryLinkAgentAuthUser(supabaseAdmin, agentId, existingUser.id);
+              return jsonResponse(200, {
+                success: true,
+                existingUser: true,
+                reconciled: true,
+                userId: existingUser.id,
+                email: existingUser.email,
+                message: 'Usuário já estava registrado no Auth. Conciliação de vínculo preparada.',
+                linkStatus: linkResult
+              });
+            }
           }
-          
           throw inviteError;
         }
 
-        console.log(`User invited: ${email} (${inviteData.user?.id || 'unknown'}) for agent: ${agentId || 'N/A'}`);
+        const resolvedUserId = inviteData?.user?.id || null;
+        const linkResult = await tryLinkAgentAuthUser(supabaseAdmin, agentId, resolvedUserId);
+        console.log(`[auth-admin] User invited: ${normalizedEmail} (${resolvedUserId || 'unknown'}) agent=${agentId || 'N/A'}`);
 
         return jsonResponse(200, {
           success: true,
-          message: 'Convite enviado por email com sucesso',
-          userId: inviteData.user?.id || null,
-          email: email
+          userId: resolvedUserId,
+          email: normalizedEmail,
+          message: 'Convite enviado por e-mail com sucesso.',
+          linkStatus: linkResult
         });
       }
 
-      case 'link_user': {
-        // Vincular humano a usuário existente (apenas retorna o userId para uso no frontend)
+      case ACTIONS.LINK_USER: {
+        if (!permissions.canLink) return forbiddenForAction(action, permissions);
         if (!userId) {
-          return jsonResponse(400, { 
-            success: false, 
+          return jsonResponse(400, {
+            success: false,
             error: 'Bad Request',
             message: 'userId é obrigatório para vincular usuário'
           });
         }
 
-        // Verificar se o usuário existe
         const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
-        
-        if (userError || !userData.user) {
-          return jsonResponse(404, { 
-            success: false, 
+        if (userError || !userData?.user) {
+          return jsonResponse(404, {
+            success: false,
             error: 'Not Found',
             message: 'Usuário não encontrado'
           });
         }
 
+        const linkResult = await tryLinkAgentAuthUser(supabaseAdmin, agentId, userData.user.id);
         return jsonResponse(200, {
           success: true,
           userId: userData.user.id,
           email: userData.user.email,
           name: userData.user.user_metadata?.name || 'Usuário',
-          message: 'Usuário válido para vinculação'
+          message: 'Usuário válido para vinculação.',
+          linkStatus: linkResult
         });
       }
 
-      case 'list_users': {
-        // Listar usuários (com paginação para segurança)
-        const { page = 1, limit = 50 } = payload;
-        const offset = (page - 1) * limit;
+      case ACTIONS.LIST_USERS: {
+        if (!permissions.canList) return forbiddenForAction(action, permissions);
 
-        const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers({
-          page: page,
+        const page = Number(payload?.page || 1);
+        const limit = Math.min(100, Math.max(1, Number(payload?.limit || 50)));
+
+        const { data, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+          page,
           perPage: limit
         });
 
         if (listError) throw listError;
 
-        // Filtrar informações sensíveis
-        const safeUsers = (users.users || []).map(user => ({
+        const safeUsers = (data?.users || []).map((user) => ({
           id: user.id,
           email: user.email,
           name: user.user_metadata?.name || '',
@@ -294,7 +461,7 @@ export async function handler(event) {
           isConfirmed: user.email_confirmed_at !== null,
           metadata: {
             agentId: user.user_metadata?.agentId,
-            createdVia: user.user_metadata?.created_via
+            createdVia: user.user_metadata?.created_via || user.user_metadata?.invited_via
           }
         }));
 
@@ -304,39 +471,38 @@ export async function handler(event) {
           pagination: {
             page,
             limit,
-            total: users.users?.length || 0,
-            hasMore: (users.users?.length || 0) >= limit
+            total: safeUsers.length,
+            hasMore: safeUsers.length >= limit
           }
         });
       }
 
       default:
-        return jsonResponse(400, { 
-          success: false, 
+        return jsonResponse(400, {
+          success: false,
           error: 'Bad Request',
           message: `Ação não reconhecida: ${action}`
         });
     }
   } catch (error) {
-    console.error('Auth admin error:', error);
-    
-    // Determinar código de status apropriado
+    console.error('[auth-admin] error:', error);
     let statusCode = 500;
     let errorMessage = 'Erro interno do servidor';
-    
-    if (error.message?.includes('rate limit') || error.message?.includes('too many requests')) {
+
+    const raw = String(error?.message || '').toLowerCase();
+    if (raw.includes('rate limit') || raw.includes('too many requests')) {
       statusCode = 429;
       errorMessage = 'Muitas requisições. Tente novamente mais tarde.';
-    } else if (error.message?.includes('invalid') || error.message?.includes('validation')) {
+    } else if (raw.includes('invalid') || raw.includes('validation')) {
       statusCode = 400;
       errorMessage = 'Dados inválidos fornecidos';
     }
-    
+
     return jsonResponse(statusCode, {
       success: false,
       error: 'Internal Server Error',
       message: errorMessage,
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? error?.message : undefined
     });
   }
 }

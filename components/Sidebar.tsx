@@ -54,39 +54,98 @@ const Sidebar: React.FC<SidebarProps> = ({
     return iconMap[id] || <FolderIcon className="w-4 h-4" />;
   };
 
-  const coreItems = [
-    { id: 'home', label: 'Início', color: 'bg-blue-500' },
-    { id: 'nic', label: 'NIC', color: 'bg-green-500', badge: '12' },
-    { id: 'intelligence-flow', label: 'Fluxo Vivo', color: 'bg-orange-500', badge: '7' },
-    { id: 'nagi', label: 'NAGI', color: 'bg-indigo-500', badge: '10' },
-    { id: 'management', label: 'Mesas e Salas', color: 'bg-purple-500', badge: '18' },
-    { id: 'governance', label: 'Governança', color: 'bg-slate-400', badge: '4' }
+  // Definição clara dos status possíveis para um item de menu (ET 02)
+  type MenuStatus = 'official' | 'technical' | 'provisional' | 'dynamic' | 'hidden';
+
+  interface MenuItem {
+    id: string;
+    label: string;
+    color: string;
+    badge?: string;
+    status: MenuStatus;
+    tooltip?: string;
+  }
+
+  // Bloco 1: Comando (Apenas itens oficiais e estratégicos)
+  const comandoItems: MenuItem[] = [
+    { id: 'home', label: 'Início', color: 'bg-blue-500', status: 'official' },
+    { id: 'ecosystem', label: 'Mapa do Ecossistema', color: 'bg-cyan-500', status: 'official', tooltip: 'Visão geral das integrações e ecossistema' },
+    { id: 'nic', label: 'NIC', color: 'bg-green-500', badge: '12', status: 'official', tooltip: 'Núcleo de Inteligência e Comando' },
+    { id: 'intelligence-flow', label: 'Fluxo de Inteligência', color: 'bg-orange-500', badge: '7', status: 'official', tooltip: 'Fluxo Vivo de Monitoramento' },
+    { id: 'nagi', label: 'NAGI (Apoio)', color: 'bg-indigo-500', badge: '10', status: 'official', tooltip: 'Núcleo de Apoio à Gestão' },
+    { id: 'missions', label: 'Missões', color: 'bg-orange-400', status: 'official' }
   ];
 
-  const systemItems = [
-    { id: 'ecosystem', label: 'Ecossistema', color: 'bg-cyan-500' },
-    { id: 'ventures', label: 'Hub de Ventures', color: 'bg-emerald-500' },
-    { id: 'conversations', label: 'Conversas', color: 'bg-blue-400' },
-    { id: 'team', label: 'Equipe Global', color: 'bg-violet-400' },
-    { id: 'programmers-room', label: 'Sala Dev', color: 'bg-amber-500' },
-    { id: 'vault', label: 'Sessão de Pautas', color: 'bg-rose-500' },
-    { id: 'cid', label: 'CID', color: 'bg-sky-500' },
-    { id: 'continuous-memory', label: 'Memória Contínua', color: 'bg-teal-500' },
-    { id: 'studio', label: 'Studio', color: 'bg-red-500' },
-    { id: 'monitoramento', label: 'Monitoramento', color: 'bg-green-400' },
-    { id: 'missions', label: 'Missões', color: 'bg-orange-400' },
-    ...getRegisteredModules().map(mod => ({
-        id: mod.manifest.id,
-        label: mod.manifest.displayName,
-        color: 'bg-slate-500'
-    }))
+  // Bloco 2: Operação (Áreas de trabalho e hubs principais)
+  const operacaoItems: MenuItem[] = [
+    { id: 'management', label: 'Painel de Gestão', color: 'bg-purple-500', badge: '18', status: 'official', tooltip: 'Gestão de Backlog (Futuro Módulo RAI)' },
+    { id: 'vault', label: 'Cofre de Pautas', color: 'bg-rose-500', status: 'official', tooltip: 'Repositório Seguro de Pautas' },
+    { id: 'agenda', label: 'Agenda Inteligente', color: 'bg-emerald-400', status: 'official' },
+    { id: 'mentorias', label: 'Central de Mentorias', color: 'bg-teal-400', status: 'official' },
+    { id: 'ventures', label: 'Hub de Ventures', color: 'bg-emerald-500', status: 'official' },
+    { id: 'conversations', label: 'Conversas', color: 'bg-blue-400', status: 'official' },
+    { id: 'team', label: 'Equipe Global', color: 'bg-violet-400', status: 'official' },
+    { id: 'studio', label: 'Studio', color: 'bg-red-500', status: 'official' },
+    { id: 'methodologies', label: 'Núcleo de Metodologias', color: 'bg-amber-400', status: 'official' }
   ];
 
-  const renderMenuItem = (item: any) => {
+  // Bloco 3: Sistema e Controle (Infraestrutura, governança, dados)
+  const sistemaEControleItems: MenuItem[] = [
+    { id: 'monitoramento', label: 'Monitoramento', color: 'bg-green-400', status: 'official' },
+    { id: 'cid', label: 'CID', color: 'bg-sky-500', status: 'official', tooltip: 'Centro de Inteligência de Dados' },
+    { id: 'governance', label: 'Governança', color: 'bg-slate-400', badge: '4', status: 'official' },
+    { id: 'configuracoes', label: 'Configurações do Ambiente', color: 'bg-slate-500', status: 'official' },
+    // Itens técnicos/provisórios agora recebem status correspondente
+    { id: 'continuous-memory', label: 'Memória da IA', color: 'bg-teal-500', status: 'provisional', tooltip: 'Memória Contínua do Sistema' },
+    { id: 'programmers-room', label: 'Sala Dev', color: 'bg-amber-500', status: 'technical' },
+    { id: 'telas-avancadas', label: 'Telas Avançadas', color: 'bg-gray-500', status: 'technical' }
+  ];
+
+  // Bloco 4: IA e Estrutura (Core de Agentes)
+  const iaEEstruturaItems: MenuItem[] = [
+    { id: 'fabrica-ca', label: 'Fábrica de Agentes', color: 'bg-purple-600', status: 'official' }
+  ];
+
+  // Regra clara para módulos dinâmicos (ET 02)
+  // Evitar duplicidades: Módulos registrados não devem colidir com hardcoded.
+  const staticItemIds = new Set([
+    ...comandoItems.map(i => i.id),
+    ...operacaoItems.map(i => i.id),
+    ...sistemaEControleItems.map(i => i.id),
+    ...iaEEstruturaItems.map(i => i.id)
+  ]);
+
+  const dynamicModules = getRegisteredModules()
+    .filter(mod => !staticItemIds.has(mod.manifest.id)) // Se já existe fixo, não duplica
+    .map(mod => ({
+      id: mod.manifest.id,
+      label: mod.manifest.displayName,
+      color: 'bg-slate-500',
+      status: 'dynamic' as MenuStatus
+    }));
+
+  // Vamos injetar os dinâmicos no bloco Operação por padrão, a não ser que haja uma blacklist (futuro)
+  const finalOperacaoItems = [...operacaoItems, ...dynamicModules];
+
+  // Critério de exibição (Visibilidade)
+  // Em produção, itens 'technical' só devem aparecer se houver flag de dev ativada.
+  // Por enquanto ocultamos ou deixamos condicional ao ambiente (usaremos uma flag simples).
+  const isDevContext = process.env.NODE_ENV === 'development' || localStorage.getItem('SAGB_DEV_MODE') === 'true';
+
+  const isVisible = (item: MenuItem) => {
+    if (item.status === 'hidden') return false;
+    if (item.status === 'technical') return isDevContext; 
+    // Itens provisórios ficam visíveis até amadurecerem ou serem descartados
+    return true; 
+  };
+
+  const renderMenuItem = (item: MenuItem) => {
+    if (!isVisible(item)) return null;
     const isActive = activeTab === item.id;
     return (
       <button
         key={item.id}
+        title={item.tooltip}
         onClick={() => setActiveTab(item.id as TabId)}
         className={`
           group flex items-center w-full px-3 py-2.5 rounded-xl transition-all duration-300 relative mb-1
@@ -141,27 +200,43 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* SCROLLABLE CONTENT */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-1">
-        {/* CORE SECTION */}
-        <div className="px-2 mb-4">
-            <span className="text-[10px] font-black text-gray-400 dark:text-sagb-muted uppercase tracking-[0.2em]">Centro de Comando</span>
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-1 pb-4">
+        {/* BLOCO 1 - COMANDO */}
+        <div className="px-2 mb-2 mt-2">
+            <span className="text-[10px] font-black text-gray-400 dark:text-sagb-muted uppercase tracking-[0.2em]">Comando</span>
         </div>
-        <nav className="mb-8">
-            {coreItems.map(renderMenuItem)}
+        <nav className="mb-6">
+            {comandoItems.map(renderMenuItem)}
         </nav>
 
-        {/* SYSTEM SECTION */}
-        <div className="px-2 mb-4">
-            <span className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">Módulos e Operação</span>
+        {/* BLOCO 2 - OPERAÇÃO */}
+        <div className="px-2 mb-2">
+            <span className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">Operação</span>
+        </div>
+        <nav className="mb-6">
+            {finalOperacaoItems.map(renderMenuItem)}
+        </nav>
+
+        {/* BLOCO 3 - SISTEMA E CONTROLE */}
+        <div className="px-2 mb-2">
+            <span className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">Sistema e Controle</span>
+        </div>
+        <nav className="mb-6">
+            {sistemaEControleItems.map(renderMenuItem)}
+        </nav>
+
+        {/* BLOCO 4 - IA E ESTRUTURA */}
+        <div className="px-2 mb-2">
+            <span className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em]">IA e Estrutura</span>
         </div>
         <nav>
-            {systemItems.map(renderMenuItem)}
+            {iaEEstruturaItems.map(renderMenuItem)}
         </nav>
       </div>
 
-      {/* BOTTOM TOOLS (LOWER OPACITY) */}
-      <div className="mt-auto pt-6 border-t border-gray-100 dark:border-white/5 px-2 shrink-0">
-        <div className="flex items-center justify-between px-3 py-4">
+      {/* BLOCO 5 - SISTEMA (RODAPÉ) */}
+      <div className="mt-auto pt-4 border-t border-gray-100 dark:border-white/5 px-2 shrink-0">
+        <div className="flex items-center justify-between px-3 py-2 mb-2">
             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-sagb-muted">Ambiente</span>
             <button
                 onClick={toggleTheme}
@@ -173,24 +248,17 @@ const Sidebar: React.FC<SidebarProps> = ({
                 />
             </button>
         </div>
-        <button
-          onClick={() => setActiveTab('fabrica-ca')}
-          className="flex items-center w-full px-3 py-2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 transition-colors text-xs"
-        >
-          <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 mr-4"></div>
-          Fábrica de Agentes
-        </button>
         {onLogout && (
           <>
             <button
               onClick={onLogout}
-              className="flex items-center w-full px-3 py-2 text-red-400/60 hover:text-red-400 transition-colors text-xs mt-2"
+              className="flex items-center w-full px-3 py-2 text-red-400/60 hover:text-red-400 transition-colors text-xs"
             >
               <div className="w-1.5 h-1.5 rounded-full bg-red-900/40 mr-4"></div>
               Encerrar Sessão
             </button>
             {/* USER NAME IN FOOTER */}
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-center">
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-center mb-2">
               <div className="text-[10px] text-gray-400 dark:text-gray-500 font-medium truncate max-w-full px-2">
                 {displayName}
               </div>

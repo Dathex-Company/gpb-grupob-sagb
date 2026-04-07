@@ -365,11 +365,21 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
     const [batchVentureId, setBatchVentureId] = useState('');
     const [importFeedback, setImportFeedback] = useState('');
     const [isAuthorizing, setIsAuthorizing] = useState(false);
+    const [isLoadingAuthPermissions, setIsLoadingAuthPermissions] = useState(false);
+    const [authAdminPermissions, setAuthAdminPermissions] = useState({
+        inviteUser: false,
+        createUser: false,
+        linkUser: false,
+        listUsers: false
+    });
     const [authorizationResult, setAuthorizationResult] = useState<{
         success: boolean;
         message: string;
         userId?: string;
     } | null>(null);
+
+    const canInviteUsers = authAdminPermissions.inviteUser;
+    const canCreateUsers = authAdminPermissions.createUser;
 
     const shouldRequireEmail = useMemo(() => {
         if (form.entityType === 'HUMANO' || form.entityType === 'HIBRIDO') return true;
@@ -391,6 +401,25 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
         setForm(agentToForm(initialAgent, activeBU, ventures));
         setIsFormOpen(true);
     }, [initialAgent, activeBU, ventures]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadPermissions = async () => {
+            setIsLoadingAuthPermissions(true);
+            const permissions = await authAdminService.getPermissions(activeWorkspaceId || undefined);
+            if (!cancelled) {
+                setAuthAdminPermissions(permissions);
+                setIsLoadingAuthPermissions(false);
+            }
+        };
+
+        loadPermissions();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeWorkspaceId]);
 
     const filteredAgents = useMemo(() => {
         const term = normalizeText(searchTerm);
@@ -428,13 +457,20 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
     const handleOpenNew = () => {
         setEditingAgentId(null);
         setForm(createEmptyForm(activeBU, ventures));
+        setAuthorizationResult(null);
         setIsFormOpen(true);
     };
 
     const handleOpenEdit = (agent: Agent) => {
         setEditingAgentId(agent.id);
         setForm(agentToForm(agent, activeBU, ventures));
+        setAuthorizationResult(null);
         setIsFormOpen(true);
+    };
+
+    const handleCloseForm = () => {
+        setIsFormOpen(false);
+        setAuthorizationResult(null);
     };
 
     const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -464,6 +500,7 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                 usesEmail: forceEmail ? true : prev.usesEmail
             };
         });
+        setAuthorizationResult(null);
     };
 
     const handleUsesEmailChange = (usesEmail: boolean) => {
@@ -472,6 +509,7 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
             usesEmail,
             email: usesEmail ? prev.email : ''
         }));
+        setAuthorizationResult(null);
     };
 
     const toggleStack = (stack: ModelProvider) => {
@@ -621,6 +659,7 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
             setIsFormOpen(false);
             setEditingAgentId(null);
             setForm(createEmptyForm(activeBU, ventures));
+            setAuthorizationResult(null);
             window.alert('Cadastro salvo com sucesso.');
         } catch (error: any) {
             console.error('Erro ao salvar cadastro estrutural:', error);
@@ -808,12 +847,22 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
 
     const handleAuthorizeHuman = async (agent: Agent, method: 'create' | 'invite' = 'invite') => {
         if (isAuthorizing) return;
+        if (method === 'invite' && !canInviteUsers) {
+            window.alert('Você não possui permissão para enviar convites.');
+            return;
+        }
+        if (method === 'create' && !canCreateUsers) {
+            window.alert('Você não possui permissão elevada para criar usuário diretamente.');
+            return;
+        }
         
         setIsAuthorizing(true);
         setAuthorizationResult(null);
         
         try {
-            const result = await authAdminService.authorizeHuman(agent, method);
+            const result = await authAdminService.authorizeHuman(agent, method, {
+                workspaceId: activeWorkspaceId || undefined
+            });
             
             setAuthorizationResult(result);
             
@@ -995,10 +1044,10 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                                                     <button onClick={() => handleOpenEdit(agent)} className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:bg-blue-50 hover:text-blue-600" title="Editar"><PencilIcon className="h-3.5 w-3.5" /></button>
                                                     {onManageIntelligence && <button onClick={() => onManageIntelligence(agent)} className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:bg-purple-50 hover:text-purple-600" title="Status DNA"><BotIcon className="h-3.5 w-3.5" /></button>}
                                                     {onRemove && <button onClick={() => handleDelete(agent)} className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:bg-red-50 hover:text-red-600" title="Excluir"><TrashIcon className="h-3.5 w-3.5" /></button>}
-                                                    {isHumanStructuralEntity(agent) && !agent.authUserId && agent.email && (
+                                                    {canInviteUsers && isHumanStructuralEntity(agent) && !agent.authUserId && agent.email && (
                                                         <button 
                                                             onClick={() => handleAuthorizeHuman(agent, 'invite')}
-                                                            disabled={isAuthorizing}
+                                                            disabled={isAuthorizing || isLoadingAuthPermissions}
                                                             className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-500 transition hover:bg-green-50 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                                             title="Autorizar Usuário"
                                                         >
@@ -1021,14 +1070,14 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                 </section>
 
                 {isFormOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-200">
-                        <div className="flex h-full max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] bg-white dark:bg-sagb-panel shadow-2xl transition-colors duration-300">
-                            <div className="flex items-start justify-between border-b border-gray-100 dark:border-white/5 px-8 py-6 bg-gray-50/50 dark:bg-sagb-bg-2 transition-colors duration-300">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-200">
+                        <div className="flex h-full max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-gray-200/70 dark:border-white/10 bg-white dark:bg-sagb-panel shadow-2xl transition-colors duration-300">
+                            <div className="flex items-start justify-between border-b border-gray-100 dark:border-white/10 px-8 py-6 transition-colors duration-300">
                                 <div>
                                     <h2 className="text-xl font-black uppercase tracking-tight text-bitrix-nav dark:text-sagb-text">{editingAgentId ? 'Editar cadastro' : 'Novo cadastro'}</h2>
                                     <p className="mt-1 text-[11px] font-semibold text-gray-500">Quadro estrutural sem exposição de DNA, cultura ou compliance.</p>
                                 </div>
-                                <button onClick={() => setIsFormOpen(false)} className="rounded-xl p-2 text-gray-400 transition hover:bg-gray-200 hover:text-gray-700"><XIcon className="h-6 w-6" /></button>
+                                <button onClick={handleCloseForm} className="rounded-xl p-2 text-gray-400 transition hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-700"><XIcon className="h-6 w-6" /></button>
                             </div>
                             <div className="flex-1 space-y-8 overflow-y-auto px-8 py-6 custom-scrollbar">
                                 <section className="space-y-4">
@@ -1063,68 +1112,105 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                                                     <p className="text-[10px] font-semibold text-gray-500">{form.entityType === 'AGENTE' ? 'E-mail estrutural para ações externas.' : 'E-mail base. O sistema usa fallback por e-mail caso não haja ID vinculado.'}</p>
                                                 </label>
                                                 {form.entityType !== 'AGENTE' && (
-                                                    <label className="space-y-1">
-                                                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">ID Real do Usuário (Supabase Auth)<HelpTooltip text="Vínculo definitivo e seguro para cruzar o Auth User com este Perfil Humano, sem depender apenas do E-mail" /></span>
+                                                    <label className="space-y-1 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-gray-50/40 dark:bg-sagb-bg-2/40 p-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Conta de login vinculada<HelpTooltip text="Vínculo interno seguro entre o perfil humano e a conta de acesso" /></span>
+                                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${form.authUserId ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-gray-200 bg-white text-gray-500 dark:border-white/10 dark:bg-sagb-panel dark:text-gray-400'}`}>
+                                                                {form.authUserId ? 'Vinculada' : 'Pendente'}
+                                                            </span>
+                                                        </div>
                                                         <select value={form.authUserId} onChange={(e) => setFormField('authUserId', e.target.value)} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 outline-none focus:border-indigo-300">
-                                                            <option value="">Não Vinculado (Fallback por E-mail)</option>
+                                                            <option value="">Sem conta vinculada (usar e-mail como referência)</option>
                                                             {Object.values(authUsersByEmail).map((u) => (
                                                                 <option key={u.id} value={u.id}>{u.email} ({u.id.substring(0, 8)}...)</option>
                                                             ))}
                                                         </select>
-                                                        <p className="text-[10px] font-semibold text-gray-500">Selecione uma conta existente no sistema para vínculo forte.</p>
+                                                        <p className="text-[10px] font-semibold text-gray-500">Este vínculo mantém o ID interno e não altera permissões já protegidas no backend.</p>
                                                     </label>
                                                 )}
                                             </div>
                                         )}
-                                        {form.entityType !== 'AGENTE' && !form.authUserId && form.email && (
-                                            <div className="space-y-3 rounded-2xl border border-gray-200 bg-gray-50/50 p-4">
-                                                <h4 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-600">Autorização de Usuário</h4>
-                                                <p className="text-[10px] font-semibold text-gray-500 mb-3">Transforme este humano em um usuário autorizado do sistema com autenticação segura.</p>
-                                                
-                                                <div className="flex flex-col gap-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <button
-                                                            onClick={() => handleAuthorizeHuman(currentEditingAgent || form, 'invite')}
-                                                            disabled={isAuthorizing || !form.email}
-                                                            className="inline-flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-green-700 transition hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                                        >
-                                                            {isAuthorizing ? (
-                                                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-green-500"></div>
-                                                            ) : (
-                                                                <MailIcon className="h-3.5 w-3.5" />
-                                                            )}
-                                                            Enviar Convite por E-mail
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleAuthorizeHuman(currentEditingAgent || form, 'create')}
-                                                            disabled={isAuthorizing || !form.email}
-                                                            className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                                        >
-                                                            {isAuthorizing ? (
-                                                                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-500"></div>
-                                                            ) : (
-                                                                <UserPlusIcon className="h-3.5 w-3.5" />
-                                                            )}
-                                                            Criar Usuário com Senha
-                                                        </button>
+                                        {form.entityType !== 'AGENTE' && (
+                                            <div className="space-y-3 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50/60 dark:bg-sagb-bg-2/50 p-4">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <h4 className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-600 dark:text-gray-300">Acesso ao sistema</h4>
+                                                        <p className="mt-1 text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+                                                            {!form.email
+                                                                ? 'Informe um e-mail para habilitar o fluxo de autorização.'
+                                                                : form.authUserId
+                                                                    ? 'Humano autorizado e conta de acesso vinculada com segurança.'
+                                                                    : 'Humano ainda sem autorização final. Escolha uma ação para concluir o acesso.'}
+                                                        </p>
                                                     </div>
-                                                    
-                                                    {authorizationResult && (
-                                                        <div className={`rounded-xl border p-3 text-[11px] font-semibold ${authorizationResult.success ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
-                                                            {authorizationResult.message}
-                                                            {authorizationResult.userId && (
-                                                                <div className="mt-1 text-[10px] font-medium text-gray-600">
-                                                                    ID do usuário: {authorizationResult.userId.substring(0, 8)}...
-                                                                </div>
-                                                            )}
+                                                    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${!form.email ? 'border-amber-200 bg-amber-50 text-amber-700' : form.authUserId ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-indigo-200 bg-indigo-50 text-indigo-700'}`}>
+                                                        {!form.email ? 'Falta e-mail' : form.authUserId ? 'Autorizado' : 'Pendente'}
+                                                    </span>
+                                                </div>
+
+                                                {!form.email && (
+                                                    <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-[11px] font-semibold text-amber-700">
+                                                        Sem e-mail não é possível enviar convite nem criar conta de acesso.
+                                                    </div>
+                                                )}
+
+                                                {form.email && !form.authUserId && (
+                                                    <>
+                                                        {!canInviteUsers && !isLoadingAuthPermissions && (
+                                                            <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-[11px] font-semibold text-amber-700">
+                                                                Você não possui permissão para autorizar usuários neste workspace.
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                            <button
+                                                                onClick={() => handleAuthorizeHuman(currentEditingAgent || form, 'invite')}
+                                                                disabled={isAuthorizing || isLoadingAuthPermissions || !form.email || !canInviteUsers}
+                                                                className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-[10px] font-black uppercase tracking-wider text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            >
+                                                                {isAuthorizing ? (
+                                                                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-emerald-500"></div>
+                                                                ) : (
+                                                                    <MailIcon className="h-3.5 w-3.5" />
+                                                                )}
+                                                                Enviar convite
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleAuthorizeHuman(currentEditingAgent || form, 'create')}
+                                                                disabled={isAuthorizing || isLoadingAuthPermissions || !form.email || !canCreateUsers}
+                                                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-[10px] font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            >
+                                                                {isAuthorizing ? (
+                                                                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-slate-500"></div>
+                                                                ) : (
+                                                                    <UserPlusIcon className="h-3.5 w-3.5" />
+                                                                )}
+                                                                Criar conta
+                                                            </button>
                                                         </div>
-                                                    )}
-                                                    
-                                                    <div className="text-[10px] font-medium text-gray-500 space-y-1">
-                                                        <p><strong>Enviar Convite:</strong> Mais seguro. O usuário recebe um e-mail para configurar sua própria senha.</p>
-                                                        <p><strong>Criar Usuário:</strong> Cria uma conta imediatamente com senha gerada automaticamente.</p>
-                                                        <p className="text-[9px] font-bold text-gray-400">Após autorização, o campo "ID Real do Usuário" será preenchido automaticamente.</p>
+                                                    </>
+                                                )}
+
+                                                {form.authUserId && (
+                                                    <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3 py-2 text-[11px] font-semibold text-emerald-700">
+                                                        Conta de acesso vinculada com referência interna {form.authUserId.substring(0, 8)}...
                                                     </div>
+                                                )}
+
+                                                {authorizationResult && (
+                                                    <div className={`rounded-xl border px-3 py-2 text-[11px] font-semibold ${authorizationResult.success ? 'border-emerald-200 bg-emerald-50/70 text-emerald-700' : 'border-amber-200 bg-amber-50/70 text-amber-700'}`}>
+                                                        {authorizationResult.message}
+                                                        {authorizationResult.userId && (
+                                                            <div className="mt-1 text-[10px] font-medium text-gray-600 dark:text-gray-300">
+                                                                Referência interna: {authorizationResult.userId.substring(0, 8)}...
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 space-y-1">
+                                                    <p><strong>Enviar convite:</strong> fluxo recomendado para o usuário configurar a própria senha.</p>
+                                                    <p><strong>Criar conta:</strong> ação avançada para perfis com permissão elevada.</p>
                                                 </div>
                                             </div>
                                         )}
@@ -1274,10 +1360,10 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
                                     </div>
                                 </section>
                             </div>
-                            <div className="flex shrink-0 items-center justify-between border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-sagb-bg-2 px-8 py-5 transition-colors">
+                            <div className="flex shrink-0 items-center justify-between border-t border-gray-100 dark:border-white/10 px-8 py-5 transition-colors">
                                 <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{editingAgentId ? 'Edicao de cadastro estrutural.' : 'Cadastro novo para escalar o ecossistema.'}</p>
                                 <div className="flex items-center gap-3">
-                                    <button onClick={() => setIsFormOpen(false)} className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-sagb-panel px-5 py-2.5 text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-white/10 transition-all">Cancelar</button>
+                                    <button onClick={handleCloseForm} className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-sagb-panel px-5 py-2.5 text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-white/10 transition-all">Cancelar</button>
                                     <button onClick={handleSave} disabled={isSaving} className="rounded-xl bg-bitrix-nav px-6 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md hover:bg-black hover:shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50">{isSaving ? 'Salvando...' : 'Salvar cadastro'}</button>
                                 </div>
                             </div>

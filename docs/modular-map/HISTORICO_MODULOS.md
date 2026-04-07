@@ -15,6 +15,27 @@ Documento de rastreabilidade macro por modulo.
 
 ## Entradas iniciais
 
+### 2026-04-07 - Ajustes operacionais em Auth/Admin, CID e realtime (estabilidade e sincronizacao)
+
+- Modulo: 05-cadastro-e-dna-de-agentes / Auth-Admin / CID Processor / Infra Supabase
+- Mudanca:
+  - ajustes no fluxo de cadastro/gestao em `AgentFactory` e refinamentos de navegacao/estado na `Sidebar`;
+  - atualizacoes no client e no backend de administracao (`services/authAdmin.ts` e `netlify/functions/auth-admin.mjs`) para reforcar consistencia de chamadas e comportamento operacional;
+  - atualizacoes em `netlify/functions/cid-processor.mjs` para melhorar robustez de processamento;
+  - inclusao de migracao para habilitacao de realtime no Supabase (`20260408000001_enable_realtime.sql`);
+  - sincronizacao de dependencias refletida em `package.json` e `package-lock.json`.
+- Tipo: fluxo / infra / correcao
+- Arquivos/tabelas afetados:
+  - `components/AgentFactory.tsx`
+  - `components/Sidebar.tsx`
+  - `services/authAdmin.ts`
+  - `netlify/functions/auth-admin.mjs`
+  - `netlify/functions/cid-processor.mjs`
+  - `supabase/migrations/20260408000001_enable_realtime.sql`
+  - `package.json`
+  - `package-lock.json`
+- Status: concluido
+
 ### 2026-04-06 - Expansao modular: Mentorias, Metodologias e Monitoramento (estrutura, rotas e dados)
 
 - Modulo: 06-mentorias / 10-metodologias / 11-monitoramento / Core de modulos / Infra Supabase
