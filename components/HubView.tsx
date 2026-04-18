@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { BusinessUnit, TabId, Agent } from '../types';
 import { Avatar } from './Avatar';
 import { deriveOperationalStatus, getOperationalStatusLabel, isAgentOperationallyBlocked } from '../utils/agentOperational';
+import { getQgByBuId } from '../data/qgRegistry';
 
 interface HubViewProps {
   businessUnits: BusinessUnit[];
@@ -190,6 +191,20 @@ const HubView: React.FC<HubViewProps> = ({ businessUnits, activeBU, onSelectBU, 
   }, [filteredNodes]);
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId);
+  const selectedNodeQg = selectedNode?.buRef ? getQgByBuId(selectedNode.buRef.id) : null;
+
+  const handleOpenQg = () => {
+    if (!selectedNodeQg) return;
+
+    if (selectedNodeQg.entryType === 'internal-tab' && selectedNodeQg.tab) {
+      onNavigate(selectedNodeQg.tab);
+      return;
+    }
+
+    if (selectedNodeQg.entryType === 'external-url' && selectedNodeQg.url) {
+      window.open(selectedNodeQg.url, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   // Type color mapping
   const getTypeColor = (type: NodeType) => {
@@ -261,7 +276,7 @@ const HubView: React.FC<HubViewProps> = ({ businessUnits, activeBU, onSelectBU, 
   };
 
   return (
-    <div className="flex h-full bg-[#F8FAFC] dark:bg-sagb-bg font-nunito transition-colors duration-300 overflow-hidden">
+    <div className="flex h-full bg-[#F8FAFC] dark:bg-sagb-bg font-sans transition-colors duration-300 overflow-hidden">
       
       {/* LEFT / CENTER: MAIN CONTENT AREA */}
       <div className={`flex-1 flex flex-col h-full transition-all duration-300 ${selectedNodeId ? 'mr-80' : ''}`}>
@@ -473,6 +488,23 @@ const HubView: React.FC<HubViewProps> = ({ businessUnits, activeBU, onSelectBU, 
                      <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
                    </button>
                  )}
+
+                 {selectedNodeQg && (
+                    <button 
+                      onClick={handleOpenQg}
+                      className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md flex items-center justify-center gap-2 group"
+                    >
+                      <span>Entrar no QG</span>
+                      <span className="text-[8px] px-2 py-0.5 rounded bg-white/20 uppercase tracking-widest">{selectedNodeQg.status}</span>
+                    </button>
+                 )}
+
+                 {selectedNodeQg && (
+                    <p className="text-[10px] text-slate-500 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg p-3">
+                      Origem registrada: <span className="font-mono">{selectedNodeQg.sourcePath || 'não informado'}</span>
+                    </p>
+                 )}
+
                  {viewMode === 'operacional' && (
                     <div className="grid grid-cols-2 gap-2">
                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">

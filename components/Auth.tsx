@@ -96,7 +96,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-sagb-bg p-6 font-nunito transition-colors duration-300">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-sagb-bg p-6 font-sans transition-colors duration-300">
             <div className="w-full max-w-md bg-white dark:bg-sagb-panel rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 dark:border-white/5 p-10 transition-colors duration-300">
                 <div className="flex flex-col items-center mb-10">
                     <div className="w-16 h-16 bg-black dark:bg-gradient-to-br dark:from-[#0a84ff] dark:to-[#005fcc] rounded-2xl flex items-center justify-center mb-6 shadow-xl">

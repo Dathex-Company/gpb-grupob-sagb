@@ -6,5 +6,11 @@ export const monitoramentoManifest: ModuleManifest = {
   displayName: 'Monitoramento',
   baseRoute: '/monitoramento',
   icon: 'MicIcon',
-  initialStatus: 'active'
+  initialStatus: 'active',
+  owner: {
+    displayName: 'Noali Kessler',
+    role: 'Agente Responsável pelo Monitoramento',
+    email: 'noali@dathex.company',
+    backup: 'Pierre Zanulli (Agente Mestre da Orquestração)'
+  }
 };

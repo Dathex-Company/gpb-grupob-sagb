@@ -18,11 +18,11 @@ import {
 } from '../services/intelligenceFlow';
 import { retrieveRelevantContext, retrieveLearnedMemory } from '../services/knowledge';
 import { buildChatStoragePath, getSupabasePublicUrl, uploadBlobToSupabaseStorage } from '../services/storage';
-import { db, collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from '../services/supabase';
+import { db, collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from '../services/supabase';
 import { SendIcon, NewChatIcon, MicIcon, StopCircleIcon, BackIcon, FolderIcon, PlusIcon, FileTextIcon, CloudUploadIcon, PaperclipIcon, XIcon, BookIcon, BotIcon, PencilIcon, CheckIcon, TrashIcon, SearchIcon } from './Icon';
 import { Avatar } from './Avatar';
-import ChatMessage from './ChatMessage';
-import ChatAttachmentCard from './ChatAttachmentCard';
+import ChatMessage from '../src/modules/nucleo-conversacional/components/ChatMessage';
+import ChatAttachmentCard from '../src/modules/nucleo-conversacional/components/ChatAttachmentCard';
 
 
 interface SystemicVisionProps {
@@ -275,6 +275,9 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
     const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
     const [sessionSearch, setSessionSearch] = useState('');
     const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
+    const [hasMoreMessages, setHasMoreMessages] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [olderMessages, setOlderMessages] = useState<Message[]>([]);
 
     const chatEndRef = useRef<HTMLDivElement>(null);
     const messagesScrollRef = useRef<HTMLDivElement>(null);
@@ -625,6 +628,78 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         setMenuOpenId(null);
     };
 
+    const loadOlderMessages = async () => {
+        if (!useSupabaseChat || !workspaceId || !currentSessionId || !selectedAgent || isLoadingMore) return;
+        
+        setIsLoadingMore(true);
+        try {
+            const allMessages = [...olderMessages, ...activeMessages];
+            const oldestTimestamp = allMessages.reduce((min, msg) => 
+                msg.timestamp.getTime() < min ? msg.timestamp.getTime() : min, 
+                Date.now()
+            );
+            const oldestDate = new Date(oldestTimestamp);
+
+            const olderQuery = query(
+                collection(db, "chat_messages"),
+                where("workspaceId", "==", workspaceId),
+                where("sessionId", "==", currentSessionId),
+                where("createdAt", "<", oldestDate),
+                orderBy("createdAt", "desc"),
+                limit(50)
+            );
+            const snapshot = await getDocs(olderQuery);
+            const newOlder = snapshot.docs.map(docSnap => {
+                const data = docSnap.data() as any;
+                const senderRaw = String(data.sender || 'bot').toLowerCase();
+                const sender = senderRaw === Sender.User ? Sender.User :
+                    senderRaw === Sender.System ? Sender.System : Sender.Bot;
+                const timestamp = data.createdAt instanceof Date ? data.createdAt : new Date(data.createdAt || Date.now());
+                const payload = (data.payload && typeof data.payload === 'object') ? data.payload : {};
+                const rawAttachment = data.attachment;
+                const attachments = Array.isArray(rawAttachment)
+                    ? rawAttachment
+                    : (rawAttachment && typeof rawAttachment === 'object' ? [rawAttachment] : []);
+                const normalizedAttachments = attachments
+                    .map((item: any) => ({
+                        data: String(item?.data || ''),
+                        mimeType: String(item?.mimeType || 'application/octet-stream'),
+                        preview: String(item?.preview || ''),
+                        name: item?.name ? String(item.name) : undefined,
+                        sizeBytes: item?.sizeBytes ? Number(item.sizeBytes) : undefined
+                    }))
+                    .filter((item: any) => Boolean(item.data));
+
+                return {
+                    id: docSnap.id,
+                    text: String(data.text || ''),
+                    sender,
+                    timestamp,
+                    buId: String(data.buId || activeBU.id),
+                    isStreaming: false,
+                    participantName: data.participantName ? String(data.participantName) : undefined,
+                    attachment: normalizedAttachments[0],
+                    attachments: normalizedAttachments,
+                    payload
+                } as Message;
+            });
+            
+            if (newOlder.length === 0) {
+                setHasMoreMessages(false);
+            } else {
+                setOlderMessages(prev => {
+                    const combined = [...newOlder, ...prev];
+                    combined.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                    return combined;
+                });
+            }
+        } catch (error) {
+            console.error("Erro ao carregar mensagens anteriores:", error);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
+
 
     const handleOpenAgent = (agent: Agent) => {
         if (agent.status === 'PLANNED') return;
@@ -729,7 +804,8 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
             collection(db, "chat_messages"),
             where("workspaceId", "==", workspaceId),
             where("sessionId", "==", currentSessionId),
-            orderBy("createdAt", "asc")
+            orderBy("createdAt", "desc"),
+            limit(50)
         );
 
         const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
@@ -769,7 +845,22 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                     payload
                 } as Message;
             });
-            setActiveMessages(loaded);
+            
+            setActiveMessages(prev => {
+                const newMessages = loaded.map(loadedMsg => {
+                    const localMsg = prev.find(m => m.id === loadedMsg.id);
+                    if (localMsg && localMsg.isStreaming) {
+                        return { ...loadedMsg, text: localMsg.text, isStreaming: true };
+                    }
+                    return loadedMsg;
+                });
+                
+                const optimisticMessages = prev.filter(m => !loaded.some(l => l.id === m.id));
+                const merged = [...newMessages, ...optimisticMessages];
+                merged.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                
+                return merged;
+            });
         }, (error) => {
             console.error("Erro ao carregar mensagens:", error);
         });
@@ -851,27 +942,8 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         setIsLoading(true);
 
         // 5. Preparar para regenerar a resposta
-        let botMsgId = Date.now().toString() + '_bot_regen';
+        let botMsgId = `${Date.now()}_bot_regen`;
         let persistedBotId: string | null = null;
-        if (canPersistChat) {
-            try {
-                const savedBot = await addDoc(collection(db, "chat_messages"), {
-                    workspaceId,
-                    sessionId: currentSessionId,
-                    agentId: selectedAgent.id,
-                    sender: Sender.Bot,
-                    text: '',
-                    buId: activeBU.id,
-                    hasAttachment: false,
-                    createdAt: new Date(),
-                    payload: { isStreaming: true }
-                });
-                botMsgId = savedBot.id;
-                persistedBotId = savedBot.id;
-            } catch (createBotError) {
-                console.error("Erro ao criar placeholder da regeneração:", createBotError);
-            }
-        }
 
         setActiveMessages(prev => [...prev, {
             id: botMsgId,
@@ -881,6 +953,26 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
             buId: activeBU.id,
             isStreaming: true
         }]);
+
+        if (canPersistChat) {
+            addDoc(collection(db, "chat_messages"), {
+                workspaceId,
+                sessionId: currentSessionId,
+                agentId: selectedAgent.id,
+                sender: Sender.Bot,
+                text: '',
+                buId: activeBU.id,
+                hasAttachment: false,
+                createdAt: new Date(),
+                payload: { isStreaming: true }
+            }).then(savedBot => {
+                setActiveMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, id: savedBot.id } : m));
+                botMsgId = savedBot.id;
+                persistedBotId = savedBot.id;
+            }).catch(createBotError => {
+                console.error("Erro ao criar placeholder da regeneração:", createBotError);
+            });
+        }
 
         try {
             // --- LOGICA DE GERAÇÃO (Cópia da handleSendMessage adaptada) ---
@@ -1545,36 +1637,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
             textareaRef.current.focus();
         }
 
-        let userMsgId = Date.now().toString();
-        if (canPersistChat) {
-            try {
-                const savedUser = await addDoc(collection(db, "chat_messages"), {
-                    workspaceId,
-                    sessionId: currentSessionId,
-                    agentId: selectedAgent.id,
-                    sender: Sender.User,
-                    text: userDisplayText,
-                    buId: activeBU.id,
-                    hasAttachment: currentAttachments.length > 0,
-                    attachment: currentAttachments.length > 0 ? currentAttachments : null,
-                    createdAt: now,
-                    payload: {
-                        turn_id: turnId,
-                        message_kind: 'user_input',
-                        ...createMessageTelemetry({
-                            provider: providerForMessage,
-                            promptText: [userText, attachmentTextShared, vaultContextShared].filter(Boolean).join('\n\n'),
-                            completionText: '',
-                            latencyMs: 0
-                        })
-                    }
-                });
-                userMsgId = savedUser.id;
-            } catch (error) {
-                console.error("Erro ao persistir mensagem do usuário:", error);
-            }
-        }
-
+        let userMsgId = `${Date.now()}_user`;
         const userMsg: Message = {
             id: userMsgId,
             text: userDisplayText,
@@ -1587,6 +1650,35 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
 
         setActiveMessages(prev => [...prev, userMsg]);
         setIsLoading(true);
+
+        if (canPersistChat) {
+            addDoc(collection(db, "chat_messages"), {
+                workspaceId,
+                sessionId: currentSessionId,
+                agentId: selectedAgent.id,
+                sender: Sender.User,
+                text: userDisplayText,
+                buId: activeBU.id,
+                hasAttachment: currentAttachments.length > 0,
+                attachment: currentAttachments.length > 0 ? currentAttachments : null,
+                createdAt: now,
+                payload: {
+                    turn_id: turnId,
+                    message_kind: 'user_input',
+                    ...createMessageTelemetry({
+                        provider: providerForMessage,
+                        promptText: [userText, attachmentTextShared, vaultContextShared].filter(Boolean).join('\n\n'),
+                        completionText: '',
+                        latencyMs: 0
+                    })
+                }
+            }).then(savedUser => {
+                setActiveMessages(prev => prev.map(m => m.id === userMsgId ? { ...m, id: savedUser.id } : m));
+                userMsgId = savedUser.id;
+            }).catch(error => {
+                console.error("Erro ao persistir mensagem do usuário:", error);
+            });
+        }
 
         await appendFlowStepSafe({
             actorType: 'user',
@@ -1653,32 +1745,6 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                     });
                 }
 
-                if (canPersistChat) {
-                    try {
-                        const savedBot = await addDoc(collection(db, "chat_messages"), {
-                            workspaceId,
-                            sessionId: currentSessionId,
-                            agentId: speaker.id,
-                            participantName: speaker.name,
-                            sender: Sender.Bot,
-                            text: '',
-                            buId: activeBU.id,
-                            hasAttachment: false,
-                            createdAt: new Date(),
-                            payload: {
-                                isStreaming: true,
-                                turn_id: turnId,
-                                model_used: providerForMessage,
-                                message_kind: 'assistant_output'
-                            }
-                        });
-                        botMsgId = savedBot.id;
-                        persistedBotId = savedBot.id;
-                    } catch (error) {
-                        console.error("Erro ao criar placeholder da resposta no banco:", error);
-                    }
-                }
-
                 setActiveMessages((prev) => [...prev, {
                     id: botMsgId,
                     text: '',
@@ -1688,6 +1754,32 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                     isStreaming: true,
                     participantName: speaker.name
                 }]);
+
+                if (canPersistChat) {
+                    addDoc(collection(db, "chat_messages"), {
+                        workspaceId,
+                        sessionId: currentSessionId,
+                        agentId: speaker.id,
+                        participantName: speaker.name,
+                        sender: Sender.Bot,
+                        text: '',
+                        buId: activeBU.id,
+                        hasAttachment: false,
+                        createdAt: new Date(),
+                        payload: {
+                            isStreaming: true,
+                            turn_id: turnId,
+                            model_used: providerForMessage,
+                            message_kind: 'assistant_output'
+                        }
+                    }).then(savedBot => {
+                        setActiveMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, id: savedBot.id } : m));
+                        botMsgId = savedBot.id;
+                        persistedBotId = savedBot.id;
+                    }).catch(error => {
+                        console.error("Erro ao criar placeholder da resposta no banco:", error);
+                    });
+                }
 
                 try {
                     const { ragContext, runtimeContext } = buildRuntimeContextForTurn(speaker, userText);
@@ -2312,7 +2404,7 @@ ${selectedVaultContext}
 
     return (
         <div
-            className="flex-1 h-full bg-[#FAFAFA] overflow-hidden flex flex-col relative font-nunito"
+            className="flex-1 h-full bg-[#FAFAFA] overflow-hidden flex flex-col relative font-sans"
             onDragOver={handleGlobalDragOver}
             onDrop={handleGlobalDrop}
         >
@@ -2813,6 +2905,64 @@ ${selectedVaultContext}
                                                 Conversa centralizada para leitura confortável, com laterais tratadas como moldura institucional sutil e foco total na operação.
                                             </p>
                                         </div>
+                                        
+                                        {hasMoreMessages && olderMessages.length === 0 && (
+                                            <div className="flex justify-center my-4">
+                                                <button
+                                                    onClick={loadOlderMessages}
+                                                    disabled={isLoadingMore}
+                                                    className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:border-bitrix-nav hover:text-bitrix-nav hover:shadow-md transition-all shadow-sm flex items-center gap-2"
+                                                >
+                                                    {isLoadingMore ? (
+                                                        <>
+                                                            <div className="w-3 h-3 border-2 border-gray-300 border-t-bitrix-nav rounded-full animate-spin"></div>
+                                                            Carregando...
+                                                        </>
+                                                    ) : (
+                                                        'Carregar mensagens anteriores'
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {olderMessages.length > 0 && (
+                                            <div className="mb-6">
+                                                <div className="flex items-center justify-center gap-2 mb-4">
+                                                    <div className="h-px flex-1 bg-gray-200"></div>
+                                                    <span className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Mensagens Anteriores</span>
+                                                    <div className="h-px flex-1 bg-gray-200"></div>
+                                                </div>
+                                                {olderMessages.map(msg => (
+                                                    <ChatMessage
+                                                        key={msg.id}
+                                                        message={msg}
+                                                        directors={directorsList}
+                                                        agentContext={selectedAgent ? { name: selectedAgent.name, avatarUrl: selectedAgent.avatarUrl } : undefined}
+                                                        onEdit={handleUpdateAndRegenerate}
+                                                        userProfile={CURRENT_USER}
+                                                    />
+                                                ))}
+                                                {hasMoreMessages && (
+                                                    <div className="flex justify-center mt-6">
+                                                        <button
+                                                            onClick={loadOlderMessages}
+                                                            disabled={isLoadingMore}
+                                                            className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:border-bitrix-nav hover:text-bitrix-nav hover:shadow-md transition-all shadow-sm flex items-center gap-2"
+                                                        >
+                                                            {isLoadingMore ? (
+                                                                <>
+                                                                    <div className="w-3 h-3 border-2 border-gray-300 border-t-bitrix-nav rounded-full animate-spin"></div>
+                                                                    Carregando...
+                                                                </>
+                                                            ) : (
+                                                                'Carregar mais mensagens anteriores'
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {activeMessages.map(msg => (
                                             <ChatMessage
                                                 key={msg.id}

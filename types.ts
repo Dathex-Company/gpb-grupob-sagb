@@ -28,7 +28,7 @@ export type AgentStatus = 'PLANNED' | 'STAGING' | 'ACTIVE' | 'MAINTENANCE' | 'BL
 export type ModelProvider = 'gemini' | 'deepseek' | 'llama_local' | 'openai' | 'claude' | 'qwen'; // Opções de Cérebro
 
 // V4.2 - Adicionado 'home' como Dashboard Inicial
-export type TabId = 'home' | 'ecosystem' | 'team' | 'conversations' | 'management' | 'programmers-room' | 'redir' | 'vault' | 'fabrica-ca' | 'governance' | 'missions' | 'nagi' | 'nic' | 'rai' | 'mentorias' | 'cid' | 'quality' | 'intelligence-flow' | 'continuous-memory' | 'studio' | 'methodology' | 'metodologias' | 'hub' | 'alignment' | 'market' | 'sales' | 'expansion' | '3forb-home' | 'audacus-home' | 'startyb-home' | 'requests' | 'unit-room' | 'chat-room' | 'ventures' | 'monitoramento' | 'agenda-inteligente';
+export type TabId = 'home' | 'ecosystem' | 'team' | 'conversations' | 'management' | 'programmers-room' | 'redir' | 'vault' | 'quadro_de_elite' | 'governance' | 'missions' | 'nagi' | 'nic' | 'rai' | 'mentorias' | 'cid' | 'quality' | 'intelligence-flow' | 'continuous-memory' | 'studio' | 'methodology' | 'metodologias' | 'hub' | 'alignment' | 'market' | 'sales' | 'expansion' | '3forb-home' | 'audacus-home' | 'startyb-home' | 'requests' | 'unit-room' | 'chat-room' | 'ventures' | 'cadastro-empresas' | 'monitoramento' | 'agenda-inteligente' | 'configuracoes-sistema' | 'foco-total';
 
 export type BUType = 'CORE' | 'VENTURY' | 'PERSONAL' | 'METHODOLOGY';
 
@@ -396,10 +396,22 @@ export interface AgentMissionBlueprint {
   title: string;
   description?: string | null;
   category: string;
-  flowConfig: any[];
+  flowConfig: AgentMissionBlueprintStepConfig[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface AgentMissionBlueprintStepConfig {
+  stepIndex: number;
+  roleKey: string;
+  stepName: string;
+  artifactType: string;
+  requiredFields?: string[];
+  schemaExample?: Record<string, any>;
+  dependsOnStepIndexes?: number[];
+  checkpointRequired?: boolean;
+  selectionRules?: Record<string, any>;
 }
 
 export interface AgentMissionBlueprintRole {
@@ -413,13 +425,31 @@ export interface AgentMissionBlueprintRole {
   createdAt: Date;
 }
 
+export interface AgentMissionParticipant {
+  id: string;
+  workspaceId: string;
+  missionId: string;
+  blueprintRoleKey: string;
+  blueprintRoleName: string;
+  agentId: string;
+  agentName: string;
+  agentRole?: string | null;
+  linkedAt: Date;
+  payload?: Record<string, any>;
+}
+
 export type AgentMissionEventType =
+  | 'mission_created'
+  | 'agent_linked'
   | 'step_started'
   | 'step_completed'
   | 'step_failed'
   | 'internal_comment'
   | 'objection'
   | 'artifact_created'
+  | 'handoff_performed'
+  | 'mission_completed'
+  | 'mission_blocked'
   | 'waiting_human_approval'
   | 'handoff_accepted'
   | 'system_log';

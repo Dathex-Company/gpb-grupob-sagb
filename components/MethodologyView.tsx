@@ -246,7 +246,7 @@ const MethodologyView: React.FC<MethodologyViewProps> = ({
       : 'Documento';
 
   return (
-    <div className="flex h-full bg-white font-nunito overflow-hidden">
+    <div className="flex h-full bg-white font-sans overflow-hidden">
       <div className="w-72 bg-gray-50 border-r border-gray-100 flex flex-col shrink-0">
         <header className="h-16 flex items-center justify-between px-5 border-b border-gray-100 bg-white/50">
           {onBack && (

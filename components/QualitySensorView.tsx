@@ -339,7 +339,7 @@ const QualitySensorView: React.FC<QualitySensorViewProps> = ({
   };
 
   return (
-    <div className="flex-1 h-full bg-[#F9FAFB] flex flex-col font-nunito overflow-y-auto custom-scrollbar relative">
+    <div className="flex-1 h-full bg-[#F9FAFB] flex flex-col font-sans overflow-y-auto custom-scrollbar relative">
       <div className="max-w-6xl mx-auto w-full p-8">
         <header className="mb-8 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">

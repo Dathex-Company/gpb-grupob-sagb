@@ -47,7 +47,7 @@ const BacklogView: React.FC<BacklogViewProps> = ({ topics, agents = [], onAddTop
   };
 
   return (
-    <div className="flex-1 h-full bg-white flex flex-col font-nunito overflow-hidden">
+    <div className="flex-1 h-full bg-white flex flex-col font-sans overflow-hidden">
         {/* HEADER */}
         <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6 shrink-0 z-20">
             <div className="flex items-center gap-3">

@@ -5,9 +5,12 @@ import type {
   AtivoEmEstruturacaoBlocoInterno,
   AtivoEmEstruturacaoBlocoInternoPatch,
   AtivoEmEstruturacaoBlocoTipo,
+  AtivoEmEstruturacaoRelacao,
+  AtivoEmEstruturacaoRelacaoDirecao,
   AtivoEmEstruturacao,
   AtivoEmEstruturacaoPatch,
   AtivoMetodologicoEstadoGovernanca,
+  AtivoMetodologicoRelacaoTipo,
   AtivoMetodologicoTipo,
   DiagnosticoPromocaoAssistida,
   DiagnosticoEstruturacao,
@@ -18,6 +21,7 @@ import {
   getEstadoGovernancaLabel,
   getLeituraVisualEstruturacaoLabel,
   getMaturidadePraticaLabel,
+  getTipoRelacaoLabel,
   getStatusEditorialLabel
 } from '../services';
 
@@ -29,10 +33,19 @@ interface MetodologiaAtivoEditarPageProps {
   estadosGovernancaDisponiveis: AtivoMetodologicoEstadoGovernanca[];
   tiposDisponiveis: Array<{ tipo: AtivoMetodologicoTipo; label: string }>;
   tiposBlocoDisponiveis: Array<{ tipo: AtivoEmEstruturacaoBlocoTipo; label: string }>;
+  tiposRelacaoDisponiveis: AtivoMetodologicoRelacaoTipo[];
+  ativosCanonicosRelacionaveis: Array<{ id: string; nome: string; slug: string }>;
   onAdicionarBlocoInterno: (tipo: AtivoEmEstruturacaoBlocoTipo) => void;
   onAtualizarBlocoInterno: (blocoId: string, patch: AtivoEmEstruturacaoBlocoInternoPatch) => void;
   onRemoverBlocoInterno: (blocoId: string) => void;
   onMoverBlocoInterno: (blocoId: string, direcao: 'cima' | 'baixo') => void;
+  onAdicionarRelacaoEstruturacao: (input: {
+    tipo_de_relacao: AtivoMetodologicoRelacaoTipo;
+    ativo_relacionado_canonico_id: string;
+    direcao: AtivoEmEstruturacaoRelacaoDirecao;
+    observacao?: string;
+  }) => void;
+  onRemoverRelacaoEstruturacao: (relacaoId: string) => void;
   onAtualizarAtivo: (patch: AtivoEmEstruturacaoPatch) => void;
   diagnosticoPromocao: DiagnosticoPromocaoAssistida;
   previewPromocao: AtivoCanonicoPromocaoPreview;
@@ -51,10 +64,14 @@ export const MetodologiaAtivoEditarPage: React.FC<MetodologiaAtivoEditarPageProp
   estadosGovernancaDisponiveis,
   tiposDisponiveis,
   tiposBlocoDisponiveis,
+  tiposRelacaoDisponiveis,
+  ativosCanonicosRelacionaveis,
   onAdicionarBlocoInterno,
   onAtualizarBlocoInterno,
   onRemoverBlocoInterno,
   onMoverBlocoInterno,
+  onAdicionarRelacaoEstruturacao,
+  onRemoverRelacaoEstruturacao,
   onAtualizarAtivo,
   diagnosticoPromocao,
   previewPromocao,
@@ -65,7 +82,22 @@ export const MetodologiaAtivoEditarPage: React.FC<MetodologiaAtivoEditarPageProp
   onVoltarMesa
 }) => {
   const [tipoNovoBloco, setTipoNovoBloco] = React.useState<AtivoEmEstruturacaoBlocoTipo>('essencia');
+  const [tipoNovaRelacao, setTipoNovaRelacao] = React.useState<AtivoMetodologicoRelacaoTipo>('complementa');
+  const [ativoRelacionadoId, setAtivoRelacionadoId] = React.useState<string>('');
+  const [direcaoRelacao, setDirecaoRelacao] = React.useState<AtivoEmEstruturacaoRelacaoDirecao>('saida');
+  const [observacaoRelacao, setObservacaoRelacao] = React.useState('');
   const blocosInternos: AtivoEmEstruturacaoBlocoInterno[] = [...(ativo.blocos_internos ?? [])].sort((a, b) => a.ordem - b.ordem);
+  const relacoesEstruturacao: AtivoEmEstruturacaoRelacao[] = [...(ativo.relacoes_estruturacao ?? [])];
+
+  React.useEffect(() => {
+    if (!ativosCanonicosRelacionaveis.length) {
+      setAtivoRelacionadoId('');
+      return;
+    }
+    if (!ativoRelacionadoId || !ativosCanonicosRelacionaveis.some((item) => item.id === ativoRelacionadoId)) {
+      setAtivoRelacionadoId(ativosCanonicosRelacionaveis[0].id);
+    }
+  }, [ativosCanonicosRelacionaveis, ativoRelacionadoId]);
 
   return (
     <section className="space-y-4">
@@ -338,6 +370,133 @@ export const MetodologiaAtivoEditarPage: React.FC<MetodologiaAtivoEditarPageProp
                 />
               </article>
             ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-cyan-200 bg-cyan-50/40 p-4 md:p-5 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700">Relações em estruturação</p>
+            <h4 className="text-lg font-black text-slate-900 tracking-tight mt-1">Conexões mínimas de intenção estrutural</h4>
+            <p className="text-xs text-slate-600 mt-1">
+              {relacoesEstruturacao.length
+                ? `Este ativo já se conecta com ${new Set(relacoesEstruturacao.map((item) => item.ativo_relacionado_canonico_id)).size} ativo(s) canônico(s).`
+                : 'Sem relações definidas ainda.'}
+            </p>
+          </div>
+          <span className="px-2.5 py-1 rounded-md bg-white border border-cyan-200 text-[10px] font-black uppercase tracking-wide text-cyan-700">
+            intenção estrutural • não canônica
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Tipo de relação</span>
+            <select
+              value={tipoNovaRelacao}
+              onChange={(event) => setTipoNovaRelacao(event.target.value as AtivoMetodologicoRelacaoTipo)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800"
+            >
+              {tiposRelacaoDisponiveis.map((tipo) => (
+                <option key={tipo} value={tipo}>
+                  {getTipoRelacaoLabel(tipo)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Ativo relacionado (canônico)</span>
+            <select
+              value={ativoRelacionadoId}
+              onChange={(event) => setAtivoRelacionadoId(event.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800"
+              disabled={ativosCanonicosRelacionaveis.length === 0}
+            >
+              {ativosCanonicosRelacionaveis.length === 0 && <option value="">Sem ativos canônicos disponíveis</option>}
+              {ativosCanonicosRelacionaveis.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Direção</span>
+            <select
+              value={direcaoRelacao}
+              onChange={(event) => setDirecaoRelacao(event.target.value as AtivoEmEstruturacaoRelacaoDirecao)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800"
+            >
+              <option value="saida">Saída (este ativo → relacionado)</option>
+              <option value="entrada">Entrada (relacionado → este ativo)</option>
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Observação (opcional)</span>
+            <input
+              value={observacaoRelacao}
+              onChange={(event) => setObservacaoRelacao(event.target.value)}
+              placeholder="Contexto curto da intenção de vínculo"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800"
+            />
+          </label>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            disabled={!ativoRelacionadoId || ativosCanonicosRelacionaveis.length === 0}
+            onClick={() => {
+              onAdicionarRelacaoEstruturacao({
+                tipo_de_relacao: tipoNovaRelacao,
+                ativo_relacionado_canonico_id: ativoRelacionadoId,
+                direcao: direcaoRelacao,
+                observacao: observacaoRelacao
+              });
+              setObservacaoRelacao('');
+            }}
+            className="px-3 py-2 rounded-lg bg-cyan-700 text-white text-[11px] font-black uppercase tracking-wide disabled:opacity-50"
+          >
+            Adicionar relação
+          </button>
+        </div>
+
+        {relacoesEstruturacao.length === 0 ? (
+          <p className="text-sm text-cyan-900/80">Defina ao menos uma conexão quando fizer sentido para evitar promoção de ativo isolado.</p>
+        ) : (
+          <div className="space-y-2">
+            {relacoesEstruturacao.map((relacao) => {
+              const ativoRelacionado = ativosCanonicosRelacionaveis.find((item) => item.id === relacao.ativo_relacionado_canonico_id);
+              return (
+                <article key={relacao.id} className="rounded-xl border border-cyan-200 bg-white p-3 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2 py-1 rounded-md bg-cyan-50 text-cyan-800 text-[10px] font-black uppercase tracking-wide">
+                      {getTipoRelacaoLabel(relacao.tipo_de_relacao)}
+                    </span>
+                    <span className="text-xs text-slate-600">
+                      {relacao.direcao === 'saida' ? 'este ativo → relacionado' : 'relacionado → este ativo'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onRemoverRelacaoEstruturacao(relacao.id)}
+                      className="ml-auto px-2 py-1 rounded-md bg-rose-600 text-white text-[10px] font-black uppercase tracking-wide"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                  <p className="text-sm text-slate-800">
+                    <strong>Ativo relacionado:</strong> {ativoRelacionado?.nome ?? relacao.ativo_relacionado_canonico_id}
+                  </p>
+                  {relacao.observacao && <p className="text-xs text-slate-600">{relacao.observacao}</p>}
+                </article>
+              );
+            })}
           </div>
         )}
       </div>

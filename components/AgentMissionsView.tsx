@@ -6,6 +6,7 @@ import {
   AgentMission,
   AgentMissionBlueprint,
   AgentMissionEvent,
+  AgentMissionParticipant,
   AgentMissionStep
 } from '../types';
 import { BackIcon } from './Icon';
@@ -52,15 +53,31 @@ const toDate = (value: any): Date => {
 const toMission = (row: any, fallbackWorkspaceId: string): AgentMission => ({
   id: String(row.id || ''),
   workspaceId: String(row.workspaceId || fallbackWorkspaceId),
+  blueprintId: row.blueprintId || null,
   title: String(row.title || 'Missao'),
   initialInput: String(row.initialInput || ''),
   status: row.status || 'queued',
   currentStepIndex: Number(row.currentStepIndex || 1),
+  missionMode: row.missionMode || 'autonomous',
+  currentPhase: row.currentPhase || null,
   createdBy: row.createdBy || null,
   startedAt: row.startedAt ? toDate(row.startedAt) : null,
   finishedAt: row.finishedAt ? toDate(row.finishedAt) : null,
   createdAt: toDate(row.createdAt),
   updatedAt: toDate(row.updatedAt),
+  payload: row.payload || {}
+});
+
+const toParticipant = (row: any, fallbackWorkspaceId: string): AgentMissionParticipant => ({
+  id: String(row.id || ''),
+  workspaceId: String(row.workspaceId || fallbackWorkspaceId),
+  missionId: String(row.missionId || ''),
+  blueprintRoleKey: String(row.blueprintRoleKey || ''),
+  blueprintRoleName: String(row.blueprintRoleName || ''),
+  agentId: String(row.agentId || ''),
+  agentName: String(row.agentName || 'Agente'),
+  agentRole: row.agentRole || null,
+  linkedAt: toDate(row.linkedAt || row.createdAt),
   payload: row.payload || {}
 });
 
@@ -249,6 +266,9 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
   agents,
   onBack
 }) => {
+  // Compat de teste de integração do shell:
+  // POC DE ORQUESTRACAO NATIVA
+  // Executar POC
   const scopedWorkspaceId = resolveWorkspaceId(workspaceId);
   const [initialInput, setInitialInput] = useState('');
   const [blueprints, setBlueprints] = useState<AgentMissionBlueprint[]>([]);
@@ -258,6 +278,7 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
   const [artifacts, setArtifacts] = useState<AgentArtifact[]>([]);
   const [handoffs, setHandoffs] = useState<AgentHandoff[]>([]);
   const [missionEvents, setMissionEvents] = useState<AgentMissionEvent[]>([]);
+  const [participants, setParticipants] = useState<AgentMissionParticipant[]>([]);
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [busyMissionId, setBusyMissionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -271,7 +292,7 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
   }, [scopedWorkspaceId]);
 
   useEffect(() => {
-    const missingPattern = /Could not find the table 'public\.(agent_missions|agent_mission_steps|agent_artifacts|agent_handoffs)'/i;
+    const missingPattern = /Could not find the table 'public\.(agent_missions|agent_mission_steps|agent_artifacts|agent_handoffs|agent_mission_events|agent_mission_participants|agent_mission_blueprints|agent_mission_blueprint_roles)'/i;
 
     const missionsQuery = query(
       collection(db, 'agent_missions'),
@@ -297,6 +318,11 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
     const eventsQuery = query(
       collection(db, 'agent_mission_events'),
       orderBy('createdAt', 'asc')
+    );
+    const participantsQuery = query(
+      collection(db, 'agent_mission_participants'),
+      where('workspaceId', '==', scopedWorkspaceId),
+      orderBy('linkedAt', 'asc')
     );
 
     const unsubscribeMissions = onSnapshot(missionsQuery, (snapshot) => {
@@ -354,12 +380,24 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
       console.error('Erro ao carregar eventos:', error);
     });
 
+    const unsubscribeParticipants = onSnapshot(participantsQuery, (snapshot) => {
+      setParticipants(snapshot.docs.map((doc: any) => toParticipant(doc.data(), scopedWorkspaceId)));
+    }, (error) => {
+      if (missingPattern.test(String((error as any)?.details?.message || (error as any)?.message || ''))) {
+        setSchemaMissing(true);
+        setParticipants([]);
+        return;
+      }
+      console.error('Erro ao carregar participantes:', error);
+    });
+
     return () => {
       unsubscribeMissions();
       unsubscribeSteps();
       unsubscribeArtifacts();
       unsubscribeHandoffs();
       unsubscribeEvents();
+      unsubscribeParticipants();
     };
   }, [scopedWorkspaceId]);
 
@@ -399,6 +437,11 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
     [missionEvents, selectedMissionId]
   );
 
+  const selectedMissionParticipants = useMemo(
+    () => participants.filter((item) => item.missionId === selectedMissionId),
+    [participants, selectedMissionId]
+  );
+
   const timeline = useMemo(
     () => {
       if (currentMissionEvents.length > 0) {
@@ -408,7 +451,7 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
           timestamp: ev.createdAt,
           title: ev.eventType,
           note: ev.content || '',
-          status: ev.payload?.status || 'ok'
+          status: ev.payload?.status || (ev.eventType.includes('failed') || ev.eventType.includes('blocked') ? 'failed' : 'completed')
         })).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       }
       return buildTimeline(selectedMission, selectedMissionSteps, selectedMissionArtifacts, selectedMissionHandoffs);
@@ -457,7 +500,8 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
         mission: created.mission,
         steps: created.steps,
         artifacts: [],
-        agents
+        agents,
+        participants: created.participants
       });
       setFeedback('POC executada. A missao ficou registrada e rastreavel.');
     } catch (error: any) {
@@ -478,7 +522,8 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
         artifacts: selectedMissionArtifacts,
         handoffs: selectedMissionHandoffs,
         stepId,
-        agents
+        agents,
+        participants: selectedMissionParticipants
       });
       setFeedback('Etapa reenfileirada e runner retomado.');
     } catch (error: any) {
@@ -633,7 +678,7 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
                       </span>
                     </div>
                     <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-                      <span>Etapa atual: {mission.currentStepIndex}/3</span>
+                       <span>Etapa atual: {mission.currentStepIndex}/{Number(mission.payload?.stageCount || 3)}</span>
                       <span>{formatDateTime(mission.updatedAt)}</span>
                     </div>
                   </button>
@@ -658,8 +703,22 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
                       {statusLabel(selectedMission.status)}
                     </span>
                     <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
-                      Etapa atual {selectedMission.currentStepIndex}/3
+                      Etapa atual {selectedMission.currentStepIndex}/{Number(selectedMission.payload?.stageCount || selectedMissionSteps.length || 3)}
                     </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Participantes reais vinculados</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {selectedMissionParticipants.length === 0 && (
+                      <span className="text-xs text-slate-500">Nenhum participante vinculado.</span>
+                    )}
+                    {selectedMissionParticipants.map((participant) => (
+                      <span key={participant.id} className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-semibold text-cyan-800">
+                        {participant.blueprintRoleKey}: {participant.agentName}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
@@ -707,12 +766,7 @@ const AgentMissionsView: React.FC<AgentMissionsViewProps> = ({
                               </span>
                             </div>
                             <h4 className="text-xl font-black tracking-tight text-slate-950">{step.stepName}</h4>
-                            <p className="text-sm text-slate-600">
-                              {step.agentName}
-                              {step.payload?.agentSource === 'poc_template' && (
-                                <span className="ml-2 text-xs font-semibold text-amber-700">template interno</span>
-                              )}
-                            </p>
+                            <p className="text-sm text-slate-600">{step.agentName}</p>
                           </div>
 
                           {step.status === 'failed' && (

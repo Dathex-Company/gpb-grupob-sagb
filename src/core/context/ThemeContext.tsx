@@ -11,11 +11,11 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Inicializa a partir do localStorage ou preferência do sistema
+  // Inicializa a partir do localStorage; sem valor salvo, força modo escuro (dark)
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('sagb-theme');
     if (saved === 'light' || saved === 'dark') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'dark';
   });
 
   const setTheme = (newTheme: Theme) => {

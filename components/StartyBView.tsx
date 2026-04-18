@@ -321,7 +321,7 @@ const StartyBView: React.FC<StartyBViewProps> = ({ activeBU, agents, onBack, act
   };
 
   return (
-    <div className="flex-1 h-full bg-[#FAFAFA] font-nunito flex flex-col relative overflow-hidden">
+    <div className="flex-1 h-full bg-[#FAFAFA] font-sans flex flex-col relative overflow-hidden">
       {renderChatModal()}
 
       {/* HEADER DE ENGENHARIA */}

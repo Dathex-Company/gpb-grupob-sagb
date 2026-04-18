@@ -6,3 +6,5 @@ export * from './metodologiasPromocaoAssistida';
 export * from './metodologiasCanonicoSnapshot';
 export * from './metodologiasComparacaoCanonica';
 export * from './metodologiasSnapshotCanonicoLifecycle';
+export * from './metodologiasIndicadores';
+export * from './metodologiasMesaOperacional';

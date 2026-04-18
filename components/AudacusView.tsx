@@ -51,7 +51,7 @@ const AudacusView: React.FC<AudacusViewProps> = ({ activeBU, onBack, savedGatewa
   // Modo Configuração (Tela Escura Gateway) - Só aparece se não houver URL definida
   if (isConfiguring) {
     return (
-      <div className="flex-1 h-full bg-[#0F172A] flex flex-col items-center justify-center p-12 font-nunito animate-msg relative overflow-hidden">
+      <div className="flex-1 h-full bg-[#0F172A] flex flex-col items-center justify-center p-12 font-sans animate-msg relative overflow-hidden">
         {/* Background Tech Effects */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-900/20 rounded-full blur-[120px]"></div>

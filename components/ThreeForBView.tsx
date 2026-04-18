@@ -246,7 +246,7 @@ const ThreeForBView: React.FC<ThreeForBViewProps> = ({ activeTab, activeBU, setA
   const renderTriageView = () => {
     const block = TRIAGE_BLOCKS[currentBlockIndex];
     return (
-      <div className="flex-1 flex flex-col h-full bg-white font-nunito animate-msg">
+      <div className="flex-1 flex flex-col h-full bg-white font-sans animate-msg">
         <div className="h-20 border-b border-gray-100 flex items-center justify-between px-10 shrink-0">
           <div className="flex items-center gap-4">
              <button onClick={() => setViewMode('dashboard')} className="hover:bg-gray-50 p-2 rounded-xl transition-colors">
@@ -330,7 +330,7 @@ const ThreeForBView: React.FC<ThreeForBViewProps> = ({ activeTab, activeBU, setA
   };
 
   const renderClientRoom = () => (
-    <div className="flex-1 flex flex-col h-full bg-[#FAFAFA] font-nunito animate-msg overflow-hidden relative">
+    <div className="flex-1 flex flex-col h-full bg-[#FAFAFA] font-sans animate-msg overflow-hidden relative">
        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-orange-100/50 to-transparent rounded-full blur-3xl pointer-events-none -mr-32 -mt-32"></div>
 
        <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col p-12 overflow-y-auto custom-scrollbar z-10">
@@ -712,7 +712,7 @@ const ThreeForBView: React.FC<ThreeForBViewProps> = ({ activeTab, activeBU, setA
 
   const renderTeamView = (filterSector?: 'MARKETING' | 'VENDAS' | 'EXPANSÃO') => {
     return (
-      <div className="flex-1 h-full bg-[#F1F1F1] overflow-y-auto custom-scrollbar p-10 font-nunito relative">
+      <div className="flex-1 h-full bg-[#F1F1F1] overflow-y-auto custom-scrollbar p-10 font-sans relative">
         <div className="absolute top-10 right-10 flex flex-col items-center opacity-60 hover:opacity-100 transition-opacity">
            <img src={GERAC_SEAL} alt="Selo GERAC" className="w-12 h-12 object-contain" />
         </div>

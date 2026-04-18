@@ -24,7 +24,7 @@ import ContinuousMemoryView from './components/ContinuousMemoryView';
 import MonitoramentoView from './components/MonitoramentoView';
 import NAGIView from './components/NAGIView';
 import UnitView from './components/UnitView';
-import ConversationsView from './components/ConversationsView';
+import ConversationsView from './src/modules/nucleo-conversacional/pages/ConversationsView';
 import Auth from './components/Auth'; // NOVA IMPORTAÇÃO
 import { getModuleRoutes } from './src/core/modules/moduleRegistry';
 import { Message, Sender, TabId, Agent, Topic, Venture, BusinessUnit, BusinessBlueprint, Task, UserProfile, GovernanceCulture, ComplianceRule, VaultItem, KnowledgeNode, WorkspaceMember, AgentQualityEvent, AgentDnaProfile, AgentDnaEffective, AppUiPrefs } from './types';
@@ -983,7 +983,7 @@ const asDate = (v: any): Date | undefined => {
     if (agent.status === 'PLANNED') {
       // Se planejado, vai para RH (Fábrica) para contratar
       setAgentToOnboard(agent);
-      setActiveTab('fabrica-ca');
+      setActiveTab('quadro_de_elite');
     } else {
       // Se ativo, vai para Chat (SystemicVision/SplitView)
       setChatTargetAgent(agent);
@@ -999,7 +999,7 @@ const asDate = (v: any): Date | undefined => {
     }
     if (agent.status === 'PLANNED') {
       setAgentToOnboard(agent);
-      setActiveTab('fabrica-ca');
+      setActiveTab('quadro_de_elite');
       return;
     }
     setChatTargetAgent(agent);
@@ -1765,7 +1765,7 @@ const asDate = (v: any): Date | undefined => {
 
       case 'alignment': return <AlignmentView activeBU={activeBU} blueprint={currentBlueprint} onUpdateBlueprint={(bp) => setBlueprints(p => ({ ...p, [activeBU.id]: { ...p[activeBU.id], ...bp } }))} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
 
-      case 'fabrica-ca': return (
+      case 'quadro_de_elite': return (
         <AgentFactory
           agents={activatedAgents}
           initialAgent={agentToOnboard}
@@ -1775,11 +1775,10 @@ const asDate = (v: any): Date | undefined => {
           activeBU={activeBU}
           activeWorkspaceId={activeWorkspaceId}
           businessUnits={businessUnits}
-          ventures={ventures} // NOVO v1.5.0
+          ventures={ventures}
           authUsersByEmail={authUsersByEmail}
           activeSessionEmail={activeSessionEmail}
           onManageIntelligence={(agent) => {
-            // NOVO HANDLER: Redireciona para Governança/Inteligência
             setGovernanceTargetId(agent.id);
             setActiveTab('governance');
           }}
@@ -1924,30 +1923,55 @@ const asDate = (v: any): Date | undefined => {
   }
 
   const safeBU = activeBU || INITIAL_BUSINESS_UNITS[0];
+  const userName = authenticatedUserProfile?.name || authenticatedUserProfile?.nickname || 'Usuário';
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-sagb-bg font-nunito text-gray-900 dark:text-sagb-text transition-colors duration-300 overflow-hidden">
-      {!isImmersiveMode && (
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          agentCount={filteredAgents.length}
-          activeBU={safeBU}
-          version={version}
-          onReset={handleReturnToHub}
-          onLogout={handleLogout}
-          userProfile={authenticatedUserProfile}
-        />
-      )}
-      <main className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-sagb-bg transition-colors duration-300">
-        <Suspense fallback={
-          <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-sagb-bg">
-            <div className="w-10 h-10 border-4 border-gray-100 dark:border-white/10 border-t-sagb-blue rounded-full animate-spin"></div>
-          </div>
-        }>
-          {renderContent()}
-        </Suspense>
-      </main>
+    <div className="h-screen bg-gray-50 dark:bg-sagb-bg font-nunito text-gray-900 dark:text-sagb-text transition-colors duration-300 overflow-hidden">
+      <div className="flex h-full overflow-hidden">
+        {!isImmersiveMode && (
+          <Sidebar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            agentCount={filteredAgents.length}
+            activeBU={safeBU}
+            version={version}
+            onReset={handleReturnToHub}
+            onLogout={handleLogout}
+            userProfile={authenticatedUserProfile}
+          />
+        )}
+        <main className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-sagb-bg transition-colors duration-300">
+          {!isImmersiveMode && (
+            <header className="shrink-0 h-14 bg-white/95 dark:bg-sagb-panel/95 backdrop-blur border-b border-gray-100 dark:border-white/10 z-[60] px-4 md:px-6 flex items-center justify-between">
+              <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">SagB v{version}</div>
+              <div className="flex items-center gap-2 md:gap-3">
+                <button
+                  onClick={() => setActiveTab('configuracoes-sistema')}
+                  className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-white/5"
+                >
+                  Configurações
+                </button>
+                <div className="hidden md:flex items-center gap-2 pl-2 border-l border-gray-200 dark:border-white/10">
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-gray-100 dark:bg-sagb-bg-2">
+                    {authenticatedUserProfile?.avatarUrl ? (
+                      <img src={authenticatedUserProfile.avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                    ) : null}
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700 dark:text-sagb-text max-w-[130px] truncate">{userName}</span>
+                  <button onClick={handleLogout} className="text-xs text-gray-500 hover:text-red-600 font-semibold">Sair</button>
+                </div>
+              </div>
+            </header>
+          )}
+          <Suspense fallback={
+            <div className="flex-1 flex flex-col items-center justify-center bg-white dark:bg-sagb-bg">
+              <div className="w-10 h-10 border-4 border-gray-100 dark:border-white/10 border-t-sagb-blue rounded-full animate-spin"></div>
+            </div>
+          }>
+            {renderContent()}
+          </Suspense>
+        </main>
+      </div>
     </div>
   );
 };

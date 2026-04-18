@@ -23,14 +23,14 @@ export const nicMetrics: NICMetric[] = [
     note: 'Preparar > Interpretar > Governar'
   },
   {
-    label: 'Fluxo Operacional',
-    value: 'CID > NIC > NAGI',
-    note: 'Preparar > Interpretar > Governar'
-  },
-  {
     label: 'Foco da Fase',
     value: 'Materiais Internos',
     note: 'Cruzamento de documentos, transcrições e memórias do SagB'
+  },
+  {
+    label: 'Estado do Motor',
+    value: 'Interface Ativa',
+    note: 'Blueprint operacional pronto, ainda com documentos mockados até integração real com o CID'
   }
 ];
 

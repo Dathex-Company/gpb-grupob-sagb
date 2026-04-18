@@ -11,11 +11,15 @@ import {
   orderBy,
   Timestamp
 } from '../../../../services/supabase';
+import { ATIVO_METODOLOGICO_RELACAO_TIPOS } from '../types';
 import type {
   AtivoCanonico,
   AtivoCanonicoBloco,
   AtivoCanonicoBlocoInput,
   AtivoCanonicoBlocoPatch,
+  AtivoEmEstruturacaoRelacao,
+  AtivoEmEstruturacaoRelacaoDirecao,
+  AtivoEmEstruturacaoRelacaoInput,
   AtivoMetodologicoRelacao,
   AtivoMetodologicoRelacaoTipo,
   AtivoCanonicoEventoManutencao,
@@ -44,6 +48,7 @@ import { validarIntegridadeSnapshotCanonico } from './metodologiasCanonicoSnapsh
 const ENTRADAS_TABLE = 'metodologias_entradas_brutas';
 const ATIVOS_TABLE = 'metodologias_ativos_em_estruturacao';
 const BLOCOS_TABLE = 'metodologias_blocos_estruturacao';
+const RELACOES_ESTRUTURACAO_TABLE = 'metodologias_relacoes_estruturacao';
 const CANONICOS_TABLE = 'metodologias_catalogo_canonico';
 const BLOCOS_CANONICOS_TABLE = 'metodologias_blocos_canonicos';
 const RELACOES_CANONICAS_TABLE = 'metodologias_relacoes_canonicas';
@@ -125,10 +130,22 @@ const mapRelacaoCanonica = (row: any): AtivoMetodologicoRelacao => ({
   observacao: row.observacao ? String(row.observacao) : undefined
 });
 
+const mapRelacaoEstruturacao = (row: any): AtivoEmEstruturacaoRelacao => ({
+  id: String(row.id),
+  ativo_em_estruturacao_id: String(row.ativo_em_estruturacao_id),
+  ativo_relacionado_canonico_id: String(row.ativo_relacionado_canonico_id),
+  tipo_de_relacao: row.tipo_de_relacao as AtivoMetodologicoRelacaoTipo,
+  direcao: (row.direcao ?? 'saida') as AtivoEmEstruturacaoRelacaoDirecao,
+  observacao: row.observacao ? String(row.observacao) : undefined,
+  created_at: toIso(row.created_at),
+  updated_at: toIso(row.updated_at)
+});
+
 const mapAtivo = (
   row: any,
   origemEntradaTitulo: string,
-  blocosInternos: AtivoEmEstruturacaoBlocoInterno[] = []
+  blocosInternos: AtivoEmEstruturacaoBlocoInterno[] = [],
+  relacoesEstruturacao: AtivoEmEstruturacaoRelacao[] = []
 ): AtivoEmEstruturacao => ({
   id_estruturacao: String(row.id),
   origem_preview_id: String(row.origem_preview_id ?? `preview-${row.id}`),
@@ -146,6 +163,14 @@ const mapAtivo = (
     estado: row.governanca_estado
   },
   blocos_internos: [...blocosInternos].sort((a, b) => a.ordem - b.ordem),
+  relacoes_estruturacao: relacoesEstruturacao,
+  relacoes_ativos: relacoesEstruturacao.map((relacao) => ({
+    id: relacao.id,
+    tipo_de_relacao: relacao.tipo_de_relacao,
+    ativo_origem_id: relacao.direcao === 'saida' ? String(row.id) : relacao.ativo_relacionado_canonico_id,
+    ativo_destino_id: relacao.direcao === 'saida' ? relacao.ativo_relacionado_canonico_id : String(row.id),
+    observacao: relacao.observacao
+  })),
   created_at: toIso(row.created_at),
   updated_at: toIso(row.updated_at)
 });
@@ -299,6 +324,33 @@ const listarBlocosPorAtivosIds = async (ativosIds: string[]): Promise<Map<string
   return agrupado;
 };
 
+const listarRelacoesEstruturacaoPorAtivosIds = async (
+  ativosIds: string[]
+): Promise<Map<string, AtivoEmEstruturacaoRelacao[]>> => {
+  const agrupado = new Map<string, AtivoEmEstruturacaoRelacao[]>();
+  if (!ativosIds.length) return agrupado;
+
+  const snapshots = await Promise.all(
+    ativosIds.map((ativoId) =>
+      getDocs(
+        query(
+          collection(db, RELACOES_ESTRUTURACAO_TABLE),
+          where('ativo_em_estruturacao_id', '==', ativoId),
+          orderBy('created_at', 'asc')
+        )
+      )
+    )
+  );
+
+  snapshots.forEach((snapshot, index) => {
+    const ativoId = ativosIds[index];
+    const relacoes = snapshot.docs.map((item: any) => mapRelacaoEstruturacao({ id: item.id, ...item.data() }));
+    agrupado.set(ativoId, relacoes);
+  });
+
+  return agrupado;
+};
+
 export const listarBlocosInternosDoAtivoPersistido = async (
   ativoEmEstruturacaoId: string
 ): Promise<AtivoEmEstruturacaoBlocoInterno[]> => {
@@ -307,6 +359,113 @@ export const listarBlocosInternosDoAtivoPersistido = async (
   );
 
   return snapshot.docs.map((item: any) => mapBlocoInterno({ id: item.id, ...item.data() })).sort((a, b) => a.ordem - b.ordem);
+};
+
+export const listarRelacoesEstruturacaoDoAtivoPersistido = async (
+  ativoEmEstruturacaoId: string
+): Promise<AtivoEmEstruturacaoRelacao[]> => {
+  const snapshot = await getDocs(
+    query(
+      collection(db, RELACOES_ESTRUTURACAO_TABLE),
+      where('ativo_em_estruturacao_id', '==', ativoEmEstruturacaoId),
+      orderBy('created_at', 'asc')
+    )
+  );
+
+  return snapshot.docs.map((item: any) => mapRelacaoEstruturacao({ id: item.id, ...item.data() }));
+};
+
+const validarTipoDeRelacaoEstruturacao = (tipo: string) => {
+  if (!ATIVO_METODOLOGICO_RELACAO_TIPOS.includes(tipo as AtivoMetodologicoRelacaoTipo)) {
+    throw new Error('Tipo de relação inválido para o núcleo de metodologias.');
+  }
+};
+
+const validarNaoSelfLoopRelacaoEstruturacao = async (params: {
+  ativoEmEstruturacaoId: string;
+  ativoRelacionadoCanonicoId: string;
+}) => {
+  const snapshotCanonicoOrigem = await getDocs(
+    query(
+      collection(db, CANONICOS_TABLE),
+      where('origem_ativo_em_estruturacao_id', '==', params.ativoEmEstruturacaoId)
+    )
+  );
+
+  const canonicoOrigem = snapshotCanonicoOrigem.docs[0];
+  if (canonicoOrigem && canonicoOrigem.id === params.ativoRelacionadoCanonicoId) {
+    throw new Error('Não é permitido criar self-loop entre ativo em estruturação e seu canônico correspondente.');
+  }
+};
+
+const validarDuplicacaoRelacaoEstruturacao = async (params: {
+  ativoEmEstruturacaoId: string;
+  ativoRelacionadoCanonicoId: string;
+  tipoDeRelacao: AtivoMetodologicoRelacaoTipo;
+  direcao: AtivoEmEstruturacaoRelacaoDirecao;
+}) => {
+  const existentes = await listarRelacoesEstruturacaoDoAtivoPersistido(params.ativoEmEstruturacaoId);
+  const duplicada = existentes.some(
+    (relacao) =>
+      relacao.ativo_relacionado_canonico_id === params.ativoRelacionadoCanonicoId &&
+      relacao.tipo_de_relacao === params.tipoDeRelacao &&
+      relacao.direcao === params.direcao
+  );
+
+  if (duplicada) {
+    throw new Error('Relação já registrada nesta estruturação com o mesmo tipo e direção.');
+  }
+};
+
+export const criarRelacaoEstruturacaoPersistida = async (
+  ativoEmEstruturacaoId: string,
+  input: AtivoEmEstruturacaoRelacaoInput
+): Promise<AtivoEmEstruturacaoRelacao> => {
+  const ativoRelacionadoCanonicoId = String(input.ativo_relacionado_canonico_id ?? '').trim();
+  if (!ativoRelacionadoCanonicoId) {
+    throw new Error('Ativo relacionado é obrigatório para registrar relação em estruturação.');
+  }
+
+  validarTipoDeRelacaoEstruturacao(input.tipo_de_relacao);
+  const direcao = input.direcao ?? 'saida';
+
+  await validarNaoSelfLoopRelacaoEstruturacao({
+    ativoEmEstruturacaoId,
+    ativoRelacionadoCanonicoId
+  });
+
+  await validarDuplicacaoRelacaoEstruturacao({
+    ativoEmEstruturacaoId,
+    ativoRelacionadoCanonicoId,
+    tipoDeRelacao: input.tipo_de_relacao,
+    direcao
+  });
+
+  const now = Timestamp.now();
+  const ref = await addDoc(collection(db, RELACOES_ESTRUTURACAO_TABLE), {
+    ativo_em_estruturacao_id: ativoEmEstruturacaoId,
+    ativo_relacionado_canonico_id: ativoRelacionadoCanonicoId,
+    tipo_de_relacao: input.tipo_de_relacao,
+    direcao,
+    observacao: input.observacao?.trim() ? input.observacao.trim() : null,
+    created_at: now,
+    updated_at: now
+  });
+
+  return {
+    id: ref.id,
+    ativo_em_estruturacao_id: ativoEmEstruturacaoId,
+    ativo_relacionado_canonico_id: ativoRelacionadoCanonicoId,
+    tipo_de_relacao: input.tipo_de_relacao,
+    direcao,
+    observacao: input.observacao?.trim() ? input.observacao.trim() : undefined,
+    created_at: now.toDate().toISOString(),
+    updated_at: now.toDate().toISOString()
+  };
+};
+
+export const removerRelacaoEstruturacaoPersistida = async (relacaoId: string): Promise<void> => {
+  await deleteDoc(doc(db, RELACOES_ESTRUTURACAO_TABLE, relacaoId));
 };
 
 export const listarBlocosCanonicosPorAtivoPersistido = async (ativoCanonicoId: string): Promise<AtivoCanonicoBloco[]> => {
@@ -447,11 +606,19 @@ export const listarAtivosEmEstruturacaoPersistidos = async (): Promise<AtivoEmEs
   const entradasMap = new Map(entradas.map((entrada) => [entrada.id, entrada.titulo]));
 
   const ativosRows = snapshotAtivos.docs.map((item: any) => ({ id: item.id, ...item.data() }));
-  const blocosPorAtivo = await listarBlocosPorAtivosIds(ativosRows.map((row) => String(row.id)));
+  const [blocosPorAtivo, relacoesPorAtivo] = await Promise.all([
+    listarBlocosPorAtivosIds(ativosRows.map((row) => String(row.id))),
+    listarRelacoesEstruturacaoPorAtivosIds(ativosRows.map((row) => String(row.id)))
+  ]);
 
   return ativosRows.map((row: any) => {
     const tituloEntrada = entradasMap.get(String(row.entrada_bruta_id)) ?? 'Entrada não localizada';
-    return mapAtivo(row, tituloEntrada, blocosPorAtivo.get(String(row.id)) ?? []);
+    return mapAtivo(
+      row,
+      tituloEntrada,
+      blocosPorAtivo.get(String(row.id)) ?? [],
+      relacoesPorAtivo.get(String(row.id)) ?? []
+    );
   });
 };
 
@@ -806,8 +973,11 @@ export const buscarAtivoEmEstruturacaoPorEntradaId = async (
 
   const row = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
   const entrada = entradas.find((item) => item.id === entradaBrutaId);
-  const blocosInternos = await listarBlocosInternosDoAtivoPersistido(String(row.id));
-  return mapAtivo(row, entrada?.titulo ?? 'Entrada não localizada', blocosInternos);
+  const [blocosInternos, relacoesEstruturacao] = await Promise.all([
+    listarBlocosInternosDoAtivoPersistido(String(row.id)),
+    listarRelacoesEstruturacaoDoAtivoPersistido(String(row.id))
+  ]);
+  return mapAtivo(row, entrada?.titulo ?? 'Entrada não localizada', blocosInternos, relacoesEstruturacao);
 };
 
 export const salvarAtivoEmEstruturacaoFromPreview = async (

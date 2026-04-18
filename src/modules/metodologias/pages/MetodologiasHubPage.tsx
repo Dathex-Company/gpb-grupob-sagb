@@ -12,6 +12,8 @@ import {
   diagnosticarProntidaoPromocaoAssistida,
   gerarPreviewPromocaoAtivoCanonico,
   criarBlocoInternoPersistido,
+  criarFiltrosOperacionaisMesaIniciais,
+  criarLeituraOperacionalMesa,
   criarEntradaBrutaPersistida,
   executarBackfillSnapshotsCanonicosDoAtivo,
   criarAtivoEmEstruturacaoFromPreview,
@@ -29,6 +31,8 @@ import {
   getMaturidadePraticaLabel,
   getEstadoGovernancaLabel,
   listarAtivosCanonicosPersistidos,
+  criarRelacaoEstruturacaoPersistida,
+  removerRelacaoEstruturacaoPersistida,
   registrarEventoManutencaoCanonicaPersistido,
   promoverAtivoEmEstruturacaoParaCanonico,
   revalidarSnapshotVersaoCanonica,
@@ -37,7 +41,13 @@ import {
   removerBlocoInternoPersistido,
   reordenarBlocosCanonicosPersistidos,
   reordenarBlocosInternosPersistidos,
-  salvarAtivoEmEstruturacaoFromPreview
+  salvarAtivoEmEstruturacaoFromPreview,
+  listarAtivosEmEstruturacaoPersistidos,
+  filtrarItensOperacionaisMesa,
+  ordenarItensOperacionaisMesa,
+  agruparItensOperacionaisMesa,
+  calcularIndicadoresNucleo,
+  type IndicadoresNucleo
 } from '../services';
 import type {
   AtivoCanonico,
@@ -48,19 +58,25 @@ import type {
   AtivoEmEstruturacaoBlocoInterno,
   AtivoEmEstruturacaoBlocoInternoPatch,
   AtivoEmEstruturacaoBlocoTipo,
+  AtivoEmEstruturacaoRelacaoDirecao,
   AtivoEmEstruturacao,
   AtivoEmEstruturacaoPatch,
   AtivoMetodologicoEstadoGovernanca,
+  AtivoMetodologicoRelacaoTipo,
   EntradaMetodologicaBruta,
   EntradaMetodologicaTipoDeEntrada,
+  MesaEstruturacaoAgrupamentoOperacional,
+  MesaEstruturacaoFiltrosOperacionais,
+  MesaEstruturacaoOrdenacaoOperacional,
   Metodologia,
   MetodologiaMaturidadePratica,
   MetodologiaStatusEditorial,
   SnapshotCanonicoStatusVersao
 } from '../types';
-import { ATIVO_EM_ESTRUTURACAO_BLOCO_TIPOS } from '../types';
+import { ATIVO_EM_ESTRUTURACAO_BLOCO_TIPOS, ATIVO_METODOLOGICO_RELACAO_TIPOS } from '../types';
 import { MetodologiasHomePage } from './MetodologiasHomePage';
 import { MetodologiasMesaPage } from './MetodologiasMesaPage';
+import { MetodologiasSaudePage } from './MetodologiasSaudePage';
 import { MetodologiasCatalogoPage } from './MetodologiasCatalogoPage';
 import { MetodologiaAtivoPage } from './MetodologiaAtivoPage';
 import { MetodologiaAtivoEditarPage } from './MetodologiaAtivoEditarPage';
@@ -115,6 +131,7 @@ type RotaInterna =
   | '/metodologias'
   | '/metodologias/mesa'
   | '/metodologias/catalogo'
+  | '/metodologias/saude'
   | `/metodologias/ativos/${string}`
   | `/metodologias/ativos/${string}/editar`;
 
@@ -288,10 +305,17 @@ const MetodologiasHubPage: React.FC = () => {
   const [novoConteudoBruto, setNovoConteudoBruto] = React.useState('');
   const [ativoEmEstruturacaoLocal, setAtivoEmEstruturacaoLocal] = React.useState<AtivoEmEstruturacao | null>(null);
   const [ativosCanonicosPersistidos, setAtivosCanonicosPersistidos] = React.useState<AtivoCanonico[]>([]);
+  const [ativosEmEstruturacaoPersistidos, setAtivosEmEstruturacaoPersistidos] = React.useState<AtivoEmEstruturacao[]>([]);
   const [blocosOrigemCanonicoEdicao, setBlocosOrigemCanonicoEdicao] = React.useState<AtivoEmEstruturacaoBlocoInterno[]>([]);
   const [ultimoAtivoCanonicoPromovido, setUltimoAtivoCanonicoPromovido] = React.useState<AtivoCanonico | null>(null);
   const [promovendoAssistido, setPromovendoAssistido] = React.useState<boolean>(false);
   const [carregandoPersistencia, setCarregandoPersistencia] = React.useState<boolean>(true);
+  const [filtrosOperacionaisMesa, setFiltrosOperacionaisMesa] = React.useState<MesaEstruturacaoFiltrosOperacionais>(() =>
+    criarFiltrosOperacionaisMesaIniciais()
+  );
+  const [ordenacaoOperacionalMesa, setOrdenacaoOperacionalMesa] = React.useState<MesaEstruturacaoOrdenacaoOperacional>('mais_recentes');
+  const [agrupamentoOperacionalMesa, setAgrupamentoOperacionalMesa] =
+    React.useState<MesaEstruturacaoAgrupamentoOperacional>('nenhum');
 
   React.useEffect(() => {
     const onHashChange = () => setRotaInterna(lerRotaHash());
@@ -305,13 +329,15 @@ const MetodologiasHubPage: React.FC = () => {
     const carregarEntradasPersistidas = async () => {
       setCarregandoPersistencia(true);
       try {
-        const [persistidas, canonicos] = await Promise.all([
+        const [persistidas, canonicos, estruturacao] = await Promise.all([
           listarEntradasBrutasPersistidas(),
-          listarAtivosCanonicosPersistidos().catch(() => [])
+          listarAtivosCanonicosPersistidos().catch(() => []),
+          listarAtivosEmEstruturacaoPersistidos().catch(() => [])
         ]);
         if (!ativo) return;
         setEntradasBrutasLocal(persistidas.length > 0 ? persistidas : entradasBrutasBase);
         setAtivosCanonicosPersistidos(canonicos);
+        setAtivosEmEstruturacaoPersistidos(estruturacao);
         setEntradaSelecionadaId((atual) => atual || persistidas[0]?.id || entradasBrutasBase[0]?.id || '');
       } catch (error) {
         console.error('Falha ao carregar entradas metodológicas persistidas. Mantendo fallback local/mock.', error);
@@ -401,6 +427,10 @@ const MetodologiasHubPage: React.FC = () => {
     [metodologias, ativosCanonicosPersistidos]
   );
 
+  const indicadoresNucleo = React.useMemo(() => {
+    return calcularIndicadoresNucleo(entradasBrutasLocal, ativosEmEstruturacaoPersistidos, ativosCanonicosPersistidos);
+  }, [entradasBrutasLocal, ativosEmEstruturacaoPersistidos, ativosCanonicosPersistidos]);
+
   const totalBrutas = React.useMemo(
     () => entradasBrutasLocal.filter((entrada) => entrada.status_de_estruturacao === 'bruto').length,
     [entradasBrutasLocal]
@@ -415,6 +445,42 @@ const MetodologiasHubPage: React.FC = () => {
   const totalOficiais = React.useMemo(
     () => metodologiasCanonicas.filter((ativo) => ativo.status_editorial === 'oficial').length,
     [metodologiasCanonicas]
+  );
+
+  const ativosEmEstruturacaoParaMesa = React.useMemo(() => {
+    if (!ativoEmEstruturacaoLocal) return ativosEmEstruturacaoPersistidos;
+
+    const index = ativosEmEstruturacaoPersistidos.findIndex(
+      (item) => item.id_estruturacao === ativoEmEstruturacaoLocal.id_estruturacao
+    );
+
+    if (index < 0) {
+      return [ativoEmEstruturacaoLocal, ...ativosEmEstruturacaoPersistidos];
+    }
+
+    return ativosEmEstruturacaoPersistidos.map((item, itemIndex) =>
+      itemIndex === index ? ativoEmEstruturacaoLocal : item
+    );
+  }, [ativosEmEstruturacaoPersistidos, ativoEmEstruturacaoLocal]);
+
+  const leituraOperacionalMesa = React.useMemo(
+    () => criarLeituraOperacionalMesa(entradasBrutasLocal, ativosEmEstruturacaoParaMesa),
+    [entradasBrutasLocal, ativosEmEstruturacaoParaMesa]
+  );
+
+  const itensFiltradosMesa = React.useMemo(
+    () => filtrarItensOperacionaisMesa(leituraOperacionalMesa.itens, filtrosOperacionaisMesa),
+    [leituraOperacionalMesa, filtrosOperacionaisMesa]
+  );
+
+  const itensOrdenadosMesa = React.useMemo(
+    () => ordenarItensOperacionaisMesa(itensFiltradosMesa, ordenacaoOperacionalMesa),
+    [itensFiltradosMesa, ordenacaoOperacionalMesa]
+  );
+
+  const gruposOperacionaisMesa = React.useMemo(
+    () => agruparItensOperacionaisMesa(itensOrdenadosMesa, agrupamentoOperacionalMesa),
+    [itensOrdenadosMesa, agrupamentoOperacionalMesa]
   );
 
   const ultimasEntradas = React.useMemo(() => entradasBrutasLocal.slice(0, 4), [entradasBrutasLocal]);
@@ -628,6 +694,62 @@ const MetodologiasHubPage: React.FC = () => {
         blocos_internos: blocosReordenados,
         updated_at: new Date().toISOString()
       };
+    });
+  };
+
+  const handleAdicionarRelacaoEstruturacao = async (input: {
+    tipo_de_relacao: AtivoMetodologicoRelacaoTipo;
+    ativo_relacionado_canonico_id: string;
+    direcao: AtivoEmEstruturacaoRelacaoDirecao;
+    observacao?: string;
+  }) => {
+    const ativoAtual = ativoEmEstruturacaoLocal;
+    if (!ativoAtual?.id_estruturacao) return;
+
+    try {
+      const relacao = await criarRelacaoEstruturacaoPersistida(ativoAtual.id_estruturacao, input);
+
+      setAtivoEmEstruturacaoLocal((atual) => {
+        if (!atual) return atual;
+        const relacoesEstruturacao = [...(atual.relacoes_estruturacao ?? []), relacao];
+        return {
+          ...atual,
+          relacoes_estruturacao: relacoesEstruturacao,
+          relacoes_ativos: relacoesEstruturacao.map((item) => ({
+            id: item.id,
+            tipo_de_relacao: item.tipo_de_relacao,
+            ativo_origem_id: item.direcao === 'saida' ? atual.id_estruturacao : item.ativo_relacionado_canonico_id,
+            ativo_destino_id: item.direcao === 'saida' ? item.ativo_relacionado_canonico_id : atual.id_estruturacao,
+            observacao: item.observacao
+          })),
+          updated_at: new Date().toISOString()
+        };
+      });
+    } catch (error) {
+      console.error('Falha ao adicionar relação em estruturação.', error);
+    }
+  };
+
+  const handleRemoverRelacaoEstruturacao = (relacaoId: string) => {
+    setAtivoEmEstruturacaoLocal((atual) => {
+      if (!atual) return atual;
+      const relacoesEstruturacao = (atual.relacoes_estruturacao ?? []).filter((relacao) => relacao.id !== relacaoId);
+      return {
+        ...atual,
+        relacoes_estruturacao: relacoesEstruturacao,
+        relacoes_ativos: relacoesEstruturacao.map((item) => ({
+          id: item.id,
+          tipo_de_relacao: item.tipo_de_relacao,
+          ativo_origem_id: item.direcao === 'saida' ? atual.id_estruturacao : item.ativo_relacionado_canonico_id,
+          ativo_destino_id: item.direcao === 'saida' ? item.ativo_relacionado_canonico_id : atual.id_estruturacao,
+          observacao: item.observacao
+        })),
+        updated_at: new Date().toISOString()
+      };
+    });
+
+    removerRelacaoEstruturacaoPersistida(relacaoId).catch((error) => {
+      console.error('Falha ao remover relação em estruturação.', error);
     });
   };
 
@@ -1057,7 +1179,8 @@ const MetodologiasHubPage: React.FC = () => {
               {[
                 { id: '/metodologias', label: 'Home' },
                 { id: '/metodologias/mesa', label: 'Mesa' },
-                { id: '/metodologias/catalogo', label: 'Catálogo' }
+                { id: '/metodologias/catalogo', label: 'Catálogo' },
+                { id: '/metodologias/saude', label: 'Saúde' }
               ].map((item) => (
                 <button
                   key={item.id}
@@ -1090,6 +1213,7 @@ const MetodologiasHubPage: React.FC = () => {
             ultimosMovimentos={ultimosMovimentos}
             onIrMesa={() => navegar('/metodologias/mesa')}
             onIrCatalogo={() => navegar('/metodologias/catalogo')}
+            onIrSaude={() => navegar('/metodologias/saude')}
             onAbrirAtivo={handleAbrirAtivo}
           />
         )}
@@ -1119,6 +1243,16 @@ const MetodologiasHubPage: React.FC = () => {
             onDefinirModoConversao={setModoConversao}
             modoConversao={modoConversao}
             onAbrirEdicaoGuiada={handleAbrirEdicaoGuiada}
+            indicadoresOperacionais={leituraOperacionalMesa.indicadores}
+            itensOperacionais={itensOrdenadosMesa}
+            gruposOperacionais={gruposOperacionaisMesa}
+            filtrosOperacionais={filtrosOperacionaisMesa}
+            ordenacaoOperacional={ordenacaoOperacionalMesa}
+            agrupamentoOperacional={agrupamentoOperacionalMesa}
+            onAtualizarFiltrosOperacionais={setFiltrosOperacionaisMesa}
+            onAlterarOrdenacaoOperacional={setOrdenacaoOperacionalMesa}
+            onAlterarAgrupamentoOperacional={setAgrupamentoOperacionalMesa}
+            onLimparFiltrosOperacionais={() => setFiltrosOperacionaisMesa(criarFiltrosOperacionaisMesaIniciais())}
           />
         )}
 
@@ -1126,6 +1260,13 @@ const MetodologiasHubPage: React.FC = () => {
           <section className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
             Carregando persistência real da mesa de estruturação...
           </section>
+        )}
+
+        {rotaInterna === '/metodologias/saude' && (
+          <MetodologiasSaudePage
+            indicadores={indicadoresNucleo}
+            onVoltar={() => navegar('/metodologias')}
+          />
         )}
 
         {rotaInterna === '/metodologias/catalogo' && (
@@ -1181,10 +1322,16 @@ const MetodologiasHubPage: React.FC = () => {
               tipo,
               label: TIPO_BLOCO_LABEL[tipo]
             }))}
+            tiposRelacaoDisponiveis={ATIVO_METODOLOGICO_RELACAO_TIPOS}
+            ativosCanonicosRelacionaveis={ativosCanonicosPersistidos
+              .filter((item) => item.origem_ativo_em_estruturacao_id !== ativoEmEstruturacaoLocal.id_estruturacao)
+              .map((item) => ({ id: item.id, nome: item.nome, slug: item.slug }))}
             onAdicionarBlocoInterno={handleAdicionarBlocoInterno}
             onAtualizarBlocoInterno={handleAtualizarBlocoInterno}
             onRemoverBlocoInterno={handleRemoverBlocoInterno}
             onMoverBlocoInterno={handleMoverBlocoInterno}
+            onAdicionarRelacaoEstruturacao={handleAdicionarRelacaoEstruturacao}
+            onRemoverRelacaoEstruturacao={handleRemoverRelacaoEstruturacao}
             onAtualizarAtivo={handleAtualizarAtivoEstruturacao}
             diagnosticoPromocao={
               diagnosticoPromocao ?? {

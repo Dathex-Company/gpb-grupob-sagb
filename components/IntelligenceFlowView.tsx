@@ -374,7 +374,7 @@ const IntelligenceFlowView: React.FC<IntelligenceFlowViewProps> = ({ workspaceId
   }, [selectedSteps]);
 
   return (
-    <div className="flex-1 h-full bg-[#F9FAFB] flex flex-col font-nunito overflow-hidden">
+    <div className="flex-1 h-full bg-[#F9FAFB] flex flex-col font-sans overflow-hidden">
       <div className="max-w-[1600px] mx-auto w-full px-6 py-6 h-full flex flex-col gap-4">
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">

@@ -41,7 +41,8 @@ export const monitoramentoSubmodulos: MonitoramentoSubmodulo[] = [
       'Uploads',
       'Latência',
       'Integridade de gravação',
-      'Tabelas relevantes'
+      'Tabelas relevantes',
+      'Monitoramento de Tabelas'
     ]
   },
   {

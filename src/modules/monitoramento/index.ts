@@ -6,3 +6,4 @@ export * from './components';
 export * from './pages';
 export * from './hooks';
 export * from './store';
+export * from './module-doc';

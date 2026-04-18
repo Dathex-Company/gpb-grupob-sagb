@@ -327,7 +327,7 @@ const MonitoramentoView: React.FC<MonitoramentoViewProps> = ({ onBack, qualityEv
   };
 
   return (
-    <div className="flex-1 h-full bg-gray-50 dark:bg-sagb-bg flex flex-col font-nunito transition-colors duration-300 overflow-hidden">
+    <div className="flex-1 h-full bg-gray-50 dark:bg-sagb-bg flex flex-col font-sans transition-colors duration-300 overflow-hidden">
       <header className="h-20 px-8 flex items-center justify-between bg-slate-900 dark:bg-sagb-panel text-white shrink-0 z-10 border-b dark:border-white/5">
         <div className="flex items-center gap-4">
           {onBack && (

@@ -19,6 +19,7 @@ interface MetodologiasHomePageProps {
   ultimosMovimentos: Array<{ id: string; data: string; titulo: string; descricao: string }>;
   onIrMesa: () => void;
   onIrCatalogo: () => void;
+  onIrSaude: () => void;
   onAbrirAtivo: (slug: string) => void;
 }
 
@@ -34,6 +35,7 @@ export const MetodologiasHomePage: React.FC<MetodologiasHomePageProps> = ({
   ultimosMovimentos,
   onIrMesa,
   onIrCatalogo,
+  onIrSaude,
   onAbrirAtivo
 }) => {
   return (
@@ -63,6 +65,13 @@ export const MetodologiasHomePage: React.FC<MetodologiasHomePageProps> = ({
               className="px-3.5 py-2 rounded-lg bg-white/5 border border-white/15 text-slate-100 text-[11px] font-black uppercase tracking-wide hover:bg-white/10 transition"
             >
               Ir para catálogo
+            </button>
+            <button
+              type="button"
+              onClick={onIrSaude}
+              className="px-3.5 py-2 rounded-lg bg-emerald-400/20 border border-emerald-300/30 text-emerald-100 text-[11px] font-black uppercase tracking-wide hover:bg-emerald-400/30 transition"
+            >
+              Saúde do Núcleo
             </button>
           </div>
         </div>

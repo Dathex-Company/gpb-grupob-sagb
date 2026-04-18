@@ -255,7 +255,7 @@ Você coordena esta sala. Responda como liderança da unidade ou delegue a fala 
   };
 
   return (
-    <div className="flex h-full bg-white font-nunito animate-msg overflow-hidden">
+    <div className="flex h-full bg-white font-sans animate-msg overflow-hidden">
       <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} accept="image/*,application/pdf,.txt" />
 
       {/* MAIN CHAT AREA (WAR ROOM) */}

@@ -131,6 +131,37 @@ export type AtivoMetodologicoRelacaoTipo =
   | 'operacionaliza'
   | 'usa_como_base';
 
+export const ATIVO_METODOLOGICO_RELACAO_TIPOS: AtivoMetodologicoRelacaoTipo[] = [
+  'deriva_de',
+  'complementa',
+  'depende_de',
+  'substitui',
+  'especializa',
+  'simplifica',
+  'operacionaliza',
+  'usa_como_base'
+];
+
+export type AtivoEmEstruturacaoRelacaoDirecao = 'saida' | 'entrada';
+
+export interface AtivoEmEstruturacaoRelacao {
+  id: string;
+  ativo_em_estruturacao_id: string;
+  ativo_relacionado_canonico_id: string;
+  tipo_de_relacao: AtivoMetodologicoRelacaoTipo;
+  direcao: AtivoEmEstruturacaoRelacaoDirecao;
+  observacao?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AtivoEmEstruturacaoRelacaoInput {
+  ativo_relacionado_canonico_id: string;
+  tipo_de_relacao: AtivoMetodologicoRelacaoTipo;
+  direcao?: AtivoEmEstruturacaoRelacaoDirecao;
+  observacao?: string;
+}
+
 export interface AtivoMetodologicoRelacao {
   id: string;
   tipo_de_relacao: AtivoMetodologicoRelacaoTipo;
@@ -568,6 +599,8 @@ export interface AtivoEmEstruturacao {
     estado: AtivoMetodologicoEstadoGovernanca;
   };
   blocos_internos?: AtivoEmEstruturacaoBlocoInterno[];
+  relacoes_estruturacao?: AtivoEmEstruturacaoRelacao[];
+  /** @deprecated usar relacoes_estruturacao */
   relacoes_ativos?: AtivoMetodologicoRelacao[];
   created_at: string;
   updated_at: string;
@@ -714,4 +747,92 @@ export interface AtivoMetodologicoCamadaMeta {
   id: AtivoMetodologicoCamadaLeitura;
   label: string;
   descricao: string;
+}
+
+export type MesaEstruturacaoClassificacaoOperacional =
+  | 'travado'
+  | 'em_andamento'
+  | 'quase_pronto'
+  | 'pronto_para_revisao'
+  | 'precisa_de_acao';
+
+export type MesaEstruturacaoProntidao = 'baixa' | 'media' | 'alta' | 'revisao';
+
+export type MesaEstruturacaoItemTipo = 'entrada_bruta' | 'ativo_estruturacao';
+
+export interface MesaEstruturacaoItemOperacional {
+  id: string;
+  tipo_item: MesaEstruturacaoItemTipo;
+  titulo: string;
+  subtitulo: string;
+  origem_label: string;
+  status_label: string;
+  atualizado_em: string;
+  dias_sem_movimento: number;
+  base_minima_preenchida: boolean;
+  pronto_para_revisao: boolean;
+  tem_blocos: boolean;
+  tem_relacoes: boolean;
+  lacuna_critica: boolean;
+  atividade_recente: boolean;
+  parado: boolean;
+  prontidao: MesaEstruturacaoProntidao;
+  classificacao_operacional: MesaEstruturacaoClassificacaoOperacional;
+  proximidade_promocao: number;
+  entrada_origem_id?: string;
+  tipo_entrada?: EntradaMetodologicaTipoDeEntrada;
+  status_estruturacao?: EntradaMetodologicaStatusEstruturacao;
+  etapa_fluxo?: AtivoEmEstruturacaoEtapaFluxo;
+}
+
+export interface MesaEstruturacaoIndicadoresOperacionais {
+  total_itens_em_estruturacao: number;
+  entradas_brutas_sem_conversao: number;
+  ativos_sem_blocos: number;
+  ativos_sem_relacoes: number;
+  ativos_com_base_minima: number;
+  itens_quase_prontos: number;
+  itens_travados: number;
+  ativos_prontos_para_revisao: number;
+  ativos_com_lacuna_critica: number;
+  itens_com_atividade_recente: number;
+  itens_parados: number;
+}
+
+export interface MesaEstruturacaoLeituraOperacional {
+  indicadores: MesaEstruturacaoIndicadoresOperacionais;
+  itens: MesaEstruturacaoItemOperacional[];
+}
+
+export interface MesaEstruturacaoFiltrosOperacionais {
+  status_estruturacao: EntradaMetodologicaStatusEstruturacao | 'todos';
+  tipo_entrada: EntradaMetodologicaTipoDeEntrada | 'todos';
+  prontidao: MesaEstruturacaoProntidao | 'todos';
+  presenca_blocos: 'todos' | 'com_blocos' | 'sem_blocos';
+  presenca_relacoes: 'todos' | 'com_relacoes' | 'sem_relacoes';
+  atividade: 'todos' | 'recente' | 'parado';
+  lacuna_critica: 'todos' | 'com_lacuna_critica' | 'sem_lacuna_critica';
+  classificacao: MesaEstruturacaoClassificacaoOperacional | 'todos';
+  tipo_item: MesaEstruturacaoItemTipo | 'todos';
+}
+
+export type MesaEstruturacaoOrdenacaoOperacional =
+  | 'mais_recentes'
+  | 'mais_antigos'
+  | 'mais_proximos_promocao'
+  | 'mais_incompletos'
+  | 'mais_parados';
+
+export type MesaEstruturacaoAgrupamentoOperacional =
+  | 'nenhum'
+  | 'status'
+  | 'prontidao'
+  | 'origem'
+  | 'lacunas';
+
+export interface MesaEstruturacaoGrupoOperacional {
+  id: string;
+  label: string;
+  total: number;
+  itens: MesaEstruturacaoItemOperacional[];
 }

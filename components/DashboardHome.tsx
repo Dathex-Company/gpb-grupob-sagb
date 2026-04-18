@@ -122,13 +122,13 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ agents, tasks, businessUn
   ];
 
   return (
-    <div className="flex-1 h-full bg-gray-50 dark:bg-sagb-bg overflow-y-auto custom-scrollbar p-8 md:p-12 font-nunito text-gray-900 dark:text-sagb-text transition-colors duration-300 animate-msg">
+    <div className="flex-1 h-full bg-gray-50 dark:bg-sagb-bg overflow-y-auto custom-scrollbar p-8 md:p-12 font-sans text-gray-900 dark:text-sagb-text transition-colors duration-300 animate-msg">
       
       {/* HEADER */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 shrink-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-1">Centro de Comando</h1>
-          <p className="text-sm text-gray-500 dark:text-sagb-muted">Comando executivo, leitura operacional e monitoramento vivo do ecossistema.</p>
+          <p className="text-[12px] text-gray-500 dark:text-sagb-muted">Comando executivo, leitura operacional e monitoramento vivo do ecossistema.</p>
         </div>
         
         <div className="flex items-center gap-3">

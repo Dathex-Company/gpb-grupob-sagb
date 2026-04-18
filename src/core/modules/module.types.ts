@@ -7,6 +7,11 @@ export interface ModuleManifest {
   baseRoute: string;
   icon: string;
   initialStatus: 'active' | 'inactive';
+  owner?: {
+    type: 'agent' | 'human';
+    id: string;
+    displayName: string;
+  };
 }
 
 export interface ModuleRoute {

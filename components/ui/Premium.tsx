@@ -2,7 +2,7 @@ import React from 'react';
 
 // 1. Superfície principal (Container Base)
 export const PremiumSurface: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`bg-[#0B0F19] text-slate-200 min-h-screen relative overflow-hidden font-nunito ${className}`}>
+    <div className={`bg-[#0B0F19] text-slate-200 min-h-screen relative overflow-hidden font-sans ${className}`}>
         {/* Glow de fundo base controlado */}
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
         {children}

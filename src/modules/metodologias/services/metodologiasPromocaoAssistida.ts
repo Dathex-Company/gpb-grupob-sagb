@@ -158,16 +158,18 @@ export const promoverAtivoEmEstruturacaoParaCanonico = async (params: {
     reprocessar: params.reprocessarBlocosCanonicos
   });
 
+  const relacoesParaPromocao =
+    params.ativo.relacoes_estruturacao?.map((relacao, index) => ({
+      id: relacao.id ?? `rel-promovida-${ativoCanonico.id}-${index + 1}`,
+      tipo_de_relacao: relacao.tipo_de_relacao,
+      ativo_origem_id: relacao.direcao === 'saida' ? ativoCanonico.id : relacao.ativo_relacionado_canonico_id,
+      ativo_destino_id: relacao.direcao === 'saida' ? relacao.ativo_relacionado_canonico_id : ativoCanonico.id,
+      observacao: relacao.observacao
+    })) ?? [];
+
   const relacoesCanonicas = await salvarRelacoesCanonicasPersistidas({
     ativo_canonico_id: ativoCanonico.id,
-    relacoes:
-      params.ativo.relacoes_ativos?.map((relacao, index) => ({
-        id: relacao.id ?? `rel-promovida-${ativoCanonico.id}-${index + 1}`,
-        tipo_de_relacao: relacao.tipo_de_relacao,
-        ativo_origem_id: relacao.ativo_origem_id,
-        ativo_destino_id: relacao.ativo_destino_id,
-        observacao: relacao.observacao
-      })) ?? []
+    relacoes: relacoesParaPromocao
   });
 
   await criarVersaoCanonicaInicialSeNecessario({
