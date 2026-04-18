@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { TabId, BusinessUnit, UserProfile } from '../types';
 import { getRegisteredModules } from '../src/core/modules/moduleRegistry';
-import { SearchIcon, MessageSquareIcon, FolderIcon, BookIcon, ShieldCheckIcon, CubeIcon, LockIcon, FileTextIcon, PlayIcon, MicIcon, VideoIcon, UserPlusIcon, AlertCircleIcon, PencilIcon, HomeIcon, BriefcaseIcon, ClipboardIcon, NetworkIcon, LayoutIcon, CalendarIcon, CompassIcon, TerminalIcon, BotIcon } from './Icon';
-import { useTheme } from '../src/core/context/ThemeContext';
+import { CurrencyDollarIcon, SearchIcon, MessageSquareIcon, FolderIcon, BookIcon, ShieldCheckIcon, CubeIcon, LockIcon, FileTextIcon, PlayIcon, MicIcon, VideoIcon, UserPlusIcon, AlertCircleIcon, PencilIcon, HomeIcon, BriefcaseIcon, ClipboardIcon, NetworkIcon, LayoutIcon, CalendarIcon, CompassIcon, TerminalIcon, BotIcon } from './Icon';
+
+const MODULE_TOGGLE_STORAGE_KEY = 'sagb:module-toggles:v2';
+type ModuleToggleMap = Record<string, boolean>;
 
 interface SidebarProps {
   activeTab: TabId;
@@ -18,28 +20,26 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
-  agentCount,
-  activeBU,
+  agentCount: _agentCount,
+  activeBU: _activeBU,
   version = "1.8.1",
-  onReset,
-  onLogout,
-  userProfile
+  onReset: _onReset,
+  onLogout: _onLogout,
+  userProfile: _userProfile
 }) => {
-  const { theme, toggleTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-    comando: true,
-    operacao: true,
-    sistema: true,
-    ia: true
-  });
+  const [moduleToggles, setModuleToggles] = useState<ModuleToggleMap>({});
 
-  const toggleGroup = (group: string) => {
-    setOpenGroups(prev => ({ ...prev, [group]: !prev[group] }));
-  };
-  const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&q=80&w=200&h=200";
-  const displayName = userProfile?.name || userProfile?.nickname || "Neuro Command";
-  const displayAvatar = userProfile?.avatarUrl || DEFAULT_AVATAR;
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(MODULE_TOGGLE_STORAGE_KEY);
+      const parsed = saved ? (JSON.parse(saved) as ModuleToggleMap) : {};
+      setModuleToggles(parsed || {});
+    } catch (error) {
+      console.warn('[Sidebar] Falha ao carregar toggles de módulo:', error);
+      setModuleToggles({});
+    }
+  }, [activeTab]);
 
   // Mapeamento de ícones para os itens do menu
   const getIconForItem = (id: string) => {
@@ -55,6 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       'cadastro-empresas': <ClipboardIcon className="w-4 h-4" />,
       'conversations': <MessageSquareIcon className="w-4 h-4" />,
       'team': <UserPlusIcon className="w-4 h-4" />,
+      'sala-dev': <TerminalIcon className="w-4 h-4" />,
       'programmers-room': <TerminalIcon className="w-4 h-4" />,
       'vault': <LockIcon className="w-4 h-4" />,
       'cid': <FileTextIcon className="w-4 h-4" />,
@@ -62,72 +63,59 @@ const Sidebar: React.FC<SidebarProps> = ({
       'studio': <VideoIcon className="w-4 h-4" />,
       'monitoramento': <AlertCircleIcon className="w-4 h-4" />,
       'missions': <PlayIcon className="w-4 h-4" />,
+      'agentes_comerciais': <BotIcon className="w-4 h-4" />,
       'fabrica-ca': <BotIcon className="w-4 h-4" />,
       'quadro_de_elite': <BotIcon className="w-4 h-4" />,
       'foco-total': <BotIcon className="w-4 h-4" />,
       'agenda': <CalendarIcon className="w-4 h-4" />,
       'mentorias': <MicIcon className="w-4 h-4" />,
+      'gestao-financeira': <CurrencyDollarIcon className="w-4 h-4" />,
+      'configuracoes-sistema': <PencilIcon className="w-4 h-4" />,
+      '_orquestracao-principal': <NetworkIcon className="w-4 h-4" />,
+      'crm-ziplia': <BriefcaseIcon className="w-4 h-4" />,
     };
     return iconMap[id] || <FolderIcon className="w-4 h-4" />;
   };
 
-  // Definição clara dos status possíveis para um item de menu (ET 02)
-  type MenuStatus = 'official' | 'technical' | 'provisional' | 'dynamic' | 'hidden';
+  type MenuVisibility = 'always' | 'dev-only' | 'hidden';
+  type MenuSource = 'core' | 'dynamic';
 
   interface MenuItem {
     id: string;
     label: string;
-    color: string;
-    status: MenuStatus;
+    source: MenuSource;
+    visibility: MenuVisibility;
     tooltip?: string;
   }
 
-  // Bloco 1: Comando (Apenas itens oficiais e estratégicos)
-  const comandoItems: MenuItem[] = [
-    { id: 'home', label: 'Início', color: 'bg-blue-500', status: 'official' },
-    { id: 'ecosystem', label: 'Mapa do Ecossistema', color: 'bg-cyan-500', status: 'official', tooltip: 'Visão geral das integrações e ecossistema' },
-    { id: 'nic', label: 'NIC', color: 'bg-green-500', status: 'official', tooltip: 'Núcleo de Inteligência e Comando' },
-    { id: 'intelligence-flow', label: 'Fluxo de Inteligência', color: 'bg-orange-500', status: 'official', tooltip: 'Fluxo Vivo de Monitoramento' },
-    { id: 'nagi', label: 'NAGI', color: 'bg-indigo-500', status: 'official', tooltip: 'Núcleo de Apoio à Gestão' },
-    { id: 'missions', label: 'Missões', color: 'bg-orange-400', status: 'official' }
+  const coreMenuItems: MenuItem[] = [
+    { id: 'home', label: 'Início', source: 'core', visibility: 'always' },
+    { id: 'ecosystem', label: 'Mapa do Ecossistema', source: 'core', visibility: 'always', tooltip: 'Visão geral das integrações e ecossistema' },
+    { id: 'nic', label: 'NIC', source: 'core', visibility: 'always', tooltip: 'Núcleo de Inteligência e Comando' },
+    { id: 'intelligence-flow', label: 'Fluxo de Inteligência', source: 'core', visibility: 'always', tooltip: 'Fluxo Vivo de Monitoramento' },
+    { id: 'nagi', label: 'NAGI', source: 'core', visibility: 'always', tooltip: 'Núcleo de Apoio à Gestão' },
+    { id: 'missions', label: 'Missões', source: 'core', visibility: 'always' },
+    { id: 'management', label: 'Painel de Gestão', source: 'core', visibility: 'always', tooltip: 'Gestão de Backlog (Futuro Módulo RAI)' },
+    { id: 'vault', label: 'Cofre de Pautas', source: 'core', visibility: 'always', tooltip: 'Repositório Seguro de Pautas' },
+    { id: 'agenda', label: 'TaskZei', source: 'core', visibility: 'always' },
+    { id: 'mentorias', label: 'Central de Mentorias', source: 'core', visibility: 'always' },
+    { id: 'cadastro-empresas', label: 'Cadastro de Empresas', source: 'core', visibility: 'always' },
+    { id: 'conversations', label: 'Conversas', source: 'core', visibility: 'always' },
+    { id: 'team', label: 'Equipe Global', source: 'core', visibility: 'always' },
+    { id: 'studio', label: 'Studio', source: 'core', visibility: 'always' },
+    { id: 'monitoramento', label: 'Monitoramento', source: 'core', visibility: 'always' },
+    { id: 'cid', label: 'CID', source: 'core', visibility: 'always', tooltip: 'Centro de Inteligência de Dados' },
+    { id: 'central_padroes', label: 'Central de Padrões', source: 'core', visibility: 'always' },
+    { id: 'nucleo_de_agentes', label: 'Núcleo de Agentes', source: 'core', visibility: 'always' },
+    { id: 'continuous-memory', label: 'Memória da IA', source: 'core', visibility: 'always', tooltip: 'Memória Contínua do Sistema' },
+    { id: 'quadro_de_elite', label: 'Quadro de Elite', source: 'core', visibility: 'always' },
+    { id: 'configuracoes-sistema', label: 'Configurações do Sistema', source: 'core', visibility: 'always' },
+    { id: 'sala-dev', label: 'Sala Dev', source: 'core', visibility: 'always' },
+    { id: 'telas-avancadas', label: 'Telas Avançadas', source: 'core', visibility: 'always' },
+    { id: 'gestao-financeira', label: 'Gestão Financeira', source: 'core', visibility: 'always' }
   ];
 
-  // Bloco 2: Operação (Áreas de trabalho e hubs principais)
-  const operacaoItems: MenuItem[] = [
-    { id: 'management', label: 'Painel de Gestão', color: 'bg-purple-500', status: 'official', tooltip: 'Gestão de Backlog (Futuro Módulo RAI)' },
-    { id: 'vault', label: 'Cofre de Pautas', color: 'bg-rose-500', status: 'official', tooltip: 'Repositório Seguro de Pautas' },
-    { id: 'agenda', label: 'taskzei', color: 'bg-emerald-400', status: 'official' },
-    { id: 'mentorias', label: 'Central de Mentorias', color: 'bg-teal-400', status: 'official' },
-    { id: 'cadastro-empresas', label: 'Cadastro de Empresas', color: 'bg-emerald-500', status: 'official' },
-    { id: 'conversations', label: 'Conversas', color: 'bg-blue-400', status: 'official' },
-    { id: 'team', label: 'Equipe Global', color: 'bg-violet-400', status: 'official' },
-    { id: 'studio', label: 'Studio', color: 'bg-red-500', status: 'official' }
-  ];
-
-  // Bloco 3: Sistema e Controle (Infraestrutura, governança, dados)
-  const sistemaEControleItems: MenuItem[] = [
-    { id: 'monitoramento', label: 'Monitoramento', color: 'bg-green-400', status: 'official' },
-    { id: 'cid', label: 'CID', color: 'bg-sky-500', status: 'official', tooltip: 'Centro de Inteligência de Dados' },
-    { id: 'central_padroes', label: 'Central de Padrões', color: 'bg-indigo-500', status: 'official' },
-    { id: 'nucleo_de_agentes', label: 'Núcleo de Agentes', color: 'bg-slate-400', status: 'official' },
-    { id: 'continuous-memory', label: 'Memória da IA', color: 'bg-teal-500', status: 'provisional', tooltip: 'Memória Contínua do Sistema' },
-    { id: 'programmers-room', label: 'Sala Dev', color: 'bg-amber-500', status: 'technical' },
-    { id: 'telas-avancadas', label: 'Telas Avançadas', color: 'bg-gray-500', status: 'technical' }
-  ];
-
-  // Bloco 4: IA e Estrutura (Core de Agentes)
-  const iaEEstruturaItems: MenuItem[] = [
-    { id: 'quadro_de_elite', label: 'Quadro de Elite', color: 'bg-purple-600', status: 'official' }
-  ];
-
-  // Regra clara para módulos dinâmicos (ET 02)
-  // Evitar duplicidades: Módulos registrados não devem colidir com hardcoded.
-  const staticItemIds = new Set([
-    ...comandoItems.map(i => i.id),
-    ...operacaoItems.map(i => i.id),
-    ...sistemaEControleItems.map(i => i.id),
-    ...iaEEstruturaItems.map(i => i.id)
-  ]);
+  const staticItemIds = new Set(coreMenuItems.map(item => item.id));
 
   const normalizeLabel = (value: string) =>
     String(value || '')
@@ -136,25 +124,48 @@ const Sidebar: React.FC<SidebarProps> = ({
       .trim()
       .toLowerCase();
 
-  const staticLabelSet = new Set(
-    [...comandoItems, ...operacaoItems, ...sistemaEControleItems, ...iaEEstruturaItems].map((item) => normalizeLabel(item.label))
-  );
+  const staticLabelSet = new Set(coreMenuItems.map((item) => normalizeLabel(item.label)));
 
-  const excludedDynamicIds = new Set(['configuracoes-sistema']);
+  const moduleManifestById = useMemo(() => {
+    return getRegisteredModules().reduce((acc, mod) => {
+      acc[mod.manifest.id] = mod.manifest;
+      return acc;
+    }, {} as Record<string, { id: string; initialStatus: 'active' | 'inactive' }>);
+  }, []);
 
-  const dynamicModules = getRegisteredModules()
-    .filter(mod => !excludedDynamicIds.has(mod.manifest.id))
-    .filter(mod => !staticItemIds.has(mod.manifest.id)) // Se já existe fixo por ID, não duplica
-    .filter(mod => !staticLabelSet.has(normalizeLabel(mod.manifest.displayName))) // Se já existe fixo por label, não duplica
-    .map(mod => ({
-      id: mod.manifest.id,
-      label: mod.manifest.displayName,
-      color: 'bg-slate-500',
-      status: 'dynamic' as MenuStatus
-    }));
+  const isModuleEnabled = (moduleId: string) => {
+    const manifest = moduleManifestById[moduleId];
+    if (!manifest) return true;
+    if (moduleId in moduleToggles) return !!moduleToggles[moduleId];
+    return manifest.initialStatus === 'active';
+  };
 
-  // Vamos injetar os dinâmicos no bloco Operação por padrão, a não ser que haja uma blacklist (futuro)
-  const finalOperacaoItems = [...operacaoItems, ...dynamicModules];
+  const dynamicModules: MenuItem[] = useMemo(() => {
+    return getRegisteredModules()
+      .filter((mod) => !staticItemIds.has(mod.manifest.id))
+      .filter((mod) => !staticLabelSet.has(normalizeLabel(mod.manifest.displayName)))
+      .map((mod) => ({
+        id: mod.manifest.id,
+        label: mod.manifest.displayName,
+        source: 'dynamic' as MenuSource,
+        visibility: 'always' as MenuVisibility
+      }));
+  }, [staticItemIds, staticLabelSet]);
+
+  const menuItems = useMemo(() => {
+    const merged = [...coreMenuItems, ...dynamicModules];
+    const seenIds = new Set<string>();
+    const seenLabels = new Set<string>();
+
+    return merged.filter((item) => {
+      const normalized = normalizeLabel(item.label);
+      if (seenIds.has(item.id)) return false;
+      if (seenLabels.has(normalized)) return false;
+      seenIds.add(item.id);
+      seenLabels.add(normalized);
+      return true;
+    });
+  }, [dynamicModules]);
 
   // Critério de exibição (Visibilidade)
   // Em produção, itens 'technical' só devem aparecer se houver flag de dev ativada.
@@ -162,10 +173,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   const isDevContext = process.env.NODE_ENV === 'development' || localStorage.getItem('SAGB_DEV_MODE') === 'true';
 
   const isVisible = (item: MenuItem) => {
-    if (item.status === 'hidden') return false;
-    if (item.status === 'technical') return isDevContext; 
-    // Itens provisórios ficam visíveis até amadurecerem ou serem descartados
-    return true; 
+    if (item.visibility === 'hidden') return false;
+    if (item.visibility === 'dev-only') return isDevContext;
+    if (!isModuleEnabled(item.id)) return false;
+    return true;
   };
 
   const renderMenuItem = (item: MenuItem) => {
@@ -257,12 +268,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* SCROLLABLE CONTENT */}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-4">
-        {/* Lista única de itens (sem subdivisões) */}
+        {/* Lista única de itens (fonte canônica + dinâmicos deduplicados) */}
         <nav className="flex flex-col gap-0">
-          {comandoItems.map(renderMenuItem)}
-          {finalOperacaoItems.map(renderMenuItem)}
-          {sistemaEControleItems.map(renderMenuItem)}
-          {iaEEstruturaItems.map(renderMenuItem)}
+          {menuItems.map(renderMenuItem)}
         </nav>
       </div>
 

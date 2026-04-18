@@ -821,6 +821,15 @@ const asDate = (v: any): Date | undefined => {
     };
   }, [user, activeWorkspaceId, memberWorkspaceIds]);
 
+  // --- GLOBAL NAVIGATION LISTENER ---
+  useEffect(() => {
+    const handleNavigate = (e: any) => {
+      if (e.detail) setActiveTab(e.detail);
+    };
+    window.addEventListener('sagb:navigate', handleNavigate);
+    return () => window.removeEventListener('sagb:navigate', handleNavigate);
+  }, []);
+
   const handleSelectBU = (bu: BusinessUnit) => {
     setIsTransitioning(true);
     setTimeout(() => {
@@ -860,6 +869,10 @@ const asDate = (v: any): Date | undefined => {
   const handleBackNavigation = () => {
     setActiveTab('ecosystem');
   }
+
+  const handleOpenGlobalSettings = () => {
+    setActiveTab('configuracoes-sistema');
+  };
 
   const handleAddTopic = async (title: string, priority: 'Alta' | 'Média' | 'Baixa', assignee?: string, dueDate?: string) => {
     try {
@@ -1620,7 +1633,14 @@ const asDate = (v: any): Date | undefined => {
     } finally { setIsLoading(false); }
   };
 
-  const isImmersiveMode = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home';
+  const isImmersiveMode = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira';
+
+  const tabAliases: Partial<Record<TabId, TabId>> = {
+    hub: 'ecosystem',
+    'sala-dev': 'programmers-room'
+  };
+
+  const resolvedActiveTab = tabAliases[activeTab] || activeTab;
 
   const renderContent = () => {
     // SAFEGUARD: Early return if activeBU is undefined/null
@@ -1653,18 +1673,16 @@ const asDate = (v: any): Date | undefined => {
 
     // Módulos Registrados Dinamicamente
     const moduleRoutes = getModuleRoutes();
-    if (moduleRoutes[activeTab]) {
-      return moduleRoutes[activeTab].element;
+    if (moduleRoutes[resolvedActiveTab]) {
+      return moduleRoutes[resolvedActiveTab].element;
     }
 
-    switch (activeTab) {
+    switch (resolvedActiveTab) {
       case 'home':
         return <DashboardHome agents={activatedAgents} tasks={tasks} businessUnits={businessUnits} onNavigate={setActiveTab} activeWorkspaceId={activeWorkspaceId} userDisplayName={currentUserDisplayName} />;
 
       // FIX: HUB VIEW SEMPRE RECEBE LISTA COMPLETA DE AGENTES (activatedAgents)
       case 'ecosystem': return <HubView businessUnits={businessUnits} activeBU={activeBU} onSelectBU={handleSelectBU} onNavigate={setActiveTab} agents={activatedAgents} onSelectAgent={handleAgentInteraction} />;
-      // Fallback for 'hub' key from localstorage if present
-      case 'hub': return <HubView businessUnits={businessUnits} activeBU={activeBU} onSelectBU={handleSelectBU} onNavigate={setActiveTab} agents={activatedAgents} onSelectAgent={handleAgentInteraction} />;
 
       case 'management': return <ManagementView tasks={tasks} onAddTask={handleAddTask} onUpdateTaskStatus={handleUpdateTaskStatus} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
       case 'programmers-room':
@@ -1946,7 +1964,7 @@ const asDate = (v: any): Date | undefined => {
               <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">SagB v{version}</div>
               <div className="flex items-center gap-2 md:gap-3">
                 <button
-                  onClick={() => setActiveTab('configuracoes-sistema')}
+                  onClick={handleOpenGlobalSettings}
                   className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-white/5"
                 >
                   Configurações

@@ -28,7 +28,55 @@ export type AgentStatus = 'PLANNED' | 'STAGING' | 'ACTIVE' | 'MAINTENANCE' | 'BL
 export type ModelProvider = 'gemini' | 'deepseek' | 'llama_local' | 'openai' | 'claude' | 'qwen'; // Opções de Cérebro
 
 // V4.2 - Adicionado 'home' como Dashboard Inicial
-export type TabId = 'home' | 'ecosystem' | 'team' | 'conversations' | 'management' | 'programmers-room' | 'redir' | 'vault' | 'quadro_de_elite' | 'governance' | 'missions' | 'nagi' | 'nic' | 'rai' | 'mentorias' | 'cid' | 'quality' | 'intelligence-flow' | 'continuous-memory' | 'studio' | 'methodology' | 'metodologias' | 'hub' | 'alignment' | 'market' | 'sales' | 'expansion' | '3forb-home' | 'audacus-home' | 'startyb-home' | 'requests' | 'unit-room' | 'chat-room' | 'ventures' | 'cadastro-empresas' | 'monitoramento' | 'agenda-inteligente' | 'configuracoes-sistema' | 'foco-total';
+export type TabId =
+  | 'home'
+  | 'ecosystem'
+  | 'team'
+  | 'conversations'
+  | 'management'
+  | 'programmers-room'
+  | 'redir'
+  | 'vault'
+  | 'quadro_de_elite'
+  | 'governance'
+  | 'missions'
+  | 'nagi'
+  | 'nic'
+  | 'rai'
+  | 'mentorias'
+  | 'cid'
+  | 'quality'
+  | 'intelligence-flow'
+  | 'continuous-memory'
+  | 'studio'
+  | 'methodology'
+  | 'metodologias'
+  | 'hub'
+  | 'alignment'
+  | 'market'
+  | 'sales'
+  | 'expansion'
+  | '3forb-home'
+  | 'audacus-home'
+  | 'startyb-home'
+  | 'requests'
+  | 'unit-room'
+  | 'chat-room'
+  | 'ventures'
+  | 'cadastro-empresas'
+  | 'monitoramento'
+  | 'agenda'
+  | 'configuracoes-sistema'
+  | 'foco-total'
+  | 'gestao-financeira'
+  | 'crm-ziplia'
+  | 'central_padroes'
+  | 'nucleo_de_agentes'
+  | 'telas-avancadas'
+  | 'agentes_comerciais'
+  | '_orquestracao-principal'
+  | 'sala-dev'
+  | 'videos-ia';
 
 export type BUType = 'CORE' | 'VENTURY' | 'PERSONAL' | 'METHODOLOGY';
 
@@ -997,6 +1045,7 @@ export interface Agent {
 
   id: string; // ID Local React (UUID)
   universalId?: string; // ID Oficial SAGB (ex: ca001gpb)
+  canonicalId?: string; // ID Canônico imutável (ex: anton_borselli_3fb_mkt_e_001)
   name: string;
   version: string;
   company: string;
@@ -1159,4 +1208,3 @@ export type AppUiPrefs = {
   audacusGatewayByBu?: Record<string, string>;
   theme?: 'light' | 'dark';
 };
-
