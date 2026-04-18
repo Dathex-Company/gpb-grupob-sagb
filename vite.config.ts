@@ -15,7 +15,19 @@ export default defineConfig(({ mode }) => {
   return {
     base: basePath,
     plugins: [react()],
+    optimizeDeps: {
+      // Evita o Vite varrer entradas de triagem fora do app oficial
+      entries: ['index.html']
+    },
     server: {
+      port: 8000,
+      strictPort: true,
+      host: true,
+      watch: {
+        // Mais estável em ambiente de rede/WSL/UNC
+        usePolling: true,
+        interval: 1000
+      },
       proxy: {
         '/api': {
           target: aiProxyTarget,

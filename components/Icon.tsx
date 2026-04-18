@@ -124,6 +124,38 @@ export const PencilIcon = ({ className }: { className?: string }) => (
   <BaseIcon d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" className={className} />
 );
 
+export const HomeIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10" className={className} />
+);
+
+export const BriefcaseIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M16 21v-2a4 4 0 00-4-4H5c-1.1 0-2 .9-2 2v4 M21 10V8a2 2 0 00-2-2H5a2 2 0 00-2 2v2 M16 4h-8v4 M21 14v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" className={className} />
+);
+
+export const ClipboardIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2 M15 2H9a1 1 0 00-1 1v2a1 1 0 001 1h6a1 1 0 001-1V3a1 1 0 00-1-1z" className={className} />
+);
+
+export const NetworkIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M8 10a2 2 0 100-4 2 2 0 000 4z M16 20a2 2 0 100-4 2 2 0 000 4z M8 20a2 2 0 100-4 2 2 0 000 4z M8 10v6 M8 10h8v6 M16 16v4" className={className} />
+);
+
+export const LayoutIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M3 3h18v18H3z M3 9h18 M9 21V9" className={className} />
+);
+
+export const CalendarIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M19 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z M16 2v4 M8 2v4 M3 10h18" className={className} />
+);
+
+export const CompassIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M12 22a10 10 0 100-20 10 10 0 000 20z M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" className={className} />
+);
+
+export const TerminalIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M4 17l6-6-6-6 M12 19h8" className={className} />
+);
+
 export const CheckIcon = ({ className }: { className?: string }) => (
   <BaseIcon d="M20 6L9 17l-5-5" className={className} />
 );
@@ -182,4 +214,8 @@ export const MailIcon = ({ className }: { className?: string }) => (
 
 export const UserPlusIcon = ({ className }: { className?: string }) => (
   <BaseIcon d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zM19 10h6M22 7v6" className={className} />
+);
+
+export const UserIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" className={className} />
 );
