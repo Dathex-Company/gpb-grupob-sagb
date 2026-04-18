@@ -1,0 +1,62 @@
+{
+  "padrao_modulos_plugaveis.md": {
+    "nome_bonito": "Protocolo Módulos Plugáveis",
+    "criado_em": "10/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "padrao_postura_e_conduta_agentes.md": {
+    "nome_bonito": "Protocolo Postura e Conduta dos Agentes",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "protocolo_log_continuo_agentes.md": {
+    "nome_bonito": "Protocolo Log Contínuo de Agentes",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "catalogo_unico_governanca.md": {
+    "nome_bonito": "Catálogo Único de Governança",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "mapa_equivalencia_runtime_docs.md": {
+    "nome_bonito": "Mapa de Equivalência Runtime ↔ Docs",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "owners_e_accountability.md": {
+    "nome_bonito": "Matriz Oficial de Accountability",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "decisoes_e_pendencias.md": {
+    "nome_bonito": "Decisões e Pendências Executivas",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "template_session_log_agente.md": {
+    "nome_bonito": "Template de Session‑Log para Agentes",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "qg_modulos_vendaveis_template.md": {
+    "nome_bonito": "Template QG → Módulos Vendáveis",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "_readme.md": {
+    "nome_bonito": "Índice Oficial da Governança",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "relacao_monitoramentos_existentes.md": {
+    "nome_bonito": "Relação de Monitoramentos Existentes",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  },
+  "agentes_e_modulos.md": {
+    "nome_bonito": "Agentes e Módulos Correspondentes",
+    "criado_em": "13/04/2026",
+    "ultima_alteracao": "13/04/2026"
+  }
+}
