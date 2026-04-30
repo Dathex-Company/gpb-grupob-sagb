@@ -8,7 +8,6 @@ import BacklogView from './components/BacklogView';
 import HubView from './components/HubView';
 import DashboardHome from './components/DashboardHome'; // NEW IMPORT
 import VenturesView from './components/VenturesView'; // NEW MODULE v1.5.0
-import StudioView from './components/StudioView';
 import AlignmentView from './components/AlignmentView';
 import ThreeForBView from './components/ThreeForBView';
 import AudacusView from './components/AudacusView';
@@ -160,6 +159,7 @@ const App: React.FC = () => {
   const [activeBU, setActiveBU] = useState<BusinessUnit>(INITIAL_BUSINESS_UNITS[0]);
 
   const [activatedAgents, setActivatedAgents] = useState<Agent[]>([]);
+  const [dbAgents, setDbAgents] = useState<Agent[]>([]);
   const [agentConfigsByAgentId, setAgentConfigsByAgentId] = useState<Record<string, { fullPrompt?: string; globalDocuments?: Agent['globalDocuments']; docCount?: number }>>({});
   const [agentDnaProfilesByAgentId, setAgentDnaProfilesByAgentId] = useState<Record<string, AgentDnaProfile>>({});
   const [agentDnaEffectiveByAgentId, setAgentDnaEffectiveByAgentId] = useState<Record<string, AgentDnaEffective>>({});
@@ -989,33 +989,37 @@ const asDate = (v: any): Date | undefined => {
 
   // V4.5 - Roteamento Inteligente de Agente
   const handleAgentInteraction = (agent: Agent) => {
-    if (isAgentOperationallyBlocked(agent)) {
-      window.alert(`O agente ${agent.name} existe no cadastro, mas ainda está bloqueado para operação porque está sem DNA válido.`);
+    const runtimeAgent = hydrateAgentForRuntime(agent);
+
+    if (isAgentOperationallyBlocked(runtimeAgent)) {
+      window.alert(`O agente ${runtimeAgent.name} existe no cadastro, mas ainda está bloqueado para operação porque está sem DNA válido.`);
       return;
     }
-    if (agent.status === 'PLANNED') {
+    if (runtimeAgent.status === 'PLANNED') {
       // Se planejado, vai para RH (Fábrica) para contratar
-      setAgentToOnboard(agent);
+      setAgentToOnboard(runtimeAgent);
       setActiveTab('quadro_de_elite');
     } else {
       // Se ativo, vai para Chat (SystemicVision/SplitView)
-      setChatTargetAgent(agent);
+      setChatTargetAgent(runtimeAgent);
       setChatTargetSessionId(null);
       setActiveTab('chat-room');
     }
   };
 
   const handleOpenAgentSession = (agent: Agent, sessionId: string) => {
-    if (isAgentOperationallyBlocked(agent)) {
-      window.alert(`O agente ${agent.name} ainda não pode operar porque está sem DNA válido.`);
+    const runtimeAgent = hydrateAgentForRuntime(agent);
+
+    if (isAgentOperationallyBlocked(runtimeAgent)) {
+      window.alert(`O agente ${runtimeAgent.name} ainda não pode operar porque está sem DNA válido.`);
       return;
     }
-    if (agent.status === 'PLANNED') {
-      setAgentToOnboard(agent);
+    if (runtimeAgent.status === 'PLANNED') {
+      setAgentToOnboard(runtimeAgent);
       setActiveTab('quadro_de_elite');
       return;
     }
-    setChatTargetAgent(agent);
+    setChatTargetAgent(runtimeAgent);
     setChatTargetSessionId(sessionId);
     setActiveTab('chat-room');
   };
@@ -1352,54 +1356,63 @@ const asDate = (v: any): Date | undefined => {
   };
 
   // --- DATABASE SYNC (SUBSTITUI LOCALSTORAGE PARA AGENTES) ---
+  // Etapa 1: assinatura do banco somente para metadados de agentes (evita re-subscrições caras).
   useEffect(() => {
     if (!user) return;
 
-    // Carrega agentes SOMENTE do banco de dados (Fonte da Verdade)
     const unsubscribe = onSnapshot(collection(db, 'agents'), (snapshot) => {
+      const label = `[SagB][Perf][Agents] snapshot-map:${Date.now()}`;
+      console.time(label);
+
       const remoteAgents = snapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id
       })) as Agent[];
 
-      const hydratedAgents = remoteAgents.map((agent) => {
-        const config = agentConfigsByAgentId[agent.id] || (agent.universalId ? agentConfigsByAgentId[agent.universalId] : undefined);
-        const dnaProfile = agentDnaProfilesByAgentId[agent.id] || (agent.universalId ? agentDnaProfilesByAgentId[agent.universalId] : undefined);
-        const dnaEffective = agentDnaEffectiveByAgentId[agent.id] || (agent.universalId ? agentDnaEffectiveByAgentId[agent.universalId] : undefined);
-        const memories = agentMemoriesByAgentId[agent.id]
-          || (agent.universalId ? agentMemoriesByAgentId[agent.universalId] : undefined)
-          || agent.learnedMemory
-          || [];
-        const basePrompt = dnaProfile?.individualPrompt || config?.fullPrompt || agent.fullPrompt || '';
-        const fallbackEffective = composeEffectivePrompt(basePrompt, {
-          constitution: latestCultureEntry?.contentMd,
-          context: latestCultureEntry?.summary,
-          compliance: activeComplianceRule?.ruleMd
-        });
-        const hydratedAgent = {
-          ...agent,
-          fullPrompt: config?.fullPrompt ?? agent.fullPrompt ?? '',
-          dnaIndividualPrompt: dnaProfile?.individualPrompt ?? basePrompt,
-          effectivePrompt: dnaEffective?.effectivePrompt ?? fallbackEffective,
-          globalDocuments: config?.globalDocuments ?? agent.globalDocuments,
-          docCount: config?.docCount ?? agent.docCount,
-          learnedMemory: Array.from(new Set(memories.filter(Boolean)))
-        };
-
-        return {
-          ...hydratedAgent,
-          operationalStatus: deriveOperationalStatus(hydratedAgent)
-        };
+      console.timeEnd(label);
+      console.debug('[SagB][Perf][Agents] snapshot recebido', {
+        total: remoteAgents.length
       });
 
-      setActivatedAgents(hydratedAgents);
+      setDbAgents(remoteAgents);
     }, (error) => {
       console.error("Erro ao conectar no banco de dados:", error);
     });
 
     return () => unsubscribe();
+  }, [user]);
+
+  const hydrateAgentForRuntime = useCallback((agent: Agent): Agent => {
+    const config = agentConfigsByAgentId[agent.id] || (agent.universalId ? agentConfigsByAgentId[agent.universalId] : undefined);
+    const dnaProfile = agentDnaProfilesByAgentId[agent.id] || (agent.universalId ? agentDnaProfilesByAgentId[agent.universalId] : undefined);
+    const dnaEffective = agentDnaEffectiveByAgentId[agent.id] || (agent.universalId ? agentDnaEffectiveByAgentId[agent.universalId] : undefined);
+    const memories = agentMemoriesByAgentId[agent.id]
+      || (agent.universalId ? agentMemoriesByAgentId[agent.universalId] : undefined)
+      || agent.learnedMemory
+      || [];
+
+    const basePrompt = dnaProfile?.individualPrompt || config?.fullPrompt || agent.fullPrompt || '';
+    const fallbackEffective = composeEffectivePrompt(basePrompt, {
+      constitution: latestCultureEntry?.contentMd,
+      context: latestCultureEntry?.summary,
+      compliance: activeComplianceRule?.ruleMd
+    });
+
+    const hydratedAgent = {
+      ...agent,
+      fullPrompt: config?.fullPrompt ?? agent.fullPrompt ?? '',
+      dnaIndividualPrompt: dnaProfile?.individualPrompt ?? basePrompt,
+      effectivePrompt: dnaEffective?.effectivePrompt ?? fallbackEffective,
+      globalDocuments: config?.globalDocuments ?? agent.globalDocuments,
+      docCount: config?.docCount ?? agent.docCount,
+      learnedMemory: Array.from(new Set(memories.filter(Boolean)))
+    };
+
+    return {
+      ...hydratedAgent,
+      operationalStatus: deriveOperationalStatus(hydratedAgent)
+    };
   }, [
-    user,
     agentConfigsByAgentId,
     agentDnaProfilesByAgentId,
     agentDnaEffectiveByAgentId,
@@ -1407,6 +1420,27 @@ const asDate = (v: any): Date | undefined => {
     latestCultureEntry,
     activeComplianceRule
   ]);
+
+  // Etapa 2: lista leve para UI (sem anexar DNA/memória completos em todos os agentes).
+  const hydratedAgents = useMemo(() => {
+    const startedAt = Date.now();
+
+    const next = dbAgents.map((agent) => ({
+      ...agent,
+      operationalStatus: deriveOperationalStatus(agent)
+    }));
+
+    console.debug('[SagB][Perf][Agents] lista leve pronta', {
+      total: next.length,
+      elapsedMs: Date.now() - startedAt
+    });
+
+    return next;
+  }, [dbAgents]);
+
+  useEffect(() => {
+    setActivatedAgents(hydratedAgents);
+  }, [hydratedAgents]);
 
   // --- SAVE STATE ---
 
@@ -1446,11 +1480,12 @@ const asDate = (v: any): Date | undefined => {
 
   const directChannelProfile = useMemo(() => {
     if (directChannelAgent) {
-      const resolvedInstruction = resolveAgentBasePrompt(directChannelAgent);
+      const hydratedDirectChannelAgent = hydrateAgentForRuntime(directChannelAgent);
+      const resolvedInstruction = resolveAgentBasePrompt(hydratedDirectChannelAgent);
       return {
-        name: directChannelAgent.name,
-        avatarColor: directChannelAgent.avatarColor || '#0EA5E9',
-        imageUrl: directChannelAgent.avatarUrl || ASSISTANT_FALLBACK_IMAGE,
+        name: hydratedDirectChannelAgent.name,
+        avatarColor: hydratedDirectChannelAgent.avatarColor || '#0EA5E9',
+        imageUrl: hydratedDirectChannelAgent.avatarUrl || ASSISTANT_FALLBACK_IMAGE,
         instruction: resolvedInstruction || DIRECT_CHANNEL_FALLBACK_PROMPT
       };
     }
@@ -1461,7 +1496,7 @@ const asDate = (v: any): Date | undefined => {
       imageUrl: ASSISTANT_FALLBACK_IMAGE,
       instruction: DIRECT_CHANNEL_FALLBACK_PROMPT
     };
-  }, [directChannelAgent]);
+  }, [directChannelAgent, hydrateAgentForRuntime]);
 
   useEffect(() => {
     // SAFEGUARD: Ensure activeBU is valid
@@ -1477,11 +1512,13 @@ const asDate = (v: any): Date | undefined => {
   }, [activeBU, directChannelProfile.instruction]);
 
   useEffect(() => {
-    const agentIdentityByKey = activatedAgents.reduce((acc, agent) => {
-      const resolved = resolveAgentBasePrompt(agent);
+    const startedAt = Date.now();
+    const agentIdentityByKey = dbAgents.reduce((acc, agent) => {
+      const hydratedAgent = hydrateAgentForRuntime(agent);
+      const resolved = resolveAgentBasePrompt(hydratedAgent);
       if (resolved) {
-        acc[agent.id] = resolved;
-        if (agent.universalId) acc[agent.universalId] = resolved;
+        acc[hydratedAgent.id] = resolved;
+        if (hydratedAgent.universalId) acc[hydratedAgent.universalId] = resolved;
       }
       return acc;
     }, {} as Record<string, string>);
@@ -1492,7 +1529,12 @@ const asDate = (v: any): Date | undefined => {
       compliance: activeComplianceRule?.ruleMd || undefined,
       agentIdentityByKey
     });
-  }, [activatedAgents, latestCultureEntry, activeComplianceRule]);
+
+    console.debug('[SagB][Perf][Agents] runtime AI context sincronizado', {
+      agentsInContext: Object.keys(agentIdentityByKey).length,
+      elapsedMs: Date.now() - startedAt
+    });
+  }, [dbAgents, hydrateAgentForRuntime, latestCultureEntry, activeComplianceRule]);
 
   const handleSaveGatewayUrl = useCallback(async (buId: string, url: string) => {
     const next = {
@@ -1633,7 +1675,7 @@ const asDate = (v: any): Date | undefined => {
     } finally { setIsLoading(false); }
   };
 
-  const isImmersiveMode = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira';
+  const isImmersiveMode = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia';
 
   const tabAliases: Partial<Record<TabId, TabId>> = {
     hub: 'ecosystem',
@@ -1762,16 +1804,6 @@ const asDate = (v: any): Date | undefined => {
             onBack={() => setActiveTab('ecosystem')}
           />
         );
-      case 'studio':
-        return (
-          <StudioView
-            workspaceId={activeWorkspaceId}
-            ownerUserId={ownerUserId}
-            userProfile={authenticatedUserProfile}
-            onBack={() => setActiveTab('ecosystem')}
-          />
-        );
-
       case 'monitoramento':
         return (
           <MonitoramentoView

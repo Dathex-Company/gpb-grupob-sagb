@@ -13,7 +13,9 @@ import {
   createEmptyForm,
   isUuid,
   mapEntityToCollaboratorType,
+  normalizeCanonicalIdInput,
   normalizeText,
+  parseCanonicalId,
   resolveAgentStatus,
   toCustomFieldObject,
   validateDraft
@@ -118,6 +120,7 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
     return list.filter((agent) => {
       const ventureName = ventures.find((venture) => venture.id === agent.ventureId)?.name || '';
       const haystack = [
+        agent.canonicalId,
         agent.name,
         agent.functionName,
         agent.officialRole,
@@ -246,6 +249,7 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
       : 'ESTRUTURAL';
 
     return {
+      canonicalId: normalizeCanonicalIdInput(draft.canonicalId),
       name: draft.name.trim(),
       entityType: draft.entityType,
       email: draft.email.trim() || undefined,
@@ -287,8 +291,41 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
     };
   };
 
+  const validateCanonicalIntegrity = (draft: AgentFormState) => {
+    const normalizedCanonicalId = normalizeCanonicalIdInput(draft.canonicalId);
+    const parsedCanonicalId = parseCanonicalId(normalizedCanonicalId);
+    if (!parsedCanonicalId) {
+      throw new Error('ID canônico inválido. Use o padrão nome_empresa3_setor3_nivel1_seq3.');
+    }
+
+    const persistedCanonicalId = normalizeCanonicalIdInput(currentEditingAgent?.canonicalId || '');
+    if (editingAgentId && persistedCanonicalId && persistedCanonicalId !== normalizedCanonicalId) {
+      throw new Error('ID canônico é imutável após o cadastro inicial.');
+    }
+
+    const duplicatedCanonical = agents.find((agent) => (
+      agent.id !== editingAgentId
+      && normalizeCanonicalIdInput(agent.canonicalId || '') === normalizedCanonicalId
+    ));
+    if (duplicatedCanonical) {
+      throw new Error(`ID canônico já utilizado por ${duplicatedCanonical.name}.`);
+    }
+
+    const duplicatedSeqInVenture = agents.find((agent) => {
+      if (agent.id === editingAgentId) return false;
+      if ((agent.ventureId || '') !== (draft.ventureId || '')) return false;
+      const parsedExisting = parseCanonicalId(agent.canonicalId || '');
+      return parsedExisting?.seq3 === parsedCanonicalId.seq3;
+    });
+
+    if (duplicatedSeqInVenture) {
+      throw new Error(`Sequencial ${parsedCanonicalId.seq3} já está em uso na venture selecionada.`);
+    }
+  };
+
   const persistAgent = async (draft: AgentFormState, originOverride?: string) => {
     validateDraft(draft);
+    validateCanonicalIntegrity(draft);
     const payload = buildAgentPayload(draft, originOverride);
 
     if (editingAgentId && isUuid(editingAgentId)) {

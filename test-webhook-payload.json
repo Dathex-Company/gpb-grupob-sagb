@@ -1,0 +1,13 @@
+{
+  "event": "payment.confirmed",
+  "data": {
+    "id": "test_1776559698939",
+    "event_id": "test_1776559698939",
+    "reference": "tx_test_0clgt6b0",
+    "provider": "bank-api",
+    "paid_at": "2026-04-19T00:48:18.939Z",
+    "amount": 100.5,
+    "currency": "BRL"
+  },
+  "timestamp": "2026-04-19T00:48:18.939Z"
+}

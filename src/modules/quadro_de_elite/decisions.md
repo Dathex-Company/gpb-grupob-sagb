@@ -55,6 +55,30 @@ Este documento registra decisões arquiteturais e operacionais tomadas durante a
 
 ---
 
+## 2026-04-18
+### Adoção de ID canônico imutável para agentes
+**Decisão:** Adotar `canonicalId` como chave canônica imutável no cadastro estrutural de agentes, seguindo convenção `nome_empresa3_setor3_nivel1_seq3`.
+
+**Justificativa:**
+- Garantir legibilidade técnica, rastreabilidade e escalabilidade de identidade de agentes.
+- Evitar colisões de nomenclatura entre ventures, setores e níveis.
+- Padronizar integração entre cadastro, pastas e relatórios operacionais.
+
+**Implementação inicial:**
+- Campo `canonicalId` no contrato `Agent`.
+- Campo obrigatório no formulário do Quadro de Elite.
+- Validação sintática via regex e parsing semântico de partes (`empresa3`, `setor3`, `nivel1`, `seq3`).
+- Bloqueio de edição do ID após criação (imutabilidade).
+- Verificação de duplicidade por `canonicalId` e por `seq3` dentro da mesma venture.
+- Exposição de `canonicalId` na tabela e inclusão no filtro de busca textual.
+
+**Impactos esperados:**
+- Maior consistência dos cadastros em escala.
+- Redução de retrabalho por ambiguidades de identificação.
+- Base mais segura para migração progressiva de legado.
+
+---
+
 ## Próximas decisões pendentes
 - Integração com serviços reais (Supabase) para carregamento de `agents`, `businessUnits`, `ventures`.
 - Remoção de ruídos visuais excessivos nos subcomponentes do `AgentFactory` (sombras, bordas pesadas).

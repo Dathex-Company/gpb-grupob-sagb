@@ -29,3 +29,15 @@ Este documento consolida o registro cronológico das interações do módulo **N
 
 ## 2026-04-16 23:20
 **poazi-bellini:** Detectadas falhas na sincronia do `onSnapshot` e delay no envio de mensagens em `SystemicVision.tsx`. Aplicada técnica de UI Otimista nas funções `handleSendMessage` e `handleUpdateAndRegenerate`, além de corrigir o merge do `onSnapshot` para preservar estados locais de streaming, eliminando o "flickering". Changelog atualizado.
+
+## 2026-04-18 15:22
+**usuario:** ative o Z:\SagB\src\modules\nucleo-conversacional\agent\prompt-ativacao-cline.md
+
+## 2026-04-18 15:22
+**poazi-bellini:** Ativação operacional registrada com sucesso. Prompt de ativação e persona do agente validados; modo ativo para o módulo Núcleo Conversacional conforme governança local.
+
+## 2026-04-20 15:31
+**usuario:** Confirmo. Pode aplicar a correção com escopo restrito em `src` e instrumentação de logs.
+
+## 2026-04-20 15:31
+**poazi-bellini:** Correção aplicada no `nucleo-conversacional` com foco em performance: separação de snapshot de agentes e hidratação, introdução de resolução sob demanda de DNA/contexto em runtime, e instrumentação de logs de latência em `App.tsx` e `ConversationsView.tsx`. Governança atualizada em `changelog.md` e `decisions.md`.

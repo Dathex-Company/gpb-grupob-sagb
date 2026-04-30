@@ -81,7 +81,7 @@ Certos módulos possuem "Golden Seal" e não devem ter sua lógica alterada sem 
 
 ## 🚀 Deploy (Netlify)
 
-> Padrão oficial de ambientes/esteira/publicação: `docs/standards/deploy-ambientes-e-esteira.md`
+> Padrão oficial de ambientes/esteira/publicação: `src/modules/central_padroes/docs/deploy-ambientes-e-esteira.md`
 
 ### Opção 1 — Integração nativa da Netlify (recomendado)
 1. Na Netlify, clique em **Add new site > Import an existing project** e conecte este repositório.

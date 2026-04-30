@@ -76,6 +76,9 @@ export const AgentFactoryFormModal: React.FC<AgentFactoryFormModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  const persistedCanonicalId = String(currentEditingAgent?.canonicalId || '').trim();
+  const isCanonicalLocked = Boolean(editingAgentId && persistedCanonicalId);
+
   const managerCandidates = mentorCandidates
     .filter(isValidHierarchyManager)
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
@@ -101,6 +104,21 @@ export const AgentFactoryFormModal: React.FC<AgentFactoryFormModalProps> = ({
               <label className="space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Nome *<HelpTooltip text="Nome principal de apresentação na plataforma" /></span>
                 <input value={form.name} onChange={(e) => onSetFormField('name', e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-sagb-bg-2 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-sagb-text outline-none focus:border-indigo-300" />
+              </label>
+              <label className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">ID canônico *<HelpTooltip text="Chave imutável no padrão nome_empresa3_setor3_nivel1_seq3 (ex: anton_borselli_3fb_mkt_e_001)." /></span>
+                <input
+                  value={form.canonicalId}
+                  onChange={(e) => onSetFormField('canonicalId', e.target.value.toLowerCase().trim())}
+                  placeholder="anton_borselli_3fb_mkt_e_001"
+                  disabled={isCanonicalLocked}
+                  className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-sagb-bg-2 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-sagb-text outline-none focus:border-indigo-300 disabled:opacity-70 disabled:cursor-not-allowed"
+                />
+                <p className="text-[10px] font-semibold text-gray-500">
+                  {isCanonicalLocked
+                    ? 'ID canônico bloqueado após criação (imutável).'
+                    : 'Use apenas minúsculas, números e underscore.'}
+                </p>
               </label>
               <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-white/5 bg-gray-50/50 dark:bg-sagb-bg-2 p-4 transition-colors">
                 <Avatar name={form.name || 'Novo Cadastro'} url={form.avatarUrl} className="h-16 w-16 shadow-md" />

@@ -1,6 +1,6 @@
 export const moduleDoc = {
   nome_oficial: 'Quadro de Elite',
-  versao: '1.0.0',
+  versao: '1.1.0',
   resumo:
     'Módulo responsável pela gestão, cadastro e evolução dos agentes oficiais do ecossistema SagB, migrando o legado do AgentFactory para o padrão novo modular.',
   fontes_de_dados: {
@@ -27,8 +27,26 @@ export const moduleDoc = {
       item: 'Criação de tela paralela de cadastro de agentes em outro módulo',
       risco: 'Divergência de identidade e status operacional dos agentes.',
       acao_preventiva: 'Manter gestão principal no Quadro de Elite e consumir dados via agents/agent_configs.'
+    },
+    {
+      item: 'Criação de IDs canônicos fora da convenção oficial',
+      risco: 'Colisão de identidade e quebra de rastreabilidade entre cadastros e pastas.',
+      acao_preventiva: 'Aplicar validação obrigatória do padrão nome_empresa3_setor3_nivel1_seq3 e bloquear edição pós-criação.'
     }
   ],
+  convencao_identidade: {
+    campo_canonico: 'canonicalId',
+    formato: 'nome_empresa3_setor3_nivel1_seq3',
+    exemplo: 'anton_borselli_3fb_mkt_e_001',
+    imutabilidade: 'O ID canônico não pode ser alterado após a criação do agente.',
+    regras: [
+      'apenas minúsculas, números e underscore',
+      'empresa3 com 3 caracteres',
+      'setor3 com 3 caracteres',
+      'nivel1 em {e,t,o}',
+      'seq3 de 001 a 999'
+    ]
+  },
   ownership: {
     owner_principal: 'Helen Dravet',
     owner_backup: 'A DEFINIR'

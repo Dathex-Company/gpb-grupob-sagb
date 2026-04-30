@@ -17,11 +17,13 @@ import {
   AgentMissionBlueprint,
   AgentMissionBlueprintRole,
   AgentMissionEvent,
-  AgentMissionStep
+  AgentMissionParticipant,
+  AgentMissionStep,
+  AgentMissionBlueprintStepConfig
 } from '../types';
 import {
-  POC_MISSION_STAGE_BLUEPRINTS,
-  resolvePocAgentForBlueprint
+  MissionStageBlueprint,
+  resolveOfficialAgentForStage
 } from './contextAssembler';
 import { resolveWorkspaceId } from '../utils/supabaseChat';
 
@@ -63,6 +65,7 @@ export type MissionBundle = {
   steps: AgentMissionStep[];
   artifacts: AgentArtifact[];
   handoffs: AgentHandoff[];
+  participants: AgentMissionParticipant[];
 };
 
 const toDate = (value: any): Date => {
@@ -109,6 +112,103 @@ const runOnce = <T,>(ref: any, mapper: (snapshot: any) => T, fallback: T): Promi
   });
 };
 
+const buildMissionBlueprintStages = (
+  flowConfig: AgentMissionBlueprintStepConfig[],
+  roles: AgentMissionBlueprintRole[]
+): MissionStageBlueprint[] => {
+  return [...flowConfig]
+    .sort((a, b) => Number(a.stepIndex || 0) - Number(b.stepIndex || 0))
+    .map((step) => {
+      const role = roles.find((item) => item.roleKey === step.roleKey);
+      return {
+        stepIndex: Number(step.stepIndex || 0),
+        stepName: String(step.stepName || `Etapa ${step.stepIndex}`),
+        roleKey: String(step.roleKey || ''),
+        roleName: role?.roleName || undefined,
+        requiredSkills: role?.requiredSkills || [],
+        selectionRules: step.selectionRules || role?.metadata || {},
+        suggestedAgentId: role?.suggestedAgentId || null,
+        artifactType: String(step.artifactType || 'artifact'),
+        requiredFields: Array.isArray(step.requiredFields) ? step.requiredFields : [],
+        schemaExample: step.schemaExample && typeof step.schemaExample === 'object'
+          ? step.schemaExample
+          : {},
+        dependsOnStepIndexes: Array.isArray(step.dependsOnStepIndexes)
+          ? step.dependsOnStepIndexes.map(Number).filter((n) => Number.isFinite(n))
+          : [],
+        checkpointRequired: Boolean(step.checkpointRequired)
+      } as MissionStageBlueprint;
+    })
+    .filter((item) => item.stepIndex > 0 && Boolean(item.roleKey));
+};
+
+const loadBlueprintById = async (blueprintId: string): Promise<AgentMissionBlueprint | null> => {
+  const q = query(collection(db, 'agent_mission_blueprints'), where('id', '==', blueprintId));
+  return runOnce(q, (snapshot) => {
+    const row = snapshot.docs[0];
+    if (!row) return null;
+    const data = row.data() as any;
+    return {
+      id: String(data.id || row.id),
+      workspaceId: String(data.workspaceId || data.workspace_id || ''),
+      title: String(data.title || 'Blueprint'),
+      description: data.description || null,
+      category: String(data.category || 'general'),
+      flowConfig: Array.isArray(data.flowConfig || data.flow_config) ? (data.flowConfig || data.flow_config) : [],
+      isActive: Boolean(data.isActive ?? data.is_active ?? true),
+      createdAt: toDate(data.createdAt || data.created_at),
+      updatedAt: toDate(data.updatedAt || data.updated_at)
+    } as AgentMissionBlueprint;
+  }, null);
+};
+
+export const loadMissionBlueprintRoles = async (blueprintId: string): Promise<AgentMissionBlueprintRole[]> => {
+  const q = query(
+    collection(db, 'agent_mission_blueprint_roles'),
+    where('blueprintId', '==', blueprintId),
+    orderBy('createdAt', 'asc')
+  );
+
+  return runOnce(q, (snapshot) => snapshot.docs.map((row: any) => {
+    const data = row.data() as any;
+    return {
+      id: String(data.id || row.id),
+      blueprintId: String(data.blueprintId || data.blueprint_id || blueprintId),
+      roleKey: String(data.roleKey || data.role_key || ''),
+      roleName: String(data.roleName || data.role_name || 'Papel'),
+      requiredSkills: Array.isArray(data.requiredSkills || data.required_skills) ? (data.requiredSkills || data.required_skills) : [],
+      suggestedAgentId: data.suggestedAgentId || data.suggested_agent_id || null,
+      metadata: data.metadata || {},
+      createdAt: toDate(data.createdAt || data.created_at)
+    } as AgentMissionBlueprintRole;
+  }), []);
+};
+
+const safeCreateMissionParticipants = async (rows: Omit<AgentMissionParticipant, 'id' | 'linkedAt'>[]) => {
+  const created: AgentMissionParticipant[] = [];
+  for (const row of rows) {
+    try {
+      const linkedAt = new Date();
+      const ref = await addDoc(collection(db, 'agent_mission_participants'), {
+        workspaceId: row.workspaceId,
+        missionId: row.missionId,
+        blueprintRoleKey: row.blueprintRoleKey,
+        blueprintRoleName: row.blueprintRoleName,
+        agentId: row.agentId,
+        agentName: row.agentName,
+        agentRole: row.agentRole || null,
+        linkedAt,
+        payload: row.payload || {}
+      });
+      created.push({ id: ref.id, linkedAt, ...row });
+    } catch (error) {
+      console.warn('agent_mission_participants indisponivel, mantendo participantes no payload/eventos.', error);
+      return [];
+    }
+  }
+  return created;
+};
+
 export const createMissionWithSteps = async ({
   workspaceId,
   blueprintId,
@@ -117,10 +217,29 @@ export const createMissionWithSteps = async ({
   missionMode = 'autonomous',
   createdBy,
   agents
-}: CreateMissionParams): Promise<{ mission: AgentMission; steps: AgentMissionStep[] }> => {
+}: CreateMissionParams): Promise<{ mission: AgentMission; steps: AgentMissionStep[]; participants: AgentMissionParticipant[] }> => {
   const scopedWorkspaceId = resolveWorkspaceId(workspaceId);
   const now = new Date();
-  
+
+  let selectedBlueprint: AgentMissionBlueprint | null = null;
+  let blueprintRoles: AgentMissionBlueprintRole[] = [];
+  let stageBlueprints: MissionStageBlueprint[] = [];
+
+  if (blueprintId) {
+    selectedBlueprint = await loadBlueprintById(blueprintId);
+    if (!selectedBlueprint) throw new Error('Blueprint selecionado nao encontrado.');
+    blueprintRoles = await loadMissionBlueprintRoles(selectedBlueprint.id);
+    stageBlueprints = buildMissionBlueprintStages(selectedBlueprint.flowConfig || [], blueprintRoles);
+  }
+
+  if (!selectedBlueprint) {
+    throw new Error('A missão exige blueprint oficial ativo para definir papéis e fluxo.');
+  }
+
+  if (!stageBlueprints.length) {
+    throw new Error('Blueprint sem etapas válidas. Defina flowConfig com papel/ordem/dependências/checkpoints.');
+  }
+
   const missionData: Partial<AgentMission> = {
     workspaceId: scopedWorkspaceId,
     blueprintId: blueprintId || null,
@@ -135,8 +254,9 @@ export const createMissionWithSteps = async ({
     createdAt: now,
     updatedAt: now,
     payload: {
-      missionType: blueprintId ? 'blueprint_based' : 'poc_three_agents',
-      stageCount: POC_MISSION_STAGE_BLUEPRINTS.length
+      missionType: 'blueprint_based',
+      stageCount: stageBlueprints.length,
+      blueprintTitle: selectedBlueprint?.title || null
     }
   };
 
@@ -147,65 +267,152 @@ export const createMissionWithSteps = async ({
     ...missionData
   } as AgentMission;
 
-  const steps = await Promise.all(
-    POC_MISSION_STAGE_BLUEPRINTS.map(async (blueprint) => {
-      const resolvedAgent = resolvePocAgentForBlueprint(agents, blueprint);
-      const stepNow = new Date();
-      const status = blueprint.stepIndex === 1 ? 'ready' : 'pending';
-      const stepRef = await addDoc(collection(db, 'agent_mission_steps'), {
-        workspaceId: scopedWorkspaceId,
-        missionId: mission.id,
-        stepIndex: blueprint.stepIndex,
-        agentId: resolvedAgent.agentId,
-        agentName: resolvedAgent.agentName,
-        stepName: blueprint.stepName,
-        artifactType: blueprint.artifactType,
-        status,
-        validationStatus: null,
-        retryCount: 0,
-        promptSnapshot: null,
-        contextSnapshot: null,
-        errorMessage: null,
-        startedAt: null,
-        finishedAt: null,
-        createdAt: stepNow,
-        updatedAt: stepNow,
-        payload: {
-          agentRole: resolvedAgent.agentRole,
-          agentSource: resolvedAgent.source,
-          preferredModel: resolvedAgent.preferredModel
-        }
-      });
+  await createMissionEvent({
+    missionId: mission.id,
+    eventType: 'mission_created',
+    actorId: createdBy || 'system',
+    actorName: createdBy ? 'Operador' : 'Mission Runner',
+    actorType: createdBy ? 'human' : 'system',
+    content: `Missao criada com ${stageBlueprints.length} etapa(s).`,
+    payload: {
+      blueprintId: blueprintId || null,
+      stageCount: stageBlueprints.length,
+      workspaceId: scopedWorkspaceId
+    }
+  });
 
-      return {
-        id: stepRef.id,
-        workspaceId: scopedWorkspaceId,
-        missionId: mission.id,
-        stepIndex: blueprint.stepIndex,
-        agentId: resolvedAgent.agentId,
-        agentName: resolvedAgent.agentName,
-        stepName: blueprint.stepName,
-        artifactType: blueprint.artifactType,
-        status,
-        validationStatus: null,
-        retryCount: 0,
-        promptSnapshot: null,
-        contextSnapshot: null,
-        errorMessage: null,
-        startedAt: null,
-        finishedAt: null,
-        createdAt: stepNow,
-        updatedAt: stepNow,
-        payload: {
-          agentRole: resolvedAgent.agentRole,
-          agentSource: resolvedAgent.source,
-          preferredModel: resolvedAgent.preferredModel
-        }
-      } as AgentMissionStep;
-    })
-  );
+  const participantSeed = new Map<string, Omit<AgentMissionParticipant, 'id' | 'linkedAt'>>();
 
-  return { mission, steps };
+  const usedAgentIds = new Set<string>();
+  const steps: AgentMissionStep[] = [];
+
+  for (const stage of stageBlueprints) {
+    if (!Array.isArray(agents) || agents.length === 0) {
+      throw new Error('Nenhum agente oficial disponível para resolver os papéis da missão.');
+    }
+
+    const allowAgentReuse = Boolean(stage.selectionRules?.allowAgentReuse);
+    const resolved = resolveOfficialAgentForStage(agents, stage, {
+      excludedAgentIds: allowAgentReuse ? [] : Array.from(usedAgentIds)
+    });
+    const resolvedAgent = agents.find((agent) => String(agent.id) === String(resolved.agentId));
+    if (!resolvedAgent) {
+      throw new Error(`Agente oficial resolvido não encontrado no cadastro para papel ${stage.roleKey}.`);
+    }
+    usedAgentIds.add(String(resolvedAgent.id));
+
+    const stepNow = new Date();
+    const status = stage.stepIndex === 1 ? 'ready' : 'pending';
+
+    const stepPayload = {
+      roleKey: stage.roleKey,
+      roleName: stage.roleName || stage.roleKey,
+      requiredSkills: stage.requiredSkills || [],
+      selectionRules: stage.selectionRules || {},
+      suggestedAgentId: stage.suggestedAgentId || null,
+      dependsOnStepIndexes: stage.dependsOnStepIndexes || [],
+      checkpointRequired: Boolean(stage.checkpointRequired),
+      requiredFields: stage.requiredFields || [],
+      schemaExample: stage.schemaExample || {},
+      agentRole: resolvedAgent.officialRole || stage.roleName || stage.roleKey,
+      agentSource: 'official_registry',
+      preferredModel: resolved.preferredModel,
+      selectionMode: 'automatic_blueprint_role',
+      selectionRuleUsed: resolved.selectionRuleUsed,
+      adherenceScore: resolved.adherenceScore,
+      adherenceEvidence: resolved.adherenceEvidence,
+      allowAgentReuse,
+      manualSelectionReady: true,
+      manualCandidateAgentIds: Array.isArray(stage.selectionRules?.manualAgentIds)
+        ? stage.selectionRules.manualAgentIds
+        : []
+    };
+
+    const stepRef = await addDoc(collection(db, 'agent_mission_steps'), {
+      workspaceId: scopedWorkspaceId,
+      missionId: mission.id,
+      stepIndex: stage.stepIndex,
+      agentId: resolvedAgent.id,
+      agentName: resolvedAgent.name,
+      stepName: stage.stepName,
+      artifactType: stage.artifactType,
+      status,
+      validationStatus: null,
+      retryCount: 0,
+      promptSnapshot: null,
+      contextSnapshot: null,
+      errorMessage: null,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: stepNow,
+      updatedAt: stepNow,
+      payload: stepPayload
+    });
+
+    participantSeed.set(`${stage.roleKey}:${resolvedAgent.id}`, {
+      workspaceId: scopedWorkspaceId,
+      missionId: mission.id,
+      blueprintRoleKey: stage.roleKey,
+      blueprintRoleName: stage.roleName || stage.roleKey,
+      agentId: resolvedAgent.id,
+      agentName: resolvedAgent.name,
+      agentRole: resolvedAgent.officialRole || stage.roleName || stage.roleKey,
+      payload: {
+        preferredModel: resolved.preferredModel,
+        selectionMode: 'automatic_blueprint_role',
+        selectionRuleUsed: resolved.selectionRuleUsed,
+        adherenceScore: resolved.adherenceScore,
+        adherenceEvidence: resolved.adherenceEvidence,
+        allowAgentReuse,
+        manualSelectionReady: true,
+        manualCandidateAgentIds: Array.isArray(stage.selectionRules?.manualAgentIds)
+          ? stage.selectionRules.manualAgentIds
+          : []
+      }
+    });
+
+    steps.push({
+      id: stepRef.id,
+      workspaceId: scopedWorkspaceId,
+      missionId: mission.id,
+      stepIndex: stage.stepIndex,
+      agentId: resolvedAgent.id,
+      agentName: resolvedAgent.name,
+      stepName: stage.stepName,
+      artifactType: stage.artifactType,
+      status,
+      validationStatus: null,
+      retryCount: 0,
+      promptSnapshot: null,
+      contextSnapshot: null,
+      errorMessage: null,
+      startedAt: null,
+      finishedAt: null,
+      createdAt: stepNow,
+      updatedAt: stepNow,
+      payload: stepPayload
+    } as AgentMissionStep);
+  }
+
+  const participants = await safeCreateMissionParticipants(Array.from(participantSeed.values()));
+  for (const participant of participants) {
+    await createMissionEvent({
+      missionId: mission.id,
+      eventType: 'agent_linked',
+      actorId: participant.agentId,
+      actorName: participant.agentName,
+      actorType: 'agent',
+      content: `Agente vinculado ao papel ${participant.blueprintRoleKey}.`,
+      payload: {
+        participantId: participant.id,
+        roleKey: participant.blueprintRoleKey,
+        agentId: participant.agentId,
+        agentName: participant.agentName
+      }
+    });
+  }
+
+  return { mission, steps, participants };
 };
 
 export const patchMission = async ({ missionId, patch }: PatchMissionParams) => {
@@ -269,19 +476,37 @@ export const createMissionHandoff = async ({
 
 export const loadMissionBlueprints = async (workspaceId?: string | null): Promise<AgentMissionBlueprint[]> => {
   const scopedWorkspaceId = resolveWorkspaceId(workspaceId);
-  const q = query(
+  const buildQuery = (targetWorkspaceId: string) => query(
     collection(db, 'agent_mission_blueprints'),
-    where('workspaceId', 'in', [scopedWorkspaceId, '00000000-0000-0000-0000-000000000000']),
+    where('workspaceId', '==', targetWorkspaceId),
     where('isActive', '==', true),
     orderBy('createdAt', 'desc')
   );
 
-  return runOnce(q, (snapshot) => snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    createdAt: toDate(doc.data().createdAt),
-    updatedAt: toDate(doc.data().updatedAt)
-  }) as AgentMissionBlueprint), []);
+  const [workspaceBlueprints, globalBlueprints] = await Promise.all([
+    runOnce(buildQuery(scopedWorkspaceId), (snapshot) => snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      flowConfig: Array.isArray(doc.data().flowConfig || doc.data().flow_config)
+        ? (doc.data().flowConfig || doc.data().flow_config)
+        : [],
+      createdAt: toDate(doc.data().createdAt || doc.data().created_at),
+      updatedAt: toDate(doc.data().updatedAt || doc.data().updated_at)
+    }) as AgentMissionBlueprint), []),
+    runOnce(buildQuery('00000000-0000-0000-0000-000000000000'), (snapshot) => snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      flowConfig: Array.isArray(doc.data().flowConfig || doc.data().flow_config)
+        ? (doc.data().flowConfig || doc.data().flow_config)
+        : [],
+      createdAt: toDate(doc.data().createdAt || doc.data().created_at),
+      updatedAt: toDate(doc.data().updatedAt || doc.data().updated_at)
+    }) as AgentMissionBlueprint), [])
+  ]);
+
+  const dedup = new Map<string, AgentMissionBlueprint>();
+  [...workspaceBlueprints, ...globalBlueprints].forEach((bp) => dedup.set(bp.id, bp));
+  return Array.from(dedup.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 };
 
 export const createMissionEvent = async (event: Omit<AgentMissionEvent, 'id' | 'createdAt'>): Promise<AgentMissionEvent> => {
@@ -310,6 +535,33 @@ export const loadMissionEvents = async (missionId: string): Promise<AgentMission
     ...doc.data(),
     createdAt: toDate(doc.data().createdAt)
   }) as AgentMissionEvent), []);
+};
+
+export const loadMissionParticipants = async (missionId: string): Promise<AgentMissionParticipant[]> => {
+  try {
+    const q = query(
+      collection(db, 'agent_mission_participants'),
+      where('missionId', '==', missionId),
+      orderBy('linkedAt', 'asc')
+    );
+    return runOnce(q, (snapshot) => snapshot.docs.map((row: any) => {
+      const data = row.data() as any;
+      return {
+        id: String(data.id || row.id),
+        workspaceId: String(data.workspaceId || data.workspace_id || ''),
+        missionId: String(data.missionId || data.mission_id || missionId),
+        blueprintRoleKey: String(data.blueprintRoleKey || data.blueprint_role_key || ''),
+        blueprintRoleName: String(data.blueprintRoleName || data.blueprint_role_name || ''),
+        agentId: String(data.agentId || data.agent_id || ''),
+        agentName: String(data.agentName || data.agent_name || 'Agente'),
+        agentRole: data.agentRole || data.agent_role || null,
+        linkedAt: toDate(data.linkedAt || data.linked_at),
+        payload: data.payload || {}
+      } as AgentMissionParticipant;
+    }), []);
+  } catch {
+    return [];
+  }
 };
 
 export const loadMissionBundle = async ({
@@ -345,7 +597,7 @@ export const loadMissionBundle = async ({
     orderBy('createdAt', 'asc')
   );
 
-  const [mission, steps, artifacts, handoffs] = await Promise.all([
+  const [mission, steps, artifacts, handoffs, participants] = await Promise.all([
     runOnce(
       missionQuery,
       (snapshot) => {
@@ -439,8 +691,9 @@ export const loadMissionBundle = async ({
         } as AgentHandoff;
       }),
       []
-    )
+    ),
+    loadMissionParticipants(missionId)
   ]);
 
-  return { mission, steps, artifacts, handoffs };
+  return { mission, steps, artifacts, handoffs, participants };
 };

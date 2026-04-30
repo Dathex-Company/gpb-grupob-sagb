@@ -3,6 +3,8 @@ import {
   AgentArtifact,
   AgentHandoff,
   AgentMission,
+  AgentMissionBlueprintRole,
+  AgentMissionParticipant,
   AgentMissionStep,
   ModelProvider
 } from '../types';
@@ -13,7 +15,7 @@ import {
   startIntelligenceFlow
 } from './intelligenceFlow';
 import {
-  POC_MISSION_STAGE_BLUEPRINTS,
+  buildMissionStageBlueprints,
   assembleMissionStepContext
 } from './contextAssembler';
 import { createMissionArtifact, updateMissionArtifactStatus } from './artifactService';
@@ -21,6 +23,7 @@ import { validateStepOutput } from './stepValidator';
 import {
   createMissionEvent,
   createMissionHandoff,
+  loadMissionBlueprintRoles,
   patchMission,
   patchMissionStep
 } from './missionService';
@@ -31,6 +34,8 @@ type RunMissionOrchestrationParams = {
   artifacts: AgentArtifact[];
   handoffs?: AgentHandoff[];
   agents: Agent[];
+  blueprintRoles?: AgentMissionBlueprintRole[];
+  participants?: AgentMissionParticipant[];
 };
 
 type ReprocessMissionStepParams = {
@@ -40,6 +45,8 @@ type ReprocessMissionStepParams = {
   handoffs?: AgentHandoff[];
   stepId: string;
   agents: Agent[];
+  blueprintRoles?: AgentMissionBlueprintRole[];
+  participants?: AgentMissionParticipant[];
 };
 
 const GEMINI_MODEL = 'gemini-2.5-flash';
@@ -248,7 +255,9 @@ export const runMissionOrchestration = async ({
   mission,
   steps,
   artifacts,
-  agents
+  agents,
+  blueprintRoles,
+  participants
 }: RunMissionOrchestrationParams) => {
   const liveMission = cloneMission(mission);
   const liveSteps = [...steps].map(cloneStep).sort((a, b) => a.stepIndex - b.stepIndex);
@@ -270,11 +279,17 @@ export const runMissionOrchestration = async ({
     }
   });
 
+  const effectiveRoles = blueprintRoles || (liveMission.blueprintId ? await loadMissionBlueprintRoles(liveMission.blueprintId) : []);
+  const stageBlueprints = buildMissionStageBlueprints({
+    steps: liveSteps,
+    roles: effectiveRoles
+  });
+
   for (let index = 0; index < liveSteps.length; index += 1) {
     const step = liveSteps[index];
     if (step.status === 'completed') continue;
 
-    const blueprint = POC_MISSION_STAGE_BLUEPRINTS.find((item) => item.stepIndex === step.stepIndex);
+    const blueprint = stageBlueprints.find((item) => item.stepIndex === step.stepIndex);
     if (!blueprint) {
       await failMission({
         mission: liveMission,
@@ -496,6 +511,16 @@ export const runMissionOrchestration = async ({
 
         await createMissionEvent({
           missionId: liveMission.id,
+          eventType: 'handoff_performed',
+          actorId: assembled.resolvedAgent.agentId,
+          actorName: assembled.resolvedAgent.agentName,
+          actorType: 'agent',
+          content: `Handoff realizado: ${step.stepName} -> ${nextStep.stepName}`,
+          payload: { fromStepId: step.id, toStepId: nextStep.id, artifactId: artifact.id }
+        });
+
+        await createMissionEvent({
+          missionId: liveMission.id,
           eventType: 'handoff_accepted',
           actorId: 'system',
           actorName: 'Mission Runner',
@@ -538,6 +563,18 @@ export const runMissionOrchestration = async ({
         flowId,
         message: toErrorMessage(error)
       });
+      await createMissionEvent({
+        missionId: liveMission.id,
+        eventType: 'mission_blocked',
+        actorId: 'system',
+        actorName: 'Mission Runner',
+        actorType: 'system',
+        content: `Missao bloqueada na etapa ${step.stepIndex}.`,
+        payload: {
+          stepId: step.id,
+          error: toErrorMessage(error)
+        }
+      });
       return;
     }
   }
@@ -558,6 +595,18 @@ export const runMissionOrchestration = async ({
     status: 'ok',
     participants: getFlowParticipants(liveSteps)
   });
+  await createMissionEvent({
+    missionId: liveMission.id,
+    eventType: 'mission_completed',
+    actorId: 'system',
+    actorName: 'Mission Runner',
+    actorType: 'system',
+    content: `Missao concluida com ${liveSteps.length} etapa(s).`,
+    payload: {
+      stepCount: liveSteps.length,
+      participantCount: (participants || []).length
+    }
+  });
 };
 
 export const reprocessMissionStep = async ({
@@ -565,7 +614,9 @@ export const reprocessMissionStep = async ({
   steps,
   artifacts,
   stepId,
-  agents
+  agents,
+  blueprintRoles,
+  participants
 }: ReprocessMissionStepParams) => {
   const targetStep = steps.find((step) => step.id === stepId);
   if (!targetStep) {
@@ -620,6 +671,8 @@ export const reprocessMissionStep = async ({
     },
     steps: refreshedSteps,
     artifacts,
-    agents
+    agents,
+    blueprintRoles,
+    participants
   });
 };

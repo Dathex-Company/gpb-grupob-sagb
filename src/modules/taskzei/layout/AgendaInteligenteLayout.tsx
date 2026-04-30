@@ -59,38 +59,55 @@ export const AgendaInteligenteLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full bg-[#f4f6fb] m-3 rounded-[1.5rem] shadow-sm border border-gray-100 overflow-hidden">
+    <div className="m-3 flex h-full overflow-hidden rounded-[1.4rem] border border-[#d9dee5] bg-[#f5f6f7] shadow-sm">
       {/* Shell Sidebar Módulo */}
-      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col shrink-0">
-        <div className="h-16 px-6 flex items-center shrink-0 border-b border-gray-50">
-          <h2 className="text-[15px] font-black text-gray-800 tracking-tight">Agenda Inteligente</h2>
+      <aside className="flex w-64 shrink-0 flex-col border-r border-[#d9dee5] bg-[#f0f2f4]">
+        <div className="h-16 shrink-0 border-b border-[#e1e6ec] px-5">
+          <div className="flex h-full items-center gap-3">
+            <div className="grid h-8 w-8 place-items-center rounded-[10px] bg-gradient-to-br from-[#68c7be] to-[#87a8cf] text-[10px] font-semibold text-white">
+              TZ
+            </div>
+            <div>
+              <h2 className="text-[14px] font-semibold tracking-tight text-[#414854]">TaskZei</h2>
+              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#95a0b1]">industrial pastel</p>
+            </div>
+          </div>
         </div>
         
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+        <nav className="flex-1 space-y-4 overflow-y-auto p-3">
+          <div>
+            <p className="mb-2 pl-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#95a0b1]">Main</p>
           {navigationItems.map(item => {
             const isActive = currentView === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setCurrentView(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                  className={`mb-1 flex h-9 w-full items-center gap-3 rounded-[10px] border px-3 text-[13px] font-medium transition-colors ${
                   isActive 
-                    ? 'bg-cyan-50 text-cyan-700' 
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                      ? 'border-[#d7ece8] bg-[#eaf7f5] text-[#414854]'
+                      : 'border-transparent text-[#6f7887] hover:bg-[#fafbfc] hover:text-[#414854]'
                 }`}
               >
-                <div className={`${isActive ? 'text-cyan-600' : 'text-gray-400'}`}>
+                  <div className={`${isActive ? 'text-[#68c7be]' : 'text-[#95a0b1]'}`}>
                   {item.icon}
                 </div>
                 {item.label}
               </button>
             );
           })}
+          </div>
+
+          <div className="rounded-[10px] border border-[#d9dee5] bg-white/80 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#95a0b1]">Workspace</p>
+            <p className="mt-1 text-[12px] font-medium text-[#414854]">Demanda Geral</p>
+            <p className="text-[11px] text-[#6f7887]">Operação • 28 tarefas</p>
+          </div>
         </nav>
       </aside>
 
       {/* Conteúdo Principal do Módulo */}
-      <main className="flex-1 flex flex-col overflow-hidden relative bg-[#F9FAFB]">
+      <main className="relative flex flex-1 flex-col overflow-hidden bg-[#f5f6f7]">
         {renderCurrentView()}
       </main>
     </div>

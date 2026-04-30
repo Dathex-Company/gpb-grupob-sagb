@@ -138,6 +138,7 @@ export const mapImportRowToForm = ({
 
   return {
     ...draft,
+    canonicalId: readByAliases(row, ['id canonico', 'id_canonic', 'canonical_id', 'canonicalid', 'agent_code']),
     name: readByAliases(row, ['nome', 'name']),
     entityType,
     email: readByAliases(row, ['email', 'e-mail', 'mail']),

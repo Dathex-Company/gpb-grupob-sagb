@@ -15,6 +15,21 @@ Documento de rastreabilidade macro por modulo.
 
 ## Entradas iniciais
 
+### 2026-04-09 - Isolamento documental do Núcleo Conversacional
+
+- Modulo: 03-nucleo-conversacional
+- Mudanca: 
+  - criação da pasta `src/modules/nucleo-conversacional/` para consolidar os dados da ficha do módulo para a interface.
+  - criação de `manifest.ts` e `module-doc.ts` com dados estruturados e tipáveis a partir de `03-nucleo-conversacional.md`.
+  - registro do manifesto em `src/core/modules/moduleRegistry.ts`.
+- Tipo: arquitetura / fluxo
+- Arquivos/tabelas afetados:
+  - `src/modules/nucleo-conversacional/manifest.ts`
+  - `src/modules/nucleo-conversacional/module-doc.ts`
+  - `src/core/modules/moduleRegistry.ts`
+  - `docs/governanca/DECISOES_E_PENDENCIAS.md`
+- Status: concluido
+
 ### 2026-04-07 - Ajustes operacionais em Auth/Admin, CID e realtime (estabilidade e sincronizacao)
 
 - Modulo: 05-cadastro-e-dna-de-agentes / Auth-Admin / CID Processor / Infra Supabase
@@ -144,9 +159,9 @@ Documento de rastreabilidade macro por modulo.
 - Tipo: infra
 - Arquivos/tabelas afetados:
   - `docs/README.md`
-  - `docs/standards/README.md`
-  - `docs/standards/design-system.md`
-  - `docs/standards/stack-e-infra.md`
+  - `src/modules/central-padroes/docs/_readme.md`
+  - `src/modules/central-padroes/docs/design-system.md`
+  - `src/modules/central-padroes/docs/stack-e-infra.md`
   - `docs/modular-map/HISTORICO_MODULOS.md`
 - Status: concluido
 

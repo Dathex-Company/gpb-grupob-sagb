@@ -1,14 +1,52 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { TaskzeiTask } from '../../types/task.types';
+import { TaskzeiTaskInlineInput } from '../../types/taskzei.contracts';
+import { useFocusStore } from '../../../foco_total/stores/focusStore';
 
 interface TaskListItemProps {
   task: TaskzeiTask;
   onClick: (task: TaskzeiTask) => void;
   onComplete: (id: string, e: React.MouseEvent) => void;
+  onChangeStatus?: (id: string, status: TaskzeiTask['status']) => void;
+  onUpdateTask?: (id: string, updates: Partial<TaskzeiTaskInlineInput>) => void;
+  variant?: 'table' | 'card';
 }
 
-export const TaskListItem: React.FC<TaskListItemProps> = ({ task, onClick, onComplete }) => {
+export const TaskListItem: React.FC<TaskListItemProps> = ({
+  task,
+  onClick,
+  onComplete,
+  onChangeStatus,
+  onUpdateTask,
+  variant = 'table'
+}) => {
   const isCompleted = task.status === 'concluida';
+  const [titleDraft, setTitleDraft] = useState(task.title);
+  const [assigneeDraft, setAssigneeDraft] = useState(task.assigneeName ?? '');
+
+  const handleFocusClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    useFocusStore.getState().setPendingTask(task.title);
+    window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: 'foco-total' }));
+  };
+
+  const dueDateInput = useMemo(() => {
+    if (!task.dueDate) return '';
+    const date = new Date(task.dueDate);
+    if (Number.isNaN(date.getTime())) return '';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, [task.dueDate]);
+
+  const [dueDateDraft, setDueDateDraft] = useState(dueDateInput);
+
+  useEffect(() => {
+    setTitleDraft(task.title);
+    setAssigneeDraft(task.assigneeName ?? '');
+    setDueDateDraft(dueDateInput);
+  }, [task.title, task.assigneeName, dueDateInput]);
 
   const getPriorityColor = () => {
     switch (task.priority) {
@@ -28,61 +66,189 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({ task, onClick, onCom
     }
   };
 
+  const getPriorityLabel = () => {
+    switch (task.priority) {
+      case 'alta':
+        return 'Alta';
+      case 'media':
+        return 'Média';
+      default:
+        return 'Baixa';
+    }
+  };
+
+  const getPriorityDotColor = () => {
+    switch (task.priority) {
+      case 'alta':
+        return 'bg-[#d78484]';
+      case 'media':
+        return 'bg-[#e6c06d]';
+      default:
+        return 'bg-[#87a8cf]';
+    }
+  };
+
+  if (variant === 'card') {
+    return (
+      <div
+        onClick={() => onClick(task)}
+        className="group cursor-pointer rounded-lg border border-[#d9dee5] bg-white p-3 shadow-sm transition-colors hover:bg-[#fafbfc]"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className={`truncate text-[12px] font-medium ${isCompleted ? 'text-[#95a0b1] line-through' : 'text-[#414854]'}`}>
+              {task.title}
+            </h3>
+            {task.description && <p className="mt-1 truncate text-[11px] text-[#95a0b1]">{task.description}</p>}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleFocusClick}
+              title="Iniciar Foco Total"
+              className="flex h-5 w-5 items-center justify-center rounded border border-[#d9dee5] bg-white text-[12px] transition-colors hover:border-[#87a8cf] hover:bg-[#f0f2f4]"
+            >
+              🎯
+            </button>
+            <button
+              onClick={(e) => onComplete(task.id, e)}
+              className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
+                isCompleted ? 'border-[#68c7be] bg-[#68c7be] text-white' : 'border-[#d9dee5] hover:border-[#87a8cf]'
+              }`}
+            >
+              {isCompleted && (
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between text-[10px] text-[#6f7887]">
+          <span className={`rounded-md border px-1.5 py-0.5 ${getPriorityColor()}`}>{getPriorityLabel()}</span>
+          <span>{getStatusLabel()}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       onClick={() => onClick(task)}
-      className="group p-3 mb-2 bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow hover:border-gray-200 transition-all cursor-pointer flex items-center gap-4"
+      className="group grid cursor-pointer grid-cols-[minmax(230px,2.6fr)_minmax(90px,1fr)_minmax(120px,1.2fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(110px,1fr)] items-center gap-3 border-b border-[#e8ecf1] px-3 py-2.5 text-xs transition-colors hover:bg-[#fafbfc]"
     >
-      <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-        <button 
-          onClick={(e) => onComplete(task.id, e)}
-          className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-            isCompleted 
-              ? 'bg-cyan-600 border-cyan-600 text-white' 
-              : 'border-gray-300 hover:border-cyan-500'
-          }`}
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="flex-shrink-0 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={handleFocusClick}
+            title="Iniciar Foco Total"
+            className="flex h-5 w-5 items-center justify-center rounded border border-[#d9dee5] bg-white text-[12px] transition-colors hover:border-[#87a8cf] hover:bg-[#f0f2f4]"
+          >
+            🎯
+          </button>
+          <button 
+            onClick={(e) => onComplete(task.id, e)}
+            className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
+              isCompleted 
+                ? 'border-[#68c7be] bg-[#68c7be] text-white' 
+                : 'border-[#d9dee5] hover:border-[#87a8cf]'
+            }`}
+          >
+            {isCompleted && (
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+          <input
+            value={titleDraft}
+            onChange={(event) => setTitleDraft(event.target.value)}
+            onBlur={() => {
+              const normalized = titleDraft.trim();
+              if (!normalized || normalized === task.title) {
+                setTitleDraft(task.title);
+                return;
+              }
+              onUpdateTask?.(task.id, { title: normalized });
+            }}
+            className={`h-7 w-full rounded-md border border-transparent bg-transparent px-2 text-[12px] font-medium focus:border-[#d9dee5] focus:bg-white focus:outline-none ${isCompleted ? 'text-[#95a0b1] line-through' : 'text-[#414854]'}`}
+          />
+          {task.description && <p className="mt-0.5 truncate text-[11px] text-[#95a0b1]">{task.description}</p>}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <span className={`h-2 w-2 rounded-sm ${getPriorityDotColor()}`} />
+        <select
+          value={task.priority}
+          onChange={(event) => onUpdateTask?.(task.id, { priority: event.target.value as TaskzeiTask['priority'] })}
+          className={`h-7 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold focus:outline-none ${getPriorityColor()} ${isCompleted ? 'opacity-50' : ''}`}
         >
-          {isCompleted && (
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-        </button>
-      </div>
-      
-      <div className="flex-1 min-w-0">
-        <h3 className={`text-sm font-medium truncate ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-          {task.title}
-        </h3>
+          <option value="alta">Alta</option>
+          <option value="media">Média</option>
+          <option value="baixa">Baixa</option>
+        </select>
       </div>
 
-      <div className="flex items-center gap-3 flex-shrink-0 text-xs">
-        {task.dueDate && (
-          <div className={`flex items-center gap-1 ${isCompleted ? 'text-gray-400' : 'text-gray-500'}`}>
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>{new Date(task.dueDate).toLocaleDateString('pt-BR')}</span>
-          </div>
-        )}
-        
-        {task.assigneeName && (
-          <div className={`flex items-center gap-1 ${isCompleted ? 'text-gray-400' : 'text-gray-600'}`}>
-            <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold">
-              {task.assigneeName.charAt(0)}
-            </div>
-          </div>
-        )}
+      <div className="text-[11px] text-[#6f7887]">TaskZei</div>
 
-        <div className={`px-2 py-0.5 rounded border font-medium ${getPriorityColor()} ${isCompleted ? 'opacity-50' : ''}`}>
-          {task.priority === 'alta' ? 'Alta' : task.priority === 'media' ? 'Média' : 'Baixa'}
+      <div className="flex items-center gap-1.5 text-[11px] text-[#6f7887]" onClick={(e) => e.stopPropagation()}>
+        <div className="grid h-5 w-5 place-items-center rounded-full border border-[#d9dee5] bg-[#f0f2f4] text-[10px] font-semibold text-[#6f7887]">
+          {assigneeDraft ? assigneeDraft.charAt(0).toUpperCase() : '—'}
         </div>
+        <input
+          value={assigneeDraft}
+          onChange={(event) => setAssigneeDraft(event.target.value)}
+          onBlur={() => {
+            const normalized = assigneeDraft.trim();
+            if (normalized === (task.assigneeName ?? '')) return;
+            onUpdateTask?.(task.id, { assigneeName: normalized || undefined });
+          }}
+          placeholder="Responsável"
+          className="h-7 w-full rounded-md border border-transparent bg-transparent px-2 text-[11px] text-[#6f7887] focus:border-[#d9dee5] focus:bg-white focus:outline-none"
+        />
+      </div>
 
-        <div className={`px-2 py-0.5 rounded border font-medium ${
-          isCompleted ? 'bg-gray-100 text-gray-500 border-gray-200' : 'bg-gray-50 text-gray-600 border-gray-200'
-        }`}>
-          {getStatusLabel()}
-        </div>
+      <div className={`text-[11px] ${isCompleted ? 'text-[#95a0b1]' : 'text-[#6f7887]'}`} onClick={(e) => e.stopPropagation()}>
+        <input
+          type="date"
+          value={dueDateDraft}
+          onChange={(event) => setDueDateDraft(event.target.value)}
+          onBlur={() => {
+            if (dueDateDraft === dueDateInput) return;
+            onUpdateTask?.(task.id, { dueDate: dueDateDraft || undefined });
+          }}
+          className="h-7 w-full rounded-md border border-[#d9dee5] bg-[#fafbfc] px-2 text-[11px] text-[#6f7887] focus:border-[#87a8cf] focus:outline-none"
+        />
+      </div>
+
+      <div className="flex items-center justify-start" onClick={(e) => e.stopPropagation()}>
+        {onUpdateTask || onChangeStatus ? (
+          <select
+            value={task.status}
+            onChange={(event) => {
+              const nextStatus = event.target.value as TaskzeiTask['status'];
+              if (onUpdateTask) {
+                onUpdateTask(task.id, { status: nextStatus });
+              } else {
+                onChangeStatus?.(task.id, nextStatus);
+              }
+            }}
+            className="h-7 rounded-md border border-[#d9dee5] bg-[#fafbfc] px-2 text-[10px] font-semibold uppercase tracking-wide text-[#6f7887] focus:border-[#87a8cf] focus:outline-none"
+          >
+            <option value="aberta">Aberta</option>
+            <option value="em_andamento">Em andamento</option>
+            <option value="concluida">Concluída</option>
+          </select>
+        ) : (
+          <span className="rounded-md border border-[#d9dee5] bg-[#f5f6f7] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#6f7887]">
+            {getStatusLabel()}
+          </span>
+        )}
       </div>
     </div>
   );

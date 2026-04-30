@@ -1,10 +1,35 @@
 import React from 'react';
+import { integrationHub } from '../../hub-integracao/services/integrationService';
 
 const CRM_ZIPLIA_URL = 'http://localhost:3000';
 
 export const CrmZipliaGatewayPage: React.FC = () => {
+  const [to, setTo] = React.useState('');
+  const [message, setMessage] = React.useState('');
+  const [sending, setSending] = React.useState(false);
+  const [result, setResult] = React.useState<string | null>(null);
+
   const handleOpenCrm = () => {
     window.open(CRM_ZIPLIA_URL, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleSendWhatsAppPoc = async () => {
+    if (!to.trim() || !message.trim()) return;
+
+    try {
+      setSending(true);
+      setResult(null);
+      const response = await integrationHub.sendWhatsAppMessage({
+        to: to.trim(),
+        message: message.trim()
+      });
+      setResult(`Mensagem enviada via Hub. ID externo: ${response.externalId}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Falha ao enviar mensagem via Hub';
+      setResult(`Erro: ${errorMessage}`);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -34,6 +59,36 @@ export const CrmZipliaGatewayPage: React.FC = () => {
         >
           Abrir CRM Ziplia
         </button>
+
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-sagb-border">
+          <h3 className="text-lg font-semibold mb-3">POC WhatsApp via Hub de Integrações</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Fluxo CRM → Hub → WhatsApp (Meta). Requer credenciais da integração <code>int_waba_01</code> no Hub.
+          </p>
+
+          <div className="grid gap-3">
+            <input
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              placeholder="Número destino (ex: 5511999999999)"
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-sagb-border bg-white dark:bg-sagb-bg"
+            />
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Mensagem"
+              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-sagb-border bg-white dark:bg-sagb-bg min-h-[100px]"
+            />
+            <button
+              onClick={handleSendWhatsAppPoc}
+              disabled={sending || !to.trim() || !message.trim()}
+              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-medium rounded-lg transition-colors"
+            >
+              {sending ? 'Enviando...' : 'Enviar via Hub'}
+            </button>
+            {result ? <div className="text-sm text-gray-700 dark:text-gray-300">{result}</div> : null}
+          </div>
+        </div>
       </section>
     </div>
   );

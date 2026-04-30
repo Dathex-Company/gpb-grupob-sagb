@@ -666,6 +666,66 @@ const handleTranscribeAudio = async (payload) => {
   return { text: response.text || '' };
 };
 
+const handleGeminiTts = async (payload) => {
+  const ai = getGeminiClient();
+  const text = String(payload?.text || '').trim();
+  if (!text) {
+    throw createHttpError(400, 'Missing required field: text');
+  }
+
+  const model = String(payload?.modelId || process.env.GEMINI_TTS_MODEL || 'gemini-2.5-flash-preview-tts').trim();
+  const voiceName = String(payload?.voiceName || process.env.GEMINI_TTS_VOICE || 'Fenrir').trim();
+  const locale = String(payload?.locale || 'pt-BR').trim();
+  const speakingStyle = String(
+    payload?.speakingStyle ||
+    'Tom masculino, agradável e firme, ritmo calmo e confiante, em português do Brasil.'
+  ).trim();
+
+  const response = await ai.models.generateContent({
+    model,
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: `${speakingStyle}\n\nIdioma: ${locale}.\n\nTexto para narração:\n${text}`
+          }
+        ]
+      }
+    ],
+    config: {
+      responseModalities: ['AUDIO'],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: {
+            voiceName
+          }
+        }
+      }
+    }
+  });
+
+  const candidates = Array.isArray(response?.candidates) ? response.candidates : [];
+  const first = candidates[0];
+  const parts = Array.isArray(first?.content?.parts) ? first.content.parts : [];
+  const audioPart = parts.find((part) => part?.inlineData?.data);
+  const audioBase64 = String(audioPart?.inlineData?.data || '').trim();
+  const mimeType = String(audioPart?.inlineData?.mimeType || 'audio/wav').trim();
+
+  if (!audioBase64) {
+    throw createHttpError(502, 'Gemini TTS did not return audio data.');
+  }
+
+  return {
+    audioBase64,
+    mimeType,
+    provider: 'gemini',
+    model,
+    voiceName,
+    locale
+  };
+};
+
 const handleConsolidateChatMemory = async (payload) => {
   const chatHistory = payload.chatHistory || '';
   const prompt = `
@@ -814,6 +874,7 @@ const handleCreateAgentFromScratch = async (payload) => {
 
 const actionHandlers = {
   gemini_chat: handleGeminiChat,
+  gemini_tts: handleGeminiTts,
   deepseek_chat: handleDeepSeekChat,
   llama_local_chat: handleLlamaLocalChat,
   openai_chat: handleOpenAIChat,

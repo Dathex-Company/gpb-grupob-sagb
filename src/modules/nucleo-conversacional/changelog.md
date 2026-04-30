@@ -4,6 +4,20 @@ Registro de mudanças técnicas, decisões de arquitetura e evolução do módul
 
 ---
 
+## [v1.3.0-performance-lazy-hydration] - 2026-04-20
+
+### Alterado
+- Refatoração do pipeline de agentes em `App.tsx` para separar ingestão de snapshot (`dbAgents`) da lista de UI (`activatedAgents`) e remover hidratação pesada global durante render.
+- Introduzido resolvedor sob demanda `hydrateAgentForRuntime(...)` para montar DNA/contexto apenas no momento de abrir conversa ou compor instrução de execução.
+- Ajustado roteamento de chat (`handleAgentInteraction` / `handleOpenAgentSession`) para usar agente hidratado sob demanda, preservando validações operacionais.
+- Ajustado `directChannelProfile` para resolver instrução com agente hidratado no momento da composição.
+- Atualizado sincronismo de `setRuntimeAiContext(...)` para derivar identidade a partir de `dbAgents` + hidratação sob demanda, evitando acoplamento com re-render de lista de UI.
+
+### Observabilidade
+- Instrumentação de performance adicionada no fluxo de agentes em `App.tsx` (`console.time`/`console.debug`) e na listagem de conversas em `ConversationsView.tsx` para medir snapshot, previews e custo de montagem.
+
+---
+
 ## [v1.2.0-otimizacao-chat-ux] - 2026-04-16
 
 ### Alterado

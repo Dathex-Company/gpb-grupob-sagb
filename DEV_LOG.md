@@ -48,6 +48,14 @@ As telas abaixo foram aprovadas pelo Chairman e **NÃO DEVEM** ser alteradas em 
 
 ## 4. Histórico de Mudanças (Changelog)
 
+### [v1.7.2] - Estruturação do C.I.D e Histórico Local
+- **Isolamento Documental**: Criada a "casca" estrutural do módulo C.I.D em `src/modules/cid` com `manifest.ts` e `module-doc.ts` (tipado a partir da doc macro anterior).
+- **Changelog Local**: Instituída a política de ter um `changelog.md` dentro de cada módulo plugável. Se um módulo for "extraído" para um novo projeto, ele levará seu próprio histórico técnico junto.
+
+### [v1.7.1] - Estruturação do Núcleo Conversacional
+- **Isolamento Documental**: Iniciado o processo de adequação do chat legado para a arquitetura modular em `src/modules/nucleo-conversacional/`.
+- **Ficha Técnica Consolidada**: O conhecimento espalhado em Markdown foi transformado em arquivo TypeScript (`module-doc.ts`), e o `manifest.ts` foi registrado na aplicação. O código interno migrará gradualmente.
+
 ### [v1.7.0] - Modularização do NIC (Núcleo de Inteligência Conectiva)
 - **Nomenclatura Oficial**: O antigo módulo RIC foi oficialmente renomeado para **NIC** (Núcleo de Inteligência Conectiva). Todas as referências visuais, rotas e documentação interna foram atualizadas.
 - **Arquitetura Modular**: O módulo foi extraído para `src/modules/nic/`, seguindo o novo padrão plugável do SagB. Possui manifesto próprio, rotas independentes e estrutura preparada para extração futura.

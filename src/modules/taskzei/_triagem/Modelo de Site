@@ -1,0 +1,725 @@
+Quero que você desenvolva a próxima versão do **TaskZei** com base nesta direção visual e estrutural.
+
+## Objetivo
+
+Transformar o TaskZei em um sistema de gestão com aparência de produto real, maduro, limpo, compacto e altamente utilizável, inspirado na leitura e organização do ClickUp, mas com identidade própria.
+
+## Referências que você deve considerar
+
+Vou te enviar junto:
+
+1. o **HTML base** que já foi criado como direção inicial
+2. **prints de referência**, especialmente da tela de tarefas do ClickUp
+3. eventuais observações complementares
+
+## Regra principal
+
+Não quero copiar o ClickUp.
+Quero usar o ClickUp como referência de:
+
+* densidade visual
+* organização
+* hierarquia
+* leitura de tarefas
+* disposição de colunas
+* toolbar
+* navegação de sistema
+
+Mas o resultado precisa parecer **TaskZei**, não clone.
+
+## Direção visual oficial do TaskZei
+
+O estilo oficial é:
+
+* **industrial pastel**
+* **tema claro**
+* **Inter 100%**
+* **sem preto**
+* usar sempre **grafite** no texto, nunca preto puro
+* aparência clean, madura, compacta e profissional
+* sem visual pesado
+* sem sombra agressiva
+* sem cores saturadas demais
+* sem cara de template genérico
+* sem cara de landing page
+* sem cara de Trello
+
+## Regras visuais não negociáveis
+
+### Tipografia
+
+* fonte: **Inter**
+* títulos: peso 600
+* texto comum: 400 ou 500
+* números: 600
+* evitar bold exagerado
+* evitar títulos muito pesados
+
+### Texto
+
+* nunca usar preto puro
+* usar grafite suave
+
+Sugestão de base:
+
+* texto principal: `#414854`
+* texto secundário: `#6F7887`
+* texto suave: `#95A0B1`
+
+### Paleta base
+
+Use essa base como ponto de partida:
+
+* fundo geral: `#F5F6F7`
+* superfície: `#FFFFFF`
+* superfície 2: `#F0F2F4`
+* linhas e bordas: `#D9DEE5`
+
+Acentos:
+
+* mint: `#68C7BE`
+* azul suave: `#87A8CF`
+* lavanda: `#A78CC6`
+* âmbar pastel: `#E6C06D`
+* terracota suave: `#D99076`
+* vermelho suave: `#D78484`
+
+### Sensação que eu quero
+
+* leve
+* sofisticada
+* organizada
+* compacta
+* operacional
+* B2B
+* produto SaaS real
+
+## Referência estrutural principal
+
+Quero que você use como base a referência da tela de tasks do ClickUp para entender:
+
+* agrupamento por status
+* toolbar superior
+* barra de contexto / breadcrumbs
+* visão compacta de lista
+* colunas objetivas
+* tags e badges
+* leitura rápida
+* tabela com cara de ferramenta real
+
+## O que eu quero que você produza
+
+Quero que você evolua a interface nas seguintes frentes:
+
+### 1. Sidebar
+
+* mais refinada
+* compacta
+* clara
+* com hierarquia melhor
+* com estados ativo / hover bem resolvidos
+* sem excesso de informação
+* com aparência de produto profissional
+
+### 2. Topbar
+
+* fina
+* limpa
+* contextual
+* com boa leitura
+* sem peso visual exagerado
+
+### 3. Tela de dashboard
+
+* mais madura
+* mais bem alinhada
+* cards mais reais
+* menos “mockup bonito” e mais “produto usável”
+* melhor organização dos blocos
+
+### 4. Tela de tasks
+
+Essa é a prioridade maior.
+
+Quero uma tela de tasks:
+
+* mais próxima da lógica do ClickUp
+* compacta
+* muito bem organizada
+* com tabela realista
+* com grupos por status
+* com toolbar funcional
+* com boa leitura de colunas
+* com badges elegantes
+* com aparência de operação diária real
+
+## O que evitar
+
+* preto
+* contraste duro
+* cards gigantes
+* espaçamento aberto demais
+* cores berrantes
+* bordas pesadas
+* excesso de sombra
+* excesso de arredondamento
+* visual infantil
+* visual genérico de dashboard de template
+
+## O que eu espero do resultado
+
+Quero que o resultado final pareça:
+
+* uma versão séria do TaskZei
+* um sistema que já poderia ser apresentado para desenvolvimento real
+* um produto com linguagem própria
+* uma mistura equilibrada entre:
+
+  * organização do ClickUp
+  * clareza de SaaS clean
+  * estética industrial pastel
+
+## Entrega esperada
+
+Quero que você me devolva:
+
+1. a versão evoluída da interface
+2. explicação curta das decisões tomadas
+3. o que você aproximou da referência
+4. o que você mudou para manter identidade própria
+5. onde o visual ainda pode evoluir
+
+## Importante
+
+Use o **HTML enviado como base inicial**, mas não fique preso a ele.
+Pode melhorar estrutura, ritmo visual, proporção, densidade e refinamento.
+
+O HTML base é ponto de partida.
+A referência do ClickUp é direção estrutural.
+A identidade final precisa ser **TaskZei industrial pastel**.
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskZei | Industrial Pastel v3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F5F6F7;
+      --surface:#FFFFFF;
+      --surface-2:#F0F2F4;
+      --surface-3:#FAFBFC;
+      --line:#D9DEE5;
+      --line-soft:#E8ECF1;
+      --text:#414854;
+      --text-2:#6F7887;
+      --text-3:#95A0B1;
+      --mint:#68C7BE;
+      --mint-soft:#EAF7F5;
+      --blue:#87A8CF;
+      --blue-soft:#EEF4FB;
+      --lav:#A78CC6;
+      --lav-soft:#F3EEF8;
+      --amber:#E6C06D;
+      --amber-soft:#FBF6E8;
+      --terracotta:#D99076;
+      --terracotta-soft:#FBEFEA;
+      --red:#D78484;
+      --red-soft:#FCF0F0;
+      --radius-xl:18px;
+      --radius-lg:14px;
+      --radius-md:10px;
+      --shadow:0 8px 22px rgba(65,72,84,.05);
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{
+      font-family:"Inter",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .app{
+      min-height:100vh;
+      display:grid;
+      grid-template-columns:220px 1fr;
+    }
+
+    .sidebar{
+      background:#F0F2F4;
+      border-right:1px solid var(--line);
+      padding:18px 14px;
+      position:sticky;
+      top:0;
+      height:100vh;
+      overflow:auto;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:18px;
+      padding:2px 6px 14px;
+      border-bottom:1px solid #E1E6EC;
+    }
+
+    .logo{
+      width:34px;
+      height:34px;
+      border-radius:10px;
+      background:linear-gradient(135deg,var(--mint),var(--blue));
+      display:grid;
+      place-items:center;
+      color:#fff;
+      font-size:12px;
+      font-weight:600;
+    }
+
+    .brand strong{display:block;font-size:15px;font-weight:600;color:var(--text)}
+    .brand span{display:block;font-size:11px;color:var(--text-3);margin-top:2px}
+
+    .menu-block{margin-bottom:18px}
+    .menu-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-3);margin:0 0 8px 10px;font-weight:600}
+    .menu{display:flex;flex-direction:column;gap:4px}
+    .item{
+      height:36px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:10px;
+      color:var(--text-2);font-size:13px;font-weight:500;
+    }
+    .item.active{background:var(--mint-soft);color:var(--text);border:1px solid #D7ECE8}
+    .icon-dot{width:7px;height:7px;border-radius:999px;background:var(--mint);flex:0 0 auto}
+    .blue{background:var(--blue)} .lav{background:var(--lav)} .amber{background:var(--amber)} .terra{background:var(--terracotta)}
+
+    .main{display:flex;flex-direction:column;min-width:0}
+    .topbar{
+      height:58px;background:rgba(255,255,255,.88);border-bottom:1px solid var(--line);display:flex;
+      align-items:center;justify-content:space-between;padding:0 18px;position:sticky;top:0;backdrop-filter: blur(10px);z-index:20;
+    }
+    .topnav{display:flex;gap:18px;font-size:12px;color:var(--text-2);font-weight:500}
+    .topnav .on{color:var(--text);font-weight:600}
+    .topright{display:flex;align-items:center;gap:10px}
+    .search{width:240px;height:34px;border-radius:10px;border:1px solid var(--line);background:#FAFBFB;display:flex;align-items:center;padding:0 12px;font-size:12px;color:var(--text-3)}
+    .btn{height:34px;border:none;border-radius:10px;padding:0 12px;font-size:12px;font-weight:600;color:#fff;background:var(--lav)}
+
+    .content{padding:20px;display:grid;gap:22px}
+    .screen{display:grid;gap:14px}
+    .screen-head{display:flex;align-items:end;justify-content:space-between;gap:16px}
+    .screen-head h1{margin:0;font-size:18px;font-weight:600;color:var(--text);letter-spacing:-.02em}
+    .screen-head p{margin:6px 0 0;font-size:13px;color:var(--text-2)}
+    .screen-tag{height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:11px;color:var(--text-2);display:inline-flex;align-items:center;font-weight:500}
+
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+    .stat small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:8px;font-weight:600}
+    .stat strong{display:block;font-size:22px;line-height:1;color:var(--text);font-weight:600}
+    .stat span{display:block;margin-top:7px;font-size:12px;color:var(--text-2)}
+
+    .layout{display:grid;grid-template-columns:1.3fr .85fr;gap:14px}
+    .panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+    .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .panel-head h3{margin:0;font-size:13px;font-weight:600;color:var(--text);letter-spacing:.01em}
+    .panel-head a,.panel-head span{font-size:12px;color:var(--text-2);text-decoration:none}
+
+    .agenda-item{display:grid;grid-template-columns:72px 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:14px;background:#FBFBFC;border:1px solid #EBEEF2;margin-bottom:8px}
+    .time{font-size:12px;font-weight:600;line-height:1.25;color:var(--text)}
+    .agenda-item h4{margin:0 0 4px;font-size:13px;font-weight:600;color:var(--text)}
+    .agenda-item p{margin:0;font-size:12px;color:var(--text-2)}
+    .badge{height:24px;padding:0 9px;border-radius:999px;display:inline-flex;align-items:center;font-size:10px;font-weight:600;border:1px solid transparent;white-space:nowrap}
+    .b-mint{background:var(--mint-soft);color:#51A89F;border-color:#D4ECE7}
+    .b-lav{background:var(--lav-soft);color:#9378B4;border-color:#E5DBF1}
+    .b-amber{background:var(--amber-soft);color:#C79F48;border-color:#F0E3BC}
+    .b-red{background:var(--red-soft);color:#C56D6D;border-color:#F0D7D7}
+    .b-blue{background:var(--blue-soft);color:#698EBB;border-color:#D8E5F5}
+
+    .activity{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #EEF1F4}
+    .activity:last-child{border-bottom:none}
+    .activity-icon{width:30px;height:30px;border-radius:10px;background:#F1F4F7;display:grid;place-items:center;color:var(--text-2);font-size:11px;font-weight:600;flex:0 0 auto}
+    .activity h4{margin:0 0 4px;font-size:12px;font-weight:600;color:var(--text)}
+    .activity p{margin:0;font-size:11px;color:var(--text-2);line-height:1.45}
+
+    .roadmap{margin-top:14px;display:grid;gap:10px}
+    .road{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+    .road-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:12px;color:var(--text);font-weight:600}
+    .bar{height:8px;border-radius:999px;background:#EEF1F4;overflow:hidden}
+    .fill{height:100%;border-radius:999px}
+
+    .tasks-shell{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+    .tasks-top{padding:14px 16px;border-bottom:1px solid var(--line-soft);display:grid;gap:12px;background:#FCFCFD}
+    .crumbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--text-2)}
+    .crumb-pill{height:26px;padding:0 10px;border-radius:999px;background:#fff;border:1px solid var(--line);display:inline-flex;align-items:center}
+    .views{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .view{height:28px;padding:0 10px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--text-2);font-size:12px;font-weight:500;display:inline-flex;align-items:center}
+    .view.active{background:var(--surface);border-color:var(--line);color:var(--text)}
+    .tasks-toolbar{padding:12px 16px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface)}
+    .left-tools,.right-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .tool{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--text-2);font-size:12px;font-weight:500;display:inline-flex;align-items:center}
+    .tool.primary{background:var(--lav);border-color:transparent;color:#fff}
+
+    .tasks-body{padding:8px 12px 14px;background:var(--surface)}
+    .group{border:1px solid var(--line-soft);border-radius:14px;overflow:hidden;margin-bottom:10px;background:#fff}
+    .group-head{height:40px;padding:0 12px;background:#FAFBFC;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .group-head strong{font-size:12px;font-weight:600;color:var(--text);letter-spacing:.02em}
+    .group-head span{font-size:11px;color:var(--text-3)}
+
+    .task-table{width:100%;border-collapse:collapse}
+    .task-table th{height:36px;background:#FCFCFD;color:var(--text-3);font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;text-align:left;padding:0 10px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+    .task-table td{height:42px;padding:0 10px;border-bottom:1px solid var(--line-soft);font-size:12px;color:var(--text-2);white-space:nowrap}
+    .task-table tr:last-child td{border-bottom:none}
+    .task-name{display:flex;align-items:center;gap:10px;min-width:260px;color:var(--text)}
+    .task-bullet{width:9px;height:9px;border-radius:999px;background:var(--lav);flex:0 0 auto}
+    .task-title{font-weight:500;color:var(--text)}
+    .priority{display:inline-flex;align-items:center;gap:6px}
+    .priority-flag{width:8px;height:8px;border-radius:2px;background:var(--amber)}
+    .priority-flag.red{background:var(--red)}
+    .client-tag{height:24px;padding:0 9px;border-radius:8px;display:inline-flex;align-items:center;font-size:11px;font-weight:600;color:#fff;background:var(--blue)}
+    .client-tag.green{background:var(--mint)}
+    .client-tag.orange{background:var(--terracotta)}
+    .client-tag.purple{background:var(--lav)}
+    .avatar-stack{display:flex;align-items:center}
+    .avatar{width:24px;height:24px;border-radius:999px;background:#DCE5EF;border:2px solid #fff;margin-left:-6px;display:grid;place-items:center;font-size:10px;font-weight:600;color:var(--text-2)}
+    .avatar:first-child{margin-left:0}
+    .muted{color:var(--text-3)}
+
+    @media (max-width:1100px){
+      .app{grid-template-columns:1fr}
+      .sidebar{border-right:none;border-bottom:1px solid var(--line);height:auto;position:relative}
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .layout{grid-template-columns:1fr}
+      .search{width:180px}
+      .task-table{display:block;overflow:auto}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">TZ</div>
+        <div>
+          <strong>TaskZei</strong>
+          <span>industrial pastel</span>
+        </div>
+      </div>
+
+      <div class="menu-block">
+        <div class="menu-title">Main</div>
+        <div class="menu">
+          <div class="item active"><span class="icon-dot"></span>Dashboard</div>
+          <div class="item"><span class="icon-dot blue"></span>Tasks</div>
+          <div class="item"><span class="icon-dot lav"></span>Projects</div>
+          <div class="item"><span class="icon-dot amber"></span>Reporting</div>
+        </div>
+      </div>
+
+      <div class="menu-block">
+        <div class="menu-title">Workspace</div>
+        <div class="menu">
+          <div class="item"><span class="icon-dot terra"></span>Team</div>
+          <div class="item"><span class="icon-dot"></span>Calendar</div>
+          <div class="item"><span class="icon-dot blue"></span>Docs</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="topnav">
+          <span class="on">Dashboard</span>
+          <span>Tasks</span>
+          <span>Projects</span>
+          <span>Reporting</span>
+        </div>
+
+        <div class="topright">
+          <div class="search">Search workspace...</div>
+          <button class="btn">New Task</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <section class="screen">
+          <div class="screen-head">
+            <div>
+              <h1>Dashboard</h1>
+              <p>Visão geral leve, compacta e operacional do seu workspace.</p>
+            </div>
+            <span class="screen-tag">Tela 01</span>
+          </div>
+
+          <div class="stats">
+            <div class="stat">
+              <small>Completed tasks</small>
+              <strong>24</strong>
+              <span>+12% this week</span>
+            </div>
+            <div class="stat">
+              <small>Efficiency rate</small>
+              <strong>94%</strong>
+              <span>optimal</span>
+            </div>
+            <div class="stat">
+              <small>Focus hours</small>
+              <strong>6.5</strong>
+              <span>avg/day</span>
+            </div>
+            <div class="stat">
+              <small>Active projects</small>
+              <strong>12</strong>
+              <span>across 3 teams</span>
+            </div>
+          </div>
+
+          <div class="layout">
+            <div>
+              <div class="panel">
+                <div class="panel-head">
+                  <h3>Daily agenda</h3>
+                  <a href="#">View Calendar</a>
+                </div>
+
+                <div class="agenda-item">
+                  <div class="time">09:00<br>AM</div>
+                  <div>
+                    <h4>Executive Design Sync</h4>
+                    <p>Precision brand identity review</p>
+                  </div>
+                  <span class="badge b-mint">High Priority</span>
+                </div>
+
+                <div class="agenda-item">
+                  <div class="time">11:30<br>AM</div>
+                  <div>
+                    <h4>Product Roadmap Review</h4>
+                    <p>Q4 objectives and key results</p>
+                  </div>
+                  <span class="badge b-lav">Internal</span>
+                </div>
+
+                <div class="agenda-item">
+                  <div class="time">02:00<br>PM</div>
+                  <div>
+                    <h4>Client Onboarding</h4>
+                    <p>Workshop with Nova digital team</p>
+                  </div>
+                  <span class="badge b-amber">External</span>
+                </div>
+              </div>
+
+              <div class="roadmap">
+                <div class="road">
+                  <div class="road-top"><span>Cloud Migration Phase 2</span><span>85%</span></div>
+                  <div class="bar"><div class="fill" style="width:85%; background:var(--red);"></div></div>
+                </div>
+                <div class="road">
+                  <div class="road-top"><span>User Authentication Audit</span><span>42%</span></div>
+                  <div class="bar"><div class="fill" style="width:42%; background:var(--lav);"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="panel">
+                <div class="panel-head">
+                  <h3>Recent activity</h3>
+                  <a href="#">View All</a>
+                </div>
+
+                <div class="activity">
+                  <div class="activity-icon">S</div>
+                  <div><h4>Sarah Chen commented on Dashboard V2</h4><p>2 minutes ago</p></div>
+                </div>
+                <div class="activity">
+                  <div class="activity-icon">P</div>
+                  <div><h4>You uploaded 3 new files to Project Aries</h4><p>45 minutes ago</p></div>
+                </div>
+                <div class="activity">
+                  <div class="activity-icon">M</div>
+                  <div><h4>Marcus marked final QA as complete</h4><p>1 hour ago</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen">
+          <div class="screen-head">
+            <div>
+              <h1>Tasks</h1>
+              <p>Segunda tela com lista de tarefas inspirada na leitura compacta do ClickUp.</p>
+            </div>
+            <span class="screen-tag">Tela 02</span>
+          </div>
+
+          <div class="tasks-shell">
+            <div class="tasks-top">
+              <div class="crumbs">
+                <span class="crumb-pill">Operational</span>
+                <span>/</span>
+                <span class="crumb-pill">Demand Center</span>
+                <span>/</span>
+                <span class="crumb-pill">Demandas | Geral</span>
+              </div>
+              <div class="views">
+                <div class="view active">Status</div>
+                <div class="view">Board</div>
+                <div class="view">Calendar</div>
+                <div class="view">Docs</div>
+                <div class="view">Whiteboard</div>
+              </div>
+            </div>
+
+            <div class="tasks-toolbar">
+              <div class="left-tools">
+                <div class="tool">Filter</div>
+                <div class="tool">Assignee</div>
+                <div class="tool">Priority</div>
+                <div class="tool">Group by Status</div>
+              </div>
+              <div class="right-tools">
+                <div class="tool">Search</div>
+                <div class="tool">Customize</div>
+                <div class="tool primary">+ Task</div>
+              </div>
+            </div>
+
+            <div class="tasks-body">
+              <div class="group">
+                <div class="group-head">
+                  <strong>Aguardando briefing</strong>
+                  <span>6 tarefas</span>
+                </div>
+                <table class="task-table">
+                  <thead>
+                    <tr>
+                      <th style="width:34%">Nome</th>
+                      <th>Prioridade</th>
+                      <th>Cliente</th>
+                      <th>Colaborador</th>
+                      <th>Responsável</th>
+                      <th>Data inicial</th>
+                      <th>Vencimento</th>
+                      <th>Sessão</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <div class="task-name">
+                          <span class="task-bullet"></span>
+                          <span class="task-title">RAMP Mensal Ki Delícia</span>
+                        </div>
+                      </td>
+                      <td><span class="priority"><span class="priority-flag"></span> Alta</span></td>
+                      <td><span class="client-tag orange">Ki Delícia</span></td>
+                      <td><span class="client-tag purple">Pietra</span></td>
+                      <td><div class="avatar-stack"><div class="avatar">P</div></div></td>
+                      <td class="muted">12/09/25</td>
+                      <td>20/09/25</td>
+                      <td><span class="badge b-red">GED</span></td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="task-name">
+                          <span class="task-bullet" style="background:var(--amber)"></span>
+                          <span class="task-title">Social Media Mensal Clínica Focal</span>
+                        </div>
+                      </td>
+                      <td><span class="priority"><span class="priority-flag"></span> Alta</span></td>
+                      <td><span class="client-tag green">Clínica Focal</span></td>
+                      <td><span class="client-tag purple">Pietra</span></td>
+                      <td><div class="avatar-stack"><div class="avatar">P</div></div></td>
+                      <td class="muted">12/09/25</td>
+                      <td>20/09/25</td>
+                      <td><span class="badge b-red">GED</span></td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="task-name">
+                          <span class="task-bullet" style="background:var(--red)"></span>
+                          <span class="task-title">Criar e-mail Titan para agentes de IA</span>
+                        </div>
+                      </td>
+                      <td><span class="priority"><span class="priority-flag red"></span> Urgente</span></td>
+                      <td><span class="client-tag" style="background:var(--terracotta)">3forB</span></td>
+                      <td><span class="client-tag purple">Pietra</span></td>
+                      <td><div class="avatar-stack"><div class="avatar">P</div><div class="avatar">D</div></div></td>
+                      <td class="muted">--</td>
+                      <td>23/09/25</td>
+                      <td><span class="badge b-amber">EDA</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="group">
+                <div class="group-head">
+                  <strong>A fazer</strong>
+                  <span>5 tarefas</span>
+                </div>
+                <table class="task-table">
+                  <tbody>
+                    <tr>
+                      <td style="width:34%">
+                        <div class="task-name">
+                          <span class="task-bullet" style="background:var(--mint)"></span>
+                          <span class="task-title">Evento Oral Platinum dia 06/11 | Café Pacientes</span>
+                        </div>
+                      </td>
+                      <td><span class="priority"><span class="priority-flag"></span> Alta</span></td>
+                      <td><span class="client-tag green">Oral Platinum</span></td>
+                      <td><span class="client-tag purple">Pietra</span></td>
+                      <td><div class="avatar-stack"><div class="avatar">P</div></div></td>
+                      <td class="muted">--</td>
+                      <td>03/11/25</td>
+                      <td><span class="badge b-lav">Estratégico</span></td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="task-name">
+                          <span class="task-bullet" style="background:var(--blue)"></span>
+                          <span class="task-title">Site Douglas Rodrigues</span>
+                        </div>
+                      </td>
+                      <td><span class="priority"><span class="priority-flag"></span> Alta</span></td>
+                      <td><span class="client-tag" style="background:#8C6B6B">Douglas</span></td>
+                      <td><span class="client-tag purple">Pietra</span></td>
+                      <td><div class="avatar-stack"><div class="avatar">P</div><div class="avatar">D</div></div></td>
+                      <td class="muted">--</td>
+                      <td>17/10/25</td>
+                      <td><span class="badge b-mint">Design</span></td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="task-name">
+                          <span class="task-bullet" style="background:var(--lav)"></span>
+                          <span class="task-title">Fazer relatório Dulcini</span>
+                        </div>
+                      </td>
+                      <td><span class="priority"><span class="priority-flag"></span> Alta</span></td>
+                      <td><span class="client-tag green">Dulcini</span></td>
+                      <td><span class="client-tag" style="background:var(--blue)">Douglas</span></td>
+                      <td><div class="avatar-stack"><div class="avatar">D</div></div></td>
+                      <td class="muted">--</td>
+                      <td>28/10/25</td>
+                      <td><span class="badge b-blue">Operação</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

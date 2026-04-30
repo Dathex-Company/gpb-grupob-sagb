@@ -1,4 +1,4 @@
-import { PocStageBlueprint } from './contextAssembler';
+import { MissionStageBlueprint } from './contextAssembler';
 
 type ValidationResult = {
   ok: boolean;
@@ -68,7 +68,7 @@ const buildContentText = (json: Record<string, any>) => {
 };
 
 export const validateStepOutput = (
-  blueprint: PocStageBlueprint,
+  blueprint: MissionStageBlueprint,
   rawText: string
 ): ValidationResult => {
   const candidate = extractJsonCandidate(rawText);

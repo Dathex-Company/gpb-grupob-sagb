@@ -89,3 +89,42 @@ export interface CreateTransacaoInput {
   created_by?: string | null;
 }
 
+export interface FinanceDateRange {
+  startDate: string;
+  endDate: string;
+}
+
+export interface FinanceKpis {
+  receitas: number;
+  despesas: number;
+  saldo: number;
+  margem: number;
+  ticketMedioReceita: number;
+}
+
+export interface FinanceDreLine {
+  code: 'RECEITA_BRUTA' | 'DESPESAS_OPERACIONAIS' | 'RESULTADO_OPERACIONAL';
+  label: string;
+  valor: number;
+}
+
+export interface FinanceSeriePoint {
+  periodo: string;
+  receitas: number;
+  despesas: number;
+  saldo: number;
+}
+
+export interface FinanceCategoriaResumo {
+  categoria: string;
+  total: number;
+}
+
+export interface FinanceDashboardReport {
+  range: FinanceDateRange;
+  kpis: FinanceKpis;
+  dre: FinanceDreLine[];
+  serieMensal: FinanceSeriePoint[];
+  topCategoriasDespesa: FinanceCategoriaResumo[];
+}
+

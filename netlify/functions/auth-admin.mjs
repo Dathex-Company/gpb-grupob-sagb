@@ -18,6 +18,7 @@ const BASE_ROLES = new Set([
   'workspace_owner',
   'admin',
   'workspace_admin',
+  'staff',
   'manager',
   'maintainer',
   'security_admin'
@@ -36,6 +37,7 @@ const ELEVATED_ROLES = new Set([
 const pickFirst = (...values) => values.find((value) => String(value || '').trim()) || '';
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 const normalizeRole = (value) => String(value || '').trim().toLowerCase();
+const normalizeStatus = (value) => String(value || 'active').trim().toLowerCase();
 
 const resolveSupabaseRuntimeConfig = () => {
   const supabaseUrl = pickFirst(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_URL);
@@ -101,9 +103,10 @@ const readWorkspaceIds = (payload, headers) => {
 const buildActionPermissions = ({ roles, isSuperAdmin }) => {
   const normalizedRoles = (roles || []).map(normalizeRole);
   const hasBaseRole = normalizedRoles.some((role) => BASE_ROLES.has(role));
+  const hasRoleAliasForBase = normalizedRoles.some((role) => role === 'member' || role === 'principal');
   const hasElevatedRole = normalizedRoles.some((role) => ELEVATED_ROLES.has(role));
 
-  const canInvite = isSuperAdmin || hasBaseRole;
+  const canInvite = isSuperAdmin || hasBaseRole || hasRoleAliasForBase;
   const canCreate = isSuperAdmin || hasElevatedRole;
 
   return {
@@ -146,8 +149,7 @@ const validateAdminPermission = async (authToken, cfg, supabaseAdmin, workspaceI
     let query = supabaseAdmin
       .from('workspace_members')
       .select('workspace_id, role, status')
-      .eq('user_id', user.id)
-      .eq('status', 'active');
+      .eq('user_id', user.id);
 
     if (workspaceIds.length === 1) {
       query = query.eq('workspace_id', workspaceIds[0]);
@@ -157,7 +159,7 @@ const validateAdminPermission = async (authToken, cfg, supabaseAdmin, workspaceI
 
     const { data: memberships, error: membershipsError } = await query;
     if (!membershipsError && Array.isArray(memberships)) {
-      membershipRows = memberships;
+      membershipRows = memberships.filter((membership) => normalizeStatus(membership?.status) !== 'inactive');
     }
 
     const roles = membershipRows.map((m) => normalizeRole(m.role));

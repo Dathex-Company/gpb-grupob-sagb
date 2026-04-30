@@ -125,7 +125,16 @@ const supabaseAuthFetch = async (path: string, body?: any, accessToken?: string)
   return json;
 };
 
-const restFetch = async (
+const splitSchemaFromTable = (rawTable: string) => {
+  const table = String(rawTable || '').trim();
+  const parts = table.split('.');
+  if (parts.length === 2) {
+    return { schema: parts[0], table: parts[1] };
+  }
+  return { schema: null as string | null, table };
+};
+
+export const restFetch = async (
   table: string,
   options: { method?: string; query?: URLSearchParams; body?: any; headers?: Record<string, string> } = {},
   accessToken?: string
@@ -133,14 +142,23 @@ const restFetch = async (
   const session = getStoredSession();
   const token = accessToken || session?.access_token;
   const queryString = options.query ? `?${options.query.toString()}` : '';
+  const parsed = splitSchemaFromTable(table);
+  const targetTable = parsed.table;
+  const profileHeaders = parsed.schema
+    ? {
+        'Accept-Profile': parsed.schema,
+        'Content-Profile': parsed.schema
+      }
+    : {};
 
-  const res = await fetch(`${supabaseUrl}/rest/v1/${table}${queryString}`, {
+  const res = await fetch(`${supabaseUrl}/rest/v1/${targetTable}${queryString}`, {
     method: options.method || 'GET',
     headers: {
       apikey: supabaseAnonKey,
       Authorization: `Bearer ${token || supabaseAnonKey}`,
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
+      ...profileHeaders,
       ...(options.headers || {})
     },
     body: options.body ? JSON.stringify(options.body) : undefined
@@ -388,6 +406,17 @@ const normalizeRecordForTable = (table: string, record: Record<string, any>) => 
       pick(payload, 'entityType', 'entity_type', 'type') ??
       ''
     ).toUpperCase();
+    const collaboratorType = String(
+      pick(r, 'collaboratorType', 'collaborator_type') ??
+      pick(payload, 'collaboratorType', 'collaborator_type') ??
+      ''
+    ).toUpperCase();
+    const resolvedEntityType =
+      entityType === 'HUMANO' || entityType === 'HIBRIDO' || entityType === 'AGENTE'
+        ? entityType
+        : collaboratorType === 'HUMANO' || collaboratorType === 'HIBRIDO'
+          ? collaboratorType
+          : 'AGENTE';
     const structuralStatus = String(
       pick(r, 'structuralStatus', 'structural_status') ??
       pick(payload, 'structuralStatus', 'structural_status') ??
@@ -412,7 +441,7 @@ const normalizeRecordForTable = (table: string, record: Record<string, any>) => 
       id: String(fallbackId),
       universalId: String(pick(r, 'universalId', 'universal_id') ?? pick(payload, 'universalId', 'universal_id') ?? fallbackId),
       name: name || 'Sem Nome',
-      entityType: (entityType || 'AGENTE'),
+      entityType: resolvedEntityType,
       shortDescription: String(pick(r, 'shortDescription', 'short_description') ?? pick(payload, 'shortDescription', 'short_description') ?? ''),
       origin: String(pick(r, 'origin') ?? pick(payload, 'origin') ?? ''),
       officialRole: officialRole || officialRolePayload || 'Sem Cargo',
@@ -435,7 +464,7 @@ const normalizeRecordForTable = (table: string, record: Record<string, any>) => 
       fullPrompt: String(pick(r, 'fullPrompt', 'full_prompt') ?? pick(payload, 'fullPrompt', 'full_prompt') ?? ''),
       sector: String(pick(r, 'sector') ?? pick(payload, 'sector') ?? officialRole ?? officialRolePayload ?? ''),
       division: pick(r, 'division') ?? pick(payload, 'division') ?? undefined,
-      collaboratorType: pick(r, 'collaboratorType', 'collaborator_type') ?? pick(payload, 'collaboratorType', 'collaborator_type') ?? undefined,
+      collaboratorType: collaboratorType || undefined,
       operationalClass: String(pick(r, 'operationalClass', 'operational_class') ?? pick(payload, 'operationalClass', 'operational_class') ?? ''),
       allowedStacks,
       preferredModel: preferredModel ?? undefined,
@@ -1171,10 +1200,13 @@ const normalizeRecordForTable = (table: string, record: Record<string, any>) => 
     return {
       id: String(r.id),
       workspaceId: String(r.workspace_id ?? ''),
+      blueprintId: r.blueprint_id ?? r.blueprintId ?? null,
       title: String(r.title ?? 'Missao'),
       initialInput: String(r.initial_input ?? r.initialInput ?? ''),
       status: r.status ?? 'queued',
       currentStepIndex: Number(r.current_step_index ?? r.currentStepIndex ?? 1),
+      missionMode: String(r.mission_mode ?? r.missionMode ?? 'autonomous') as any,
+      currentPhase: r.current_phase ?? r.currentPhase ?? null,
       createdBy: r.created_by ?? r.createdBy ?? null,
       startedAt: asJsDate(pick(r, 'started_at', 'startedAt')) ?? null,
       finishedAt: asJsDate(pick(r, 'finished_at', 'finishedAt')) ?? null,
@@ -1240,6 +1272,62 @@ const normalizeRecordForTable = (table: string, record: Record<string, any>) => 
       createdAt: asJsDate(pick(r, 'created_at', 'createdAt')) ?? new Date(),
       acceptedAt: asJsDate(pick(r, 'accepted_at', 'acceptedAt')) ?? null,
       payload: r.payload ?? undefined
+    };
+  }
+
+  if (table === 'agent_mission_blueprints') {
+    return {
+      id: String(r.id),
+      workspaceId: String(r.workspace_id ?? ''),
+      title: String(r.title ?? 'Blueprint'),
+      description: r.description ?? null,
+      category: String(r.category ?? 'general'),
+      flowConfig: Array.isArray(r.flow_config ?? r.flowConfig) ? (r.flow_config ?? r.flowConfig) : [],
+      isActive: Boolean(r.is_active ?? r.isActive ?? true),
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt')) ?? new Date(),
+      updatedAt: asJsDate(pick(r, 'updated_at', 'updatedAt')) ?? new Date()
+    };
+  }
+
+  if (table === 'agent_mission_blueprint_roles') {
+    return {
+      id: String(r.id),
+      blueprintId: String(r.blueprint_id ?? r.blueprintId ?? ''),
+      roleKey: String(r.role_key ?? r.roleKey ?? ''),
+      roleName: String(r.role_name ?? r.roleName ?? ''),
+      requiredSkills: Array.isArray(r.required_skills ?? r.requiredSkills) ? (r.required_skills ?? r.requiredSkills) : [],
+      suggestedAgentId: r.suggested_agent_id ?? r.suggestedAgentId ?? null,
+      metadata: r.metadata ?? {},
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt')) ?? new Date()
+    };
+  }
+
+  if (table === 'agent_mission_events') {
+    return {
+      id: String(r.id),
+      missionId: String(r.mission_id ?? r.missionId ?? ''),
+      eventType: String(r.event_type ?? r.eventType ?? 'system_log'),
+      actorId: r.actor_id ?? r.actorId ?? null,
+      actorName: r.actor_name ?? r.actorName ?? null,
+      actorType: String(r.actor_type ?? r.actorType ?? 'system'),
+      content: r.content ?? null,
+      payload: r.payload ?? {},
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt')) ?? new Date()
+    };
+  }
+
+  if (table === 'agent_mission_participants') {
+    return {
+      id: String(r.id),
+      workspaceId: String(r.workspace_id ?? ''),
+      missionId: String(r.mission_id ?? r.missionId ?? ''),
+      blueprintRoleKey: String(r.blueprint_role_key ?? r.blueprintRoleKey ?? ''),
+      blueprintRoleName: String(r.blueprint_role_name ?? r.blueprintRoleName ?? ''),
+      agentId: String(r.agent_id ?? r.agentId ?? ''),
+      agentName: String(r.agent_name ?? r.agentName ?? 'Agente'),
+      agentRole: r.agent_role ?? r.agentRole ?? null,
+      linkedAt: asJsDate(pick(r, 'linked_at', 'linkedAt', 'created_at', 'createdAt')) ?? new Date(),
+      payload: r.payload ?? {}
     };
   }
 
@@ -2187,8 +2275,11 @@ const normalizePayloadForTable = (table: string, payload: Record<string, any>) =
 
   if (table === 'agent_missions') {
     if (p.workspaceId !== undefined) { p.workspace_id = p.workspaceId; delete p.workspaceId; }
+    if (p.blueprintId !== undefined) { p.blueprint_id = p.blueprintId; delete p.blueprintId; }
     if (p.initialInput !== undefined) { p.initial_input = p.initialInput; delete p.initialInput; }
     if (p.currentStepIndex !== undefined) { p.current_step_index = p.currentStepIndex; delete p.currentStepIndex; }
+    if (p.missionMode !== undefined) { p.mission_mode = p.missionMode; delete p.missionMode; }
+    if (p.currentPhase !== undefined) { p.current_phase = p.currentPhase; delete p.currentPhase; }
     if (p.createdBy !== undefined) { p.created_by = p.createdBy; delete p.createdBy; }
     if (p.startedAt !== undefined) { p.started_at = p.startedAt; delete p.startedAt; }
     if (p.finishedAt !== undefined) { p.finished_at = p.finishedAt; delete p.finishedAt; }
@@ -2240,6 +2331,49 @@ const normalizePayloadForTable = (table: string, payload: Record<string, any>) =
     if (p.toAgentId !== undefined) { p.to_agent_id = p.toAgentId; delete p.toAgentId; }
     if (p.artifactId !== undefined) { p.artifact_id = p.artifactId; delete p.artifactId; }
     if (p.acceptedAt !== undefined) { p.accepted_at = p.acceptedAt; delete p.acceptedAt; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    delete p.createdAt;
+  }
+
+  if (table === 'agent_mission_blueprints') {
+    if (p.workspaceId !== undefined) { p.workspace_id = p.workspaceId; delete p.workspaceId; }
+    if (p.flowConfig !== undefined) { p.flow_config = p.flowConfig; delete p.flowConfig; }
+    if (p.isActive !== undefined) { p.is_active = p.isActive; delete p.isActive; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    if (p.updatedAt !== undefined && p.updated_at === undefined) { p.updated_at = p.updatedAt; }
+    delete p.createdAt;
+    delete p.updatedAt;
+  }
+
+  if (table === 'agent_mission_blueprint_roles') {
+    if (p.blueprintId !== undefined) { p.blueprint_id = p.blueprintId; delete p.blueprintId; }
+    if (p.roleKey !== undefined) { p.role_key = p.roleKey; delete p.roleKey; }
+    if (p.roleName !== undefined) { p.role_name = p.roleName; delete p.roleName; }
+    if (p.requiredSkills !== undefined) { p.required_skills = p.requiredSkills; delete p.requiredSkills; }
+    if (p.suggestedAgentId !== undefined) { p.suggested_agent_id = p.suggestedAgentId; delete p.suggestedAgentId; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    delete p.createdAt;
+  }
+
+  if (table === 'agent_mission_events') {
+    if (p.missionId !== undefined) { p.mission_id = p.missionId; delete p.missionId; }
+    if (p.eventType !== undefined) { p.event_type = p.eventType; delete p.eventType; }
+    if (p.actorId !== undefined) { p.actor_id = p.actorId; delete p.actorId; }
+    if (p.actorName !== undefined) { p.actor_name = p.actorName; delete p.actorName; }
+    if (p.actorType !== undefined) { p.actor_type = p.actorType; delete p.actorType; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    delete p.createdAt;
+  }
+
+  if (table === 'agent_mission_participants') {
+    if (p.workspaceId !== undefined) { p.workspace_id = p.workspaceId; delete p.workspaceId; }
+    if (p.missionId !== undefined) { p.mission_id = p.missionId; delete p.missionId; }
+    if (p.blueprintRoleKey !== undefined) { p.blueprint_role_key = p.blueprintRoleKey; delete p.blueprintRoleKey; }
+    if (p.blueprintRoleName !== undefined) { p.blueprint_role_name = p.blueprintRoleName; delete p.blueprintRoleName; }
+    if (p.agentId !== undefined) { p.agent_id = p.agentId; delete p.agentId; }
+    if (p.agentName !== undefined) { p.agent_name = p.agentName; delete p.agentName; }
+    if (p.agentRole !== undefined) { p.agent_role = p.agentRole; delete p.agentRole; }
+    if (p.linkedAt !== undefined) { p.linked_at = p.linkedAt; delete p.linkedAt; }
     if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
     delete p.createdAt;
   }

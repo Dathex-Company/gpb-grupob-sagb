@@ -11,7 +11,12 @@ import {
 } from '../../../../components/Icon';
 import { bankService } from '../services/bankIntegrationService';
 import { financeService } from '../services/financeService';
-import { PlanoConta, TipoTransacaoFinanceira, TransacaoFinanceira } from '../types/finance.types';
+import {
+  FinanceDashboardReport,
+  PlanoConta,
+  TipoTransacaoFinanceira,
+  TransacaoFinanceira
+} from '../types/finance.types';
 
 type NovaTransacaoForm = {
   tipo: TipoTransacaoFinanceira;
@@ -34,9 +39,22 @@ const initialForm = (): NovaTransacaoForm => ({
 });
 
 export const GestaoFinanceiraPage: React.FC = () => {
+  const getDefaultRange = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 30);
+    return {
+      startDate: start.toISOString().slice(0, 10),
+      endDate: end.toISOString().slice(0, 10)
+    };
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [accounts, setAccounts] = useState<PlanoConta[]>([]);
   const [transactions, setTransactions] = useState<TransacaoFinanceira[]>([]);
+  const [range, setRange] = useState(getDefaultRange());
+  const [dashboard, setDashboard] = useState<FinanceDashboardReport | null>(null);
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -71,11 +89,40 @@ export const GestaoFinanceiraPage: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    setIsLoadingDashboard(true);
+
+    financeService
+      .getDashboardReport({ startDate: range.startDate, endDate: range.endDate })
+      .then((report) => {
+        if (active) setDashboard(report);
+      })
+      .catch((error) => {
+        console.error('[GestaoFinanceira] Erro ao carregar dashboard avançado:', error);
+      })
+      .finally(() => {
+        if (active) setIsLoadingDashboard(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [range.startDate, range.endDate, transactions]);
+
   const handleBack = () => {
     window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: 'ecosystem' }));
   };
 
   const totals = useMemo(() => {
+    if (dashboard) {
+      return {
+        despesas: dashboard.kpis.despesas,
+        receitas: dashboard.kpis.receitas,
+        saldo: dashboard.kpis.saldo
+      };
+    }
+
     const despesas = transactions
       .filter((tx) => tx.tipo === 'despesa' || tx.tipo === 'pagamento' || tx.tipo === 'taxa')
       .reduce((acc, tx) => acc + Number(tx.valor || 0), 0);
@@ -89,7 +136,11 @@ export const GestaoFinanceiraPage: React.FC = () => {
       receitas,
       saldo: receitas - despesas
     };
-  }, [transactions]);
+  }, [transactions, dashboard]);
+
+  const dre = dashboard?.dre || [];
+  const serieMensal = dashboard?.serieMensal || [];
+  const topCategorias = dashboard?.topCategoriasDespesa || [];
 
   const filteredTransactions = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -331,6 +382,30 @@ export const GestaoFinanceiraPage: React.FC = () => {
           </section>
 
           <section className="lg:col-span-2 bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-white/10 shadow-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 dark:border-white/10 bg-white dark:bg-[#111827]">
+              <div className="flex flex-wrap items-center gap-3 justify-between">
+                <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">Dashboard Avançado • Período</h3>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={range.startDate}
+                    onChange={(e) => setRange((prev) => ({ ...prev, startDate: e.target.value }))}
+                    className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs"
+                  />
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">até</span>
+                  <input
+                    type="date"
+                    value={range.endDate}
+                    onChange={(e) => setRange((prev) => ({ ...prev, endDate: e.target.value }))}
+                    className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs"
+                  />
+                </div>
+              </div>
+              <div className="mt-2 text-[10px] uppercase font-bold tracking-wider text-gray-400">
+                {isLoadingDashboard ? 'Atualizando métricas...' : `Período selecionado: ${range.startDate} → ${range.endDate}`}
+              </div>
+            </div>
+
             <div className="grid grid-cols-3 gap-3 p-4 border-b border-gray-100 dark:border-white/10 bg-gray-50/60 dark:bg-white/5">
               <div className="rounded-xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 p-3">
                 <div className="text-[10px] uppercase font-black text-gray-400">Receitas</div>
@@ -343,6 +418,51 @@ export const GestaoFinanceiraPage: React.FC = () => {
               <div className="rounded-xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 p-3">
                 <div className="text-[10px] uppercase font-black text-gray-400">Saldo Projetado</div>
                 <div className={`text-lg font-black ${totals.saldo >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>R$ {totals.saldo.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-gray-100 dark:border-white/10 bg-white dark:bg-[#111827]">
+              <div className="rounded-xl border border-gray-100 dark:border-white/10 p-3 bg-gray-50/50 dark:bg-white/5">
+                <div className="text-[10px] uppercase font-black text-gray-400 mb-2">DRE Simplificado</div>
+                <div className="space-y-2">
+                  {dre.map((line) => (
+                    <div key={line.code} className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-gray-600 dark:text-gray-300">{line.label}</span>
+                      <span className={`font-black ${line.valor >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        R$ {line.valor.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                  {!dre.length && <div className="text-xs text-gray-400">Sem dados para o período.</div>}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 dark:border-white/10 p-3 bg-gray-50/50 dark:bg-white/5">
+                <div className="text-[10px] uppercase font-black text-gray-400 mb-2">Top Categorias de Despesa</div>
+                <div className="space-y-2">
+                  {topCategorias.map((item) => (
+                    <div key={item.categoria} className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-gray-600 dark:text-gray-300">{item.categoria}</span>
+                      <span className="font-black text-rose-600">R$ {item.total.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  {!topCategorias.length && <div className="text-xs text-gray-400">Sem despesas categorizadas no período.</div>}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-b border-gray-100 dark:border-white/10 bg-white dark:bg-[#111827]">
+              <div className="text-[10px] uppercase font-black text-gray-400 mb-2">Série Mensal (Receitas x Despesas)</div>
+              <div className="space-y-2">
+                {serieMensal.map((point) => (
+                  <div key={point.periodo} className="grid grid-cols-4 gap-2 text-xs items-center">
+                    <div className="font-bold text-gray-600 dark:text-gray-300">{point.periodo}</div>
+                    <div className="text-emerald-600 font-black">R$ {point.receitas.toFixed(2)}</div>
+                    <div className="text-rose-600 font-black">R$ {point.despesas.toFixed(2)}</div>
+                    <div className={`font-black ${point.saldo >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>R$ {point.saldo.toFixed(2)}</div>
+                  </div>
+                ))}
+                {!serieMensal.length && <div className="text-xs text-gray-400">Sem movimentos no período.</div>}
               </div>
             </div>
 

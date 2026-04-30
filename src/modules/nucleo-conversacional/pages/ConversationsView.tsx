@@ -38,6 +38,7 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents, onOpenCha
     setLoading(true);
     setError(null);
     const scopedWorkspaceId = resolveWorkspaceId(activeWorkspaceId);
+    const snapshotLabel = `[SagB][Perf][ConversationsView] chat_sessions_snapshot:${Date.now()}`;
     const sessionsQuery = query(
       collection(db, 'chat_sessions'),
       where('workspaceId', '==', scopedWorkspaceId),
@@ -47,10 +48,16 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents, onOpenCha
     const unsubscribe = onSnapshot(
       sessionsQuery,
       (snapshot) => {
+        console.time(snapshotLabel);
         const next: Record<string, any> = {};
         snapshot.docs.forEach((row: any) => {
           const data = row.data();
           next[String(data.id || row.id)] = data;
+        });
+        console.timeEnd(snapshotLabel);
+        console.debug('[SagB][Perf][ConversationsView] sessões recebidas', {
+          workspaceId: scopedWorkspaceId,
+          total: snapshot.docs.length
         });
         setSessionsById(next);
         setLoading(false);
@@ -70,6 +77,7 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents, onOpenCha
     const fetchPreviews = async () => {
       const newPreviews: Record<string, string> = {};
       const sessionIds = Object.keys(sessionsById);
+      const startedAt = Date.now();
 
       const previewsPromises = sessionIds.map(async (sessionId) => {
         const lastMessage = await getLastMessageForSession({ sessionId, workspaceId: activeWorkspaceId });
@@ -88,6 +96,10 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents, onOpenCha
         }
 
         setMessagePreviewBySession(newPreviews);
+        console.debug('[SagB][Perf][ConversationsView] previews carregados', {
+          sessions: sessionIds.length,
+          elapsedMs: Date.now() - startedAt
+        });
       } catch (err) {
         console.error('Erro ao carregar previews de conversa:', err);
         setError('Não foi possível carregar o preview das conversas.');

@@ -1,0 +1,32 @@
+name: Ziplia CRM Check
+
+on:
+  push:
+    paths:
+      - '_ventures/ziplia/modules/crm/web/**'
+      - '.github/workflows/ziplia-crm-check.yml'
+  pull_request:
+    paths:
+      - '_ventures/ziplia/modules/crm/web/**'
+      - '.github/workflows/ziplia-crm-check.yml'
+
+jobs:
+  check-ziplia-crm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: _ventures/ziplia/modules/crm/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm --prefix _ventures/ziplia/modules/crm/web ci
+
+      - name: Run checks
+        run: npm --prefix _ventures/ziplia/modules/crm/web run check

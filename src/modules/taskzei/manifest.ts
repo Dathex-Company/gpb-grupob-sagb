@@ -1,7 +1,7 @@
 import { ModuleManifest } from '../../core/modules/module.types';
 
 export const taskzeiManifest: ModuleManifest = {
-  id: 'agenda-inteligente',
+  id: 'agenda',
   internalName: 'TaskZei',
   displayName: 'taskzei',
   baseRoute: '/agenda-inteligente',

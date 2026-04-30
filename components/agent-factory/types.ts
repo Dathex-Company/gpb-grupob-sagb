@@ -14,6 +14,7 @@ export interface FormCustomField {
 }
 
 export interface AgentFormState {
+  canonicalId: string;
   name: string;
   entityType: EntityType;
   email: string;

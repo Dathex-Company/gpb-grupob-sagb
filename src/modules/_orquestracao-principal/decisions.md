@@ -8,3 +8,4 @@
 - **[2026-04-13]**: Aprovado o padrão de transparência por módulo com botão `Docs` no topo da tela, abrindo modal com fontes de dados, integrações, ativos reutilizáveis e riscos de duplicação para evitar criação desnecessária de tabelas.
 - **[2026-04-13]**: Definido o `nucleo-agentes` como módulo piloto para implementação do padrão de `Docs` e homologação futura nos demais módulos.
 - **[2026-04-13]**: Instituído o documento de governança `docs/governanca/padrao_postura_e_conduta_agentes.md` como referência oficial de postura comportamental dos agentes.
+- **[2026-04-20]**: Aprovada e executada a migração do módulo `telas-avancadas` para o novo padrão técnico `telas_avancadas`, incluindo renomeação de pasta, atualização de `manifest.id/internalName/baseRoute` para underscore, formalização de owner humano (`Cley Scrini`) e definição da persona operacional oficial (`Cley Devis`).

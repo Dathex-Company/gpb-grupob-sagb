@@ -12,12 +12,64 @@ import {
 } from './types';
 import { STRUCTURAL_TO_AGENT_STATUS } from './constants';
 
+export interface CanonicalIdParts {
+  full: string;
+  nomeAgente: string;
+  empresa3: string;
+  setor3: string;
+  nivel1: 'e' | 't' | 'o';
+  seq3: string;
+}
+
+export const CANONICAL_ID_REGEX = /^[a-z0-9]+(?:_[a-z0-9]+)*_[a-z0-9]{3}_[a-z0-9]{3}_[eto]_[0-9]{3}$/;
+
 export const normalizeText = (value: string) =>
   String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .toLowerCase();
+
+export const normalizeCanonicalIdInput = (value: string) =>
+  String(value || '')
+    .trim()
+    .toLowerCase();
+
+export const parseCanonicalId = (value: string): CanonicalIdParts | null => {
+  const normalized = normalizeCanonicalIdInput(value);
+  if (!CANONICAL_ID_REGEX.test(normalized)) return null;
+
+  const tokens = normalized.split('_');
+  if (tokens.length < 6) return null;
+
+  const seq3 = tokens[tokens.length - 1];
+  const nivel1 = tokens[tokens.length - 2] as CanonicalIdParts['nivel1'];
+  const setor3 = tokens[tokens.length - 3];
+  const empresa3 = tokens[tokens.length - 4];
+  const nomeTokens = tokens.slice(0, -4);
+  const nomeAgente = nomeTokens.join('_');
+
+  if (!nomeAgente) return null;
+  const seqAsNumber = Number(seq3);
+  if (!Number.isInteger(seqAsNumber) || seqAsNumber < 1 || seqAsNumber > 999) return null;
+
+  return {
+    full: normalized,
+    nomeAgente,
+    empresa3,
+    setor3,
+    nivel1,
+    seq3
+  };
+};
+
+export const validateCanonicalIdOrThrow = (value: string): CanonicalIdParts => {
+  const parsed = parseCanonicalId(value);
+  if (!parsed) {
+    throw new Error('ID canônico inválido. Use o padrão nome_empresa3_setor3_nivel1_seq3 (ex: anton_borselli_3fb_mkt_e_001).');
+  }
+  return parsed;
+};
 
 export const toDisplayOption = (value: any) => {
   const raw = String(value ?? '').trim();
@@ -63,6 +115,7 @@ export const normalizeModelValue = (value: string): ModelProvider | '' => {
 };
 
 export const createEmptyForm = (activeBU: BusinessUnit, ventures: Venture[]): AgentFormState => ({
+  canonicalId: '',
   name: '',
   entityType: 'AGENTE',
   email: '',
@@ -108,6 +161,7 @@ export const agentToForm = (agent: Agent, activeBU: BusinessUnit, ventures: Vent
 
   return {
     ...fallback,
+    canonicalId: normalizeCanonicalIdInput(agent.canonicalId || ''),
     name: agent.name || '',
     entityType: resolvedEntityType,
     email: agent.email || '',
@@ -142,6 +196,8 @@ export const agentToForm = (agent: Agent, activeBU: BusinessUnit, ventures: Vent
 };
 
 export const validateDraft = (draft: AgentFormState) => {
+  if (!draft.canonicalId.trim()) throw new Error('ID canônico é obrigatório.');
+  validateCanonicalIdOrThrow(draft.canonicalId);
   if (!draft.name.trim()) throw new Error('Nome e obrigatorio.');
   if (!draft.ventureId) throw new Error('Venture e obrigatoria.');
   if (!draft.functionName.trim()) throw new Error('Funcao principal e obrigatoria.');

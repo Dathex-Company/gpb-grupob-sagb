@@ -110,6 +110,7 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({
                       task={task}
                       onClick={onTaskClick}
                       onComplete={onCompleteTask}
+                      variant="card"
                     />
                   </div>
                 ))

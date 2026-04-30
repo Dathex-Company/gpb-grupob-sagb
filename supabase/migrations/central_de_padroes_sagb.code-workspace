@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "SagB",
+			"path": "../.."
+		}
+	],
+	"settings": {
+		"editor.fontSize": 11,
+		"editor.formatOnSave": false,
+		"editor.fontFamily": "inter"
+	}
+}

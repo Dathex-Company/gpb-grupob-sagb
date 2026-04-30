@@ -15,6 +15,12 @@ import {
   ConciliacaoFinanceira,
   ConfiguracaoApiBancaria,
   CreateTransacaoInput,
+  FinanceCategoriaResumo,
+  FinanceDashboardReport,
+  FinanceDateRange,
+  FinanceDreLine,
+  FinanceKpis,
+  FinanceSeriePoint,
   PlanoConta,
   TransacaoFinanceira
 } from '../types/finance.types';
@@ -46,6 +52,20 @@ const snapshotToArray = <T>(snapshot: SnapshotLike): T[] => {
 };
 
 export class FinanceService {
+  private isReceita(tx: TransacaoFinanceira): boolean {
+    return tx.tipo === 'receita';
+  }
+
+  private isDespesa(tx: TransacaoFinanceira): boolean {
+    return tx.tipo === 'despesa' || tx.tipo === 'pagamento' || tx.tipo === 'taxa';
+  }
+
+  private toMonthKey(dateValue?: string | null): string {
+    if (!dateValue) return 'sem-data';
+    const normalized = String(dateValue).slice(0, 7);
+    return /^\d{4}-\d{2}$/.test(normalized) ? normalized : 'sem-data';
+  }
+
   async listPlanoDeContas(): Promise<PlanoConta[]> {
     const q = query(collection(db, TABLE_PLANO_CONTAS), orderBy('codigo', 'asc'));
     const snapshot = await getDocs(q);
@@ -65,6 +85,83 @@ export class FinanceService {
       queryLimit(take)
     );
     return onSnapshot(q, (snapshot) => cb(snapshotToArray<TransacaoFinanceira>(snapshot as SnapshotLike)));
+  }
+
+  async listTransacoesByRange(range: FinanceDateRange, workspaceId = DEFAULT_WORKSPACE_ID): Promise<TransacaoFinanceira[]> {
+    const q = query(
+      collection(db, TABLE_TRANSACOES),
+      where('workspace_id', '==', workspaceId),
+      where('data_competencia', '>=', range.startDate),
+      where('data_competencia', '<=', range.endDate),
+      orderBy('data_competencia', 'asc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshotToArray<TransacaoFinanceira>(snapshot as SnapshotLike);
+  }
+
+  async getDashboardReport(range: FinanceDateRange, workspaceId = DEFAULT_WORKSPACE_ID): Promise<FinanceDashboardReport> {
+    const rows = await this.listTransacoesByRange(range, workspaceId);
+
+    const receitas = rows
+      .filter((tx) => this.isReceita(tx))
+      .reduce((acc, tx) => acc + Number(tx.valor || 0), 0);
+
+    const despesas = rows
+      .filter((tx) => this.isDespesa(tx))
+      .reduce((acc, tx) => acc + Number(tx.valor || 0), 0);
+
+    const saldo = receitas - despesas;
+    const receitaCount = rows.filter((tx) => this.isReceita(tx)).length;
+
+    const kpis: FinanceKpis = {
+      receitas,
+      despesas,
+      saldo,
+      margem: receitas > 0 ? saldo / receitas : 0,
+      ticketMedioReceita: receitaCount > 0 ? receitas / receitaCount : 0
+    };
+
+    const dre: FinanceDreLine[] = [
+      { code: 'RECEITA_BRUTA', label: 'Receita Bruta', valor: receitas },
+      { code: 'DESPESAS_OPERACIONAIS', label: 'Despesas Operacionais', valor: despesas },
+      { code: 'RESULTADO_OPERACIONAL', label: 'Resultado Operacional', valor: saldo }
+    ];
+
+    const byMonth = new Map<string, FinanceSeriePoint>();
+    rows.forEach((tx) => {
+      const key = this.toMonthKey(tx.data_competencia);
+      const current = byMonth.get(key) || { periodo: key, receitas: 0, despesas: 0, saldo: 0 };
+
+      const valor = Number(tx.valor || 0);
+      if (this.isReceita(tx)) current.receitas += valor;
+      if (this.isDespesa(tx)) current.despesas += valor;
+      current.saldo = current.receitas - current.despesas;
+
+      byMonth.set(key, current);
+    });
+
+    const serieMensal: FinanceSeriePoint[] = [...byMonth.values()].sort((a, b) => a.periodo.localeCompare(b.periodo));
+
+    const byCategoria = new Map<string, number>();
+    rows
+      .filter((tx) => this.isDespesa(tx))
+      .forEach((tx) => {
+        const key = (tx.categoria || tx.plano_conta_codigo || 'Sem categoria').trim();
+        byCategoria.set(key, (byCategoria.get(key) || 0) + Number(tx.valor || 0));
+      });
+
+    const topCategoriasDespesa: FinanceCategoriaResumo[] = [...byCategoria.entries()]
+      .map(([categoria, total]) => ({ categoria, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+
+    return {
+      range,
+      kpis,
+      dre,
+      serieMensal,
+      topCategoriasDespesa
+    };
   }
 
   async createTransacao(input: CreateTransacaoInput): Promise<string> {
@@ -239,6 +336,96 @@ export class FinanceService {
     const snapshot = await getDocs(q);
     synced.push(...snapshotToArray<TransacaoFinanceira>(snapshot as SnapshotLike));
     return synced;
+  }
+
+  /**
+   * Busca conciliação por event_id para verificação de idempotência
+   * @param eventId ID único do evento do webhook
+   * @param provider Nome do provider (ex: 'bank-api')
+   * @returns ID da conciliação se encontrada, null caso contrário
+   */
+  async findConciliacaoByEventId(eventId: string, provider: string): Promise<string | null> {
+    if (!eventId || !provider) {
+      return null;
+    }
+
+    try {
+      const q = query(
+        collection(db, TABLE_CONCILIACOES),
+        where('event_id', '==', eventId),
+        where('provider', '==', provider),
+        queryLimit(1)
+      );
+      const snapshot = await getDocs(q);
+      const conciliacoes = snapshotToArray<ConciliacaoFinanceira>(snapshot as SnapshotLike);
+      
+      return conciliacoes.length > 0 ? conciliacoes[0].id : null;
+    } catch (error) {
+      console.error(`Erro ao buscar conciliação por event_id ${eventId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Obtém segredo de webhook para validação de assinatura
+   * @param provider Nome do provider (ex: 'bank-api')
+   * @returns Segredo em texto claro ou null se não encontrado
+   */
+  async getWebhookSecret(provider: string): Promise<string | null> {
+    try {
+      const q = query(
+        collection(db, TABLE_CONFIGURACOES),
+        where('provider', '==', provider),
+        queryLimit(1)
+      );
+      const snapshot = await getDocs(q);
+      const configs = snapshotToArray<ConfiguracaoApiBancaria>(snapshot as SnapshotLike);
+      
+      if (configs.length === 0) {
+        return null;
+      }
+
+      // Nota: Em produção, o segredo deve estar criptografado e precisaria ser descriptografado
+      // Por enquanto, assumimos que está em texto claro para desenvolvimento
+      const config = configs[0];
+      return config.webhook_secret_enc || config.api_key_enc || null;
+    } catch (error) {
+      console.error(`Erro ao obter segredo de webhook para ${provider}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Registra tentativa de processamento de webhook (para logging e debugging)
+   * @param eventId ID do evento
+   * @param provider Nome do provider
+   * @param status Status do processamento
+   * @param payload Payload recebido
+   * @param errorMessage Mensagem de erro (se houver)
+   */
+  async logWebhookAttempt(
+    eventId: string,
+    provider: string,
+    status: 'received' | 'validated' | 'processed' | 'duplicate' | 'error',
+    payload?: any,
+    errorMessage?: string
+  ): Promise<void> {
+    try {
+      await addDoc(collection(db, TABLE_CONCILIACOES), {
+        transacao_id: null,
+        provider,
+        event_type: 'webhook_attempt',
+        event_id: eventId,
+        status,
+        payload: payload || {},
+        error_message: errorMessage || null,
+        ocorrido_em: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Erro ao registrar tentativa de webhook:', error);
+    }
   }
 }
 

@@ -33,6 +33,19 @@ export default defineConfig(({ mode }) => {
           target: aiProxyTarget,
           changeOrigin: true,
           secure: true
+        },
+        // Proxy para webhooks financeiros (desenvolvimento)
+        '/api/finance/webhook': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path // Mantém o mesmo path
+        },
+        // Proxy para testes de webhook
+        '/api/finance/test-signature': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+          secure: false
         }
       }
     },

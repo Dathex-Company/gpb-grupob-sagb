@@ -61,6 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       'cid': <FileTextIcon className="w-4 h-4" />,
       'continuous-memory': <BookIcon className="w-4 h-4" />,
       'studio': <VideoIcon className="w-4 h-4" />,
+      'karaoke': <PlayIcon className="w-4 h-4" />,
       'monitoramento': <AlertCircleIcon className="w-4 h-4" />,
       'missions': <PlayIcon className="w-4 h-4" />,
       'agentes_comerciais': <BotIcon className="w-4 h-4" />,
@@ -70,6 +71,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       'agenda': <CalendarIcon className="w-4 h-4" />,
       'mentorias': <MicIcon className="w-4 h-4" />,
       'gestao-financeira': <CurrencyDollarIcon className="w-4 h-4" />,
+      'hub-integracao': <NetworkIcon className="w-4 h-4" />,
+      'acadb-cursos': <BookIcon className="w-4 h-4" />,
       'configuracoes-sistema': <PencilIcon className="w-4 h-4" />,
       '_orquestracao-principal': <NetworkIcon className="w-4 h-4" />,
       'crm-ziplia': <BriefcaseIcon className="w-4 h-4" />,
@@ -112,7 +115,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'configuracoes-sistema', label: 'Configurações do Sistema', source: 'core', visibility: 'always' },
     { id: 'sala-dev', label: 'Sala Dev', source: 'core', visibility: 'always' },
     { id: 'telas-avancadas', label: 'Telas Avançadas', source: 'core', visibility: 'always' },
-    { id: 'gestao-financeira', label: 'Gestão Financeira', source: 'core', visibility: 'always' }
+    { id: 'gestao-financeira', label: 'Gestão Financeira', source: 'core', visibility: 'always' },
+    { id: 'hub-integracao', label: 'Hub de Integrações', source: 'core', visibility: 'always' },
+    { id: 'acadb-cursos', label: 'AcadB Cursos', source: 'core', visibility: 'always' }
   ];
 
   const staticItemIds = new Set(coreMenuItems.map(item => item.id));

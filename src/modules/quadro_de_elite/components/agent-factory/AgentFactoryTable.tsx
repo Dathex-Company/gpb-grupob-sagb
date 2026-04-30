@@ -44,6 +44,7 @@ export const AgentFactoryTable: React.FC<AgentFactoryTableProps> = ({
         <thead className="sticky top-0 z-10 bg-white dark:bg-sagb-panel shadow-sm">
           <tr className="border-b border-gray-100 dark:border-white/5 text-left text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">
             <th className="px-3 py-3">Nome</th>
+            <th className="px-3 py-3">ID canônico</th>
             <th className="px-3 py-3">Tipo</th>
             <th className="px-3 py-3">Venture</th>
             <th className="px-3 py-3">Unidade</th>
@@ -90,6 +91,7 @@ export const AgentFactoryTable: React.FC<AgentFactoryTableProps> = ({
                     </div>
                   </div>
                 </td>
+                <td className="px-3 py-2 font-mono text-[10px] text-gray-500 dark:text-gray-400">{agent.canonicalId || '-'}</td>
                 <td className="px-3 py-2">{toDisplayOption(agent.entityType || (agent.collaboratorType === 'HUMANO' ? 'HUMANO' : 'AGENTE'))}</td>
                 <td className="px-3 py-2">{ventureName}</td>
                 <td className="px-3 py-2">{agent.unitName || agent.division || '-'}</td>
@@ -120,7 +122,7 @@ export const AgentFactoryTable: React.FC<AgentFactoryTableProps> = ({
               </tr>
             );
           })}
-          {filteredAgents.length === 0 && <tr><td colSpan={showAdvancedColumns ? 22 : 11} className="px-6 py-10 text-center text-sm font-semibold text-gray-400">Nenhum cadastro encontrado para o filtro atual.</td></tr>}
+          {filteredAgents.length === 0 && <tr><td colSpan={showAdvancedColumns ? 23 : 12} className="px-6 py-10 text-center text-sm font-semibold text-gray-400">Nenhum cadastro encontrado para o filtro atual.</td></tr>}
         </tbody>
       </table>
     </div>
