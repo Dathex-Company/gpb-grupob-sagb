@@ -325,8 +325,147 @@ const processNotification = async (supabaseAdmin, notification) => {
       .from('taskzei_notifications')
       .select('id, notification_status')
       .eq('deduplication_hash', deduplication_hash)
-      .neq('notification_status', ['pending', 'failed'])
+      .not('notification_status', 'in', '(pending,failed)')
       .limit(1);
 
     if (existing?.length > 0) {
       await updateNotificationRecord(supabaseAdmin, id, {
+        notification_status: 'skipped',
+        failure_reason: 'duplicated_notification',
+        processed_at: new Date().toISOString()
+      });
+      return { skipped: true, reason: 'duplicated_notification' };
+    }
+  }
+
+  // 2. Resolver e-mail do responsável
+  const assignee = await resolveAssigneeEmail(supabaseAdmin, assignee_id);
+  if (!assignee.email) {
+    await updateNotificationRecord(supabaseAdmin, id, {
+      notification_status: 'failed',
+      failure_reason: `assignee_email_unresolved:${assignee.reason || 'unknown'}`,
+      processed_at: new Date().toISOString()
+    });
+    return { skipped: true, reason: `assignee_email_unresolved:${assignee.reason || 'unknown'}` };
+  }
+
+  // 3. Preparar template
+  const template = DEFAULT_TEMPLATES[template_key] || DEFAULT_TEMPLATES[event_type] || DEFAULT_TEMPLATES.task_created;
+  const templateVars = {
+    task_id,
+    event_type,
+    scheduled_for,
+    ...(variables || {})
+  };
+
+  const subject = renderTemplate(template.subject, templateVars);
+  const html = renderTemplate(template.html, templateVars);
+  const text = renderTemplate(template.text, templateVars);
+
+  // 4. Marcar processamento e enviar
+  await updateNotificationRecord(supabaseAdmin, id, {
+    notification_status: 'processing'
+  });
+
+  const sendResult = EMAIL_PROVIDER === 'sendgrid'
+    ? await sendViaSendGrid(assignee.email, subject, html, text)
+    : await sendViaResend(assignee.email, subject, html, text);
+
+  // 5. Salvar sucesso
+  await updateNotificationRecord(supabaseAdmin, id, {
+    notification_status: 'sent',
+    provider: sendResult.provider,
+    provider_message_id: sendResult.messageId || null,
+    delivered_to: assignee.email,
+    processed_at: new Date().toISOString(),
+    failure_reason: null
+  });
+
+  return { sent: true, provider: sendResult.provider, messageId: sendResult.messageId || null };
+};
+
+const fetchPendingNotifications = async (supabaseAdmin, batchSize = 25) => {
+  const now = new Date().toISOString();
+  const { data, error } = await supabaseAdmin
+    .from('taskzei_notifications')
+    .select('*')
+    .in('notification_status', ['pending', 'failed'])
+    .lte('scheduled_for', now)
+    .order('scheduled_for', { ascending: true })
+    .limit(batchSize);
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+};
+
+export const handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return jsonResponse(405, { success: false, error: 'Method not allowed' });
+  }
+
+  try {
+    const cfg = resolveSupabaseConfig();
+    const misconfigured = failIfMisconfigured(cfg);
+    if (misconfigured) return misconfigured;
+
+    const supabaseAdmin = createClient(cfg.supabaseUrl, cfg.supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+
+    const payload = event.body ? JSON.parse(event.body) : {};
+    const batchSize = Number(payload.batchSize || 25);
+
+    const pending = await fetchPendingNotifications(supabaseAdmin, batchSize);
+    if (!pending.length) {
+      return jsonResponse(200, {
+        success: true,
+        processed: 0,
+        sent: 0,
+        skipped: 0,
+        failed: 0,
+        message: 'No pending notifications'
+      });
+    }
+
+    let sent = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const notification of pending) {
+      try {
+        const result = await processNotification(supabaseAdmin, notification);
+        if (result?.sent) sent += 1;
+        else skipped += 1;
+      } catch (err) {
+        failed += 1;
+        console.error('[taskzei-send-notification] processing error:', err);
+        try {
+          await updateNotificationRecord(supabaseAdmin, notification.id, {
+            notification_status: 'failed',
+            failure_reason: String(err?.message || err || 'unknown_error'),
+            processed_at: new Date().toISOString()
+          });
+        } catch (persistErr) {
+          console.error('[taskzei-send-notification] failed to persist failure state:', persistErr);
+        }
+      }
+    }
+
+    return jsonResponse(200, {
+      success: true,
+      processed: pending.length,
+      sent,
+      skipped,
+      failed
+    });
+  } catch (err) {
+    console.error('[taskzei-send-notification] fatal error:', err);
+    return jsonResponse(500, {
+      success: false,
+      error: String(err?.message || err || 'internal_error')
+    });
+  }
+};
