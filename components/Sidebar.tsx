@@ -100,23 +100,17 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'missions', label: 'Missões', source: 'core', visibility: 'always' },
     { id: 'management', label: 'Painel de Gestão', source: 'core', visibility: 'always', tooltip: 'Gestão de Backlog (Futuro Módulo RAI)' },
     { id: 'vault', label: 'Cofre de Pautas', source: 'core', visibility: 'always', tooltip: 'Repositório Seguro de Pautas' },
-    { id: 'agenda', label: 'TaskZei', source: 'core', visibility: 'always' },
     { id: 'mentorias', label: 'Central de Mentorias', source: 'core', visibility: 'always' },
     { id: 'cadastro-empresas', label: 'Cadastro de Empresas', source: 'core', visibility: 'always' },
     { id: 'conversations', label: 'Conversas', source: 'core', visibility: 'always' },
     { id: 'team', label: 'Equipe Global', source: 'core', visibility: 'always' },
-    { id: 'studio', label: 'Studio', source: 'core', visibility: 'always' },
     { id: 'monitoramento', label: 'Monitoramento', source: 'core', visibility: 'always' },
-    { id: 'cid', label: 'CID', source: 'core', visibility: 'always', tooltip: 'Centro de Inteligência de Dados' },
     { id: 'central_padroes', label: 'Central de Padrões', source: 'core', visibility: 'always' },
     { id: 'nucleo_de_agentes', label: 'Núcleo de Agentes', source: 'core', visibility: 'always' },
     { id: 'continuous-memory', label: 'Memória da IA', source: 'core', visibility: 'always', tooltip: 'Memória Contínua do Sistema' },
     { id: 'quadro_de_elite', label: 'Quadro de Elite', source: 'core', visibility: 'always' },
     { id: 'configuracoes-sistema', label: 'Configurações do Sistema', source: 'core', visibility: 'always' },
     { id: 'sala-dev', label: 'Sala Dev', source: 'core', visibility: 'always' },
-    { id: 'telas-avancadas', label: 'Telas Avançadas', source: 'core', visibility: 'always' },
-    { id: 'gestao-financeira', label: 'Gestão Financeira', source: 'core', visibility: 'always' },
-    { id: 'hub-integracao', label: 'Hub de Integrações', source: 'core', visibility: 'always' },
     { id: 'acadb-cursos', label: 'AcadB Cursos', source: 'core', visibility: 'always' }
   ];
 
