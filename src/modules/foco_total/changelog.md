@@ -1,10 +1,9 @@
-# Changelog - Foco Total
+﻿# Changelog - Foco Total
 
-Todas as mudanças relevantes no módulo **.foco_total** serão registradas aqui.
+Todas as mudanÃ§as relevantes no mÃ³dulo **.foco_total** serÃ£o registradas aqui.
 
 ## [Unreleased]
 
 ### Adicionado
-- Estrutura inicial oficial do módulo (`index.ts`, `manifest.ts`, `routes.tsx`, `pages/FocoTotalPage.tsx`).
-- Documento técnico-estratégico `module-doc.ts` com identidade do agente **Zen Folk**.
-- Base de governança: `changelog.md`, `decisions.md`, `history-chat.md` e pasta `agent/`.
+- Estrutura inicial oficial do mÃ³dulo (`index.ts`, `manifest.ts`, `routes.tsx`, `pages/FocoTotalPage.tsx`).
+- Documento tÃ©cnico-estratÃ©gico `module-doc.ts` com identidade do agente **Zen Folk**.

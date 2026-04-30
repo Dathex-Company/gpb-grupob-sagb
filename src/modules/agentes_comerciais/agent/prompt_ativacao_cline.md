@@ -1,16 +1,1 @@
-# prompt_ativacao_cline — modulo agentes_atendendes
-
-voce e o agente diretor operacional do modulo `agentes_atendendes`.
-
-antes de qualquer implementacao, leia nesta ordem:
-1. `src/modules/agentes_atendendes/decisions.md`
-2. `src/modules/agentes_atendendes/changelog.md`
-3. `src/modules/agentes_atendendes/history_chat.md`
-4. `src/modules/agentes_atendendes/agent/diretriz_refatoracao_modulo.md`
-5. `src/modules/agentes_atendendes/agent/oton_lacerda_diretor/persona.md`
-6. `src/modules/agentes_atendendes/agent/oton_lacerda_diretor/owner.md`
-
-regras obrigatorias:
-- manter padrao de nomenclatura em lowercase com `_`.
-- registrar tudo em `agent/session_log.md` e no `session_log.md` do agente.
-- responder sempre em formato: diagnostico -> recomendacao -> proximos_passos.
+﻿# prompt_ativacao_cline — agentes_comerciais  ## regra canônica obrigatória Antes de qualquer ação, este agente deve ler e obedecer integralmente: 1. `docs/governanca_sagb/padrao_unificado_governanca.md` 2. `docs/governanca_sagb/protocolo_log_continuo_agentes.md` 3. `docs/governanca_sagb/falas_user.md`  ## ordem de leitura do agente 1. `agent/prompt_ativacao_cline.md` 2. `agent/persona.md` 3. `agent/session_log.md` 4. `agent/falas_user.md`  ## estrutura obrigatória da pasta `agent` A pasta deste agente deve conter apenas os 4 arquivos canônicos: - `persona.md` - `session_log.md` - `falas_user.md` - `prompt_ativacao_cline.md`  É proibido recriar `owner.md`, `history-chat.md`, `history_chat.md`, `session-log.md`, `prompt-ativacao-cline.md` ou qualquer duplicata que faça a mesma função dos arquivos canônicos.  ## auto-log duplo obrigatório Antes de responder ao usuário, o agente deve registrar: 1. conversa completa e literal em `agent/session_log.md`; 2. fala do usuário, literal e isolada, em `agent/falas_user.md`.  ## literalidade Não resumir, corrigir, reescrever ou interpretar a fala do usuário nos logs. Registrar exatamente como foi dito/escrito.  ## fechamento obrigatório Toda resposta final ao usuário deve terminar com a tag: `[ 📝 Auto-log: OK ]` 

@@ -16,7 +16,6 @@ src/modules/<nome-do-modulo>/
 ├── module-doc.ts                # Documentação técnica e estratégica do módulo
 ├── routes.tsx                   # Definição das rotas React (implementa ModuleRoute)
 ├── changelog.md                 # Histórico de versionamento e mudanças do módulo (obrigatório)
-├── history-chat.md              # Histórico conversacional do módulo (obrigatório)
 ├── decisions.md                 # Decisões consolidadas e justificadas do módulo (obrigatório)
 ├── prompt_ativacao_cline.md     # Prompt oficial de inicialização do Agente Guardião (opcional, ver regra)
 │
@@ -45,10 +44,10 @@ Ao menos um dos dois caminhos deve existir.
 
 ### 1.2 Papel de cada trilha documental (sem sobreposição)
 
-- `history-chat.md`: conversa completa (trilha bruta).
 - `decisions.md`: síntese decisória (o que foi decidido e por quê).
 - `changelog.md`: mudanças/versionamento do módulo (o que foi entregue/alterado).
-- `agent/session_log.md`: log operacional turno a turno do agente.
+- `agent/session_log.md`: histórico oficial e log operacional turno a turno do agente.
+- `history-chat.md` e `history_chat.md`: legados. Não criar em módulos novos e remover em padronizações canônicas.
 
 ## 2. Contrato de Exportação
 

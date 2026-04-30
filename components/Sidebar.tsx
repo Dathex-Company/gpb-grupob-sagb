@@ -6,6 +6,29 @@ import { CurrencyDollarIcon, SearchIcon, MessageSquareIcon, FolderIcon, BookIcon
 const MODULE_TOGGLE_STORAGE_KEY = 'sagb:module-toggles:v2';
 type ModuleToggleMap = Record<string, boolean>;
 
+// ============================================================================
+// SIDEBAR — GUIA RÁPIDO DE MANUTENÇÃO
+// ----------------------------------------------------------------------------
+// 1) Onde alterar ITENS DO MENU:
+//    - Lista base fixa: coreMenuItems (id/label/tooltip/visibilidade)
+//
+// 2) Onde alterar ÍCONES:
+//    - getIconForItem(id): map id -> ícone
+//
+// 3) Onde alterar CORES / HOVER / ATIVO:
+//    - className do botão em renderMenuItem()
+//    - barra vertical do item ativo (div absoluta)
+//
+// 4) Onde alterar TOOLTIP do hover:
+//    - bloco {item.tooltip && (...)}
+//
+// 5) Onde entram MÓDULOS DINÂMICOS:
+//    - dynamicModules (getRegisteredModules)
+//
+// 6) Deduplicação (não repetir item):
+//    - por ID + por label normalizado em menuItems
+// ============================================================================
+
 interface SidebarProps {
   activeTab: TabId;
   setActiveTab: (tab: TabId) => void;
@@ -27,11 +50,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   onLogout: _onLogout,
   userProfile: _userProfile
 }) => {
+  // [UI] Controle do menu no mobile (abre/fecha overlay + sidebar)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // [Estado] Chaveado por módulo: true/false para exibir item dinâmico
+  // Exemplo: { "hub-integracao": true, "acadb-cursos": false }
   const [moduleToggles, setModuleToggles] = useState<ModuleToggleMap>({});
 
   useEffect(() => {
     try {
+      // [Persistência] Lê toggles salvos no localStorage
       const saved = localStorage.getItem(MODULE_TOGGLE_STORAGE_KEY);
       const parsed = saved ? (JSON.parse(saved) as ModuleToggleMap) : {};
       setModuleToggles(parsed || {});
@@ -41,7 +69,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [activeTab]);
 
-  // Mapeamento de ícones para os itens do menu
+  // --------------------------------------------------------------------------
+  // [MAPA DE ÍCONES]
+  // - Se um item aparecer com ícone genérico de pasta, faltou mapear o ID aqui
+  // - Chave = id do menu | Valor = componente ícone
+  // --------------------------------------------------------------------------
   const getIconForItem = (id: string) => {
     const iconMap: Record<string, React.ReactNode> = {
       'home': <HomeIcon className="w-4 h-4" />,
@@ -80,6 +112,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     return iconMap[id] || <FolderIcon className="w-4 h-4" />;
   };
 
+  // --------------------------------------------------------------------------
+  // [CONTRATO DE ITEM]
+  // visibility:
+  // - always   => sempre tenta mostrar (respeitando toggle de módulo)
+  // - dev-only => só em contexto dev
+  // - hidden   => nunca mostra
+  // --------------------------------------------------------------------------
   type MenuVisibility = 'always' | 'dev-only' | 'hidden';
   type MenuSource = 'core' | 'dynamic';
 
@@ -88,34 +127,28 @@ const Sidebar: React.FC<SidebarProps> = ({
     label: string;
     source: MenuSource;
     visibility: MenuVisibility;
-    tooltip?: string;
   }
 
+  // --------------------------------------------------------------------------
+  // [LISTA BASE FIXA DO MENU]
+  // id      => usado na navegação (setActiveTab)
+  // label   => texto exibido no sidebar
+  // tooltip => texto do balão ao passar mouse (se não quiser, remover)
+  // --------------------------------------------------------------------------
   const coreMenuItems: MenuItem[] = [
     { id: 'home', label: 'Início', source: 'core', visibility: 'always' },
-    { id: 'ecosystem', label: 'Mapa do Ecossistema', source: 'core', visibility: 'always', tooltip: 'Visão geral das integrações e ecossistema' },
-    { id: 'nic', label: 'NIC', source: 'core', visibility: 'always', tooltip: 'Núcleo de Inteligência e Comando' },
-    { id: 'intelligence-flow', label: 'Fluxo de Inteligência', source: 'core', visibility: 'always', tooltip: 'Fluxo Vivo de Monitoramento' },
-    { id: 'nagi', label: 'NAGI', source: 'core', visibility: 'always', tooltip: 'Núcleo de Apoio à Gestão' },
-    { id: 'missions', label: 'Missões', source: 'core', visibility: 'always' },
-    { id: 'management', label: 'Painel de Gestão', source: 'core', visibility: 'always', tooltip: 'Gestão de Backlog (Futuro Módulo RAI)' },
-    { id: 'vault', label: 'Cofre de Pautas', source: 'core', visibility: 'always', tooltip: 'Repositório Seguro de Pautas' },
-    { id: 'mentorias', label: 'Central de Mentorias', source: 'core', visibility: 'always' },
-    { id: 'cadastro-empresas', label: 'Cadastro de Empresas', source: 'core', visibility: 'always' },
-    { id: 'conversations', label: 'Conversas', source: 'core', visibility: 'always' },
-    { id: 'team', label: 'Equipe Global', source: 'core', visibility: 'always' },
-    { id: 'monitoramento', label: 'Monitoramento', source: 'core', visibility: 'always' },
+    { id: 'nic', label: 'NIC', source: 'core', visibility: 'always' },
+    { id: 'intelligence-flow', label: 'Fluxo de Inteligência', source: 'core', visibility: 'always' },
+    { id: 'nagi', label: 'NAGI', source: 'core', visibility: 'always' },
     { id: 'central_padroes', label: 'Central de Padrões', source: 'core', visibility: 'always' },
-    { id: 'nucleo_de_agentes', label: 'Núcleo de Agentes', source: 'core', visibility: 'always' },
-    { id: 'continuous-memory', label: 'Memória da IA', source: 'core', visibility: 'always', tooltip: 'Memória Contínua do Sistema' },
-    { id: 'quadro_de_elite', label: 'Quadro de Elite', source: 'core', visibility: 'always' },
     { id: 'configuracoes-sistema', label: 'Configurações do Sistema', source: 'core', visibility: 'always' },
-    { id: 'sala-dev', label: 'Sala Dev', source: 'core', visibility: 'always' },
     { id: 'acadb-cursos', label: 'AcadB Cursos', source: 'core', visibility: 'always' }
   ];
 
+  // IDs fixos já ocupados pelo menu base
   const staticItemIds = new Set(coreMenuItems.map(item => item.id));
 
+  // Normaliza labels para deduplicar: remove acento, trim e lowercase
   const normalizeLabel = (value: string) =>
     String(value || '')
       .normalize('NFD')
@@ -125,6 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const staticLabelSet = new Set(coreMenuItems.map((item) => normalizeLabel(item.label)));
 
+  // Índice rápido dos manifests dos módulos
   const moduleManifestById = useMemo(() => {
     return getRegisteredModules().reduce((acc, mod) => {
       acc[mod.manifest.id] = mod.manifest;
@@ -132,6 +166,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     }, {} as Record<string, { id: string; initialStatus: 'active' | 'inactive' }>);
   }, []);
 
+  // Define se módulo dinâmico aparece no menu
+  // Prioridade:
+  // 1) toggle salvo no localStorage
+  // 2) initialStatus do manifest
   const isModuleEnabled = (moduleId: string) => {
     const manifest = moduleManifestById[moduleId];
     if (!manifest) return true;
@@ -139,6 +177,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     return manifest.initialStatus === 'active';
   };
 
+  // --------------------------------------------------------------------------
+  // [MÓDULOS DINÂMICOS]
+  // Vêm do registro global (moduleRegistry)
+  // Regras:
+  // - ignora IDs já existentes no menu fixo
+  // - ignora labels duplicados com a lista fixa
+  // --------------------------------------------------------------------------
   const dynamicModules: MenuItem[] = useMemo(() => {
     return getRegisteredModules()
       .filter((mod) => !staticItemIds.has(mod.manifest.id))
@@ -151,6 +196,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       }));
   }, [staticItemIds, staticLabelSet]);
 
+  // Merge final + deduplicação por id e por label
   const menuItems = useMemo(() => {
     const merged = [...coreMenuItems, ...dynamicModules];
     const seenIds = new Set<string>();
@@ -166,9 +212,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     });
   }, [dynamicModules]);
 
-  // Critério de exibição (Visibilidade)
-  // Em produção, itens 'technical' só devem aparecer se houver flag de dev ativada.
-  // Por enquanto ocultamos ou deixamos condicional ao ambiente (usaremos uma flag simples).
+  // Contexto dev para itens dev-only
   const isDevContext = process.env.NODE_ENV === 'development' || localStorage.getItem('SAGB_DEV_MODE') === 'true';
 
   const isVisible = (item: MenuItem) => {
@@ -178,6 +222,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     return true;
   };
 
+  // --------------------------------------------------------------------------
+  // [RENDER DE ITEM]
+  // Pontos principais para customização visual:
+  // - classe do botão (hover/ativo/tipografia/spacing)
+  // - barra azul lateral do item ativo
+  // - bloco de tooltip
+  // --------------------------------------------------------------------------
   const renderMenuItem = (item: MenuItem) => {
     if (!isVisible(item)) return null;
     const isActive = activeTab === item.id;
@@ -191,32 +242,26 @@ const Sidebar: React.FC<SidebarProps> = ({
           className={`
             group flex items-center w-full px-3 py-1.5 rounded-md transition-colors duration-200 relative text-[12px]
             ${isActive 
-              ? 'bg-blue-50/50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-400 font-semibold' 
-              : 'text-gray-600 dark:text-gray-400 hover:bg-[#F3F8FF] dark:hover:bg-blue-950/20 font-normal hover:text-blue-700 dark:hover:text-blue-300'}
+              ? 'bg-blue-50/40 dark:bg-blue-900/10 text-blue-700 dark:text-blue-400 font-semibold' 
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/5 font-normal hover:text-gray-800 dark:hover:text-gray-200'}
           `}
         >
+          {/* Barra vertical do item ativo (lado esquerdo) */}
           {isActive && (
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-blue-600 dark:bg-blue-500 rounded-r-md"></div>
           )}
           
-          {/* ÍCONE PADRONIZADO */}
+          {/* Ícone do item */}
           <div className={`w-5 h-5 flex items-center justify-center mr-3 shrink-0 transition-colors duration-200 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'}`}>
             {getIconForItem(item.id)}
           </div>
           
-          {/* TEXTO DO MENU */}
+          {/* Texto do menu */}
           <span className="flex-1 text-left tracking-normal truncate">
             {item.label}
           </span>
         </button>
 
-        {/* Custom Tooltip */}
-        {item.tooltip && (
-          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[11px] font-medium rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-nowrap pointer-events-none">
-            {item.tooltip}
-            <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-2 h-2 bg-gray-900 dark:bg-gray-100 rotate-45"></div>
-          </div>
-        )}
       </div>
     );
   };

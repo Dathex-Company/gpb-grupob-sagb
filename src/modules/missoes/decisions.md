@@ -1,0 +1,1 @@
+﻿# decisions — missoes  ## 30/04/2026 - Módulo alinhado ao padrão canônico de governança do SagB. - Pasta `agent` limitada aos 4 arquivos canônicos definidos em `docs/governanca_sagb/padrao_unificado_governanca.md`.
