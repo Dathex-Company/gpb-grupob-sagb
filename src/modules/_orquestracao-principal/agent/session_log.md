@@ -1,6 +1,6 @@
-# Log Contínuo de Orquestração — Pierre Zanulli
+# session_log
 
-Este documento consolida o registro cronológico das interações de Orquestração Sistêmica, conforme definido em `protocolo_log_continuo_agentes.md`.
+Este documento consolida o registro cronológico das interações de Orquestração Sistêmica, conforme definido em `docs/governanca_sagb/protocolo_log_continuo_agentes.md`.
 
 ---
 
