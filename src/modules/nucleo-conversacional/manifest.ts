@@ -1,9 +1,9 @@
 import { ModuleManifest } from '../../core/modules/module.types';
 
 export const nucleoConversacionalManifest: ModuleManifest = {
-  id: 'nucleo-conversacional',
+  id: 'conversations',
   internalName: 'nucleo-conversacional',
-  displayName: 'Núcleo Conversacional',
+  displayName: 'Conversas',
   baseRoute: '/conversas',
   icon: 'MessageSquareIcon',
   initialStatus: 'active'

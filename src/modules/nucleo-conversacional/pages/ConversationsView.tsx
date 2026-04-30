@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Agent } from '../types';
+import { Agent } from '../../../../types';
 import { AlertTriangleIcon, BotIcon, ChevronRightIcon, SearchIcon, XIcon } from '../../../../components/Icon';
 import { Avatar } from '../../../../components/Avatar';
 import { db, collection, query, where, orderBy, onSnapshot } from '../../../../services/supabase';
@@ -8,8 +8,8 @@ import { getLastMessageForSession, resolveWorkspaceId } from '../../../../utils/
 import { moduleDoc } from '../module-doc';
 
 interface ConversationsViewProps {
-  agents: Agent[];
-  onOpenChat: (agent: Agent) => void;
+  agents?: Agent[];
+  onOpenChat?: (agent: Agent) => void;
   onOpenSession?: (agent: Agent, sessionId: string) => void;
   activeWorkspaceId?: string | null;
 }
@@ -25,7 +25,7 @@ interface ChatSessionSummary {
     preview: string;
 }
 
-const ConversationsView: React.FC<ConversationsViewProps> = ({ agents, onOpenChat, onOpenSession, activeWorkspaceId }) => {
+const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOpenChat, onOpenSession, activeWorkspaceId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [sessionsById, setSessionsById] = useState<Record<string, any>>({});
@@ -224,7 +224,7 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents, onOpenCha
                                   onOpenSession(agent, session.sessionId);
                                   return;
                                 }
-                                onOpenChat(agent);
+                                onOpenChat?.(agent);
                             }}
                             className="bg-white dark:bg-sagb-panel p-4 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-md dark:hover:bg-sagb-bg-2 hover:border-gray-200 transition-all cursor-pointer group flex items-center gap-4 animate-msg"
                         >

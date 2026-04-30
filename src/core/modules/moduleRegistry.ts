@@ -10,6 +10,7 @@ import { manifest as telasAvancadasManifest, routes as telasAvancadasRoutes } fr
 import { videosIaManifest, videosIaRoutes } from '../../modules/videos-ia';
 import { focoTotalManifest, focoTotalRoutes } from '../../modules/foco_total';
 import { orquestracaoPrincipalManifest, orquestracaoPrincipalRoutes } from '../../modules/_orquestracao-principal';
+import { nucleoConversacionalManifest, nucleoConversacionalRoutes } from '../../modules/nucleo-conversacional';
 
 import { hubIntegracaoManifest, hubIntegracaoRoutes } from '../../modules/hub-integracao';
 
@@ -19,6 +20,10 @@ export const moduleRegistry: PluggableModule[] = [
   {
     manifest: hubIntegracaoManifest,
     routes: hubIntegracaoRoutes
+  },
+  {
+    manifest: nucleoConversacionalManifest,
+    routes: nucleoConversacionalRoutes
   },
   {
     manifest: karaokeManifest,
