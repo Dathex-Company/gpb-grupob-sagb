@@ -89,7 +89,7 @@ const HubView: React.FC<HubViewProps> = ({ businessUnits, activeBU, onSelectBU, 
     });
 
     // SEGUNDA CAMADA: EMPRESAS-PILAR
-    const pilares = ['3forB', 'StartyB', 'AcadB', 'InstitutoB'];
+    const pilares = ['3forB', 'StartyB', 'InstitutoB'];
     pilares.forEach(pilar => {
       const bu = findBU(pilar);
       nodeList.push({
