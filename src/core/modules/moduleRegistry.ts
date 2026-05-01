@@ -2,6 +2,7 @@ import { PluggableModule } from './module.types';
 
 // Módulos do core
 import { cidManifest, cidRoutes } from '../../modules/cid';
+import { apiSagbManifest, apiSagbRoutes } from '../../modules/api_sagb';
 import { agentes_comerciais_manifest, agentes_comerciais_routes } from '../../modules/agentes_comerciais';
 import { cadastroEmpresasManifest, cadastroEmpresasRoutes } from '../../modules/cadastro-empresas';
 import { taskzeiManifest, taskzeiRoutes } from '../../modules/taskzei';
@@ -31,6 +32,10 @@ import { hubIntegracaoManifest, hubIntegracaoRoutes } from '../../modules/hub-in
 // Aqui definimos o registry central. Novos módulos devem ser registrados nesta array.
 
 export const moduleRegistry: PluggableModule[] = [
+  {
+    manifest: apiSagbManifest,
+    routes: apiSagbRoutes
+  },
   {
     manifest: hubIntegracaoManifest,
     routes: hubIntegracaoRoutes
