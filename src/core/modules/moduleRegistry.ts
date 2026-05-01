@@ -9,8 +9,14 @@ import { karaokeManifest, karaokeRoutes } from '../../modules/karaoke';
 import { manifest as telasAvancadasManifest, routes as telasAvancadasRoutes } from '../../modules/telas_avancadas';
 import { videosIaManifest, videosIaRoutes } from '../../modules/videos-ia';
 import { focoTotalManifest, focoTotalRoutes } from '../../modules/foco_total';
-import { orquestracaoPrincipalManifest, orquestracaoPrincipalRoutes } from '../../modules/_orquestracao-principal';
 import { nucleoConversacionalManifest, nucleoConversacionalRoutes } from '../../modules/nucleo-conversacional';
+import { manifest as nucleoDeAgentesManifest, routes as nucleoDeAgentesRoutes } from '../../modules/nucleo_de_agentes';
+import { centralPadroesManifest, centralPadroesRoutes } from '../../modules/central_padroes';
+import { monitoramentoManifest, monitoramentoRoutes } from '../../modules/monitoramento';
+import { nagiManifest, nagiRoutes } from '../../modules/nagi';
+import { nicManifest, nicRoutes } from '../../modules/nic';
+import { manifest as quadroDeEliteManifest, routes as quadroDeEliteRoutes } from '../../modules/quadro_de_elite';
+import { salaDevManifest, salaDevRoutes } from '../../modules/sala-dev';
 
 import { hubIntegracaoManifest, hubIntegracaoRoutes } from '../../modules/hub-integracao';
 
@@ -24,6 +30,34 @@ export const moduleRegistry: PluggableModule[] = [
   {
     manifest: nucleoConversacionalManifest,
     routes: nucleoConversacionalRoutes
+  },
+  {
+    manifest: nucleoDeAgentesManifest,
+    routes: nucleoDeAgentesRoutes
+  },
+  {
+    manifest: centralPadroesManifest,
+    routes: centralPadroesRoutes
+  },
+  {
+    manifest: monitoramentoManifest,
+    routes: monitoramentoRoutes
+  },
+  {
+    manifest: nagiManifest,
+    routes: nagiRoutes
+  },
+  {
+    manifest: nicManifest,
+    routes: nicRoutes
+  },
+  {
+    manifest: quadroDeEliteManifest,
+    routes: quadroDeEliteRoutes
+  },
+  {
+    manifest: salaDevManifest,
+    routes: salaDevRoutes
   },
   {
     manifest: karaokeManifest,
@@ -56,10 +90,6 @@ export const moduleRegistry: PluggableModule[] = [
   {
     manifest: focoTotalManifest,
     routes: focoTotalRoutes
-  },
-  {
-    manifest: orquestracaoPrincipalManifest,
-    routes: orquestracaoPrincipalRoutes
   }
 ];
 
