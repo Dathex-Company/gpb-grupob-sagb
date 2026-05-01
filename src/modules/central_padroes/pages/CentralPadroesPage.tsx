@@ -3,19 +3,19 @@ import ReactMarkdown from 'react-markdown';
 import { BookIcon, CalendarIcon } from '../../../../components/Icon';
 import { manifest } from '../manifest';
 import { moduleDoc } from '../module-doc';
-import governancaReadmeMd from '../../../../docs/governanca/_readme.md?raw';
-import padraoModulosPlugaveisMd from '../../../../docs/governanca/padrao_modulos_plugaveis.md?raw';
-import padraoPosturaCondutaMd from '../../../../docs/governanca/padrao_postura_e_conduta_agentes.md?raw';
-import protocoloLogContinuoMd from '../../../../docs/governanca/protocolo_log_continuo_agentes.md?raw';
-import catalogoUnicoGovernancaMd from '../../../../docs/governanca/catalogo_unico_governanca.md?raw';
-import mapaEquivalenciaMd from '../../../../docs/governanca/mapa_equivalencia_runtime_docs.md?raw';
-import ownersAccountabilityMd from '../../../../docs/governanca/owners_e_accountability.md?raw';
-import decisoesPendenciasMd from '../../../../docs/governanca/decisoes_e_pendencias.md?raw';
-import templateSessionLogMd from '../../../../docs/governanca/template_session_log_agente.md?raw';
-import qgModulosVendaveisMd from '../../../../docs/governanca/qg_modulos_vendaveis_template.md?raw';
-import relacaoMonitoramentosExistentesMd from '../../../../docs/governanca/relacao_monitoramentos_existentes.md?raw';
+import governancaReadmeMd from '../../../../docs/governanca_sagb/_readme.md?raw';
+import padraoModulosPlugaveisMd from '../../../../docs/governanca_sagb/padrao_modulos_plugaveis.md?raw';
+import padraoPosturaCondutaMd from '../../../../docs/governanca_sagb/padrao_postura_e_conduta_agentes.md?raw';
+import protocoloLogContinuoMd from '../../../../docs/governanca_sagb/protocolo_log_continuo_agentes.md?raw';
+import catalogoUnicoGovernancaMd from '../../../../docs/governanca_sagb/catalogo_unico_governanca.md?raw';
+import mapaEquivalenciaMd from '../../../../docs/governanca_sagb/mapa_equivalencia_runtime_docs.md?raw';
+import ownersAccountabilityMd from '../../../../docs/governanca_sagb/owners_e_accountability.md?raw';
+import decisoesPendenciasMd from '../../../../docs/governanca_sagb/decisoes_e_pendencias.md?raw';
+import templateSessionLogMd from '../../../../docs/governanca_sagb/template_session_log_agente.md?raw';
+import qgModulosVendaveisMd from '../../../../docs/governanca_sagb/qg_modulos_vendaveis_template.md?raw';
+import relacaoMonitoramentosExistentesMd from '../../../../docs/governanca_sagb/relacao_monitoramentos_existentes.md?raw';
 
-import metadataJson from '../../../../docs/governanca/metadata.json';
+import metadataJson from '../../../../docs/governanca_sagb/metadata.json';
 
 type GovernanceDocStatus = 'ativo' | 'parcial' | 'pendente';
 type GovernanceDocCategory = 'normas' | 'operacional' | 'templates';
@@ -211,7 +211,7 @@ const CentralPadroesPage: React.FC = () => {
             <div>
               <h2 className="text-2xl font-black text-gray-900">{selectedDoc?.nomeBonito || 'Documento de Governança'}</h2>
               <p className="text-[12px] text-gray-500">
-                docs/governanca/{selectedDoc?.fileName || '_readme.md'}
+                docs/governanca_sagb/{selectedDoc?.fileName || '_readme.md'}
               </p>
               <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500">
                 <div className="flex items-center gap-1">
