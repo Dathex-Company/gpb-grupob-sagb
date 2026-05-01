@@ -2,8 +2,11 @@ import { PluggableModule } from './module.types';
 
 // Módulos do core
 import { cidManifest, cidRoutes } from '../../modules/cid';
+import { agentes_comerciais_manifest, agentes_comerciais_routes } from '../../modules/agentes_comerciais';
+import { cadastroEmpresasManifest, cadastroEmpresasRoutes } from '../../modules/cadastro-empresas';
 import { taskzeiManifest, taskzeiRoutes } from '../../modules/taskzei';
 import { gestaoFinanceiraManifest, gestaoFinanceiraRoutes } from '../../modules/gestao_financeira';
+import { crmZipliaManifest, crmZipliaRoutes } from '../../modules/crm_ziplia';
 import { studioManifest, studioRoutes } from '../../modules/studio';
 import { karaokeManifest, karaokeRoutes } from '../../modules/karaoke';
 import { manifest as telasAvancadasManifest, routes as telasAvancadasRoutes } from '../../modules/telas_avancadas';
@@ -15,8 +18,13 @@ import { centralPadroesManifest, centralPadroesRoutes } from '../../modules/cent
 import { monitoramentoManifest, monitoramentoRoutes } from '../../modules/monitoramento';
 import { nagiManifest, nagiRoutes } from '../../modules/nagi';
 import { nicManifest, nicRoutes } from '../../modules/nic';
+import { mentoriasManifest, mentoriasRoutes } from '../../modules/mentorias';
+import { metodologiasManifest, metodologiasRoutes } from '../../modules/metodologias';
+import { missoesManifest, missoesRoutes } from '../../modules/missoes';
 import { manifest as quadroDeEliteManifest, routes as quadroDeEliteRoutes } from '../../modules/quadro_de_elite';
+import { raiManifest, raiRoutes } from '../../modules/rai';
 import { salaDevManifest, salaDevRoutes } from '../../modules/sala-dev';
+import { manifest as configuracoesAmbienteManifest, routes as configuracoesAmbienteRoutes } from '../../modules/configuracoes-ambiente';
 
 import { hubIntegracaoManifest, hubIntegracaoRoutes } from '../../modules/hub-integracao';
 
@@ -26,6 +34,14 @@ export const moduleRegistry: PluggableModule[] = [
   {
     manifest: hubIntegracaoManifest,
     routes: hubIntegracaoRoutes
+  },
+  {
+    manifest: agentes_comerciais_manifest,
+    routes: agentes_comerciais_routes
+  },
+  {
+    manifest: cadastroEmpresasManifest,
+    routes: cadastroEmpresasRoutes
   },
   {
     manifest: nucleoConversacionalManifest,
@@ -60,6 +76,22 @@ export const moduleRegistry: PluggableModule[] = [
     routes: salaDevRoutes
   },
   {
+    manifest: mentoriasManifest,
+    routes: mentoriasRoutes
+  },
+  {
+    manifest: metodologiasManifest,
+    routes: metodologiasRoutes
+  },
+  {
+    manifest: missoesManifest,
+    routes: missoesRoutes
+  },
+  {
+    manifest: raiManifest,
+    routes: raiRoutes
+  },
+  {
     manifest: karaokeManifest,
     routes: karaokeRoutes
   },
@@ -74,6 +106,14 @@ export const moduleRegistry: PluggableModule[] = [
   {
     manifest: taskzeiManifest,
     routes: taskzeiRoutes
+  },
+  {
+    manifest: crmZipliaManifest,
+    routes: crmZipliaRoutes
+  },
+  {
+    manifest: configuracoesAmbienteManifest,
+    routes: configuracoesAmbienteRoutes
   },
   {
     manifest: gestaoFinanceiraManifest,
