@@ -182,8 +182,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   // 1) toggle salvo no localStorage
   // 2) initialStatus do manifest
   const isModuleEnabled = (moduleId: string) => {
-    const manifest = moduleManifestById[moduleId];
-    if (!manifest) return true;
+    // Usa o toggle salvo (inclui itens do core que não estão no moduleRegistry)
     return resolveModuleEnabled(moduleId, moduleToggles);
   };
 

@@ -124,14 +124,16 @@ const truncateMessageContent = (messages: DeepSeekMessage[], maxCharsPerMessage:
 const requestDeepSeek = async (
   messages: DeepSeekMessage[],
   systemInstruction: string,
-  maxTokens: number
+  maxTokens: number,
+  model?: string
 ) => {
   const composed = composeRuntimeGovernancePayload(systemInstruction);
   return callAiProxy<{ text: string }>('deepseek_chat', {
     messages,
     systemInstruction: composed.instruction,
     governanceContext: composed.governanceContext,
-    maxTokens
+    maxTokens,
+    ...(model ? { model } : {})
   }) as Promise<{ text: string; finishReason?: string | null; completionTokens?: number | null; requestedMaxTokens?: number | null }>;
 };
 
@@ -161,14 +163,16 @@ const stripEndMarker = (text: string): string => text.replace(new RegExp(`${END_
 
 export async function* streamDeepSeekResponse(
   messages: DeepSeekMessage[],
-  systemInstruction: string
+  systemInstruction: string,
+  options?: { model?: string }
 ) {
   const latestUserMessage = getLatestUserMessage(messages);
   const groundedSystemInstruction = buildGroundedInstruction(systemInstruction, latestUserMessage);
   const compactedSystemInstruction = compactSystemInstruction(groundedSystemInstruction);
+  const model = options?.model;
   try {
     const compactedMessages = compactHistory(messages);
-    const response = await requestDeepSeek(compactedMessages, compactedSystemInstruction, PRIMARY_MAX_TOKENS);
+    const response = await requestDeepSeek(compactedMessages, compactedSystemInstruction, PRIMARY_MAX_TOKENS, model);
     let finalText = response.text || '';
     let continuationSafetyCounter = 0;
     let currentResponse = response;
@@ -182,7 +186,7 @@ export async function* streamDeepSeekResponse(
           { role: 'assistant', content: tailAssistant },
           { role: 'user', content: `Continue exatamente do ponto onde parou, sem repetir o que ja foi dito. Finalize com ${END_MARKER}.` }
         ];
-        const continuation = await requestDeepSeek(continuationMessages, compactedSystemInstruction, FALLBACK_MAX_TOKENS);
+        const continuation = await requestDeepSeek(continuationMessages, compactedSystemInstruction, FALLBACK_MAX_TOKENS, model);
         const extra = String(continuation.text || '').trim();
         if (!extra) break;
         finalText = `${finalText}\n${extra}`.trim();
@@ -205,7 +209,7 @@ export async function* streamDeepSeekResponse(
     if (isTimeoutLikeError(firstMessage)) {
       try {
         const reducedMessages = truncateMessageContent(compactHistory(messages).slice(-10), 1200);
-        const retryResponse = await requestDeepSeek(reducedMessages, compactedSystemInstruction, FALLBACK_MAX_TOKENS);
+        const retryResponse = await requestDeepSeek(reducedMessages, compactedSystemInstruction, FALLBACK_MAX_TOKENS, model);
         yield { text: retryResponse.text || '' };
         return;
       } catch (retryError) {

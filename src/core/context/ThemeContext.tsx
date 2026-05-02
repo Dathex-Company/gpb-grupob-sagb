@@ -12,8 +12,13 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Inicializa a partir do localStorage; sem valor salvo, força modo claro (light)
+  // Migração única: força 'light' como padrão, ignorando localStorage de versões anteriores
   const [theme, setThemeState] = useState<Theme>(() => {
+    const migrated = localStorage.getItem('sagb-theme-migrated-v1');
+    if (!migrated) {
+      localStorage.removeItem('sagb-theme');
+      localStorage.setItem('sagb-theme-migrated-v1', 'true');
+    }
     const saved = localStorage.getItem('sagb-theme');
     if (saved === 'light' || saved === 'dark') return saved;
     return 'light';

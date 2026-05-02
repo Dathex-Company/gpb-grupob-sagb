@@ -244,6 +244,14 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
     // --- MODEL SELECTION STATE ---
     const [selectedModelProvider, setSelectedModelProvider] = useState<ModelProvider>('gemini');
     const [providerHealth, setProviderHealth] = useState<Partial<ProvidersHealthMap>>({});
+    const [providerModelSelections, setProviderModelSelections] = useState<Record<string, string>>(() => {
+        try {
+            const saved = localStorage.getItem('sagb_provider_models_v2');
+            return saved ? JSON.parse(saved) : {};
+        } catch { return {}; }
+    });
+    const [modelPopupProvider, setModelPopupProvider] = useState<ModelProvider | null>(null);
+    const modelPopupRef = useRef<HTMLDivElement>(null);
     const [providerHealthError, setProviderHealthError] = useState<string>('');
 
     // --- KNOWLEDGE BASE STATE (SIDEBAR REMOVIDA - SÓ HISTÓRICO AGORA) ---
@@ -326,6 +334,20 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         { value: 'openai', label: 'OpenAI' },
         { value: 'claude', label: 'Claude' }
     ];
+    const PROVIDER_MODEL_OPTIONS: Record<string, string[]> = {
+        gemini: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
+        deepseek: ['deepseek-chat', 'deepseek-reasoner'],
+        openai: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo'],
+        claude: ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
+        llama_local: ['llama3.1:8b', 'llama3:70b', 'mistral:7b']
+    };
+    const DEFAULT_PROVIDER_MODELS: Record<string, string> = {
+        gemini: 'gemini-2.5-flash',
+        deepseek: 'deepseek-chat',
+        openai: 'gpt-4o-mini',
+        claude: 'claude-sonnet-4-20250514',
+        llama_local: 'llama3.1:8b'
+    };
     const getProviderLabel = (provider?: ModelProvider | null) => {
         const normalized = resolveProvider(provider);
         return MODEL_PROVIDER_OPTIONS.find((item) => item.value === normalized)?.label || 'Gemini';
@@ -334,6 +356,31 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
     const getProviderHealthBadge = (provider?: ModelProvider | null) => {
         return providerHealthToBadge(resolveProvider(provider), providerHealth as any);
     };
+
+    const getProviderModel = (provider: ModelProvider): string => {
+        return providerModelSelections[provider] || DEFAULT_PROVIDER_MODELS[provider] || '';
+    };
+
+    const handleSelectProviderModel = (provider: ModelProvider, model: string) => {
+        setProviderModelSelections(prev => {
+            const next = { ...prev, [provider]: model };
+            try { localStorage.setItem('sagb_provider_models_v2', JSON.stringify(next)); } catch {}
+            return next;
+        });
+        setModelPopupProvider(null);
+    };
+
+    // Fechar popup ao clicar fora
+    useEffect(() => {
+        if (!modelPopupProvider) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (modelPopupRef.current && !modelPopupRef.current.contains(e.target as Node)) {
+                setModelPopupProvider(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [modelPopupProvider]);
 
     // New Agent Modal State
     const [isAdding, setIsAdding] = useState(false);
@@ -460,9 +507,8 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
     }, []);
 
     const initializeSession = (agent: Agent, history: any[] = [], forcedProvider?: ModelProvider) => {
-        const modelId = resolveProvider(forcedProvider || selectedModelProvider) === 'gemini'
-            ? 'gemini-2.5-flash'
-            : 'gemini-2.5-flash';
+        const provider = resolveProvider(forcedProvider || selectedModelProvider);
+        const modelId = getProviderModel(provider) || 'gemini-2.5-flash';
         const longTerm = retrieveLearnedMemory(agent);
         const docsInventory = buildAgentDocsInventory(agent);
 
@@ -1820,7 +1866,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                             if (runtimeContext) deepSeekHistory.push({ role: 'system', content: runtimeContext });
                             if (participantsLabel) deepSeekHistory.push({ role: 'system', content: participantsLabel });
 
-                            const stream = streamDeepSeekResponse(deepSeekHistory, buildSystemInstructionForAgent(speaker));
+                            const stream = streamDeepSeekResponse(deepSeekHistory, buildSystemInstructionForAgent(speaker), { model: getProviderModel('deepseek') });
                             for await (const chunk of stream) {
                                 const text = (chunk as any)?.text || '';
                                 if (typeof (chunk as any)?.completionTokens === 'number') tokens = Number((chunk as any).completionTokens);
@@ -1836,7 +1882,7 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                             if (runtimeContext) llamaHistory.push({ role: 'system', content: runtimeContext });
                             if (participantsLabel) llamaHistory.push({ role: 'system', content: participantsLabel });
 
-                            const stream = streamLlamaLocalResponse(llamaHistory, buildSystemInstructionForAgent(speaker) || '');
+                            const stream = streamLlamaLocalResponse(llamaHistory, buildSystemInstructionForAgent(speaker) || '', { model: getProviderModel('llama_local') });
                             for await (const chunk of stream) {
                                 resultText += chunk.text;
                                 setActiveMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, text: resultText } : m));
@@ -1850,13 +1896,13 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
                             if (runtimeContext) proxyHistory.push({ role: 'system', content: runtimeContext });
                             if (participantsLabel) proxyHistory.push({ role: 'system', content: participantsLabel });
 
-                            const stream = streamProxyProviderResponse(targetProvider, proxyHistory, buildSystemInstructionForAgent(speaker) || '');
+                            const stream = streamProxyProviderResponse(targetProvider, proxyHistory, buildSystemInstructionForAgent(speaker) || '', { model: getProviderModel(targetProvider) });
                             for await (const chunk of stream) {
                                 resultText += chunk.text;
                                 setActiveMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, text: resultText } : m));
                             }
                         } else {
-                            const modelId = 'gemini-2.5-flash';
+                            const modelId = getProviderModel('gemini') || 'gemini-2.5-flash';
                             const historyForSpeaker = activeMessages
                                 .concat(userMsg)
                                 .concat(generatedReplies)
@@ -2678,6 +2724,37 @@ ${selectedVaultContext}
                                                         </option>
                                                     ))}
                                                 </select>
+                                            </div>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setModelPopupProvider(modelPopupProvider === selectedModelProvider ? null : selectedModelProvider)}
+                                                    className="flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white/80 px-2.5 py-1 shadow-[0_6px_18px_rgba(15,23,42,0.04)] hover:bg-white transition-colors"
+                                                >
+                                                    <span className="text-[8px] font-black uppercase tracking-[0.24em] text-slate-400">Usando</span>
+                                                    <span className="text-[10px] font-bold text-emerald-700 truncate max-w-[140px]">{getProviderModel(selectedModelProvider)}</span>
+                                                    <svg className="w-3 h-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
+                                                {modelPopupProvider === selectedModelProvider && (
+                                                    <div ref={modelPopupRef} className="absolute top-full left-0 mt-1 z-50 bg-white rounded-xl border border-slate-200 shadow-xl p-2 min-w-[200px]">
+                                                        <p className="px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-slate-400">
+                                                            {getProviderLabel(modelPopupProvider)}
+                                                        </p>
+                                                        {PROVIDER_MODEL_OPTIONS[modelPopupProvider]?.map(model => (
+                                                            <button
+                                                                key={model}
+                                                                onClick={() => handleSelectProviderModel(modelPopupProvider, model)}
+                                                                className={`w-full text-left px-2 py-1.5 text-[10px] rounded-md transition-colors ${getProviderModel(modelPopupProvider) === model ? 'bg-emerald-100 text-emerald-800 font-bold' : 'hover:bg-slate-100 text-slate-600'}`}
+                                                            >
+                                                                {getProviderModel(modelPopupProvider) === model && (
+                                                                    <span className="mr-1.5">✓</span>
+                                                                )}
+                                                                {model}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                             {!activeParticipants.length && (
                                                 <span className={`rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-[0.22em] ${getProviderHealthBadge(selectedModelProvider) === '🟢' ? 'bg-emerald-100 text-emerald-700' : getProviderHealthBadge(selectedModelProvider) === '🔴' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>

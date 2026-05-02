@@ -45,7 +45,8 @@ const toUserFacingError = (provider: ModelProvider, rawMessage: string): string 
 export async function* streamProxyProviderResponse(
   provider: ModelProvider,
   messages: ProxyProviderMessage[],
-  systemInstruction: string
+  systemInstruction: string,
+  options?: { model?: string }
 ) {
   const action = ACTION_MAP[provider];
   if (!action) {
@@ -58,7 +59,8 @@ export async function* streamProxyProviderResponse(
     const response = await callAiProxy<{ text: string }>(action, {
       messages,
       systemInstruction: composed.instruction,
-      governanceContext: composed.governanceContext
+      governanceContext: composed.governanceContext,
+      ...(options?.model ? { model: options.model } : {})
     });
     yield { text: response.text || '' };
   } catch (error) {
