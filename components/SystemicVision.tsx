@@ -18,11 +18,13 @@ import {
 } from '../services/intelligenceFlow';
 import { retrieveRelevantContext, retrieveLearnedMemory } from '../services/knowledge';
 import { buildChatStoragePath, getSupabasePublicUrl, uploadBlobToSupabaseStorage } from '../services/storage';
-import { db, collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from '../services/supabase';
+import { db, collection, query, where, orderBy, limit, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs } from '../services/supabase';
 import { SendIcon, NewChatIcon, MicIcon, StopCircleIcon, BackIcon, FolderIcon, PlusIcon, FileTextIcon, CloudUploadIcon, PaperclipIcon, XIcon, BookIcon, BotIcon, PencilIcon, CheckIcon, TrashIcon, SearchIcon } from './Icon';
 import { Avatar } from './Avatar';
 import ChatMessage from '../src/modules/nucleo-conversacional/components/ChatMessage';
 import ChatAttachmentCard from '../src/modules/nucleo-conversacional/components/ChatAttachmentCard';
+import { ncLog } from '../src/modules/nucleo-conversacional/utils/observability';
+import { persistBotPlaceholder, touchChatSessionMetadata } from '../src/modules/nucleo-conversacional/services/chatPersistence';
 
 
 interface SystemicVisionProps {
@@ -70,6 +72,8 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
     const createAttachmentId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const attachmentScopeVersionRef = useRef(0);
     const cancelledAttachmentIdsRef = useRef<Set<string>>(new Set());
+    const forcedSessionIdRef = useRef(forcedSessionId);
+    forcedSessionIdRef.current = forcedSessionId;
 
     const isAttachmentContextValid = useCallback((localId: string, scopeVersion: number) => {
         return scopeVersion === attachmentScopeVersionRef.current && !cancelledAttachmentIdsRef.current.has(localId);
@@ -381,10 +385,19 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
 
     // --- AUTO-OPEN FORCED AGENT ---
     useEffect(() => {
-        if (forcedAgent && forcedAgent.id !== selectedAgent?.id) {
-            handleOpenAgent(forcedAgent);
-        }
-    }, [forcedAgent, selectedAgent?.id]);
+        if (!forcedAgent) return;
+        if (forcedAgent.id === selectedAgent?.id) return;
+
+        // Fluxo explícito para evitar estados intermediários que podem causar tela preta
+        setSelectedModelProvider((forcedAgent.modelProvider || 'gemini') as ModelProvider);
+        setSelectedAgent(forcedAgent);
+        setCurrentSessionId(null);
+        setActiveMessages([]);
+        setTitleOptions(null);
+        setTaskSuggestions(null);
+        resetAttachmentWorkflow();
+        setActiveParticipants([]);
+    }, [forcedAgent, selectedAgent?.id, resetAttachmentWorkflow]);
 
     useEffect(() => {
         if (!forcedSessionId) {
@@ -754,6 +767,10 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
             setCurrentSessionId((prev) => {
                 if (loaded.length === 0) return null;
                 if (prev && loaded.some((s) => s.id === prev)) return prev;
+                // Se há um forcedSessionId ativo, respeita-o em vez de auto-selecionar o primeiro
+                if (forcedSessionIdRef.current && loaded.some((s) => s.id === forcedSessionIdRef.current)) {
+                    return forcedSessionIdRef.current;
+                }
                 return loaded[0].id;
             });
 
@@ -879,12 +896,12 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         });
 
         try {
-            await updateDoc(doc(db, "chat_sessions", sessionId), {
-                lastMessageAt: new Date(nowMs),
-                updatedAt: new Date(nowMs)
-            });
+            await touchChatSessionMetadata(sessionId, nowMs);
         } catch (error) {
-            console.error("Erro ao atualizar metadata da sessão:", error);
+            ncLog.error('chat.session.metadata.update.failed', {
+                sessionId,
+                error: error instanceof Error ? error.message : String(error)
+            });
         }
     };
 
@@ -955,22 +972,21 @@ const SystemicVision: React.FC<SystemicVisionProps> = ({ dynamicAgents, onUpdate
         }]);
 
         if (canPersistChat) {
-            addDoc(collection(db, "chat_messages"), {
-                workspaceId,
-                sessionId: currentSessionId,
+            persistBotPlaceholder({
+                workspaceId: String(workspaceId),
+                sessionId: String(currentSessionId),
                 agentId: selectedAgent.id,
-                sender: Sender.Bot,
-                text: '',
                 buId: activeBU.id,
-                hasAttachment: false,
-                createdAt: new Date(),
-                payload: { isStreaming: true }
             }).then(savedBot => {
                 setActiveMessages(prev => prev.map(m => m.id === botMsgId ? { ...m, id: savedBot.id } : m));
                 botMsgId = savedBot.id;
                 persistedBotId = savedBot.id;
             }).catch(createBotError => {
-                console.error("Erro ao criar placeholder da regeneração:", createBotError);
+                ncLog.error('chat.regeneration.placeholder.create.failed', {
+                    sessionId: currentSessionId || null,
+                    agentId: selectedAgent.id,
+                    error: createBotError instanceof Error ? createBotError.message : String(createBotError)
+                });
             });
         }
 
@@ -2411,6 +2427,15 @@ ${selectedVaultContext}
             <input type="file" ref={fileInputRef} className="hidden" accept=".txt,.md,.json,.csv,.js,.ts,.tsx,.py,.html,.css,.xml,.env,.yml,.yaml" onChange={handleFileSelect} />
             <input type="file" ref={chatAttachmentRef} className="hidden" multiple accept="image/*,audio/*,application/pdf,.txt,.md,.json,.csv,.xml,.yaml,.yml" onChange={handleChatAttachmentSelect} />
             {renderVaultPreview()}
+
+            {forcedAgent && !selectedAgent && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-sagb-bg dark:bg-sagb-bg-2">
+                    <div className="flex flex-col items-center gap-3 text-sagb-text dark:text-sagb-text">
+                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-sagb-muted border-t-transparent" />
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-sagb-muted">Abrindo conversa...</p>
+                    </div>
+                </div>
+            )}
 
             {!forcedAgent && (
                 <div className="px-6 md:px-12 py-6 border-b border-gray-100 flex justify-between items-end shrink-0 bg-white z-10">

@@ -165,24 +165,26 @@ const NucleoAgentesPage: React.FC = () => {
   };
 
   return (
-    <BaseDosAgentesView
-      onBack={() => window.history.back()}
-      agents={agents}
-      onUpdateAgent={handleUpdateAgent}
-      businessUnits={[]}
-      onAddUnit={handleAddUnit}
-      cultureEntry={latestCultureEntry}
-      complianceMarkdown={activeComplianceRule?.ruleMd || ''}
-      onSaveCulture={handleSaveCulture}
-      onSaveCompliance={handleSaveCompliance}
-      vaultItems={activeVaultEntries}
-      onCreateVaultItem={handleCreateVaultItem}
-      onDeleteVaultItem={handleDeleteVaultItem}
-      knowledgeNodes={visibleKnowledgeNodes}
-      onCreateKnowledgeNode={handleCreateKnowledgeNode}
-      onUpdateKnowledgeNode={handleUpdateKnowledgeNode}
-      onDeleteKnowledgeNode={handleDeleteKnowledgeNode}
-    />
+    <div className="font-inter">
+      <BaseDosAgentesView
+        onBack={() => window.history.back()}
+        agents={agents}
+        onUpdateAgent={handleUpdateAgent}
+        businessUnits={[]}
+        onAddUnit={handleAddUnit}
+        cultureEntry={latestCultureEntry}
+        complianceMarkdown={activeComplianceRule?.ruleMd || ''}
+        onSaveCulture={handleSaveCulture}
+        onSaveCompliance={handleSaveCompliance}
+        vaultItems={activeVaultEntries}
+        onCreateVaultItem={handleCreateVaultItem}
+        onDeleteVaultItem={handleDeleteVaultItem}
+        knowledgeNodes={visibleKnowledgeNodes}
+        onCreateKnowledgeNode={handleCreateKnowledgeNode}
+        onUpdateKnowledgeNode={handleUpdateKnowledgeNode}
+        onDeleteKnowledgeNode={handleDeleteKnowledgeNode}
+      />
+    </div>
   );
 };
 

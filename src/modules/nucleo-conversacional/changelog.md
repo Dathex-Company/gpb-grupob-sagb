@@ -4,6 +4,23 @@ Registro de mudanÃ§as tÃ©cnicas, decisÃµes de arquitetura e evoluÃ§Ã£o
 
 ---
 
+## [v1.4.0-hardening-observabilidade-chat] - 2026-05-01
+
+### Adicionado
+- UtilitÃ¡rio de observabilidade estruturada em `src/modules/nucleo-conversacional/utils/observability.ts`.
+- Camada inicial de persistÃªncia de chat em `src/modules/nucleo-conversacional/services/chatPersistence.ts` para reduzir duplicidade operacional.
+
+### Alterado
+- `ConversationsView.tsx` passou a ler preview direto de `chat_sessions.payload.latestMessageText`, removendo padrÃ£o N+1 de leitura por sessÃ£o.
+- `ConversationsView.tsx` recebeu tipagem local de sessÃ£o (`SessionRowData`) em substituiÃ§Ã£o de `any` nos pontos crÃ­ticos do estado.
+- `ChatMessage.tsx` passou a usar `UserProfile` tipado e `ReactMarkdown` com `skipHtml` + `allowedElements` para hardening de renderizaÃ§Ã£o.
+- `SystemicVision.tsx` iniciou extraÃ§Ã£o de persistÃªncia (`touchChatSessionMetadata`, `persistBotPlaceholder`) e padronizou logs de erro desses fluxos com observabilidade do mÃ³dulo.
+
+### SeguranÃ§a
+- ReduÃ§Ã£o de superfÃ­cie de renderizaÃ§Ã£o markdown (sem HTML cru), com whitelist de elementos permitidos.
+
+---
+
 ## [v1.3.0-performance-lazy-hydration] - 2026-04-20
 
 ### Alterado

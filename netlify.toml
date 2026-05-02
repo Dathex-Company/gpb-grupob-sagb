@@ -7,6 +7,10 @@
 [functions]
   directory = "netlify/functions"
 
+[dev]
+  targetPort = 8000
+  autoLaunch = false
+
 [build.environment]
   NODE_VERSION = "20"
 

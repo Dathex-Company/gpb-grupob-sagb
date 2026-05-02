@@ -1,5 +1,117 @@
-﻿# changelog — sala-dev
+# changelog — sala-dev
 
 ## 2026-04-30
 - Módulo promovido ao padrão de módulos plugáveis do SagB.
 - Criados arquivos obrigatórios de governança e agente.
+
+## 2026-05-01
+- Atualizado `plano_modulo.md` como planejamento oficial do módulo com trilha de evolução em 9 etapas.
+- Atualizado `decisions.md` com decisões oficiais de governança, precedência canônica e ordem de evolução.
+- Revisado `module-doc.ts` para remoção de referência não canônica em documentos obrigatórios.
+- Implementação da Sala Dev modularizada para `src/modules/sala-dev/components`, `types`, `services`, `hooks` e `store`.
+- `pages/SalaDevPage.tsx` atualizado para renderizar `components/DevRoomView.tsx` do próprio módulo.
+- Mantida equivalência visual e comportamental da versão V1 com mocks isolados em `services/salaDevMockService.ts`.
+- Etapa `03/09 ET` iniciada com contrato de domínio mínimo em `types/salaDev.domain.ts` e estados padronizados em `types/salaDev.status.ts`.
+- `salaDev.types.ts`, `salaDevMockService.ts`, `salaDev.store.ts` e `useSalaDevRun.ts` adaptados para incluir snapshot de domínio sem alterar o layout atual.
+- Etapa `04/09 ET` consolidou os 3 painéis oficiais no módulo sem redesign profundo.
+- `CommandCenterPanel.tsx` passou a consumir indicadores do domínio (macrocamada atual, risco, gate pendente, execução futura VS Code/Roo).
+- `AgentsFlowPanel.tsx` consolidado como painel de `Esteira e Fluxo` com métricas resumidas de macrocamadas, handoffs, gates e agentes ativos.
+- `WorkspacePanel.tsx` consolidado como painel de `Artefatos e Auditoria` com indicadores de artefatos, logs e decisões.
+- `DevRoomView.tsx` atualizado para repassar snapshot de domínio aos três painéis.
+- Etapa `05/09 ET` adicionou representação visual das 6 macrocamadas com modo compacto (`MacroLayerCard.tsx`) e detalhado (`MacroLayerDetail.tsx`).
+- `AgentsFlowPanel.tsx` evoluído para exibir cards de macrocamada, seleção e painel de detalhe operacional por camada.
+- `useSalaDevRun.ts` passou a controlar `selectedMacroLayerId` para navegação de contexto entre camadas.
+- `salaDevMockService.ts` enriquecido com descrições e próxima ação recomendada por macrocamada.
+- `CommandCenterPanel.tsx` atualizado para refletir status e progresso da macrocamada ativa.
+- Etapa `06/09 ET` consolidada com operação local de handoffs e gates por macrocamada.
+- Criados `HandoffCard.tsx`, `GateCard.tsx`, `HandoffDetailPanel.tsx` e `GateDetailPanel.tsx` para leitura resumida + detalhe acionável.
+- `MacroLayerDetail.tsx` evoluído para listar, selecionar e operar handoffs/gates vinculados à macrocamada ativa.
+- `useSalaDevRun.ts` passou a controlar `selectedHandoffId` e `selectedGateId`, além de expor `handleHandoffStatusChange` e `handleGateStatusChange`.
+- `salaDev.store.ts` recebeu mutações locais `updateHandoffStatus` e `updateGateStatus` para simular transições operacionais sem persistência externa.
+- `DevRoomView.tsx` e `AgentsFlowPanel.tsx` atualizados para propagar seleção/ações de handoff e gate no fluxo oficial de 3 painéis.
+- Etapa `07/09 ET` iniciada e consolidada com separação operacional de agentes em `convocados`, `disponíveis` e `recomendados`.
+- Contrato de domínio evoluído em `salaDev.domain.ts` com `AgentCatalogEntity`, `RecommendedAgentEntity`, `AgentPriority` e metadados técnicos de agente na run.
+- `salaDev.types.ts` atualizado para incluir `availableAgents` e `recommendedAgents` no snapshot de domínio.
+- `salaDevMockService.ts` atualizado com catálogo simulado de agentes disponíveis e recomendações contextualizadas por macrocamada/risco/complexidade.
+- Criados `AgentGroupPanel.tsx` e `AgentRunCard.tsx` para visualização dos três grupos e ações simuladas de convocação/operação.
+- `salaDev.store.ts` evoluído com ações locais de agente: `summonAgentToRun`, `updateRunAgentStatus`, `deactivateRunAgent`.
+- `useSalaDevRun.ts` e `DevRoomView.tsx` atualizados para expor e propagar handlers de convocação, mudança de status e desativação.
+- Pendência técnica global preservada: `tsc --noEmit` continua falhando por erros pré-existentes em `module-doc.ts` de outros módulos fora do escopo da Sala Dev.
+- Etapa `08/09 ET` iniciada e consolidada com reforço do painel `Artefatos e Auditoria`.
+- Contrato de domínio expandido para rastreabilidade formal: vínculos de artefato com `handoffId`/`gateId`, versões (`ArtifactVersionEntity`), checklists (`GateChecklistEntity`) e parecer final inicial (`FinalAuditEntity`).
+- Snapshot de domínio evoluído em `salaDev.types.ts` com `artifactVersions`, `gateChecklists` e `finalAudit`.
+- `salaDevMockService.ts` atualizado com trilha mockada de versões, logs com `eventType/severity`, decisões com `title/status` e checklist por gate.
+- Criados componentes de auditoria: `ArtifactCard`, `ArtifactPreviewPanel`, `VersionHistoryPanel`, `DecisionLogPanel`, `ChecklistPanel`, `AuditTrailPanel`.
+- `WorkspacePanel.tsx` refatorado para experiência de auditoria por artefato selecionado (preview, versões, decisões, checklist e auditoria final inicial).
+- `DevRoomView.tsx` atualizado para repassar novos blocos do snapshot de domínio ao painel de auditoria.
+- Etapa `09/09 ET` iniciada e consolidada com preparação de persistência e integração futura.
+- Criado contrato de persistência em `types/salaDev.persistence.ts` com modelagem inicial de `dev_runs`, `dev_run_macro_layers`, `dev_run_agents`, `dev_handoffs`, `dev_gates`, `dev_artifacts`, `dev_artifact_versions`, `dev_logs`, `dev_decisions`, `dev_gate_checklists`, `dev_final_audits`, `dev_execution_environments`.
+- Criada camada de repositório em `services/salaDevRepository.ts` (`ISalaDevRepository`, `SalaDevMockRepository`, `SalaDevRepositoryAdapter`) para separar origem de dados.
+- Criado mapper em `services/salaDevSupabaseMapper.ts` para conversão domínio ↔ persistência.
+- Criado serviço de ambiente técnico em `services/salaDevExecutionEnvironmentService.ts` com estados de preparação para VS Code/Roo (`not_connected`, `configured`, `ready`, `running`, `paused`, `completed`, `failed`).
+- `useSalaDevRun.ts` atualizado para bootstrap via repositório (mantendo mock funcional), preservando compatibilidade da UI atual.
+- Pendência técnica global fora de `sala-dev` mantida registrada (erros pré-existentes em `module-doc.ts` de outros módulos).
+- Etapa `10/10 ET` adicionada para **consolidação técnica da Fase 1**, sem construção de novas features.
+- Fechamento oficial ET01–ET09 registrado com foco em estabilidade, rastreabilidade e manutenção do modo mock como fallback.
+- Plano da Fase 2 formalizado com ativação incremental controlada (persistência real, agentes oficiais e execução técnica) sem antecipar integrações reais.
+- Lapidação UX V1 aplicada sem mudança de domínio: dicionário visual único de status em PT-BR (`utils/salaDevStatusView.ts`).
+- `CommandCenterPanel.tsx` recebeu aviso explícito de modo simulado/mockado e chips de status mais legíveis.
+- `AgentsFlowPanel.tsx` ajustado para melhor densidade visual, cabeçalho estável e chip amigável de status na timeline.
+- `AgentRunCard.tsx` atualizado com labels de status amigáveis e melhor contraste de textos secundários.
+- `VersionHistoryPanel.tsx` e `DecisionLogPanel.tsx` passaram a ordenar itens mais recentes primeiro, com chips padronizados para status.
+- Planejamento da Fase 2 Onda 1 registrado sem implementação sensível: estratégia de persistência incremental com fallback mock ativo.
+- Documentada ordem recomendada de entrada no Supabase: `dev_runs`/`dev_execution_environments` → `dev_run_macro_layers` → `dev_handoffs`/`dev_gates` → trilha de auditoria.
+- Formalizada diretriz de feature flag no adapter de repositório para alternância segura entre provider mock e provider Supabase.
+- Onda 1A implementada com provider Supabase mínimo em `services/salaDevSupabaseRepository.ts`.
+- Seleção de provider adicionada em `SalaDevRepositoryAdapter` com `VITE_SALA_DEV_DATA_PROVIDER` e padrão `mock`.
+- Persistência mínima conectada para `dev_runs` e `dev_run_macro_layers` + leitura de `dev_execution_environments`.
+- Fallback automático para mock aplicado em ausência de env, falha de conexão, erro de mapeamento e falha de bootstrap inicial.
+- Escopo não expandido: sem agentes/handoffs/gates/artefatos/logs/decisões/checklists/auditoria reais nesta etapa.
+- Onda 1B iniciada com persistência real de `dev_handoffs` e `dev_gates` no provider Supabase.
+- `salaDevSupabaseMapper.ts` evoluído com conversões domínio ↔ persistência para handoffs e gates.
+- `salaDev.persistence.ts` ampliado com campos operacionais de handoff/gate (datas e metadados de decisão/responsável).
+- Contrato de `ISalaDevRepository` ampliado para persistir `run`, `macroLayers`, `handoffs` e `gates`.
+- `useSalaDevRun.ts` passou a persistir handoffs e gates junto ao estado mínimo já persistido.
+- Escopo da Onda 1B mantido: sem migração de agentes, artefatos, logs, decisões, checklists, auditoria final e sem integração VS Code/Roo.
+- Onda 1C iniciada com persistência real de `dev_artifacts`, `dev_artifact_versions`, `dev_logs` e `dev_decisions` no provider Supabase.
+- `salaDevSupabaseMapper.ts` consolidado com mapeamentos row → domínio para artefatos, versões, logs e decisões.
+- `salaDevSupabaseRepository.ts` ampliado para leitura inicial e upsert incremental dessas quatro entidades.
+- `ISalaDevRepository` e `useSalaDevRun.ts` evoluídos para persistir a trilha completa desta onda sem alteração visual da UI.
+- Pendência global mantida fora do escopo: `tsc --noEmit` segue falhando por erros pré-existentes em `module-doc.ts` de outros módulos.
+- Onda 1D iniciada com persistência real de `dev_gate_checklists` e `dev_final_audits` no provider Supabase.
+- `salaDevSupabaseRepository.ts` ampliado para leitura inicial e upsert incremental de checklists e auditoria final.
+- `salaDevSupabaseMapper.ts` evoluído com conversão `finalAudit row → domínio` e reutilização do mapeamento de checklist já canônico.
+- `ISalaDevRepository` e `useSalaDevRun.ts` evoluídos para incluir checklist e auditoria final no fluxo persistido.
+- Fechamento oficial da Onda 1 registrado (1A+1B+1C+1D), mantendo `mock` como padrão e fallback obrigatório.
+- Onda 2 (Planejamento) concluído, estabelecendo que a Sala Dev consumirá o catálogo oficial de agentes state-driven (via props de `App.tsx`) e formalizando o snapshot imutável de `official_agent_id` e `dna_version_id` na run, além da adoção de um fallback híbrido (fallback para mock caso a prop venha vazia).
+- Onda 2A iniciada com leitura do catálogo oficial de agentes por props, com encadeamento `App.tsx -> SalaDevPage -> DevRoomView -> useSalaDevRun`.
+- `useSalaDevRun.ts` passou a aplicar `salaDevAgentCatalogAdapter.adaptFromOfficial(...)` na carga inicial para preencher `domain.availableAgents` sem novo listener/query no módulo.
+- Fallback mock preservado quando a prop `agents` vier ausente, vazia ou sem agentes elegíveis, mantendo resiliência operacional da Sala Dev.
+- Onda 3B iniciada com contrato `TechnicalExecutionPackage` e service dedicado de exportação técnica auditável.
+- Exportação técnica passou a gerar artefato interno + log de trilha operacional, sem abrir VS Code/Roo e sem executar comandos externos.
+- Sanitização explícita aplicada no pacote para excluir prompt completo sensível, memória privada e segredos/credenciais.
+- Onda 3C iniciada com contrato `TechnicalBridgeContract` e service de bridge com capability matrix inicial.
+- Política deny-by-default formalizada: capacidades sensíveis negadas por padrão e aprovação humana obrigatória para qualquer avanço de capability crítica.
+- `CommandCenterPanel.tsx` atualizado para sinalizar ponte planejada/não conectada, execução remota desabilitada e governança humana obrigatória.
+- Fase 2 encerrada oficialmente com Ondas 1, 2 e 3 concluídas sob guardrails de segurança.
+- Consolidação técnica da Fase 2 registrada com estado final de persistência progressiva, núcleo oficial de agentes referenciado por props e ponte técnica apenas contratual.
+- Diretriz inicial da Fase 3 registrada com foco em hardening operacional, testes de contrato e maturidade de auditoria antes de qualquer integração ativa.
+
+## 2026-05-02 — ux core de entrada (novo projeto + briefing inicial)
+- Fluxo de entrada redesenhado para começar por "Qual projeto você quer criar?", com formulário de briefing inicial antes da esteira técnica.
+- Criado `NewProjectEntryPanel.tsx` com captura local/mockada de dados do projeto, geração de briefing estruturado e CTA principal de início da esteira.
+- `useSalaDevRun.ts` evoluído com estado local de entrada (`projectEntryForm`, `generatedBriefing`, `pipelineStarted`) sem alterar persistência/fallback existentes.
+- `DevRoomView.tsx` passou a alternar entre tela de entrada e os 3 painéis técnicos somente após ação explícita de "Iniciar esteira de desenvolvimento".
+- Ação de exportação foi rebaixada para contexto avançado em `CommandCenterPanel.tsx` com label explícita "Exportar pacote técnico (avançado)".
+
+## 2026-05-02 — ux core (ação novo projeto)
+- Ação visível de `Novo Projeto` adicionada no header da Sala Dev quando a esteira já está iniciada.
+- Reset controlado implementado no hook com limpeza de `pipelineStarted`, `generatedBriefing` e `projectEntryForm`.
+- Retorno garantido para a tela inicial “Qual projeto você quer criar?” sem alterar persistência, Supabase, núcleo de agentes ou integração externa.
+
+## 2026-05-02 — ux copy v1 (lapidação de linguagem)
+- Ajustado microcopy da entrada para linguagem menos interna: `Sala Dev · UX Core` → `Novo Projeto`.
+- Campo de restrições simplificado para `Alguma limitação importante?` com exemplos mais humanos (prazo, orçamento, ferramenta usada, plataforma obrigatória, regra importante).
+- Subtítulo do header técnico simplificado para `Painel técnico do projeto`.
+- Indicador textual discreto de jornada adicionado na entrada: `1. Ideia → 2. Briefing → 3. Esteira`.
+- Bloco `Briefing inicial gerado` recebeu reforço de contraste visual sem alteração de fluxo/arquitetura.

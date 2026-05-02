@@ -108,6 +108,31 @@ Centro de comando técnico do GrupoB.
 |-------------|-------------|-------|-------|-------|------------|
 | `denic_celmi_grb_crm_t_017` | Denic Celmi | Diretor do CRM Ziplia | Tático | `crm` | 017 |
 
+### 5.3. Dathex (Sala Dev)
+| ID Canônico | Nome Visual | Cargo | Nível | Setor | Sequencial |
+|-------------|-------------|-------|-------|-------|------------|
+| `cassio_mendes_grb_eng_e_001` | Cássio Mendes | Diretor de Orquestração Dev | Estratégico | `eng` | 001 |
+| `denise_bogado_grb_eng_t_002` | Denise Bogado | Arquiteta da Sala Dev e Produto Operacional | Tático | `eng` | 002 |
+| `renati_voss_grb_eng_t_003` | Renati Voss | Lapidador Técnico de Escopo | Tático | `eng` | 003 |
+| `caito_marden_grb_eng_o_004` | Caito Marden | Agente de Requisitos | Operacional | `eng` | 004 |
+| `laris_vellin_grb_eng_t_005` | Laris Vellin | UX/UI e Fluxos de Produto | Tático | `eng` | 005 |
+| `andrese_valon_grb_eng_e_006` | Andrese Valon | Arquiteto Técnico de Sistemas | Estratégico | `eng` | 006 |
+| `pedrin_gazan_grb_eng_e_007` | Pedrin Gazan | Diretor de Segurança Digital | Estratégico | `eng` | 007 |
+| `dario_vault_grb_eng_t_008` | Dario Vault | Segurança de IA e Guardrails | Tático | `eng` | 008 |
+| `tobias_nicozi_grb_eng_t_009` | Tobias Nicozi | Supabase, Banco e Políticas de Dados | Tático | `eng` | 009 |
+| `heleni_pradox_grb_eng_o_010` | Heleni Pradox | RLS, Auth e Segurança de Dados | Operacional | `eng` | 010 |
+| `enzoc_ferrazi_grb_eng_t_011` | Enzoc Ferrazi | APIs, Webhooks e Integrações | Tático | `eng` | 011 |
+| `alan_flow_grb_eng_o_012` | Alan Flow | Automação, n8n e Fluxos Operacionais | Operacional | `eng` | 012 |
+| `felix_toran_grb_eng_o_013` | Felix Toran | Front-end Web | Operacional | `eng` | 013 |
+| `brunec_cardel_grb_eng_o_014` | Brunec Cardel | Back-end e APIs Internas | Operacional | `eng` | 014 |
+| `deniel_cazuetti_grb_eng_o_015` | Deniel Cazuetti | Desenvolvimento Mobile | Operacional | `eng` | 015 |
+| `gabriel_voli_grb_eng_t_016` | Gabriel Voli | GitHub, Branches e Versionamento | Tático | `eng` | 016 |
+| `kaique_zambram_grb_eng_o_017` | Kaique Zambram | Deploy, Netlify e Ambientes Web | Operacional | `eng` | 017 |
+| `lucca_varnel_grb_eng_o_018` | Lucca Varnel | QA e Testes Funcionais | Operacional | `eng` | 018 |
+| `simoni_faler_grb_eng_o_019` | Simoni Faler | QA Extremo e Testes de Quebra | Operacional | `eng` | 019 |
+| `vero_lins_grb_eng_t_021` | Vero Lins | Auditoria Final de Entrega | Tático | `eng` | 021 |
+| `octo_zen_grb_eng_o_022` | Octo Zen | Telemetria e Observabilidade | Operacional | `eng` | 022 |
+
 ---
 
 ## 6. Hierarquia Visual
@@ -138,13 +163,63 @@ graph TD
 
 ---
 
-## 7. Próximos Sequenciais Disponíveis
+## 6.1 Organograma Visual em Árvore (Canônico)
 
-O próximo sequencial global a ser atribuído é: **`018`**
+Organograma ASCII com todos os agentes da Dathex, organizados por setor e nível hierárquico:
+
+```text
+dathex/
+├── sandri_bacoli_grb_ceo_e_001/          # CEO Dathex
+│
+├── eng/                                    # Núcleo Engenharia (Sala Dev)
+│   ├── cassio_mendes_grb_eng_e_001/       # Diretor de Orquestração Dev
+│   │
+│   ├── [estratégico]
+│   │   ├── andrese_valon_grb_eng_e_006/   # Arquiteto Técnico de Sistemas
+│   │   └── pedrin_gazan_grb_eng_e_007/    # Diretor de Segurança Digital
+│   │
+│   ├── [tático]
+│   │   ├── denise_bogado_grb_eng_t_002/   # Arquiteta da Sala Dev e Produto Operacional
+│   │   ├── renati_voss_grb_eng_t_003/     # Lapidador Técnico de Escopo
+│   │   ├── laris_vellin_grb_eng_t_005/    # UX/UI e Fluxos de Produto
+│   │   ├── dario_vault_grb_eng_t_008/     # Segurança de IA e Guardrails
+│   │   ├── tobias_nicozi_grb_eng_t_009/   # Supabase, Banco e Políticas de Dados
+│   │   ├── enzoc_ferrazi_grb_eng_t_011/   # APIs, Webhooks e Integrações
+│   │   ├── gabriel_voli_grb_eng_t_016/    # GitHub, Branches e Versionamento
+│   │   ├── matheu_rizzili_grb_eng_t_002/  # Documentação Técnica e Handoff
+│   │   └── vero_lins_grb_eng_t_021/       # Auditoria Final de Entrega
+│   │
+│   └── [operacional]
+│       ├── caito_marden_grb_eng_o_004/    # Agente de Requisitos
+│       ├── heleni_pradox_grb_eng_o_010/   # RLS, Auth e Segurança de Dados
+│       ├── alan_flow_grb_eng_o_012/       # Automação, n8n e Fluxos Operacionais
+│       ├── felix_toran_grb_eng_o_013/     # Front-end Web
+│       ├── brunec_cardel_grb_eng_o_014/   # Back-end e APIs Internas
+│       ├── deniel_cazuetti_grb_eng_o_015/ # Desenvolvimento Mobile
+│       ├── kaique_zambram_grb_eng_o_017/  # Deploy, Netlify e Ambientes Web
+│       ├── lucca_varnel_grb_eng_o_018/    # QA e Testes Funcionais
+│       ├── simoni_faler_grb_eng_o_019/    # QA Extremo e Testes de Quebra
+│       └── octo_zen_grb_eng_o_022/        # Telemetria e Observabilidade
+│
+└── con/                                    # Núcleo Consultores LLM
+    ├── alexer_chen_grb_con_d_001/         # Consultor LLM (DeepSeek)
+    ├── bryan_luck_grb_con_c_001/          # Consultor LLM (Claude)
+    ├── piter_many_grb_con_g_001/          # Consultor LLM (Google/Gemini)
+    └── michael_park_grb_con_o_001/        # Consultor LLM (OpenAI)
+```
+```
 
 ---
 
-## 8. Regras de Atualização
+## 8. Próximos Sequenciais Disponíveis
+
+O próximo sequencial **global GrupoB** a ser atribuído é: **`018`**.
+
+O próximo sequencial **local Dathex (Sala Dev)** a ser atribuído é: **`023`**.
+
+---
+
+## 9. Regras de Atualização
 
 1.  Qualquer nova contratação, criação de agente ou mudança de cargo deve ser refletida aqui.
 2.  O sequencial global deve ser incrementado linearmente, independente do setor.

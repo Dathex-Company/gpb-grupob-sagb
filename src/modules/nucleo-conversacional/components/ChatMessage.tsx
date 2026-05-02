@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Message, Sender, PersonaConfig, ChatAttachment } from '../../../../types';
+import { Message, Sender, PersonaConfig, ChatAttachment, UserProfile } from '../../../../types';
 import { CheckIcon, XIcon, PencilIcon, FileTextIcon } from '../../../../components/Icon';
 import { Avatar } from '../../../../components/Avatar';
 import ChatAttachmentCard from './ChatAttachmentCard';
@@ -11,7 +11,7 @@ interface ChatMessageProps {
     directors: PersonaConfig[];
     agentContext?: { name: string, avatarUrl?: string };
     onEdit?: (msg: Message, newText: string, newAttachment?: ChatAttachment | null) => void;
-    userProfile?: any;
+    userProfile?: UserProfile | null;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentContext, onEdit, userProfile }) => {
@@ -150,7 +150,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentCont
                     </div>
 
                     {/* --- BLOCO DE CONTEÚDO --- */}
-                    <div className={`flex flex-col min-w-0 ${isBot ? 'items-start' : 'items-end'}`} style={{ minWidth: (part.speaker.length * 9) + 20 }}>
+                    <div className={`flex flex-col min-w-0 ${isBot ? 'items-start' : 'items-end'}`}>
 
                         {/* HEADER: Nome */}
                         <div className={`mb-1.5 flex items-end px-1 ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
@@ -223,7 +223,32 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, directors, agentCont
                                             ))}
                                         </div>
                                     )}
-                                    {isBot ? <ReactMarkdown>{part.content}</ReactMarkdown> : <span>{part.content}</span>}
+                                    {isBot ? (
+                                        <ReactMarkdown
+                                            skipHtml
+                                            allowedElements={[
+                                                'p',
+                                                'strong',
+                                                'em',
+                                                'ul',
+                                                'ol',
+                                                'li',
+                                                'blockquote',
+                                                'code',
+                                                'pre',
+                                                'a',
+                                                'h1',
+                                                'h2',
+                                                'h3',
+                                                'h4',
+                                                'hr',
+                                                'br'
+                                            ]}
+                                            unwrapDisallowed
+                                        >
+                                            {part.content}
+                                        </ReactMarkdown>
+                                    ) : <span>{part.content}</span>}
                                 </div>
                             )}
                         </div>

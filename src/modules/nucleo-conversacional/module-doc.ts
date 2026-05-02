@@ -28,8 +28,10 @@ export const moduleDoc = {
 
   estruturasExclusivas: [
     'components/SystemicVision.tsx',
-    'components/ChatMessage.tsx',
-    'components/ConversationsView.tsx',
+    'src/modules/nucleo-conversacional/components/ChatMessage.tsx',
+    'src/modules/nucleo-conversacional/pages/ConversationsView.tsx',
+    'src/modules/nucleo-conversacional/services/chatPersistence.ts',
+    'src/modules/nucleo-conversacional/utils/observability.ts',
     'services/gemini.ts',
     'services/deepseek.ts',
     'services/llamaLocal.ts',

@@ -35,7 +35,7 @@ const pickAnthropicModel = () => {
   return (
     process.env.ANTHROPIC_MODEL ||
     process.env.ANTROPIC_MODEL ||
-    'claude-3-5-haiku-latest'
+    'claude-sonnet-4-20250514'
   ).trim();
 };
 
@@ -442,9 +442,10 @@ const checkOpenAIHealth = async () => {
   }
 };
 
-const checkClaudeHealth = async () => {
+const checkClaudeHealth = async (modelOverride) => {
   const apiKey = pickAnthropicKey();
   if (!apiKey) throw new Error('Claude sem API key');
+  const model = modelOverride || pickAnthropicModel();
   const response = await timedFetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -453,15 +454,15 @@ const checkClaudeHealth = async () => {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: pickAnthropicModel(),
+      model,
       max_tokens: 1,
       messages: [{ role: 'user', content: 'ping' }],
       temperature: 0
     })
-  }, 20000); // Aumentado de 10 para 20 segundos
+  }, 20000);
   if (!response.ok) {
     const raw = await response.text().catch(() => '');
-    throw new Error(`Claude HTTP ${response.status}: ${raw}`);
+    throw new Error(`Claude HTTP ${response.status} (model: ${model}): ${raw}`);
   }
 };
 
@@ -506,12 +507,13 @@ const checkLlamaHealth = async () => {
   }
 };
 
-const handleProvidersHealth = async () => {
+const handleProvidersHealth = async (body) => {
+  const testClaudeModel = body?.payload?.testClaudeModel || null;
   const [gemini, deepseek, openai, claude, llama_local] = await Promise.all([
     runHealthCheck('Gemini', checkGeminiHealth),
     runHealthCheck('DeepSeek', checkDeepSeekHealth),
     runHealthCheck('OpenAI', checkOpenAIHealth),
-    runHealthCheck('Claude', checkClaudeHealth),
+    runHealthCheck('Claude', () => checkClaudeHealth(testClaudeModel)),
     runHealthCheck('Llama', checkLlamaHealth)
   ]);
 

@@ -27,3 +27,21 @@ Este documento registra as decisões estruturais e de governança do módulo, ma
 - **Decisão complementar:** introduzir resolver sob demanda `hydrateAgentForRuntime(...)` para montar contexto completo apenas no momento de uso (abertura de conversa, composição de instrução e runtime AI context).
 - **Motivo complementar:** preservar completude de contexto para execução sem carregar payload pesado em toda a árvore de UI.
 - **Impacto complementar:** menor pressão de render global e melhor responsividade nas interações de chat.
+
+## 2026-05-01 — Hardening incremental do Núcleo Conversacional
+
+- **Decisão:** remover padrão N+1 da listagem de conversas, utilizando preview vindo de `chat_sessions.payload.latestMessageText` em `ConversationsView.tsx`.
+- **Motivo:** reduzir latência e custo de leitura por sessão na entrada do módulo.
+- **Impacto:** melhoria de escalabilidade e tempo de abertura da Central de Mensagens.
+
+- **Decisão complementar:** introduzir `utils/observability.ts` para logs estruturados do módulo.
+- **Motivo complementar:** criar padrão de telemetria reutilizável e reduzir dispersão de logs ad-hoc.
+- **Impacto complementar:** maior rastreabilidade operacional para debug e performance tuning.
+
+- **Decisão complementar:** extrair persistência de chat inicial para `services/chatPersistence.ts` (metadata de sessão e placeholder bot).
+- **Motivo complementar:** reduzir duplicidade e preparar fatiamento progressivo de `SystemicVision.tsx`.
+- **Impacto complementar:** base de refatoração contínua sem ruptura de fluxo.
+
+- **Decisão complementar:** reforçar renderização markdown em `ChatMessage.tsx` com `skipHtml` e whitelist de elementos.
+- **Motivo complementar:** diminuir superfície de conteúdo não controlado na UI de chat.
+- **Impacto complementar:** aumento de segurança de apresentação de respostas IA/usuário.

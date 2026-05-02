@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { TabId, BusinessUnit, UserProfile } from '../types';
 import { getRegisteredModules } from '../src/core/modules/moduleRegistry';
+import { ModuleToggleMap, readModuleToggles, isModuleEnabled as resolveModuleEnabled, readModuleOrder, sortModulesByOrder } from '../src/core/modules/moduleActivation';
 import { CurrencyDollarIcon, SearchIcon, MessageSquareIcon, FolderIcon, BookIcon, ShieldCheckIcon, CubeIcon, LockIcon, FileTextIcon, PlayIcon, MicIcon, VideoIcon, UserPlusIcon, AlertCircleIcon, PencilIcon, HomeIcon, BriefcaseIcon, ClipboardIcon, NetworkIcon, LayoutIcon, CalendarIcon, CompassIcon, TerminalIcon, BotIcon } from './Icon';
 
-const MODULE_TOGGLE_STORAGE_KEY = 'sagb:module-toggles:v2';
-type ModuleToggleMap = Record<string, boolean>;
 
 // ============================================================================
 // SIDEBAR — GUIA RÁPIDO DE MANUTENÇÃO
@@ -54,20 +53,33 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // [Estado] Chaveado por módulo: true/false para exibir item dinâmico
-  // Exemplo: { "hub-integracao": true, "acadb-cursos": false }
+  // Exemplo: { "hub-integracao": true, "nucleo_de_agentes": true }
   const [moduleToggles, setModuleToggles] = useState<ModuleToggleMap>({});
 
   useEffect(() => {
-    try {
-      // [Persistência] Lê toggles salvos no localStorage
-      const saved = localStorage.getItem(MODULE_TOGGLE_STORAGE_KEY);
-      const parsed = saved ? (JSON.parse(saved) as ModuleToggleMap) : {};
-      setModuleToggles(parsed || {});
-    } catch (error) {
-      console.warn('[Sidebar] Falha ao carregar toggles de módulo:', error);
-      setModuleToggles({});
-    }
-  }, [activeTab]);
+    const syncToggles = () => setModuleToggles(readModuleToggles(_userProfile?.workspaceId));
+    syncToggles();
+
+    const onStorage = () => syncToggles();
+    const onCustom = () => syncToggles();
+
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('sagb:module-toggles-changed', onCustom as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('sagb:module-toggles-changed', onCustom as EventListener);
+    };
+  }, [_userProfile?.workspaceId]);
+
+  // [Estado] Ordem personalizada dos módulos
+  const [moduleOrder, setModuleOrder] = useState<string[]>(() => readModuleOrder());
+
+  useEffect(() => {
+    const onOrderChange = () => setModuleOrder(readModuleOrder());
+    window.addEventListener('sagb:module-order-changed', onOrderChange as EventListener);
+    return () => window.removeEventListener('sagb:module-order-changed', onOrderChange as EventListener);
+  }, []);
 
   // --------------------------------------------------------------------------
   // [MAPA DE ÍCONES]
@@ -85,7 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       'central_padroes': <ShieldCheckIcon className="w-4 h-4" />,
       'ecosystem': <BriefcaseIcon className="w-4 h-4" />,
       'cadastro-empresas': <ClipboardIcon className="w-4 h-4" />,
-      'conversations': <MessageSquareIcon className="w-4 h-4" />,
+      'nucleo-conversacional': <MessageSquareIcon className="w-4 h-4" />,
       'team': <UserPlusIcon className="w-4 h-4" />,
       'sala-dev': <TerminalIcon className="w-4 h-4" />,
       'programmers-room': <TerminalIcon className="w-4 h-4" />,
@@ -104,7 +116,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       'mentorias': <MicIcon className="w-4 h-4" />,
       'gestao-financeira': <CurrencyDollarIcon className="w-4 h-4" />,
       'hub-integracao': <NetworkIcon className="w-4 h-4" />,
-      'acadb-cursos': <BookIcon className="w-4 h-4" />,
       'configuracoes-sistema': <PencilIcon className="w-4 h-4" />,
       '_orquestracao-principal': <NetworkIcon className="w-4 h-4" />,
       'crm-ziplia': <BriefcaseIcon className="w-4 h-4" />,
@@ -137,12 +148,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   // --------------------------------------------------------------------------
   const coreMenuItems: MenuItem[] = [
     { id: 'home', label: 'Início', source: 'core', visibility: 'always' },
+    { id: 'nucleo-conversacional', label: 'Conversas', source: 'core', visibility: 'always' },
     { id: 'nic', label: 'NIC', source: 'core', visibility: 'always' },
     { id: 'intelligence-flow', label: 'Fluxo de Inteligência', source: 'core', visibility: 'always' },
     { id: 'nagi', label: 'NAGI', source: 'core', visibility: 'always' },
     { id: 'central_padroes', label: 'Central de Padrões', source: 'core', visibility: 'always' },
-    { id: 'configuracoes-sistema', label: 'Configurações do Sistema', source: 'core', visibility: 'always' },
-    { id: 'acadb-cursos', label: 'AcadB Cursos', source: 'core', visibility: 'always' }
+    { id: 'configuracoes-sistema', label: 'Configurações do Sistema', source: 'core', visibility: 'hidden' }
   ];
 
   // IDs fixos já ocupados pelo menu base
@@ -173,8 +184,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const isModuleEnabled = (moduleId: string) => {
     const manifest = moduleManifestById[moduleId];
     if (!manifest) return true;
-    if (moduleId in moduleToggles) return !!moduleToggles[moduleId];
-    return manifest.initialStatus === 'active';
+    return resolveModuleEnabled(moduleId, moduleToggles);
   };
 
   // --------------------------------------------------------------------------
@@ -185,7 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   // - ignora labels duplicados com a lista fixa
   // --------------------------------------------------------------------------
   const dynamicModules: MenuItem[] = useMemo(() => {
-    return getRegisteredModules()
+    const modules = getRegisteredModules()
       .filter((mod) => !staticItemIds.has(mod.manifest.id))
       .filter((mod) => !staticLabelSet.has(normalizeLabel(mod.manifest.displayName)))
       .map((mod) => ({
@@ -194,15 +204,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         source: 'dynamic' as MenuSource,
         visibility: 'always' as MenuVisibility
       }));
-  }, [staticItemIds, staticLabelSet]);
+    return sortModulesByOrder(modules, moduleOrder);
+  }, [staticItemIds, staticLabelSet, moduleOrder]);
 
-  // Merge final + deduplicação por id e por label
+  // Merge final + ordenação personalizada + deduplicação
   const menuItems = useMemo(() => {
-    const merged = [...coreMenuItems, ...dynamicModules];
+    const allItems = sortModulesByOrder([...coreMenuItems, ...dynamicModules], moduleOrder);
     const seenIds = new Set<string>();
     const seenLabels = new Set<string>();
 
-    return merged.filter((item) => {
+    return allItems.filter((item) => {
       const normalized = normalizeLabel(item.label);
       if (seenIds.has(item.id)) return false;
       if (seenLabels.has(normalized)) return false;
@@ -210,7 +221,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       seenLabels.add(normalized);
       return true;
     });
-  }, [dynamicModules]);
+  }, [dynamicModules, moduleOrder]);
 
   // Contexto dev para itens dev-only
   const isDevContext = process.env.NODE_ENV === 'development' || localStorage.getItem('SAGB_DEV_MODE') === 'true';

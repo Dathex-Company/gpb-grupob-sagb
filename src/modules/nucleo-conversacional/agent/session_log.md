@@ -42,3 +42,21 @@ Este documento consolida o registro cronolÃ³gico das interaÃ§Ãµes do mÃ³
 ## 2026-04-20 15:31
 **poazi-bellini:** CorreÃ§Ã£o aplicada no `nucleo-conversacional` com foco em performance: separaÃ§Ã£o de snapshot de agentes e hidrataÃ§Ã£o, introduÃ§Ã£o de resoluÃ§Ã£o sob demanda de DNA/contexto em runtime, e instrumentaÃ§Ã£o de logs de latÃªncia em `App.tsx` e `ConversationsView.tsx`. GovernanÃ§a atualizada em `changelog.md` e `decisions.md`.
 
+## 2026-05-01 13:07
+**usuario:** Nucleo Conversacional | Poazi Bellini
+
+## 2026-05-01 13:07
+**usuario:** aitve Z:\SagB\src\modules\nucleo-conversacional\agent\prompt_ativacao_cline.md
+
+## 2026-05-02 13:46
+**usuario:** ative o Z:\SagB\src\modules\nucleo-conversacional\agent\prompt_ativacao_cline.md
+
+## 2026-05-02 13:47
+**poazi-bellini:** Ativação operacional do módulo Nucleo Conversacional registrada. Prompt de ativação lido, persona validada e auto-log atualizado conforme regra canônica.
+
+## 2026-05-02 13:48
+**usuario:** **[URGENTE: AUDITORIA DE CONFORMIDADE E ANTI-DRIFT - FASE 2]** Olá. Quero que você atue agora na sua capacidade de OWNER oficial deste módulo. Precisamos adequar este módulo ao novo padrão de governança canônica estabelecido pela orquestração principal. Sua tarefa é fazer uma **varredura completa e silenciosa** em todo o escopo do seu módulo, garantindo 100% de conformidade com as regras recentes. Ao final, apresente um relatório rápido das correções executadas.
+
+## 2026-05-02 13:51
+**poazi-bellini:** Auditoria executada com sucesso. (1) Foi criado o arquivo plano_modulo.md seguindo template exigido. (2) O nome de Poazi Bellini foi incluído como owner oficial em manifest.ts. (3) Em ConversationsView.tsx a cor hardcoded 'gray-50' do bg do container principal foi trocada pelos tokens semânticos Tailwind corretos (bg-sagb-bg-1 dark:bg-sagb-bg). Nenhum hex/rgb inline detectado. (4) Componentes e exportações no ModuleRegistry estavam devidamente configurados sem uso de rotas emuladas. Nenhuma fonte fora de 'Inter' foi detectada.
+

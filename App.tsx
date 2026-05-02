@@ -6,6 +6,7 @@ import SystemicVision from './components/SystemicVision'; // RESTAURADO
 import AgentFactory from './components/AgentFactory';
 import BacklogView from './components/BacklogView';
 import HubView from './components/HubView';
+import ErrorBoundary from './components/ErrorBoundary';
 import DashboardHome from './components/DashboardHome'; // NEW IMPORT
 import VenturesView from './components/VenturesView'; // NEW MODULE v1.5.0
 import AlignmentView from './components/AlignmentView';
@@ -26,6 +27,9 @@ import UnitView from './components/UnitView';
 import ConversationsView from './src/modules/nucleo-conversacional/pages/ConversationsView';
 import Auth from './components/Auth'; // NOVA IMPORTAÇÃO
 import { getModuleRoutes } from './src/core/modules/moduleRegistry';
+import { readModuleToggles, isModuleEnabled as isModuleEnabledByToggle } from './src/core/modules/moduleActivation';
+import SalaDevPage from './src/modules/sala-dev/pages/SalaDevPage';
+import { setQuadroDeEliteRuntimeContext } from './src/modules/quadro_de_elite/store';
 import { Message, Sender, TabId, Agent, Topic, Venture, BusinessUnit, BusinessBlueprint, Task, UserProfile, GovernanceCulture, ComplianceRule, VaultItem, KnowledgeNode, WorkspaceMember, AgentQualityEvent, AgentDnaProfile, AgentDnaEffective, AppUiPrefs } from './types';
 import { useTheme } from './src/core/context/ThemeContext';
 import {
@@ -84,14 +88,6 @@ const INITIAL_BUSINESS_UNITS: BusinessUnit[] = [
     description: 'Conteúdo e Comunicação',
     type: 'CORE',
     sigla: 'ppb'
-  },
-  {
-    id: 'acadb',
-    name: 'AcadB',
-    themeColor: '#7c3aed',
-    description: 'Educação Corporativa',
-    type: 'CORE',
-    sigla: 'adb'
   },
   {
     id: 'acelerab',
@@ -157,6 +153,7 @@ const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<TabId>('home'); // DEFAULT: HOME
   const [activeBU, setActiveBU] = useState<BusinessUnit>(INITIAL_BUSINESS_UNITS[0]);
+  const [moduleToggles, setModuleToggles] = useState<Record<string, boolean>>({});
 
   const [activatedAgents, setActivatedAgents] = useState<Agent[]>([]);
   const [dbAgents, setDbAgents] = useState<Agent[]>([]);
@@ -276,6 +273,29 @@ const App: React.FC = () => {
     if (memberWorkspaceIds.length > 0) return memberWorkspaceIds[0];
     return null;
   }, [preferredWorkspaceId, memberWorkspaceIds]);
+
+  useEffect(() => {
+    const syncToggles = () => setModuleToggles(readModuleToggles(activeWorkspaceId));
+    syncToggles();
+
+    const onStorage = () => syncToggles();
+    const onCustom = () => syncToggles();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('sagb:module-toggles-changed', onCustom as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('sagb:module-toggles-changed', onCustom as EventListener);
+    };
+  }, [activeWorkspaceId]);
+
+  useEffect(() => {
+    if (!activeTab) return;
+    const enabled = isModuleEnabledByToggle(activeTab, moduleToggles);
+    if (!enabled) {
+      setActiveTab('home');
+    }
+  }, [activeTab, moduleToggles]);
 
   const resolveWorkspaceIdForWrites = useMemo(() => {
     const candidates = [
@@ -1678,8 +1698,7 @@ const asDate = (v: any): Date | undefined => {
   const isImmersiveMode = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia';
 
   const tabAliases: Partial<Record<TabId, TabId>> = {
-    hub: 'ecosystem',
-    'sala-dev': 'programmers-room'
+    hub: 'ecosystem'
   };
 
   const resolvedActiveTab = tabAliases[activeTab] || activeTab;
@@ -1687,6 +1706,10 @@ const asDate = (v: any): Date | undefined => {
   const renderContent = () => {
     // SAFEGUARD: Early return if activeBU is undefined/null
     if (!activeBU) return null;
+
+    if (!isModuleEnabledByToggle(resolvedActiveTab, moduleToggles)) {
+      return <DashboardHome agents={activatedAgents} tasks={tasks} businessUnits={businessUnits} onNavigate={setActiveTab} activeWorkspaceId={activeWorkspaceId} userDisplayName={currentUserDisplayName} />;
+    }
 
     if (isTransitioning) {
       return (
@@ -1713,9 +1736,41 @@ const asDate = (v: any): Date | undefined => {
     // ROTA STARTYB
     if (activeBU.id === 'startyb' && activeTab === 'startyb-home') return <StartyBView activeBU={activeBU} agents={operationalAgents} onBack={handleReturnToHub} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
 
+    if (resolvedActiveTab === 'sala-dev') {
+      return <SalaDevPage agents={operationalAgents} />;
+    }
+
+    // Compatibilidade legada: qualquer navegação antiga para "programmers-room"
+    // deve cair no módulo novo de Sala Dev.
+    if (resolvedActiveTab === 'programmers-room') {
+      console.warn('[SagB][Nav] Legacy tab "programmers-room" redirecionada para módulo "sala-dev".');
+      return <SalaDevPage agents={operationalAgents} />;
+    }
+
+    // Injetar runtime context para módulos que usam bridge (ex: quadro_de_elite)
+    if (resolvedActiveTab === 'quadro_de_elite') {
+      setQuadroDeEliteRuntimeContext({
+        workspaceId: activeWorkspaceId,
+        agents: activatedAgents,
+        businessUnits,
+        ventures,
+        activeBU,
+        activeWorkspaceId,
+        authUsersByEmail,
+        activeSessionEmail,
+        onNavigateToEcosystem: () => setActiveTab('ecosystem'),
+        onActivate: handleActivateAgent,
+        onRemove: handleRemoveAgent,
+        onManageIntelligence: (agent) => {
+          setGovernanceTargetId(agent.id);
+          setActiveTab('governance');
+        }
+      });
+    }
+
     // Módulos Registrados Dinamicamente
     const moduleRoutes = getModuleRoutes();
-    if (moduleRoutes[resolvedActiveTab]) {
+    if (moduleRoutes[resolvedActiveTab] && isModuleEnabledByToggle(resolvedActiveTab, moduleToggles)) {
       return moduleRoutes[resolvedActiveTab].element;
     }
 
@@ -1728,11 +1783,16 @@ const asDate = (v: any): Date | undefined => {
 
       case 'management': return <ManagementView tasks={tasks} onAddTask={handleAddTask} onUpdateTaskStatus={handleUpdateTaskStatus} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
       case 'programmers-room':
-        return <DevRoomView onBack={() => setActiveTab('ecosystem')} />;
+        console.warn('[SagB][Nav] Fallback legado "programmers-room" acionado. Renderizando "sala-dev" módulo novo.');
+        return <SalaDevPage agents={operationalAgents} />;
       case 'unit-room': return <UnitView activeBU={activeBU} agents={activatedAgents} onBack={handleBackNavigation} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
 
       // NOVA ROTA: CONVERSAS (HISTÓRICO)
+      case 'nucleo-conversacional': return <ConversationsView agents={activatedAgents} onOpenChat={handleAgentInteraction} onOpenSession={handleOpenAgentSession} activeWorkspaceId={activeWorkspaceId} />;
+
+      // ROTA DE SEGURANÇA (LEGADO DE SEGURANÇA)
       case 'conversations': return <ConversationsView agents={activatedAgents} onOpenChat={handleAgentInteraction} onOpenSession={handleOpenAgentSession} activeWorkspaceId={activeWorkspaceId} />;
+
 
       // NOVA LÓGICA V4.6 - Governance Deep Linking
       case 'governance': return (
@@ -1836,10 +1896,18 @@ const asDate = (v: any): Date | undefined => {
       );
 
       // NOVA ROTA: EQUIPE GLOBAL (VISÃO DE TODOS OS AGENTES PARA CHAT)
-      case 'team': return <SystemicVision dynamicAgents={operationalAgents} onUpdateAgents={setActivatedAgents} activeBU={activeBU} businessUnits={businessUnits} onBack={handleBackNavigation} onConvertToTopic={handleCreateTopicFromChat} viewMode="global" userProfile={authenticatedUserProfile} activeWorkspaceId={activeWorkspaceId} vaultItems={activeVaultEntries} />;
+      case 'team': return (
+        <ErrorBoundary>
+          <SystemicVision dynamicAgents={operationalAgents} onUpdateAgents={setActivatedAgents} activeBU={activeBU} businessUnits={businessUnits} onBack={handleBackNavigation} onConvertToTopic={handleCreateTopicFromChat} viewMode="global" userProfile={authenticatedUserProfile} activeWorkspaceId={activeWorkspaceId} vaultItems={activeVaultEntries} />
+        </ErrorBoundary>
+      );
 
       // RESTORED: CHAT ROOM (Systemic Vision Logic) with onConvertToTopic prop
-      case 'chat-room': return <SystemicVision dynamicAgents={operationalAgents} onUpdateAgents={setActivatedAgents} activeBU={activeBU} businessUnits={businessUnits} forcedAgent={chatTargetAgent} forcedSessionId={chatTargetSessionId} onBack={handleBackNavigation} onConvertToTopic={handleCreateTopicFromChat} userProfile={authenticatedUserProfile} activeWorkspaceId={activeWorkspaceId} vaultItems={activeVaultEntries} />;
+      case 'chat-room': return (
+        <ErrorBoundary>
+          <SystemicVision dynamicAgents={operationalAgents} onUpdateAgents={setActivatedAgents} activeBU={activeBU} businessUnits={businessUnits} forcedAgent={chatTargetAgent} forcedSessionId={chatTargetSessionId} onBack={handleBackNavigation} onConvertToTopic={handleCreateTopicFromChat} userProfile={authenticatedUserProfile} activeWorkspaceId={activeWorkspaceId} vaultItems={activeVaultEntries} />
+        </ErrorBoundary>
+      );
 
       case 'vault':
         return <BacklogView

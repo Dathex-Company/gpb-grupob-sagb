@@ -28,6 +28,9 @@ import { salaDevManifest, salaDevRoutes } from '../../modules/sala-dev';
 import { manifest as configuracoesAmbienteManifest, routes as configuracoesAmbienteRoutes } from '../../modules/configuracoes-ambiente';
 
 import { hubIntegracaoManifest, hubIntegracaoRoutes } from '../../modules/hub-integracao';
+import { sagbBridgeManifest, sagbBridgeRoutes } from '../../modules/sagb_bridge';
+import { mcpSagbManifest, mcpSagbRoutes } from '../../modules/mcp_sagb';
+import { fluxobManifest, fluxobRoutes } from '../../modules/fluxob';
 
 // Aqui definimos o registry central. Novos módulos devem ser registrados nesta array.
 
@@ -135,6 +138,18 @@ export const moduleRegistry: PluggableModule[] = [
   {
     manifest: focoTotalManifest,
     routes: focoTotalRoutes
+  },
+  {
+    manifest: sagbBridgeManifest,
+    routes: sagbBridgeRoutes
+  },
+  {
+    manifest: mcpSagbManifest,
+    routes: mcpSagbRoutes
+  },
+  {
+    manifest: fluxobManifest,
+    routes: fluxobRoutes
   }
 ];
 

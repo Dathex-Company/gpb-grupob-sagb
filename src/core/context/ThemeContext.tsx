@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { generateCssVariables } from '../../modules/configuracoes-ambiente/services/themeTokens';
 
 type Theme = 'light' | 'dark';
 
@@ -11,11 +12,11 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Inicializa a partir do localStorage; sem valor salvo, força modo escuro (dark)
+  // Inicializa a partir do localStorage; sem valor salvo, força modo claro (light)
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('sagb-theme');
     if (saved === 'light' || saved === 'dark') return saved;
-    return 'dark';
+    return 'light';
   });
 
   const setTheme = (newTheme: Theme) => {
@@ -34,6 +35,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       root.classList.remove('dark');
     }
+
+    // Injeta as variáveis CSS corretas para o tema atual
+    const styleId = 'sagb-theme-variables';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = generateCssVariables(theme);
   }, [theme]);
 
   return (

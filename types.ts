@@ -53,7 +53,6 @@ export type TabId =
   | 'methodology'
   | 'metodologias'
   | 'hub-integracao'
-  | 'acadb-cursos'
   | 'hub'
   | 'alignment'
   | 'market'

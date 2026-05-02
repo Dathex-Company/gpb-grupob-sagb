@@ -220,10 +220,18 @@ export const UserIcon = ({ className }: { className?: string }) => (
   <BaseIcon d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" className={className} />
 );
 
+export const CodeIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M8 3L1 12l7 9M16 3l7 9-7 9" className={className} />
+);
+
 export const CurrencyDollarIcon = ({ className }: { className?: string }) => (
   <BaseIcon d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" className={className} />
 );
 
 export const LogOutIcon = ({ className }: { className?: string }) => (
   <BaseIcon d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" className={className} />
+);
+
+export const GitBranchIcon = ({ className }: { className?: string }) => (
+  <BaseIcon d="M6 3v12a4 4 0 0 0 4 4h4M10 3l4 4-4 4M18 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" className={className} />
 );

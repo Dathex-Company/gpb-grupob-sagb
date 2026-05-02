@@ -128,3 +128,9 @@ tools/__pycache__/
 tmpclaude-*
 tmp_test_file.txt
 sagb (10).zip
+
+# Local Netlify folder
+.netlify
+
+# Roo extension config
+.roo/

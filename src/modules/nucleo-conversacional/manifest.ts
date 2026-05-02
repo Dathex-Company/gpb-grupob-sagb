@@ -6,5 +6,6 @@ export const nucleoConversacionalManifest: ModuleManifest = {
   displayName: 'Conversas',
   baseRoute: '/conversas',
   icon: 'MessageSquareIcon',
-  initialStatus: 'active'
+  initialStatus: 'active',
+  owner: 'Poazi Bellini'
 };

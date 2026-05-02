@@ -32,7 +32,7 @@
 - Módulo está 100% padronizado conforme novos padrões SagB
 
 **Próximos passos:**
-- [ ] Criar documento `agentes_e_modulos.md` na governança
+- [ ] Criar documento `padrao_agentes_responsaveis.md` na governança
 - [ ] Adicionar ao `metadata.json` e Central de Padrões
 - [ ] Validar build final com `npm run dev`
 - [ ] Listar módulos plugáveis para próxima fase de padronização
@@ -100,7 +100,7 @@
 **Imediato (hoje):**
 1. Validar build com `npm run dev`
 2. Testar tela de monitoramento de tabelas Supabase
-3. Criar `agentes_e_modulos.md` na governança
+3. Criar `padrao_agentes_responsaveis.md` na governança
 
 **Curto prazo (próximos dias):**
 1. Listar todos os módulos plugáveis existentes

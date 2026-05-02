@@ -4,8 +4,9 @@ import { Agent } from '../../../../types';
 import { AlertTriangleIcon, BotIcon, ChevronRightIcon, SearchIcon, XIcon } from '../../../../components/Icon';
 import { Avatar } from '../../../../components/Avatar';
 import { db, collection, query, where, orderBy, onSnapshot } from '../../../../services/supabase';
-import { getLastMessageForSession, resolveWorkspaceId } from '../../../../utils/supabaseChat';
+import { resolveWorkspaceId } from '../../../../utils/supabaseChat';
 import { moduleDoc } from '../module-doc';
+import { ncLog } from '../utils/observability';
 
 interface ConversationsViewProps {
   agents?: Agent[];
@@ -25,11 +26,22 @@ interface ChatSessionSummary {
     preview: string;
 }
 
+interface SessionRowData {
+  id?: string;
+  agentId?: string;
+  lastMessageAt?: Date | string | number;
+  updatedAt?: Date | string | number;
+  createdAt?: Date | string | number;
+  title?: string;
+  payload?: {
+    latestMessageText?: string;
+  };
+}
+
 const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOpenChat, onOpenSession, activeWorkspaceId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
-  const [sessionsById, setSessionsById] = useState<Record<string, any>>({});
-  const [messagePreviewBySession, setMessagePreviewBySession] = useState<Record<string, string>>({});
+  const [sessionsById, setSessionsById] = useState<Record<string, SessionRowData>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDocsModalOpen, setIsDocsModalOpen] = useState(false);
@@ -38,7 +50,7 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
     setLoading(true);
     setError(null);
     const scopedWorkspaceId = resolveWorkspaceId(activeWorkspaceId);
-    const snapshotLabel = `[SagB][Perf][ConversationsView] chat_sessions_snapshot:${Date.now()}`;
+    const startedAt = Date.now();
     const sessionsQuery = query(
       collection(db, 'chat_sessions'),
       where('workspaceId', '==', scopedWorkspaceId),
@@ -48,22 +60,24 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
     const unsubscribe = onSnapshot(
       sessionsQuery,
       (snapshot) => {
-        console.time(snapshotLabel);
-        const next: Record<string, any> = {};
-        snapshot.docs.forEach((row: any) => {
+        const next: Record<string, SessionRowData> = {};
+        snapshot.docs.forEach((row: { id: string; data: () => SessionRowData }) => {
           const data = row.data();
           next[String(data.id || row.id)] = data;
         });
-        console.timeEnd(snapshotLabel);
-        console.debug('[SagB][Perf][ConversationsView] sessões recebidas', {
+        ncLog.debug('conversations.snapshot.received', {
           workspaceId: scopedWorkspaceId,
-          total: snapshot.docs.length
+          total: snapshot.docs.length,
+          elapsedMs: Date.now() - startedAt
         });
         setSessionsById(next);
         setLoading(false);
       },
       (err) => {
-        console.error('Erro ao carregar sessões de conversa:', err);
+        ncLog.error('conversations.snapshot.failed', {
+          workspaceId: scopedWorkspaceId,
+          error: err instanceof Error ? err.message : String(err)
+        });
         setError('Não foi possível carregar as conversas.');
         setSessionsById({});
         setLoading(false);
@@ -72,44 +86,6 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
 
     return () => unsubscribe();
   }, [activeWorkspaceId]);
-
-  useEffect(() => {
-    const fetchPreviews = async () => {
-      const newPreviews: Record<string, string> = {};
-      const sessionIds = Object.keys(sessionsById);
-      const startedAt = Date.now();
-
-      const previewsPromises = sessionIds.map(async (sessionId) => {
-        const lastMessage = await getLastMessageForSession({ sessionId, workspaceId: activeWorkspaceId });
-        if (lastMessage) {
-          const raw = String(lastMessage.text || '').trim();
-          return { sessionId, preview: raw ? `${raw.slice(0, 60)}${raw.length > 60 ? '...' : ''}` : 'Nova conversa iniciada...' };
-        }
-        return { sessionId, preview: 'Nova conversa iniciada...' };
-      });
-
-      try {
-        const previews = await Promise.all(previewsPromises);
-
-        for (const { sessionId, preview } of previews) {
-          newPreviews[sessionId] = preview;
-        }
-
-        setMessagePreviewBySession(newPreviews);
-        console.debug('[SagB][Perf][ConversationsView] previews carregados', {
-          sessions: sessionIds.length,
-          elapsedMs: Date.now() - startedAt
-        });
-      } catch (err) {
-        console.error('Erro ao carregar previews de conversa:', err);
-        setError('Não foi possível carregar o preview das conversas.');
-      }
-    };
-
-    if (Object.keys(sessionsById).length > 0) {
-      fetchPreviews();
-    }
-  }, [sessionsById, activeWorkspaceId]);
 
   useEffect(() => {
     const allSessions: ChatSessionSummary[] = Object.entries(sessionsById)
@@ -130,14 +106,18 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
           agentAvatar: agent.avatarUrl,
           lastMessageAt,
           title: String(sessionData.title || 'Conversa sem título'),
-          preview: messagePreviewBySession[sessionId] || 'Nova conversa iniciada...'
+          preview: (() => {
+            const raw = String(sessionData.payload?.latestMessageText || '').trim();
+            if (!raw) return 'Nova conversa iniciada...';
+            return raw.length > 60 ? `${raw.slice(0, 60)}...` : raw;
+          })()
         } as ChatSessionSummary;
       })
       .filter((session): session is ChatSessionSummary => Boolean(session));
 
     allSessions.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
     setSessions(allSessions);
-  }, [agents, messagePreviewBySession, sessionsById]);
+  }, [agents, sessionsById]);
 
   const filteredSessions = sessions.filter(s => 
       s.agentName.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -157,7 +137,7 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
   };
 
   return (
-    <div className="flex-1 h-full bg-gray-50 dark:bg-sagb-bg flex flex-col font-sans transition-colors duration-300 overflow-hidden">
+    <div className="flex-1 h-full bg-sagb-bg-1 dark:bg-sagb-bg flex flex-col font-sans transition-colors duration-300 overflow-hidden">
         {/* HEADER */}
         <header className="h-24 px-8 md:px-12 flex justify-between items-center border-b border-gray-100 dark:border-white/5 bg-white dark:bg-sagb-panel shrink-0 transition-colors duration-300">
             <div className="flex flex-col justify-center">

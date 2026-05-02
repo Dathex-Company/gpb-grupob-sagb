@@ -137,7 +137,7 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
             isSelecionada ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'
           }`}>
-            <div className="w-2 h-2 rounded-full bg-current"></div>
+            <div className="w-2 h-2 rounded-full bg-current" />
           </div>
         </div>
       </div>
@@ -186,15 +186,15 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                 {camada.id === 'escopo-acessos' && (
                   <ul className="space-y-2">
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
                       Definição de escopo operacional
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
                       Controle de acessos e permissões
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
                       Auditoria e rastreabilidade
                     </li>
                   </ul>
@@ -202,15 +202,15 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                 {camada.id === 'cultura-oficial' && (
                   <ul className="space-y-2">
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
                       Identidade e tom de voz oficiais
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
                       Valores e cultura organizacional
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-3" />
                       Padronização de comportamento
                     </li>
                   </ul>
@@ -218,15 +218,15 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                 {camada.id === 'base-institucional' && (
                   <ul className="space-y-2">
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full mr-3" />
                       Protocolos e estruturas oficiais
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full mr-3" />
                       Padrões de governança
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full mr-3" />
                       Estrutura de tomada de decisão
                     </li>
                   </ul>
@@ -234,15 +234,15 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                 {camada.id === 'diretrizes-compliance' && (
                   <ul className="space-y-2">
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-3" />
                       Regras de segurança e LGPD
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-3" />
                       Controles de compliance
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-3" />
                       Auditoria regulatória
                     </li>
                   </ul>
@@ -250,15 +250,15 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                 {camada.id === 'protocolos-oficiais' && (
                   <ul className="space-y-2">
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-amber-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-amber-500 rounded-full mr-3" />
                       Regras operacionais
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-amber-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-amber-500 rounded-full mr-3" />
                       Procedimentos decisórios
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-amber-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-amber-500 rounded-full mr-3" />
                       Fluxos de aprovação
                     </li>
                   </ul>
@@ -266,15 +266,15 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                 {camada.id === 'nucleo-inteligencia' && (
                   <ul className="space-y-2">
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-red-500 rounded-full mr-3" />
                       DNA e conhecimento dos agentes
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-red-500 rounded-full mr-3" />
                       Permissões e capacidades
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-red-500 rounded-full mr-3" />
                       Atualização de inteligência
                     </li>
                   </ul>
@@ -282,15 +282,15 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                 {camada.id === 'memoria-agentes' && (
                   <ul className="space-y-2">
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-slate-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-slate-500 rounded-full mr-3" />
                       Cofre Black e segredos
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-slate-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-slate-500 rounded-full mr-3" />
                       Memória contínua
                     </li>
                     <li className="flex items-center text-[12px] text-gray-600">
-                      <div className="w-2 h-2 bg-slate-500 rounded-full mr-3"></div>
+                      <div className="w-2 h-2 bg-slate-500 rounded-full mr-3" />
                       Histórico de operações
                     </li>
                   </ul>
@@ -308,7 +308,7 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                           <span className="font-bold text-blue-600">{agents.length}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.min(100, (agents.length / 10) * 100)}%` }}></div>
+                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.min(100, (agents.length / 10) * 100)}%` }} />
                         </div>
                       </div>
                       <div>
@@ -317,7 +317,7 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                           <span className="font-bold text-green-600">{agents.filter(a => a.dnaStatus === 'DNA_COMPLETO').length}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-green-500 h-2 rounded-full" style={{ width: `${agents.length > 0 ? (agents.filter(a => a.dnaStatus === 'DNA_COMPLETO').length / agents.length) * 100 : 0}%` }}></div>
+                          <div className="bg-green-500 h-2 rounded-full" style={{ width: `${agents.length > 0 ? (agents.filter(a => a.dnaStatus === 'DNA_COMPLETO').length / agents.length) * 100 : 0}%` }} />
                         </div>
                       </div>
                     </>
@@ -330,7 +330,7 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                           <span className="font-bold text-blue-600">{vaultItems?.length || 0}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.min(100, ((vaultItems?.length || 0) / 20) * 100)}%` }}></div>
+                          <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.min(100, ((vaultItems?.length || 0) / 20) * 100)}%` }} />
                         </div>
                       </div>
                       <div>
@@ -339,7 +339,7 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                           <span className="font-bold text-green-600">{knowledgeNodes?.length || 0}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-green-500 h-2 rounded-full" style={{ width: `${Math.min(100, ((knowledgeNodes?.length || 0) / 50) * 100)}%` }}></div>
+                          <div className="bg-green-500 h-2 rounded-full" style={{ width: `${Math.min(100, ((knowledgeNodes?.length || 0) / 50) * 100)}%` }} />
                         </div>
                       </div>
                     </>
@@ -352,7 +352,7 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                           <span className="font-bold text-green-600">100%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-green-500 h-2 rounded-full w-full"></div>
+                          <div className="bg-green-500 h-2 rounded-full w-full" />
                         </div>
                       </div>
                       <div>
@@ -361,7 +361,7 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
                           <span className="font-bold text-blue-600">85%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-500 h-2 rounded-full w-[85%]"></div>
+                          <div className="bg-blue-500 h-2 rounded-full w-[85%]" />
                         </div>
                       </div>
                     </>
@@ -462,7 +462,7 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6 font-inter">
       {/* Header */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex justify-between items-start">
@@ -508,20 +508,20 @@ const BaseDosAgentesView: React.FC<BaseDosAgentesViewProps> = ({
         
         {/* Legenda */}
         <div className="mt-8 pt-8 border-t border-gray-200">
-          <div className="flex flex-wrap gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-[12px] text-gray-600">Camada Oficial</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-              <span className="text-[12px] text-gray-600">Camada Homologada</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span className="text-[12px] text-gray-600">Selecionada</span>
-            </div>
+        <div className="flex flex-wrap gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded-full" />
+            <span className="text-[12px] text-gray-600">Camada Oficial</span>
           </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-amber-500 rounded-full" />
+            <span className="text-[12px] text-gray-600">Camada Homologada</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full" />
+            <span className="text-[12px] text-gray-600">Selecionada</span>
+          </div>
+        </div>
         </div>
       </div>
 

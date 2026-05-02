@@ -9,8 +9,7 @@ export const apiSagbManifest: ModuleManifest = {
   initialStatus: 'active',
   owner: {
     type: 'agent',
-    id: 'alan_flow',
-    displayName: 'Alan Flow'
+    id: 'dante_conec',
+    displayName: 'Dante Conec'
   }
 };
-

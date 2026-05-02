@@ -18,7 +18,6 @@
     'decisions.md',
     'agent/prompt_ativacao_cline.md',
     'agent/persona.md',
-    'agent/owner.md',
     'agent/session_log.md',
     'agent/falas_user.md'
   ]
