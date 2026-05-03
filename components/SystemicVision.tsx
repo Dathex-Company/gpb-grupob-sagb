@@ -2801,6 +2801,16 @@ ${selectedVaultContext}
                                         <span className="hidden sm:inline">Sugerir pauta</span>
                                     </button>
 
+                                    <button
+                                        onClick={handleManualSuggestTitle}
+                                        disabled={activeMessages.length < 2}
+                                        className="flex h-9 shrink-0 items-center gap-2 rounded-xl border border-slate-200/70 bg-white/60 px-3 text-[8px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-white hover:text-slate-900 md:text-[9px] disabled:opacity-30 disabled:cursor-not-allowed"
+                                        title="Gerar nomes sugeridos para esta conversa"
+                                    >
+                                        <PencilIcon className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Gerar Nomes</span>
+                                    </button>
+
                                     {onConvertToTopic && (
                                         <button
                                             onClick={() => openTaskModal()}

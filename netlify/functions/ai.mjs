@@ -770,12 +770,16 @@ Lista concisa de aprendizados (bullet points).
 const handleGenerateTitleOptions = async (payload) => {
   const messagesText = payload.messagesText || '';
   const prompt = `
-ATENCAO: Voce e um assistente executivo.
-Analise a conversa e sugira 3 opcoes de Titulos.
-PADRAO: "PalavraChave | Descricao".
+VOCE E UM EXECUTIVO SENIOR resumindo reunioes de alto nivel.
+Analise a conversa abaixo e gere 3 opcoes de titulos que capturem o assunto principal com clareza e impacto.
+REGRAS:
+- Seja direto e evite genericos como "Discussao sobre..." ou "Conversa a respeito de...".
+- Use o formato "PalavraChave | Descricao concisa" (ex: "Deploy CI/CD | Definicao do Pipeline" ou "Arquitetura SagB | Decisao sobre Microservicos").
+- Os titulos devem ser distintos entre si, trazendo angulos diferentes do mesmo assunto.
+- Priorize termos que um executivo usaria em uma pauta de reuniao.
 CONVERSA:
 ${messagesText}
-Retorne JSON Array de strings.
+Retorne JSON Array com exatamente 3 strings.
 `.trim();
 
   if (!hasGeminiKey()) {
