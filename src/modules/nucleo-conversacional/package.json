@@ -1,0 +1,28 @@
+{
+  "name": "@sagb/nucleo-conversacional",
+  "version": "1.5.0",
+  "private": true,
+  "type": "module",
+  "description": "Módulo conversacional standalone — chat multi-provider com persistência, anexos e sugestão inteligente de títulos/tarefas",
+  "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./tailwind-preset": "./tailwind.preset.ts",
+    "./services/ncDb": "./services/ncDb.ts",
+    "./services/ncLlm": "./services/ncLlm.ts",
+    "./services/chatPersistence": "./services/chatPersistence.ts",
+    "./types": "./types.ts"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "dependencies": {
+    "react-markdown": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "~5.8.2"
+  }
+}

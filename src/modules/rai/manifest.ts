@@ -3,8 +3,13 @@ import { ModuleManifest } from '../../core/modules/module.types';
 export const raiManifest: ModuleManifest = {
   id: 'rai',
   internalName: 'rai',
-  displayName: 'RAI',
+  displayName: 'RAI — Radar Avançado de Inteligência',
   baseRoute: '/rai',
-  icon: 'RadarIcon', // O shell deve mapear isso para um ícone Lucide ou similar
-  initialStatus: 'active'
+  icon: 'RadarIcon',
+  initialStatus: 'active',
+  owner: {
+    type: 'agent',
+    id: 'saleh_malu',
+    displayName: 'Saleh Malu'
+  }
 };

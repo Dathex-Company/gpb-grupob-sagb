@@ -1,5 +1,5 @@
-import { addDoc, collection, doc, onSnapshot, query, updateDoc, where, db } from '../../../../services/supabase';
-import { uploadBlobToSupabaseStorage } from '../../../../services/storage';
+import { addDoc, collection, doc, getDocs, onSnapshot, query, updateDoc, where, db, orderBy } from '../../../../services/supabase';
+import { uploadBlobToSupabaseStorage, downloadBlobFromSupabaseStorage, triggerBlobDownload } from '../../../../services/storage';
 import { transcribeMediaBlob } from '../../../../services/gemini';
 
 const makeLocalId = (prefix: string) => `${prefix}_local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -83,7 +83,42 @@ const studioFallbackStore = {
   sessions: new Map<string, StudioSession>(),
   chunks: new Map<string, StudioChunk>(),
   sessionSubscribers: new Set<(workspaceId: string) => void>(),
-  chunkSubscribers: new Set<(sessionId: string) => void>()
+  chunkSubscribers: new Set<(sessionId: string) => void>(),
+  /** Timestamp da última limpeza para evitar execução frequente */
+  lastCleanup: 0
+};
+
+/**
+ * Limpa sessões e chunks antigos do fallback store (mais de 24h).
+ * Chamado sob demanda para evitar memory leak em uso prolongado.
+ */
+const cleanupFallbackStore = () => {
+  const now = Date.now();
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+  // Só executa uma vez a cada 6 horas no máximo
+  if (now - studioFallbackStore.lastCleanup < 6 * 60 * 60 * 1000) return;
+  studioFallbackStore.lastCleanup = now;
+
+  let sessionsRemoved = 0;
+  studioFallbackStore.sessions.forEach((session, id) => {
+    if (now - session.createdAt.getTime() > ONE_DAY_MS) {
+      studioFallbackStore.sessions.delete(id);
+      sessionsRemoved++;
+    }
+  });
+
+  let chunksRemoved = 0;
+  studioFallbackStore.chunks.forEach((chunk, id) => {
+    if (now - chunk.createdAt.getTime() > ONE_DAY_MS) {
+      studioFallbackStore.chunks.delete(id);
+      chunksRemoved++;
+    }
+  });
+
+  if (sessionsRemoved > 0 || chunksRemoved > 0) {
+    console.info(`[Studio] cleanupFallbackStore: removidas ${sessionsRemoved} sessões e ${chunksRemoved} chunks antigos.`);
+  }
 };
 
 const notifySessionSubscribers = (workspaceId: string) => {
@@ -212,6 +247,9 @@ export const subscribeToStudioSessions = (
   studioFallbackStore.sessionSubscribers.add(localListener);
   emitLocal();
 
+  // Limpeza periódica do fallback store ao assinar
+  cleanupFallbackStore();
+
   return () => {
     unsubscribeRemote();
     studioFallbackStore.sessionSubscribers.delete(localListener);
@@ -321,6 +359,9 @@ export const subscribeToStudioChunks = (
   studioFallbackStore.chunkSubscribers.add(localListener);
   emitLocal();
 
+  // Limpeza periódica do fallback store ao assinar chunks
+  cleanupFallbackStore();
+
   return () => {
     unsubscribeRemote();
     studioFallbackStore.chunkSubscribers.delete(localListener);
@@ -387,9 +428,33 @@ export const processAudioChunkPipeline = async (params: {
 
 const appendToSessionPayloadArray = async (sessionId: string, key: string, item: Record<string, any>) => {
   try {
+    // 1. Buscar payload atual para fazer merge (evita sobrescrever dados de outras chaves)
+    let existingPayload: Record<string, any> = {};
+
+    try {
+      const q = query(
+        collection(db, 'studio_sessions'),
+        where('id', '==', sessionId)
+      );
+      const snapshot = await getDocs(q);
+      if (snapshot.docs.length > 0) {
+        existingPayload = snapshot.docs[0].data()?.payload || {};
+      }
+    } catch {
+      // Fallback: tentar do store local
+      const localSession = studioFallbackStore.sessions.get(sessionId);
+      if (localSession?.payload) {
+        existingPayload = localSession.payload;
+      }
+    }
+
+    // 2. Fazer merge: preserva chaves existentes, adiciona novo item ao array
+    const currentArray = Array.isArray(existingPayload[key]) ? existingPayload[key] : [];
+
     await updateStudioSession(sessionId, {
       payload: {
-        [key]: [item]
+        ...existingPayload,
+        [key]: [...currentArray, item]
       }
     });
   } catch {
@@ -439,13 +504,15 @@ export const saveRawVideoPipeline = async (params: {
   sessionId: string;
   workspaceId: string;
   videoBlob: Blob;
+  cameraId?: string;
+  deviceId?: string;
 }) => {
   try {
     await saveCameraFilePipeline({
       sessionId: params.sessionId,
       workspaceId: params.workspaceId,
-      cameraId: 'legacy-camera',
-      deviceId: 'legacy-device',
+      cameraId: params.cameraId || 'legacy-camera',
+      deviceId: params.deviceId || 'legacy-device',
       videoBlob: params.videoBlob,
       durationSeconds: 0
     });
@@ -574,6 +641,169 @@ export const saveMasterAudioPipeline = async (params: {
 };
 
 /**
+ * Extrai e valida os chunks completos (transcritos) de uma sessão.
+ * Lógica compartilhada entre exportSessionTranscript e exportSessionTranscriptPlain.
+ */
+const fetchCompletedChunks = async (sessionId: string): Promise<StudioChunk[]> => {
+  const chunks = await fetchChunksBySession(sessionId);
+  const completedChunks = chunks.filter((c) => c.status === 'completed' && c.transcriptionText);
+
+  if (completedChunks.length === 0) {
+    throw new Error('Nenhum chunk transcrito disponível para exportação.');
+  }
+
+  return completedChunks;
+};
+
+/**
+ * Retorna os chunks de uma sessão (local ou remoto).
+ */
+const fetchChunksBySession = async (sessionId: string): Promise<StudioChunk[]> => {
+  try {
+    const q = query(collection(db, 'studio_chunks'), where('sessionId', '==', sessionId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d: any) => ({ ...d.data(), id: d.id })) as StudioChunk[];
+  } catch (error: any) {
+    if (isMissingTableError(error, 'studio_chunks')) {
+      return getLocalChunksBySession(sessionId);
+    }
+    console.error('[Studio] erro ao buscar chunks:', error);
+    return [];
+  }
+};
+
+/**
+ * Exporta a transcrição completa de uma sessão como texto formatado (.md).
+ * Consolida todos os chunks transcritos em um único documento.
+ */
+export const exportSessionTranscript = async (sessionId: string): Promise<string> => {
+  const completedChunks = await fetchCompletedChunks(sessionId);
+
+  let transcript = `# Transcrição de Sessão\n\n`;
+  transcript += `**Sessão ID:** ${sessionId}\n`;
+  transcript += `**Data de exportação:** ${new Date().toLocaleString('pt-BR')}\n`;
+  transcript += `**Total de blocos transcritos:** ${completedChunks.length}\n`;
+  transcript += `---\n\n`;
+
+  for (const chunk of completedChunks) {
+    const startedAt = chunk.startedAt
+      ? new Date(chunk.startedAt).toLocaleTimeString('pt-BR')
+      : '--:--:--';
+    transcript += `## Bloco #${chunk.chunkIndex} (${startedAt})\n\n`;
+    transcript += `${chunk.transcriptionText}\n\n`;
+    transcript += `---\n\n`;
+  }
+
+  return transcript;
+};
+
+/**
+ * Exporta a transcrição como texto plano (.txt).
+ */
+export const exportSessionTranscriptPlain = async (sessionId: string): Promise<string> => {
+  const completedChunks = await fetchCompletedChunks(sessionId);
+
+  let transcript = `TRANSCRIÇÃO DE SESSÃO\n`;
+  transcript += `Sessão: ${sessionId}\n`;
+  transcript += `Exportado em: ${new Date().toLocaleString('pt-BR')}\n`;
+  transcript += `${'='.repeat(60)}\n\n`;
+
+  for (const chunk of completedChunks) {
+    const startedAt = chunk.startedAt
+      ? new Date(chunk.startedAt).toLocaleTimeString('pt-BR')
+      : '--:--:--';
+    transcript += `[Bloco #${chunk.chunkIndex} - ${startedAt}]\n`;
+    transcript += `${chunk.transcriptionText}\n\n`;
+  }
+
+  return transcript;
+};
+
+/**
+ * Faz download do áudio master de uma sessão e dispara o download no navegador.
+ */
+/**
+ * Busca o áudio master de uma sessão na tabela `studio_audio_tracks`.
+ * Fallback: busca o primeiro chunk com `audioPath` (sessões legadas).
+ */
+const fetchMasterAudioPath = async (sessionId: string): Promise<string | null> => {
+  try {
+    const q = query(
+      collection(db, 'studio_audio_tracks'),
+      where('sessionId', '==', sessionId),
+      where('trackRole', '==', 'master'),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.docs.length > 0) {
+      return snapshot.docs[0].data().storagePath as string;
+    }
+  } catch {
+    // Tabela pode não existir — fallback para chunks
+  }
+
+  // Fallback legado: buscar o primeiro chunk com audioPath
+  try {
+    const chunks = await fetchChunksBySession(sessionId);
+    const chunkWithAudio = chunks.find((c) => c.audioPath);
+    return chunkWithAudio?.audioPath || null;
+  } catch {
+    return null;
+  }
+};
+
+export const downloadSessionMasterAudio = async (
+  sessionId: string,
+  workspaceId: string,
+  sessionTitle?: string
+) => {
+  const audioPath = await fetchMasterAudioPath(sessionId);
+  if (!audioPath) {
+    throw new Error('Nenhum áudio master disponível para download nesta sessão.');
+  }
+
+  const blob = await downloadBlobFromSupabaseStorage({
+    bucket: 'studio',
+    path: audioPath
+  });
+
+  const safeTitle = (sessionTitle || `sessao-${sessionId}`)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .toLowerCase();
+
+  triggerBlobDownload(blob, `studio_audio_${safeTitle}.webm`);
+};
+
+/**
+ * Faz download do arquivo de vídeo de uma câmera específica e dispara o download no navegador.
+ */
+export const downloadSessionCameraVideo = async (
+  sessionId: string,
+  workspaceId: string,
+  cameraLabel: string,
+  storagePath: string
+) => {
+  if (!storagePath) {
+    throw new Error('Caminho do arquivo de vídeo não encontrado.');
+  }
+
+  const blob = await downloadBlobFromSupabaseStorage({
+    bucket: 'studio',
+    path: storagePath
+  });
+
+  const safeLabel = cameraLabel
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .toLowerCase();
+
+  triggerBlobDownload(blob, `studio_camera_${safeLabel}_${Date.now()}.webm`);
+};
+
+/**
  * Pipeline para processar um arquivo completo (retroativo)
  * 1. Upload do arquivo bruto
  * 2. Transcrição completa via Gemini
@@ -586,18 +816,24 @@ export const processFullFilePipeline = async (params: {
   fileBlob: Blob;
   fileName: string;
 }) => {
+  // Validação: fileBlob.type vazio causa erro no upload e transcrição
+  if (!params.fileBlob.type) {
+    console.warn('[Studio] fileBlob.type vazio — inferindo application/octet-stream');
+  }
+
   try {
     await updateStudioSession(params.sessionId, { status: 'processing' });
 
     // 1. Upload
     const safeSessionId = params.sessionId.replace(/[^a-zA-Z0-9.-]/g, '');
     const storagePath = `${params.workspaceId}/${safeSessionId}/${params.fileName}`;
+    const mimeType = params.fileBlob.type || 'application/octet-stream';
 
     await uploadBlobToSupabaseStorage({
       bucket: 'studio',
       path: storagePath,
       blob: params.fileBlob,
-      mimeType: params.fileBlob.type
+      mimeType
     });
 
     await updateStudioSession(params.sessionId, { rawVideoPath: storagePath });

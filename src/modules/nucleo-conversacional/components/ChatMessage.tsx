@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Message, Sender, PersonaConfig, ChatAttachment, UserProfile } from '../../../../types';
-import { CheckIcon, XIcon, PencilIcon, FileTextIcon } from '../../../../components/Icon';
-import { Avatar } from '../../../../components/Avatar';
+import { Message, Sender, PersonaConfig, ChatAttachment, UserProfile } from '../types';
+import { CheckIcon, XIcon, PencilIcon, FileTextIcon } from './ui/Icon';
+import { Avatar } from './ui/Avatar';
 import ChatAttachmentCard from './ChatAttachmentCard';
 
 interface ChatMessageProps {

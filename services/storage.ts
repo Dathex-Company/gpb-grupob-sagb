@@ -1,6 +1,6 @@
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const SESSION_STORAGE_KEY = 'sagb_supabase_session_v1';
+const SESSION_STORAGE_KEY = import.meta.env.VITE_SESSION_STORAGE_KEY || 'sagb_supabase_session_v1';
 
 const getAccessToken = () => {
   if (typeof window === 'undefined') return '';
@@ -81,4 +81,42 @@ export const buildChatStoragePath = (params: {
 export const getSupabasePublicUrl = (bucket: string, path: string) => {
   if (!supabaseUrl) return '';
   return `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
+};
+
+/**
+ * Faz download de um arquivo do Supabase Storage (bucket privado) e retorna como Blob.
+ */
+export const downloadBlobFromSupabaseStorage = async (params: {
+  bucket: string;
+  path: string;
+}): Promise<Blob> => {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase storage indisponivel: variaveis de ambiente ausentes.');
+  }
+
+  const response = await fetch(`${supabaseUrl}/storage/v1/object/${params.bucket}/${params.path}`, {
+    method: 'GET',
+    headers: buildStorageHeaders()
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(text || `Falha ao baixar arquivo do storage (${response.status}).`);
+  }
+
+  return await response.blob();
+};
+
+/**
+ * Dispara o download de um Blob no navegador, simulando clique em link.
+ */
+export const triggerBlobDownload = (blob: Blob, fileName: string) => {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
 };

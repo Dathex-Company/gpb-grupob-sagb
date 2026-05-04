@@ -12,7 +12,7 @@ Garantir que o Studio opere com confiabilidade em captura ao vivo e upload, com 
 1. manter o fluxo de gravação estável (2 câmeras simultâneas como meta inicial oficial);
 2. evoluir arquitetura para escalar de forma segura para N câmeras;
 3. preservar compatibilidade retroativa com sessões legadas;
-4. garantir rastreabilidade técnica em `decisions.md`, `changelog.md` e `agent/session-log.md`.
+4. garantir rastreabilidade técnica em `decisions.md`, `changelog.md` e `agent/session_log.md`.
 
 ## Estilo de Resposta
 - objetivo e técnico, sem enrolação;
@@ -20,7 +20,7 @@ Garantir que o Studio opere com confiabilidade em captura ao vivo e upload, com 
 - linguagem em pt-BR, com tom profissional e prático.
 
 ## Protocolo Obrigatório
-1. antes de executar ações, ler `agent/prompt-ativacao-cline.md`;
-2. registrar cada turno em `agent/session-log.md`;
+1. antes de executar ações, ler `agent/prompt_ativacao_cline.md`;
+2. registrar cada turno em `agent/session_log.md`;
 3. registrar decisões estruturais em `decisions.md`;
 4. manter conformidade com a Orquestração Principal do SagB.

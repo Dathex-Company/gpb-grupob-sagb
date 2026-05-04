@@ -25,6 +25,7 @@ import MonitoramentoView from './components/MonitoramentoView';
 import NAGIView from './components/NAGIView';
 import UnitView from './components/UnitView';
 import ConversationsView from './src/modules/nucleo-conversacional/pages/ConversationsView';
+import { setDbProvider, createSupabaseDbProvider } from './src/modules/nucleo-conversacional/services/ncDb';
 import Auth from './components/Auth'; // NOVA IMPORTAÇÃO
 import { getModuleRoutes } from './src/core/modules/moduleRegistry';
 import { readModuleToggles, isModuleEnabled as isModuleEnabledByToggle } from './src/core/modules/moduleActivation';
@@ -144,6 +145,17 @@ const getTierRank = (tier?: string | null) => {
 const App: React.FC = () => {
   const version = metadata.version;
   const { theme, setTheme } = useTheme();
+
+  // ── Inicializa provider de banco para o módulo Núcleo Conversacional ──
+  if (typeof window !== 'undefined' && !window._ncDbInitialized) {
+    try {
+      setDbProvider(createSupabaseDbProvider());
+      (window as any)._ncDbInitialized = true;
+    } catch (e) {
+      console.warn('[App] Falha ao inicializar ncDb provider:', e);
+    }
+  }
+
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -1695,7 +1707,8 @@ const asDate = (v: any): Date | undefined => {
     } finally { setIsLoading(false); }
   };
 
-  const isImmersiveMode = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia';
+  const hideSidebar = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia' || activeTab === 'mentorias' || activeTab === 'metodologias';
+  const hideHeader = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home';
 
   const tabAliases: Partial<Record<TabId, TabId>> = {
     hub: 'ecosystem'
@@ -2046,7 +2059,7 @@ const asDate = (v: any): Date | undefined => {
   return (
     <div className="h-screen bg-gray-50 dark:bg-sagb-bg font-nunito text-gray-900 dark:text-sagb-text transition-colors duration-300 overflow-hidden">
       <div className="flex h-full overflow-hidden">
-        {!isImmersiveMode && (
+        {!hideSidebar && (
           <Sidebar
             activeTab={activeTab}
             setActiveTab={setActiveTab}
@@ -2059,7 +2072,7 @@ const asDate = (v: any): Date | undefined => {
           />
         )}
         <main className="flex-1 flex flex-col overflow-hidden relative bg-white dark:bg-sagb-bg transition-colors duration-300">
-          {!isImmersiveMode && (
+          {!hideHeader && (
             <header className="shrink-0 h-14 bg-white/95 dark:bg-sagb-panel/95 backdrop-blur border-b border-gray-100 dark:border-white/10 z-[60] px-4 md:px-6 flex items-center justify-between">
               <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">SagB v{version}</div>
               <div className="flex items-center gap-2 md:gap-3">

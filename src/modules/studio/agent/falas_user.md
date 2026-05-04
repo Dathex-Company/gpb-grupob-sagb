@@ -13,4 +13,11 @@ Registrar literalmente as falas do usuário associadas a este módulo/agente, se
 
 ## registros
 
+### 03/05/2026
+**usuario:** "Studio | Fabi Nunes"
 
+**usuario:** "como esta esse modulo, ja esta funcionando completamente? o que precisa ser feito ainda? qual fase esta."
+
+**usuario:** "Quero atacar tudo — faz um plano completo ordenado por prioridade"
+
+**usuario:** "Plano aprovado! Pode iniciar a implementação pela P1"

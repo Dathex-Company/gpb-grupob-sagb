@@ -13,19 +13,24 @@ const MentoriasModuleContainer: React.FC = () => {
     setSelectedId(id);
   };
 
+  const handleBackToSagB = () => {
+    window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: 'ecosystem' }));
+  };
+
   switch (view) {
     case 'dashboard':
-      return <MentoriasDashboardPage onNavigate={handleNavigate} />;
+      return <MentoriasDashboardPage onNavigate={handleNavigate} onBackToSagB={handleBackToSagB} />;
     case 'library':
       return <MentoriasLibraryPage onNavigate={handleNavigate} />;
     case 'detail':
       return <MentoriaDetailPage id={selectedId} onBack={() => setView('library')} />;
     default:
-      return <MentoriasDashboardPage onNavigate={handleNavigate} />;
+      return <MentoriasDashboardPage onNavigate={handleNavigate} onBackToSagB={handleBackToSagB} />;
   }
 };
 
 export const mentoriasRoutes: ModuleRoute = {
   path: '/mentorias',
-  element: <MentoriasModuleContainer />
+  element: <MentoriasModuleContainer />,
+  fullscreen: true
 };

@@ -22,15 +22,17 @@ Regra de nomenclatura obrigatória:
 
 ```text
 src/modules/<id_canonico_do_modulo>/
-├── index.ts                     # Ponto de exportação do módulo (manifest e rotas)
-├── manifest.ts                  # Configuração visual e metadados do módulo (implementa ModuleManifest)
-├── module-doc.ts                # Documentação técnica e estratégica do módulo
-├── routes.tsx                   # Definição das rotas React (implementa ModuleRoute)
-├── plano_modulo.md              # Planejamento oficial do módulo (obrigatório)
-├── changelog.md                 # Histórico de versionamento e mudanças do módulo (obrigatório)
-├── decisions.md                 # Decisões consolidadas e justificadas do módulo (obrigatório)
+├── index.ts                     # Ponto de exportação do módulo (manifest, routes, moduleDoc)
+├── manifest.ts                  # Metadados + owner do módulo (ModuleManifest tipado)
+├── module-doc.ts                # Contrato técnico TIPADO (interface ModuleDoc)
+├── routes.tsx                   # Rotas React (ModuleRoute tipado)
 │
-├── agent/                       # QG do Agente
+├── README.md                    # Visão executiva do módulo (obrigatório, UPPERCASE)
+├── CHANGELOG.md                 # Histórico de versões (obrigatório, UPPERCASE)
+├── DECISIONS.md                 # Decisões arquiteturais (obrigatório, UPPERCASE)
+├── PLANNED.md                   # Plano de evolução (OPCIONAL, UPPERCASE)
+│
+├── agent/                       # QG do Agente (4 arquivos canônicos)
 │   ├── prompt_ativacao_cline.md # Prompt oficial de ativação (obrigatório)
 │   ├── persona.md               # Identidade, missões e tom de voz do agente do módulo
 │   ├── session_log.md           # Log Contínuo de sessões (seguindo o Protocolo de Log)
@@ -59,14 +61,21 @@ Para módulos novos, o caminho canônico em `agent/` deve existir obrigatoriamen
 - Para módulo com status ativo, o owner não pode estar vazio, placeholder (`a_definir`) ou valor equivalente.
 - Troca de owner só é válida com atualização no mesmo PR/ciclo de: `manifest.ts`, `decisions.md`, `changelog.md` e `agent/persona.md`.
 
-### 1.2 Papel de cada trilha documental (sem sobreposição)
+### 1.2 Papel de cada arquivo (sem sobreposição — anti-drift)
 
-- `decisions.md`: síntese decisória (o que foi decidido e por quê).
-- `changelog.md`: mudanças/versionamento do módulo (o que foi entregue/alterado).
-- `plano_modulo.md`: planejamento executivo e trilha de evolução do módulo.
-- `agent/session_log.md`: histórico oficial e log operacional turno a turno do agente.
-- `agent/falas_user.md`: trilha literal de falas do usuário.
-- `history-chat.md` e `history_chat.md`: legados. Não criar em módulos novos e remover em padronizações canônicas.
+| Arquivo | Papel | O que contém | O que NÃO contém |
+|---|---|---|---|
+| `manifest.ts` | Metadados técnicos | id, route, icon, owner | Visão, plano, versões |
+| `routes.tsx` | Roteamento | path, element | Lógica de negócio |
+| `module-doc.ts` | Contrato técnico tipado | displayName, purpose, version, boundaries, integrations | Plano, decisões, changelog |
+| `README.md` | Visão executiva | Propósito, como usar, ativos, riscos | Versões, decisões, plano detalhado |
+| `CHANGELOG.md` | Histórico de versões | Versões com data + mudanças | Decisões, plano, visão |
+| `DECISIONS.md` | Decisões arquiteturais | Tabela data/decisão/motivo | Changelog, plano, visão |
+| `PLANNED.md` | Plano de evolução (opcional) | Checklist de etapas futuras | Histórico, decisões passadas |
+| `agent/session_log.md` | Log operacional | Histórico turno a turno do agente | Detalhes de implementação |
+| `agent/falas_user.md` | Falas do usuário | Trilha literal de falas | Decisões, plano |
+
+> `history-chat.md` e `history_chat.md`: legados. Não criar em módulos novos e remover em padronizações canônicas.
 
 ## 2. Contrato de Exportação
 
@@ -131,15 +140,17 @@ Antes de considerar um módulo como canônico:
 
 1. pasta criada em `src/modules/<id_canonico_do_modulo>/` seguindo nomenclatura oficial
 2. presença de `manifest.ts`, `routes.tsx`, `index.ts`, `module-doc.ts`
-3. presença de `plano_modulo.md`, `decisions.md`, `changelog.md`
-4. pasta `agent` com os 4 arquivos canônicos:
+3. `module-doc.ts` implementa a interface `ModuleDoc` (tipado)
+4. presença de `README.md`, `CHANGELOG.md`, `DECISIONS.md` (UPPERCASE)
+5. `PLANNED.md` opcional (só obrigatório se houver plano ativo de evolução)
+6. pasta `agent` com os 4 arquivos canônicos:
    - `persona.md`
    - `session_log.md`
    - `falas_user.md`
    - `prompt_ativacao_cline.md`
-5. owner declarado no `manifest.ts`
-6. módulo registrado em `src/core/modules/moduleRegistry.ts`
-7. conformidade visual canônica obrigatória:
+7. owner declarado no `manifest.ts` (campo `owner` no formato `{ type, id, displayName }`)
+8. módulo registrado em `src/core/modules/moduleRegistry.ts`
+9. conformidade visual canônica obrigatória:
    - uso de fonte **Inter** via padrão global da plataforma
    - uso obrigatório de tokens semânticos `--sagb-*` para cores, superfícies, textos e bordas
    - proibição explícita de hardcode de cor (`hex`, `rgb`, `hsl`) inline em elementos de UI estruturais
@@ -169,12 +180,13 @@ Para manter coerência entre runtime e governança, aplicar estes controles mín
 
 2. **sincronização de owner no mesmo ciclo**
    - qualquer alteração de owner em `src/modules/<id_canonico_do_modulo>/manifest.ts`
-   - exige atualização no mesmo PR/ciclo em `decisions.md`, `changelog.md` e `agent/persona.md`
+   - exige atualização no mesmo PR/ciclo em `DECISIONS.md`, `CHANGELOG.md` e `agent/persona.md`
 
 3. **validação estrutural cruzada**
    - módulo presente no `moduleRegistry.ts`
    - owner válido no `manifest.ts`
    - pasta `agent` com os 4 arquivos canônicos
-   - presença da tríade `plano_modulo.md`, `decisions.md`, `changelog.md`
+   - presença de `README.md`, `CHANGELOG.md`, `DECISIONS.md` (`PLANNED.md` opcional)
+   - `module-doc.ts` implementa `ModuleDoc` (interface compartilhada)
 
 Em caso de conflito de interpretação, prevalece `padrao_unificado_governanca.md`.

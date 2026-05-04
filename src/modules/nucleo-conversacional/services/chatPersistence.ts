@@ -1,4 +1,4 @@
-import { addDoc, collection, db, doc, updateDoc } from '../../../../services/supabase';
+import { getDbProvider } from './ncDb';
 
 interface PersistBotPlaceholderInput {
   workspaceId: string;
@@ -8,14 +8,16 @@ interface PersistBotPlaceholderInput {
 }
 
 export const touchChatSessionMetadata = async (sessionId: string, nowMs: number) => {
-  await updateDoc(doc(db, 'chat_sessions', sessionId), {
+  const db = getDbProvider();
+  await db.updateSession(sessionId, {
     lastMessageAt: new Date(nowMs),
     updatedAt: new Date(nowMs),
   });
 };
 
 export const persistBotPlaceholder = async ({ workspaceId, sessionId, agentId, buId }: PersistBotPlaceholderInput) => {
-  return addDoc(collection(db, 'chat_messages'), {
+  const db = getDbProvider();
+  return db.addMessage({
     workspaceId,
     sessionId,
     agentId,
@@ -23,8 +25,10 @@ export const persistBotPlaceholder = async ({ workspaceId, sessionId, agentId, b
     text: '',
     buId,
     hasAttachment: false,
-    createdAt: new Date(),
-    payload: { isStreaming: true },
+    isStreaming: true,
   });
 };
 
+// Re-export provider for convenience
+export { setDbProvider, getDbProvider, createSupabaseDbProvider } from './ncDb';
+export type { NcDbProvider, SessionsSnapshotDoc } from './ncDb';

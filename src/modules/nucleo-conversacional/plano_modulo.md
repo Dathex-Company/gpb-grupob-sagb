@@ -11,14 +11,19 @@ Garantir operação estável, rastreabilidade de mudanças e evolução contínu
 
 ## 3. Roadmap e Objetivos
 
-### Fase Atual (v1.x)
-- Hardening operacional (segurança em renderização de markdown).
-- Observabilidade contínua (ncLog).
-- Separação progressiva do monólito `SystemicVision`.
+### Fase Atual — Standalone Prep (v1.5.x)
+- **Objetivo:** Tornar o módulo independente da raiz do SagB para venda como produto standalone.
+- Camada 1 ✅ — Tipos locais (types.ts)
+- Camada 2 ✅ — UI local (ícones + Avatar + barrel export)
+- Camada 3 ✅ — Abstração de providers (banco + LLM)
+- **Infraestrutura ✅** — package.json, index.ts (barrel export), tailwind.preset.ts (tokens exportáveis)
+- Camada 4 ✅ — Extrair TitleSuggestionPanel + TaskSuggestionPanel do SystemicVision (+ substituição no SystemicVision.tsx)
 
 ### Fase Futura (v2.x)
-- Extração completa de lógica de negócio da interface.
+- Extração completa de lógica de negócio da interface (chat input, streaming).
 - Conformidade visual total aos novos tokens Tailwind.
+- Separação progressiva do monólito `SystemicVision`.
+- Publicação como pacote npm / marketplace.
 
 ## 4. Métricas de Sucesso
 - 0 regressões em renderização de mensagens de usuários/agentes.

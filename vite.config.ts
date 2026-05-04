@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
       entries: ['index.html']
     },
     server: {
-      port: 8000,
+      port: 7000,
       strictPort: true,
       host: true,
       watch: {

@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { BackIcon, MicIcon, StopCircleIcon, CloudUploadIcon, FileTextIcon } from '../../../../components/Icon';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { BackIcon, MicIcon, StopCircleIcon, CloudUploadIcon, FileTextIcon, DownloadIcon } from '../../../../components/Icon';
 import {
   StudioSession,
   StudioChunk,
@@ -13,7 +13,11 @@ import {
   registerSessionCameras,
   saveCameraFilePipeline,
   saveMasterAudioPipeline,
-  processFullFilePipeline
+  processFullFilePipeline,
+  exportSessionTranscript,
+  exportSessionTranscriptPlain,
+  downloadSessionMasterAudio,
+  downloadSessionCameraVideo
 } from '../services/studio';
 import { UserProfile } from '../../../../types';
 
@@ -28,11 +32,59 @@ const DEFAULT_WORKSPACE_ID = '00000000-0000-0000-0000-000000000000';
 const MAX_SIMULTANEOUS_CAMERAS = 4;
 const studioDebug = (...args: any[]) => console.info('[StudioDebug]', ...args);
 
-const fmtDuration = (seconds?: number | null) => {
+export const fmtDuration = (seconds?: number | null) => {
   const total = Math.max(0, Math.round(Number(seconds || 0)));
   const mins = Math.floor(total / 60);
   const secs = total % 60;
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+};
+
+/**
+ * Componente isolado para exibir o timer de gravação.
+ * Mantém seu próprio estado de elapsed time para evitar re-render
+ * de todo o StudioView a cada 1 segundo.
+ */
+const RecordingTimer = ({
+  sessionStartedAt,
+  chunkStartedAt,
+  running
+}: {
+  sessionStartedAt: number;
+  chunkStartedAt: number;
+  running: boolean;
+}) => {
+  const [sessionElapsedMs, setSessionElapsedMs] = useState(0);
+  const [chunkElapsedMs, setChunkElapsedMs] = useState(0);
+
+  useEffect(() => {
+    if (!running) {
+      setSessionElapsedMs(0);
+      setChunkElapsedMs(0);
+      return;
+    }
+    const updateTimers = () => {
+      const now = Date.now();
+      setSessionElapsedMs(now - sessionStartedAt);
+      setChunkElapsedMs(now - chunkStartedAt);
+    };
+    updateTimers(); // sincroniza imediatamente na inicialização
+    const id = window.setInterval(updateTimers, 1000);
+    return () => window.clearInterval(id);
+  }, [running, sessionStartedAt, chunkStartedAt]);
+
+  if (!running) return null;
+
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex items-center gap-2 text-rose-500 text-sm font-bold">
+        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+        AO VIVO
+      </span>
+      <span className="text-slate-600 font-mono font-bold bg-slate-100 px-3 py-1 rounded-lg">
+        {fmtDuration(sessionElapsedMs / 1000)}
+      </span>
+    </div>
+  );
 };
 
 const StudioView: React.FC<StudioViewProps> = ({
@@ -50,15 +102,22 @@ const StudioView: React.FC<StudioViewProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [feedback, setFeedback] = useState('');
-  
+
+  // Auto-clear feedback após 5 segundos (item 14 da auditoria)
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = window.setTimeout(() => setFeedback(''), 5000);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
+
   // Settings
   const [chunkIntervalMin, setChunkIntervalMin] = useState<number>(2);
   const [captureMode, setCaptureMode] = useState<'audio_video' | 'audio_only'>('audio_video');
   const [sessionTitle, setSessionTitle] = useState<string>(`Gravação de Áudio • ${new Date().toLocaleDateString('pt-BR')}`);
   
-  // Real-time tracking
-  const [sessionElapsedMs, setSessionElapsedMs] = useState(0);
-  const [chunkElapsedMs, setChunkElapsedMs] = useState(0);
+  // Real-time tracking — usamos refs em vez de state para evitar re-render global
+  const sessionStartedAtRef = useRef<number>(0);
+  const chunkStartedAtRef = useRef<number>(0);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraIds, setSelectedCameraIds] = useState<string[]>([]);
   const [cameraPreviews, setCameraPreviews] = useState<Array<{ cameraId: string; label: string; stream: MediaStream | null; status: 'ready' | 'recording' | 'error' | 'offline' }>>([]);
@@ -73,14 +132,49 @@ const StudioView: React.FC<StudioViewProps> = ({
   const audioRecorderRef = useRef<MediaRecorder | null>(null);
   const isRecordingRef = useRef<boolean>(false);
   
-  const sessionStartedAtRef = useRef<number>(0);
-  const chunkStartedAtRef = useRef<number>(0);
   const currentChunkIndexRef = useRef<number>(1);
+  const isProcessingChunkRef = useRef<boolean>(false);
   
   const chunkTimerRef = useRef<number | null>(null);
-  const elapsedTimerRef = useRef<number | null>(null);
+
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handlers para download/export
+  const handleDownloadAudio = useCallback(async (session: StudioSession) => {
+    setDownloadingId(session.id);
+    try {
+      await downloadSessionMasterAudio(session.id, scopedWorkspaceId, session.title);
+      setFeedback(`Download do áudio master iniciado: "${session.title}"`);
+    } catch (error: any) {
+      setFeedback(`Erro ao baixar áudio: ${error.message}`);
+    } finally {
+      setDownloadingId(null);
+    }
+  }, [scopedWorkspaceId]);
+
+  const handleExportTranscript = useCallback(async (session: StudioSession) => {
+    setExportingId(session.id);
+    try {
+      const text = await exportSessionTranscript(session.id);
+      const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `transcricao_${session.title.replace(/[^a-zA-Z0-9]/g, '_')}.md`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+      setFeedback(`Transcrição exportada como Markdown: "${session.title}"`);
+    } catch (error: any) {
+      setFeedback(`Erro ao exportar transcrição: ${error.message}`);
+    } finally {
+      setExportingId(null);
+    }
+  }, []);
 
   const getVideoMimeType = () => {
     const options = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
@@ -195,7 +289,17 @@ const StudioView: React.FC<StudioViewProps> = ({
     navigator.mediaDevices?.addEventListener?.('devicechange', handler);
     return () => {
       navigator.mediaDevices?.removeEventListener?.('devicechange', handler);
+      // Cleanup completo de todas as streams no unmount
       stopAllPreviewStreams();
+      masterAudioStreamRef.current?.getTracks().forEach((t) => t.stop());
+      masterAudioStreamRef.current = null;
+      cameraRecordersRef.current.forEach(({ recorder }) => {
+        if (recorder.state === 'recording') {
+          try { recorder.stop(); } catch { /* já parou */ }
+        }
+      });
+      cameraRecordersRef.current.clear();
+      if (chunkTimerRef.current) window.clearTimeout(chunkTimerRef.current);
     };
   }, []);
 
@@ -219,26 +323,6 @@ const StudioView: React.FC<StudioViewProps> = ({
 
     void openCameraPreviews(manualIds);
   }, [captureMode, selectedCameraIds, videoDevices, isRecording]);
-
-  // Handle timers for UI
-  useEffect(() => {
-    if (!isRecordingRef.current) {
-      setSessionElapsedMs(0);
-      setChunkElapsedMs(0);
-      return;
-    }
-
-    const updateTimers = () => {
-      const now = Date.now();
-      setSessionElapsedMs(now - sessionStartedAtRef.current);
-      setChunkElapsedMs(now - chunkStartedAtRef.current);
-    };
-
-    elapsedTimerRef.current = window.setInterval(updateTimers, 1000);
-    return () => {
-      if (elapsedTimerRef.current) window.clearInterval(elapsedTimerRef.current);
-    };
-  }, [isRecording]);
 
   const requestAudioStream = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -294,6 +378,13 @@ const StudioView: React.FC<StudioViewProps> = ({
   const startAudioChunkRecorder = async (sessionId: string) => {
     if (!masterAudioStreamRef.current) return;
     
+    // Impede iniciar novo chunk enquanto o anterior ainda está sendo processado
+    if (isProcessingChunkRef.current) {
+      console.warn('[Studio] chunk anterior ainda processando, aguardando...');
+      return;
+    }
+    isProcessingChunkRef.current = true;
+    
     const chunkId = await createStudioChunk({
       sessionId,
       workspaceId: scopedWorkspaceId,
@@ -316,6 +407,15 @@ const StudioView: React.FC<StudioViewProps> = ({
       const duration = Math.round((Date.now() - chunkStartedAtRef.current) / 1000);
       const endedAt = new Date();
       
+      // Libera o lock ao finalizar o pipeline (com sucesso ou erro)
+      const finishChunk = () => {
+        isProcessingChunkRef.current = false;
+        if (isRecordingRef.current) {
+          currentChunkIndexRef.current += 1;
+          void startAudioChunkRecorder(sessionId);
+        }
+      };
+      
       void processAudioChunkPipeline({
         chunkId,
         workspaceId: scopedWorkspaceId,
@@ -323,12 +423,7 @@ const StudioView: React.FC<StudioViewProps> = ({
         audioBlob: blob,
         durationSeconds: duration,
         endedAt
-      });
-      
-      if (isRecordingRef.current) {
-        currentChunkIndexRef.current += 1;
-        void startAudioChunkRecorder(sessionId);
-      }
+      }).then(finishChunk).catch(finishChunk);
     };
     
     audioRecorderRef.current = audioRecorder;
@@ -506,7 +601,9 @@ const StudioView: React.FC<StudioViewProps> = ({
     if (audioRecorderRef.current?.state === 'recording') audioRecorderRef.current.stop();
 
     cameraRecordersRef.current.forEach(({ recorder }) => {
-      if (recorder.state === 'recording') recorder.stop();
+      if (recorder.state === 'recording') {
+        try { recorder.stop(); } catch { /* recorder já parou */ }
+      }
     });
     cameraRecordersRef.current.clear();
 
@@ -570,6 +667,7 @@ const StudioView: React.FC<StudioViewProps> = ({
       const sessionId = await createStudioSession({
         workspaceId: scopedWorkspaceId,
         title: `Processamento: ${file.name}`,
+        source: 'upload',
         chunkIntervalMin: 0, // Not used for full file
         captureMode: file.type.startsWith('video/') ? 'audio_video' : 'audio_only'
       });
@@ -645,17 +743,11 @@ const StudioView: React.FC<StudioViewProps> = ({
                 <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-black text-slate-900">Monitor de Captura</h2>
-                    {isRecording && (
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-2 text-rose-500 text-sm font-bold">
-                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-                          AO VIVO
-                        </span>
-                        <span className="text-slate-600 font-mono font-bold bg-slate-100 px-3 py-1 rounded-lg">
-                          {fmtDuration(sessionElapsedMs / 1000)}
-                        </span>
-                      </div>
-                    )}
+                    <RecordingTimer
+                      sessionStartedAt={sessionStartedAtRef.current}
+                      chunkStartedAt={chunkStartedAtRef.current}
+                      running={isRecording}
+                    />
                   </div>
                   
                   <div className="relative w-full min-h-[320px] bg-slate-950 rounded-[24px] overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center p-4">
@@ -931,15 +1023,15 @@ const StudioView: React.FC<StudioViewProps> = ({
             <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Sessões Recentes</h2>
               <div className="space-y-2">
-                {sessions.slice(0, 4).map(session => (
-                  <button 
+                {sessions.slice(0, 5).map(session => (
+                  <div
                     key={session.id}
-                    onClick={() => setActiveSessionId(session.id)}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all ${
-                      activeSessionId === session.id 
-                        ? 'bg-slate-950 text-white border-slate-950 shadow-lg scale-[1.02]' 
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                      activeSessionId === session.id
+                        ? 'bg-slate-950 text-white border-slate-950 shadow-lg scale-[1.02]'
                         : 'bg-white text-slate-700 border-slate-100 hover:border-slate-200'
                     }`}
+                    onClick={() => setActiveSessionId(session.id)}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="font-black text-xs truncate mr-2">{session.title}</div>
@@ -949,14 +1041,45 @@ const StudioView: React.FC<StudioViewProps> = ({
                         {session.source || 'live'}
                       </span>
                     </div>
-                    <div className={`flex items-center justify-between text-[10px] font-bold ${activeSessionId === session.id ? 'text-slate-400' : 'text-slate-400'}`}>
+                    <div className="flex items-center justify-between text-[10px] font-bold mt-2">
                       <span>{new Date(session.createdAt).toLocaleDateString()}</span>
                       <span className="flex items-center gap-1">
                         <ClockIcon className="w-3 h-3" />
                         {fmtDuration(session.totalDurationSeconds)}
                       </span>
                     </div>
-                  </button>
+                    {/* Ações de download/export */}
+                    <div className="flex items-center gap-1 mt-2 pt-2 border-t border-slate-200/30"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => handleDownloadAudio(session)}
+                        disabled={downloadingId === session.id}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                          activeSessionId === session.id
+                            ? 'bg-white/10 text-white hover:bg-white/20'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        } disabled:opacity-50`}
+                        title="Download do áudio master"
+                      >
+                        <DownloadIcon className="w-3 h-3" />
+                        {downloadingId === session.id ? '...' : 'Áudio'}
+                      </button>
+                      <button
+                        onClick={() => handleExportTranscript(session)}
+                        disabled={exportingId === session.id}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                          activeSessionId === session.id
+                            ? 'bg-white/10 text-white hover:bg-white/20'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        } disabled:opacity-50`}
+                        title="Exportar transcrição como Markdown"
+                      >
+                        <FileTextIcon className="w-3 h-3" />
+                        {exportingId === session.id ? '...' : 'Transcrição'}
+                      </button>
+                    </div>
+                  </div>
                 ))}
                 {sessions.length === 0 && (
                   <p className="text-[10px] text-slate-400 text-center py-4 font-bold uppercase tracking-widest">Nenhuma sessão salva</p>

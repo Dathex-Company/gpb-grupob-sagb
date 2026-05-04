@@ -38,3 +38,4 @@ Não resumir, corrigir, reescrever ou interpretar a fala do usuário nos logs. R
 Toda resposta final ao usuário deve terminar com a tag:
 
 [ 📝 Auto-log: OK ]
+5

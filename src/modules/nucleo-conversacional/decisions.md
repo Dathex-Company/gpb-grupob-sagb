@@ -45,3 +45,15 @@ Este documento registra as decisões estruturais e de governança do módulo, ma
 - **Decisão complementar:** reforçar renderização markdown em `ChatMessage.tsx` com `skipHtml` e whitelist de elementos.
 - **Motivo complementar:** diminuir superfície de conteúdo não controlado na UI de chat.
 - **Impacto complementar:** aumento de segurança de apresentação de respostas IA/usuário.
+
+## 2026-05-03 — Início do desacoplamento para produto standalone
+
+- **Decisão:** O módulo Núcleo Conversacional será o primeiro produto standalone vendável do SagB. Iniciado desacoplamento por camadas.
+- **Motivo:** O módulo é um chat multi-agente auto-contido, ideal para comercialização independente.
+- **Camada 1 (tipos):** Criado `types.ts` local com cópia das interfaces essenciais (Agent, Message, Sender, ChatAttachment, UserProfile, PersonaConfig, etc.). Imports dos componentes migrados de `../../../../types` para `../types`.
+- **Impacto:** ~120 linhas de tipos copiadas. ChatAttachmentCard.tsx que tinha import quebrado (`../types` não existia) foi corrigido automaticamente. Módulo agora independente do types.ts raiz para seus tipos de domínio.
+- **Camadas 2 e 3 executadas:** UI local (ícones, Avatar) + abstração de providers (banco + LLM com DI containers).
+- **Infraestrutura standalone:** Criado package.json (React 19, react-markdown 10, TypeScript ~5.8), index.ts (barrel export público), tailwind.preset.ts (tokens bitrix + sagb exportáveis como preset ou objetos avulsos). Primeiro módulo do SagB com infraestrutura própria de publicação.
+- **Camada 4 (SuggestionPanels):** Criado `components/SuggestionPanel.tsx` com TitleSuggestionPanel (botões de título) e TaskSuggestionPanel (botões de sugestão de pauta). Substituídos os JSX inline correspondentes no SystemicVision.tsx (ex-linhas 3090-3128) pelos componentes importados. Handlers permanecem no SystemicVision por dependerem de estado local.
+- **Decisão:** A extração foi conservadora — apenas o JSX de renderização foi movido. Os handlers continuam no SystemicVision porque dependem de: activeMessages, currentSessionId, isLoading, generateTitleOptions, generateTaskSuggestions, updateDoc (Firestore). Uma extração mais profunda exigiria refatorar o chat input + streaming primeiro.
+- **Próximo passo:** Chat input, streaming e header permanecem no SystemicVision. Para extraí-los, seria necessário um `ChatContainer` que encapsule estado de input, anexos, gravação de áudio e streaming.

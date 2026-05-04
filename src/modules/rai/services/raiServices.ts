@@ -13,6 +13,11 @@ export const raiAgentsService = {
         objective: 'Monitorar flutuações e tendências macroeconômicas',
         frequency: 'hourly',
         status: 'active',
+        sources: [
+          'https://www.bcb.gov.br/rss',
+          'https://feeds.folha.uol.com.br/mercado/rss.xml',
+          'https://www.infomoney.com.br/feed/'
+        ],
         lastRun: new Date(Date.now() - 3600000),
         nextRun: new Date(Date.now() + 3600000)
       },
@@ -23,6 +28,11 @@ export const raiAgentsService = {
         objective: 'Captar avanços em LLMs e ferramentas de produtividade',
         frequency: 'real-time',
         status: 'active',
+        sources: [
+          'https://arxiv.org/rss/cs.AI',
+          'https://news.ycombinator.com/rss',
+          'https://blog.google/technology/rss/'
+        ],
         lastRun: new Date(),
         nextRun: new Date(Date.now() + 600000)
       },
@@ -32,7 +42,11 @@ export const raiAgentsService = {
         theme: 'Concorrência',
         objective: 'Acompanhar novos produtos de players do setor',
         frequency: 'daily',
-        status: 'paused'
+        status: 'paused',
+        sources: [
+          'https://techcrunch.com/feed/',
+          'https://producthunt.com/feed'
+        ]
       }
     ];
   }

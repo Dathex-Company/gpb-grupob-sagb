@@ -1,14 +1,8 @@
-﻿export const moduleDoc = {
-  name: '
-metodologias
-',
-  title: '
-Núcleo de Metodologias
-',
+export const moduleDoc = {
+  name: 'metodologias',
+  title: 'Núcleo de Metodologias',
   status: 'active',
-  purpose: '
-Governar o catálogo, estruturação, versionamento, saúde e operação das metodologias do SagB.
-',
+  purpose: 'Governar o catálogo, estruturação, versionamento, saúde e operação das metodologias do SagB.',
   requiredAgentFiles: [
     'persona.md',
     'session_log.md',

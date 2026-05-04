@@ -1,22 +1,32 @@
-export {};
-// O SagB usa Zustand em outros módulos via arquivos store/index.ts
-// Para o RAI, deixamos a estrutura preparada.
-
-/*
 import { create } from 'zustand';
-import { RAIAgent, RAICapture } from '../types';
+import { RAIConfig, RAICapture } from '../types';
 
 interface RAIState {
-  agents: RAIAgent[];
+  /** Configurações de radar carregadas do Supabase (rai_configs) */
+  configs: RAIConfig[];
+  /** Capturas de inteligência */
   captures: RAICapture[];
-  setAgents: (agents: RAIAgent[]) => void;
+  loading: boolean;
+  error: string | null;
+  setConfigs: (configs: RAIConfig[]) => void;
   setCaptures: (captures: RAICapture[]) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  reset: () => void;
 }
 
-export const useRAIStore = create<RAIState>((set) => ({
-  agents: [],
+const initialState = {
+  configs: [],
   captures: [],
-  setAgents: (agents) => set({ agents }),
+  loading: false,
+  error: null,
+};
+
+export const useRAIStore = create<RAIState>((set) => ({
+  ...initialState,
+  setConfigs: (configs) => set({ configs }),
   setCaptures: (captures) => set({ captures }),
+  setLoading: (loading) => set({ loading }),
+  setError: (error) => set({ error }),
+  reset: () => set(initialState),
 }));
-*/

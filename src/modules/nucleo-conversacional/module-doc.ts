@@ -57,9 +57,16 @@ export const moduleDoc = {
     'Sugerir título, tarefas ou consolidar memória'
   ],
 
+  objetivosProduto: [
+    'Produto standalone vendável — módulo independente de tipos, UI e serviços raiz do SagB'
+  ],
+
   pendenciasPrincipais: [
+    '[STANDALONE] Camada 1 — Tipos locais (types.ts) ✅',
+    '[STANDALONE] Camada 2 — UI local (ícones, Avatar)',
+    '[STANDALONE] Camada 3 — Abstração de providers (banco + LLM)',
+    '[STANDALONE] Camada 4 — Extrair TitleSuggestionPanel + TaskSuggestionPanel do SystemicVision',
     'Reduzir tamanho e complexidade do SystemicVision.tsx',
-    'Isolar melhor regras de provider, UI e orquestração',
     'Fortalecer RAG além de heurísticas por palavra-chave',
     'Tornar prompts estruturais realmente preenchidos (data/prompts.ts)'
   ]

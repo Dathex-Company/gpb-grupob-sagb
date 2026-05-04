@@ -8,5 +8,10 @@ export const studioManifest = {
   version: '1.0.0',
   type: 'core',
   baseRoute: '/studio',
-  initialStatus: 'active' as const
+  initialStatus: 'active' as const,
+  owner: {
+    type: 'agent' as const,
+    id: 'fabi_nunes',
+    displayName: 'Fabi Nunes'
+  }
 };

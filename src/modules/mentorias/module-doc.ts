@@ -1,14 +1,8 @@
-﻿export const moduleDoc = {
-  name: '
-mentorias
-',
-  title: '
-Central de Mentorias
-',
+export const moduleDoc = {
+  name: 'mentorias',
+  title: 'Central de Mentorias',
   status: 'active',
-  purpose: '
-Governar a biblioteca, acompanhamento e operação de mentorias do SagB.
-',
+  purpose: 'Governar a biblioteca, acompanhamento e operação de mentorias do SagB.',
   requiredAgentFiles: [
     'persona.md',
     'session_log.md',

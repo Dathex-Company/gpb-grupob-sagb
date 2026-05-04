@@ -6,5 +6,10 @@ export const metodologiasManifest: ModuleManifest = {
   displayName: 'Núcleo de Metodologias',
   baseRoute: '/metodologias',
   icon: 'BookIcon',
-  initialStatus: 'active'
+  initialStatus: 'active',
+  owner: {
+    type: 'agent',
+    id: 'metodologias-agent',
+    displayName: 'Agente de Metodologias'
+  }
 };

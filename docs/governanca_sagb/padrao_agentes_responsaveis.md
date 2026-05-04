@@ -39,6 +39,7 @@ Em qualquer conflito, prevalece [`padrao_unificado_governanca.md`](docs/governan
 | `mcp_sagb` | runtime mcp | `savio_codare` | ativo | `manifest.ts` + pasta `agent` canônica |
 | `sagb_bridge` | bridge/orquestração | `alan_flow` | ativo | `manifest.ts` + pasta `agent` canônica |
 | `fluxob` | workflow engine | `alan_flow` | pre_alpha | `manifest.ts` + pasta `agent` canônica |
+| `rai` | radar inteligência | `saleh_malu` | ativo | `manifest.ts` + pasta `agent` canônica |
 
 ## protocolo de nomeação e troca de owner
 

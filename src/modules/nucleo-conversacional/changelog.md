@@ -57,6 +57,51 @@ Registro de mudanÃ§as tÃ©cnicas, decisÃµes de arquitetura e evoluÃ§Ã£o
 
 ---
 
+## [v1.5.0-standalone-infrastructure] - 2026-05-03
+
+### Adicionado
+- `package.json` com React 19, react-markdown 10, TypeScript ~5.8 como peer/dev dependencias.
+- `index.ts` barrel export publico: ConversationsView, ChatMessage, ChatAttachmentCard, providers (setDbProvider, setLlmProvider), ncLog, tailwind preset.
+- `tailwind.preset.ts` com tokens bitrix (6 cores) + sagb (13 cores, 3 gradientes, 10 sombras) exportaveis como preset PostCSS ou objetos avulsos para CDN.
+
+### Alterado
+- `plano_modulo.md` — infraestrutura adicionada como passo entre Camada 3 e Camada 4 no roadmap.
+- `agent/session_log.md` — registro da execucao da infraestrutura standalone.
+- `decisions.md` — atualizada com decisoes da infraestrutura.
+
+## [v1.4.0-hardening-observabilidade-chat] - 2026-05-01
+
+### Adicionado
+- Utilitário de observabilidade estruturada em `src/modules/nucleo-conversacional/utils/observability.ts`.
+
+---
+
+## [v1.6.1-esm-hotfix] - 2026-05-03
+
+### Corrigido
+- White screen ao clicar em "Conversas" no sidebar: `require()` usado em `ncDb.ts` e `ncLlm.ts` crashava em contexto ESM/Vite. Substituído por `import()` dinâmico com promise cacheada.
+- `ncDb.ts` — `getSupabase()` convertido de `require()` síncrono para `import()` assíncrono com promise cacheada (`_supabaseInit`).
+- `ncLlm.ts` — `getAiProxy()` convertido de `require()` síncrono para `import()` assíncrono com promise cacheada (`_proxyInit`).
+- `ConversationsView.tsx` — `subscribeToSessions` agora retorna `Promise<() => void>`; useEffect adaptado com flag `cancelled` e ref de cleanup para evitar race conditions em re-render.
+
+---
+
+## [v1.6.0-standalone-layer4] - 2026-05-03
+
+### Adicionado
+- SuggestionPanel.tsx — TitleSuggestionPanel e TaskSuggestionPanel como componentes standalone no módulo.
+- Substituição dos JSX inline correspondentes no SystemicVision.tsx pelos componentes importados.
+
+### Alterado
+- SystemicVision.tsx — ~38 linhas removidas (3.264 → ~3.226), 1 import adicionado.
+- index.ts — Exporta SuggestionPanel, TitleSuggestionPanel, TaskSuggestionPanel.
+- plano_modulo.md — Camada 4 marcada como concluída.
+
+### Pendências (Roadmap)
+- Chat input, streaming e header ainda estão no SystemicVision. Próxima refatoração: ChatContainer.
+
+---
+
 ## [v1.0.0-governance-bootstrap] - 2026-04-09
 
 ### Adicionado

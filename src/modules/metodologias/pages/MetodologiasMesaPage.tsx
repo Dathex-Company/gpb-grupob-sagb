@@ -61,22 +61,22 @@ interface MetodologiasMesaPageProps {
 }
 
 const BADGE_CLASSIFICACAO_STYLE: Record<MesaEstruturacaoItemOperacional['classificacao_operacional'], string> = {
-  travado: 'bg-rose-100 text-rose-700 border-rose-200',
-  em_andamento: 'bg-cyan-100 text-cyan-700 border-cyan-200',
-  quase_pronto: 'bg-amber-100 text-amber-700 border-amber-200',
-  pronto_para_revisao: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  precisa_de_acao: 'bg-violet-100 text-violet-700 border-violet-200'
+  travado: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
+  em_andamento: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
+  quase_pronto: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+  pronto_para_revisao: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+  precisa_de_acao: 'bg-violet-500/10 text-violet-500 border-violet-500/20'
 };
 
 const BADGE_PRONTIDAO_STYLE: Record<MesaEstruturacaoItemOperacional['prontidao'], string> = {
-  baixa: 'bg-slate-100 text-slate-700 border-slate-200',
-  media: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-  alta: 'bg-amber-100 text-amber-700 border-amber-200',
-  revisao: 'bg-emerald-100 text-emerald-700 border-emerald-200'
+  baixa: 'bg-sagb-bg-2 text-sagb-muted border-sagb-line',
+  media: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
+  alta: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+  revisao: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
 };
 
 const FILTER_BASE_CLASS =
-  'rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-cyan-300';
+  'rounded-lg border border-sagb-line bg-sagb-panel px-2.5 py-1.5 text-[12px] text-sagb-text';
 
 const ORDENACOES: Array<{ id: MesaEstruturacaoOrdenacaoOperacional; label: string }> = [
   { id: 'mais_recentes', label: 'Mais recentes' },
@@ -133,93 +133,93 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
     <section className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Mesa de Estruturação Assistida</h2>
-          <p className="text-slate-500 text-sm">
+          <h2 className="text-2xl font-black text-sagb-text tracking-tight">Mesa de Estruturação Assistida</h2>
+          <p className="text-sagb-muted text-[12px]">
             Bancada operacional para triagem, priorização e ação sobre entradas e ativos em estruturação.
           </p>
         </div>
-        <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Frente dedicada</span>
+        <span className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Frente dedicada</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <article className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-700">Material cru</p>
-          <p className="text-2xl font-black text-amber-900 mt-1">{totalBrutas}</p>
-          <p className="text-xs text-amber-900/80 mt-1">Entradas ainda em estado bruto aguardando leitura.</p>
+        <article className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
+          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-500">Material cru</p>
+          <p className="text-2xl font-black text-amber-500 mt-1">{totalBrutas}</p>
+          <p className="text-[12px] text-amber-500/80 mt-1">Entradas ainda em estado bruto aguardando leitura.</p>
         </article>
 
-        <article className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-700">Em estruturação</p>
-          <p className="text-2xl font-black text-cyan-900 mt-1">{totalEmEstruturacao}</p>
-          <p className="text-xs text-cyan-900/80 mt-1">Itens com lapidação metodológica em andamento.</p>
+        <article className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-4">
+          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-500">Em estruturação</p>
+          <p className="text-2xl font-black text-cyan-500 mt-1">{totalEmEstruturacao}</p>
+          <p className="text-[12px] text-cyan-500/80 mt-1">Itens com lapidação metodológica em andamento.</p>
         </article>
 
-        <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700">Consolidados</p>
-          <p className="text-2xl font-black text-emerald-900 mt-1">{totalConsolidados}</p>
-          <p className="text-xs text-emerald-900/80 mt-1">Ativos já consolidados no catálogo canônico.</p>
+        <article className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-500">Consolidados</p>
+          <p className="text-2xl font-black text-emerald-500 mt-1">{totalConsolidados}</p>
+          <p className="text-[12px] text-emerald-500/80 mt-1">Ativos já consolidados no catálogo canônico.</p>
         </article>
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 space-y-4">
+      <section className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 md:p-5 space-y-4">
         <header>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Leitura operacional da mesa</p>
-          <h3 className="text-lg font-black text-slate-900 tracking-tight mt-1">Visão executiva de gargalos e prontidão</h3>
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Leitura operacional da mesa</p>
+          <h3 className="text-lg font-black text-sagb-text tracking-tight mt-1">Visão executiva de gargalos e prontidão</h3>
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2.5">
-          <article className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Itens em estruturação</p>
-            <p className="text-xl font-black text-slate-900 mt-1">{indicadoresOperacionais.total_itens_em_estruturacao}</p>
+          <article className="rounded-xl border border-sagb-line bg-sagb-bg-2 px-3 py-2.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-sagb-muted">Itens em estruturação</p>
+            <p className="text-xl font-black text-sagb-text mt-1">{indicadoresOperacionais.total_itens_em_estruturacao}</p>
           </article>
-          <article className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-700">Quase prontos</p>
-            <p className="text-xl font-black text-amber-900 mt-1">{indicadoresOperacionais.itens_quase_prontos}</p>
+          <article className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-500">Quase prontos</p>
+            <p className="text-xl font-black text-amber-500 mt-1">{indicadoresOperacionais.itens_quase_prontos}</p>
           </article>
-          <article className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-700">Travados</p>
-            <p className="text-xl font-black text-rose-900 mt-1">{indicadoresOperacionais.itens_travados}</p>
+          <article className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-rose-500">Travados</p>
+            <p className="text-xl font-black text-rose-500 mt-1">{indicadoresOperacionais.itens_travados}</p>
           </article>
-          <article className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2.5">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-700">Sem blocos</p>
-            <p className="text-xl font-black text-indigo-900 mt-1">{indicadoresOperacionais.ativos_sem_blocos}</p>
+          <article className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-500">Sem blocos</p>
+            <p className="text-xl font-black text-indigo-500 mt-1">{indicadoresOperacionais.ativos_sem_blocos}</p>
           </article>
-          <article className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-700">Sem relações</p>
-            <p className="text-xl font-black text-violet-900 mt-1">{indicadoresOperacionais.ativos_sem_relacoes}</p>
+          <article className="rounded-xl border border-violet-500/20 bg-violet-500/10 px-3 py-2.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-500">Sem relações</p>
+            <p className="text-xl font-black text-violet-500 mt-1">{indicadoresOperacionais.ativos_sem_relacoes}</p>
           </article>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
-          <article className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-slate-500">Base mínima preenchida</p>
-            <p className="text-sm font-black text-slate-800 mt-1">{indicadoresOperacionais.ativos_com_base_minima}</p>
+          <article className="rounded-lg border border-sagb-line bg-sagb-bg-2 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-sagb-muted">Base mínima preenchida</p>
+            <p className="text-[12px] font-black text-sagb-text mt-1">{indicadoresOperacionais.ativos_com_base_minima}</p>
           </article>
-          <article className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-slate-500">Prontos para revisão</p>
-            <p className="text-sm font-black text-slate-800 mt-1">{indicadoresOperacionais.ativos_prontos_para_revisao}</p>
+          <article className="rounded-lg border border-sagb-line bg-sagb-bg-2 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-sagb-muted">Prontos para revisão</p>
+            <p className="text-[12px] font-black text-sagb-text mt-1">{indicadoresOperacionais.ativos_prontos_para_revisao}</p>
           </article>
-          <article className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-slate-500">Atividade recente</p>
-            <p className="text-sm font-black text-slate-800 mt-1">{indicadoresOperacionais.itens_com_atividade_recente}</p>
+          <article className="rounded-lg border border-sagb-line bg-sagb-bg-2 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-sagb-muted">Atividade recente</p>
+            <p className="text-[12px] font-black text-sagb-text mt-1">{indicadoresOperacionais.itens_com_atividade_recente}</p>
           </article>
-          <article className="rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wide text-slate-500">Mais parados</p>
-            <p className="text-sm font-black text-slate-800 mt-1">{indicadoresOperacionais.itens_parados}</p>
+          <article className="rounded-lg border border-sagb-line bg-sagb-bg-2 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-sagb-muted">Mais parados</p>
+            <p className="text-[12px] font-black text-sagb-text mt-1">{indicadoresOperacionais.itens_parados}</p>
           </article>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 space-y-3">
+      <section className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 md:p-5 space-y-3">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Bancada operacional</p>
-            <h3 className="text-lg font-black text-slate-900 tracking-tight mt-1">Filtros, ordenação e agrupamento</h3>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Bancada operacional</p>
+            <h3 className="text-lg font-black text-sagb-text tracking-tight mt-1">Filtros, ordenação e agrupamento</h3>
           </div>
           <button
             type="button"
             onClick={onLimparFiltrosOperacionais}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 text-[11px] font-black uppercase tracking-wide text-slate-700 hover:bg-slate-50"
+            className="px-3 py-1.5 rounded-lg border border-sagb-line text-[11px] font-black uppercase tracking-wide text-sagb-muted hover:bg-sagb-bg-2"
           >
             Limpar filtros
           </button>
@@ -227,7 +227,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2">
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Status de estruturação</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Status de estruturação</span>
             <select
               className={FILTER_BASE_CLASS}
               value={filtrosOperacionais.status_estruturacao}
@@ -247,7 +247,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Tipo de entrada</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Tipo de entrada</span>
             <select
               className={FILTER_BASE_CLASS}
               value={filtrosOperacionais.tipo_entrada}
@@ -268,7 +268,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Prontidão</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Prontidão</span>
             <select
               className={FILTER_BASE_CLASS}
               value={filtrosOperacionais.prontidao}
@@ -288,7 +288,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Blocos</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Blocos</span>
             <select
               className={FILTER_BASE_CLASS}
               value={filtrosOperacionais.presenca_blocos}
@@ -306,7 +306,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Relações</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Relações</span>
             <select
               className={FILTER_BASE_CLASS}
               value={filtrosOperacionais.presenca_relacoes}
@@ -326,7 +326,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2">
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Atividade</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Atividade</span>
             <select
               className={FILTER_BASE_CLASS}
               value={filtrosOperacionais.atividade}
@@ -344,7 +344,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Lacuna crítica</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Lacuna crítica</span>
             <select
               className={FILTER_BASE_CLASS}
               value={filtrosOperacionais.lacuna_critica}
@@ -362,7 +362,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Classificação operacional</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Classificação operacional</span>
             <select
               className={FILTER_BASE_CLASS}
               value={filtrosOperacionais.classificacao}
@@ -383,7 +383,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Ordenação</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Ordenação</span>
             <select
               className={FILTER_BASE_CLASS}
               value={ordenacaoOperacional}
@@ -398,7 +398,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Agrupamento</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Agrupamento</span>
             <select
               className={FILTER_BASE_CLASS}
               value={agrupamentoOperacional}
@@ -413,26 +413,26 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
           </label>
         </div>
 
-        <article className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2">
+        <article className="rounded-xl border border-sagb-line bg-sagb-bg-2 p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-black text-slate-700 uppercase tracking-wide">Fila operacional</p>
-            <p className="text-[11px] text-slate-500">{itensOperacionais.length} itens após filtros</p>
+            <p className="text-[12px] font-black text-sagb-text uppercase tracking-wide">Fila operacional</p>
+            <p className="text-[11px] text-sagb-muted">{itensOperacionais.length} itens após filtros</p>
           </div>
 
           {gruposOperacionais.length === 0 || itensOperacionais.length === 0 ? (
-            <p className="text-xs text-slate-500">Nenhum item encontrado com os filtros atuais.</p>
+            <p className="text-[12px] text-sagb-muted">Nenhum item encontrado com os filtros atuais.</p>
           ) : (
             <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
               {gruposOperacionais.map((grupo) => (
                 <div key={grupo.id} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{grupo.label}</p>
-                    <span className="text-[11px] font-bold text-slate-500">{grupo.total}</span>
+                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-sagb-muted">{grupo.label}</p>
+                    <span className="text-[11px] font-bold text-sagb-muted">{grupo.total}</span>
                   </div>
 
                   <div className="space-y-2">
                     {grupo.itens.map((item) => (
-                      <article key={item.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 space-y-2">
+                      <article key={item.id} className="rounded-lg border border-sagb-line bg-sagb-bg-2 px-3 py-2.5 space-y-2">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span
                             className={`px-2 py-0.5 rounded-md border text-[10px] font-black uppercase tracking-wide ${BADGE_CLASSIFICACAO_STYLE[item.classificacao_operacional]}`}
@@ -445,23 +445,23 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
                             {getProntidaoOperacionalMesaLabel(item.prontidao)}
                           </span>
                           {item.lacuna_critica && (
-                            <span className="px-2 py-0.5 rounded-md border border-rose-200 bg-rose-50 text-[10px] font-black uppercase tracking-wide text-rose-700">
+                            <span className="px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black uppercase tracking-wide text-rose-500">
                               Lacuna crítica
                             </span>
                           )}
                           {item.parado && (
-                            <span className="px-2 py-0.5 rounded-md border border-slate-200 bg-slate-100 text-[10px] font-black uppercase tracking-wide text-slate-700">
+                            <span className="px-2 py-0.5 rounded-md border border-sagb-line bg-sagb-bg-2 text-[10px] font-black uppercase tracking-wide text-sagb-muted">
                               Parado
                             </span>
                           )}
                         </div>
 
                         <div>
-                          <p className="text-sm font-bold text-slate-900">{item.titulo}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{item.subtitulo}</p>
+                          <p className="text-[12px] font-bold text-sagb-text">{item.titulo}</p>
+                          <p className="text-[12px] text-sagb-muted mt-0.5">{item.subtitulo}</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[11px] text-slate-600">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[11px] text-sagb-muted">
                           <p>
                             <strong>Origem:</strong> {item.origem_label}
                           </p>
@@ -474,7 +474,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
                         </div>
 
                         {item.tipo_item === 'ativo_estruturacao' && (
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-1 text-[11px] text-slate-600">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-1 text-[11px] text-sagb-muted">
                             <p>
                               <strong>Base mínima:</strong> {item.base_minima_preenchida ? 'Sim' : 'Não'}
                             </p>
@@ -499,29 +499,29 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
         </article>
       </section>
 
-      <form onSubmit={onRegistrarEntradaBruta} className="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 space-y-3">
+      <form onSubmit={onRegistrarEntradaBruta} className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 md:p-5 space-y-3">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Entrada bruta</p>
-          <h3 className="text-lg font-black text-slate-900 tracking-tight mt-1">Registrar novo insumo</h3>
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Entrada bruta</p>
+          <h3 className="text-lg font-black text-sagb-text tracking-tight mt-1">Registrar novo insumo</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Título</span>
+            <span className="text-[11px] font-bold uppercase tracking-wide text-sagb-muted">Título</span>
             <input
               value={novoTitulo}
               onChange={(event) => onNovoTituloChange(event.target.value)}
               placeholder="Ex.: Rascunho de framework de validação"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-cyan-300"
+              className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text"
             />
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Tipo de entrada</span>
+            <span className="text-[11px] font-bold uppercase tracking-wide text-sagb-muted">Tipo de entrada</span>
             <select
               value={novoTipoEntrada}
               onChange={(event) => onNovoTipoEntradaChange(event.target.value as EntradaMetodologicaTipoDeEntrada)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-cyan-300"
+              className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text"
             >
               {tiposEntradaDisponiveis.map((tipo) => (
                 <option key={tipo} value={tipo}>
@@ -533,30 +533,30 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
         </div>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Origem</span>
+          <span className="text-[11px] font-bold uppercase tracking-wide text-sagb-muted">Origem</span>
           <input
             value={novaOrigem}
             onChange={(event) => onNovaOrigemChange(event.target.value)}
             placeholder="Ex.: anotação interna, resumo de PDF, bloco conceitual"
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-cyan-300"
+            className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Conteúdo bruto</span>
+          <span className="text-[11px] font-bold uppercase tracking-wide text-sagb-muted">Conteúdo bruto</span>
           <textarea
             value={novoConteudoBruto}
             onChange={(event) => onNovoConteudoBrutoChange(event.target.value)}
             rows={4}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-cyan-300 resize-y"
+            className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text resize-y"
           />
         </label>
 
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-slate-500">Entrada persistida para continuidade real da estruturação.</p>
+          <p className="text-[12px] text-sagb-muted">Entrada persistida para continuidade real da estruturação.</p>
           <button
             type="submit"
-            className="px-3.5 py-2 rounded-lg bg-slate-900 text-white text-[11px] font-black uppercase tracking-wide hover:bg-slate-800 transition"
+            className="px-3.5 py-2 rounded-lg bg-sagb-blue text-white text-[11px] font-black uppercase tracking-wide hover:brightness-110 transition"
           >
             Registrar entrada bruta
           </button>
@@ -564,10 +564,10 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
       </form>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-5">
-        <article className="rounded-2xl border border-slate-200 bg-white p-4 md:p-5 space-y-3">
+        <article className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 md:p-5 space-y-3">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Fila de estruturação</p>
-            <h3 className="text-lg font-black text-slate-900 tracking-tight mt-1">Entradas recebidas</h3>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Fila de estruturação</p>
+            <h3 className="text-lg font-black text-sagb-text tracking-tight mt-1">Entradas recebidas</h3>
           </div>
 
           <div className="space-y-2.5 max-h-[520px] overflow-y-auto pr-1 custom-scrollbar">
@@ -580,20 +580,20 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
                   onClick={() => onSelecionarEntrada(entrada.id)}
                   className={`w-full text-left rounded-xl border p-3 transition ${
                     selecionada
-                      ? 'border-cyan-200 bg-cyan-50/70 shadow-sm'
-                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'
+                      ? 'border-cyan-500/20 bg-cyan-500/10 shadow-sm'
+                      : 'border-sagb-line bg-sagb-bg-2 hover:brightness-110'
                   }`}
                 >
                   <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                    <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-black uppercase tracking-wide text-slate-700">
+                    <span className="px-2 py-0.5 rounded-md bg-sagb-panel border border-sagb-line text-[10px] font-black uppercase tracking-wide text-sagb-muted">
                       {getTipoEntradaBrutaLabel(entrada.tipo_de_entrada)}
                     </span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-cyan-100 text-cyan-800">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-cyan-500/10 text-cyan-500">
                       {getStatusEstruturacaoLabel(entrada.status_de_estruturacao)}
                     </span>
                   </div>
-                  <p className="text-sm font-bold text-slate-900 leading-snug">{entrada.titulo}</p>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{entrada.conteudo_bruto}</p>
+                  <p className="text-[12px] font-bold text-sagb-text leading-snug">{entrada.titulo}</p>
+                  <p className="text-[12px] text-sagb-muted mt-1 line-clamp-2">{entrada.conteudo_bruto}</p>
                 </button>
               );
             })}
@@ -601,46 +601,46 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
         </article>
 
         {entradaSelecionada && leituraAssistida && (
-          <article className="rounded-2xl border border-cyan-100 bg-cyan-50/35 p-4 md:p-5 space-y-4">
+          <article className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-4 md:p-5 space-y-4">
             <header className="space-y-2">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-800">Leitura assistida</p>
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">Interpretação inicial do insumo</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">Orientação estruturante para converter material cru em ativo.</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-500">Leitura assistida</p>
+              <h3 className="text-lg font-black text-sagb-text tracking-tight">Interpretação inicial do insumo</h3>
+              <p className="text-[12px] text-sagb-muted leading-relaxed">Orientação estruturante para converter material cru em ativo.</p>
             </header>
 
-            <div className="rounded-xl border border-cyan-200 bg-white p-4 space-y-3">
-              <p className="text-sm font-black text-slate-900">{entradaSelecionada.titulo}</p>
-              <p className="text-sm text-slate-700 leading-relaxed">{entradaSelecionada.conteudo_bruto}</p>
+            <div className="rounded-xl border border-cyan-500/20 bg-sagb-bg-2 p-4 space-y-3">
+              <p className="text-[12px] font-black text-sagb-text">{entradaSelecionada.titulo}</p>
+              <p className="text-[12px] text-sagb-text leading-relaxed">{entradaSelecionada.conteudo_bruto}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <p className="text-xs text-slate-600"><strong>O que parece ser:</strong> {leituraAssistida.o_que_parece_ser}</p>
-                <p className="text-xs text-slate-600">
+                <p className="text-[12px] text-sagb-muted"><strong>O que parece ser:</strong> {leituraAssistida.o_que_parece_ser}</p>
+                <p className="text-[12px] text-sagb-muted">
                   <strong>Tipo provável:</strong>{' '}
                   {leituraAssistida.tipo_mais_provavel === 'indefinido'
                     ? 'Ainda indefinido'
                     : getTipoDeAtivoLabel(leituraAssistida.tipo_mais_provavel)}
                 </p>
-                <p className="text-xs text-slate-600"><strong>Essência:</strong> {leituraAssistida.essencia}</p>
-                <p className="text-xs text-slate-600"><strong>Objetivo:</strong> {leituraAssistida.objetivo}</p>
+                <p className="text-[12px] text-sagb-muted"><strong>Essência:</strong> {leituraAssistida.essencia}</p>
+                <p className="text-[12px] text-sagb-muted"><strong>Objetivo:</strong> {leituraAssistida.objetivo}</p>
               </div>
             </div>
 
-            <article className="rounded-xl border border-slate-200 bg-white p-3">
-              <h4 className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-700">Perguntas de estruturação</h4>
+            <article className="rounded-xl border border-sagb-line bg-sagb-panel p-3">
+              <h4 className="text-[11px] font-black uppercase tracking-[0.16em] text-sagb-muted">Perguntas de estruturação</h4>
               <ul className="mt-2 space-y-2">
                 {perguntasEstruturacao.map((pergunta) => (
-                  <li key={pergunta.id} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                    <p className="text-xs font-bold text-slate-800">{pergunta.titulo}</p>
-                    <p className="text-xs text-slate-600 mt-1">{pergunta.descricao}</p>
+                  <li key={pergunta.id} className="rounded-lg border border-sagb-line bg-sagb-bg-2 px-3 py-2">
+                    <p className="text-[12px] font-bold text-sagb-text">{pergunta.titulo}</p>
+                    <p className="text-[12px] text-sagb-muted mt-1">{pergunta.descricao}</p>
                   </li>
                 ))}
               </ul>
             </article>
 
             {conversaoAssistida && (
-              <article className="rounded-xl border border-violet-200 bg-violet-50/50 p-3 md:p-4 space-y-4">
+              <article className="rounded-xl border border-violet-500/20 bg-violet-500/10 p-3 md:p-4 space-y-4">
                 <header className="space-y-2">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-800">Conversão assistida</p>
-                  <h4 className="text-base font-black text-slate-900 tracking-tight">Entrada bruta → ativo em estruturação</h4>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-500">Conversão assistida</p>
+                  <h4 className="text-base font-black text-sagb-text tracking-tight">Entrada bruta → ativo em estruturação</h4>
                 </header>
 
                 <div className="flex flex-wrap gap-2">
@@ -651,8 +651,8 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
                       onClick={() => onDefinirModoConversao(modo)}
                       className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wide border transition ${
                         modoConversao === modo
-                          ? 'bg-violet-100 text-violet-800 border-violet-300'
-                          : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                          ? 'bg-violet-500/10 text-violet-500 border-violet-500/30'
+                          : 'bg-sagb-panel text-sagb-muted border-sagb-line hover:border-sagb-muted'
                       }`}
                     >
                       {modo === 'preview'
@@ -664,13 +664,13 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
                   ))}
                 </div>
 
-                <article className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
-                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-600">Preview do resultado</p>
-                  <p className="text-xs text-slate-700"><strong>Nome:</strong> {conversaoAssistida.ativo_preview.nome}</p>
-                  <p className="text-xs text-slate-700"><strong>Tipo:</strong> {getTipoDeAtivoLabel(conversaoAssistida.ativo_preview.tipo_de_ativo)}</p>
-                  <p className="text-xs text-slate-700"><strong>Status:</strong> {getStatusConversaoAssistidaLabel(conversaoAssistida.status_resultado)}</p>
+                <article className="rounded-xl border border-sagb-line bg-sagb-panel p-3 space-y-2">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-sagb-muted">Preview do resultado</p>
+                  <p className="text-[12px] text-sagb-text"><strong>Nome:</strong> {conversaoAssistida.ativo_preview.nome}</p>
+                  <p className="text-[12px] text-sagb-text"><strong>Tipo:</strong> {getTipoDeAtivoLabel(conversaoAssistida.ativo_preview.tipo_de_ativo)}</p>
+                  <p className="text-[12px] text-sagb-text"><strong>Status:</strong> {getStatusConversaoAssistidaLabel(conversaoAssistida.status_resultado)}</p>
                   {ativoEmEstruturacaoLocal && (
-                    <p className="text-xs text-slate-700">
+                    <p className="text-[12px] text-sagb-text">
                       <strong>Leitura visual:</strong>{' '}
                       {getLeituraVisualEstruturacaoLabel(
                         ativoEmEstruturacaoLocal.governanca.estado === ('em_revisao' as AtivoMetodologicoEstadoGovernanca)
@@ -684,7 +684,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
                 <button
                   type="button"
                   onClick={onAbrirEdicaoGuiada}
-                  className="w-full px-3.5 py-2 rounded-lg bg-slate-900 text-white text-[11px] font-black uppercase tracking-wide hover:bg-slate-800 transition"
+                  className="w-full px-3.5 py-2 rounded-lg bg-sagb-blue text-white text-[11px] font-black uppercase tracking-wide hover:brightness-110 transition"
                 >
                   Abrir edição guiada do ativo
                 </button>

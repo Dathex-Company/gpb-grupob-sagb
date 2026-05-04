@@ -289,7 +289,11 @@ const deveRegistrarEventoCanonico = (params: {
   return diferencaMs > JANELA_DEDUP_EVENTO_MS;
 };
 
-const MetodologiasHubPage: React.FC = () => {
+interface MetodologiasHubPageProps {
+  onBackToSagB?: () => void;
+}
+
+const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB }) => {
   const metodologias = React.useMemo(() => getMetodologias(), []);
   const entradasBrutasBase = React.useMemo(() => getEntradasMetodologicasBrutas(), []);
   const taxonomiaOficial = React.useMemo(() => getTaxonomiaOficialAtivos(), []);
@@ -1171,217 +1175,252 @@ const MetodologiasHubPage: React.FC = () => {
       : 'Detalhe do ativo';
 
   return (
-    <div className="flex-1 h-full overflow-y-auto bg-[#F8FAFC] custom-scrollbar">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-7 space-y-5">
-        <section className="rounded-2xl border border-slate-200 bg-white p-3 md:p-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              {[
-                { id: '/metodologias', label: 'Home' },
-                { id: '/metodologias/mesa', label: 'Mesa' },
-                { id: '/metodologias/catalogo', label: 'Catálogo' },
-                { id: '/metodologias/saude', label: 'Saúde' }
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => navegar(item.id as RotaInterna)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wide border transition ${
-                    rotaInterna === item.id
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Contexto atual: {tituloPagina}</p>
+    <div className="flex-1 p-10 bg-sagb-bg text-sagb-text min-h-full font-inter">
+      {/* Header canônico — 2 colunas */}
+      <header className="flex items-start justify-between gap-6 mb-8">
+        <div className="space-y-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sagb-blue/10 text-sagb-blue text-[10px] font-black uppercase tracking-[0.22em] border border-sagb-blue/20">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Módulo Oficial
+          </span>
+          <h1 className="text-3xl font-black tracking-tight">Núcleo de Metodologias</h1>
+          <p className="text-[12px] text-sagb-muted max-w-2xl leading-relaxed">
+            Governar o catálogo, estruturação, versionamento, saúde e operação das metodologias do SagB.
+          </p>
+          <div className="flex items-center gap-4 pt-1">
+            <span className="text-[11px] text-sagb-muted">
+              <span className="font-bold text-sagb-text">Owner:</span> Agente de Metodologias
+            </span>
           </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onBackToSagB}
+            className="px-3 py-1.5 rounded-lg bg-sagb-blue text-white text-[11px] font-black uppercase tracking-wide hover:opacity-90 transition"
+          >
+            ← Voltar ao SagB
+          </button>
+        </div>
+      </header>
+
+      {/* Navbar horizontal */}
+      <div className="max-w-[1400px] mx-auto space-y-6">
+        <nav className="flex flex-wrap items-center gap-2 rounded-2xl border border-sagb-line bg-sagb-panel p-2 shadow-sm">
+          {([
+            { id: '/metodologias' as RotaInterna, label: 'Home', icone: '🏠' },
+            { id: '/metodologias/mesa' as RotaInterna, label: 'Mesa', icone: '🪟' },
+            { id: '/metodologias/catalogo' as RotaInterna, label: 'Catálogo', icone: '📋' },
+            { id: '/metodologias/saude' as RotaInterna, label: 'Saúde', icone: '❤️' },
+          ] as const).map((item) => {
+            const ativo =
+              item.id === '/metodologias'
+                ? rotaInterna === '/metodologias'
+                : rotaInterna === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => navegar(item.id)}
+                className={`rounded-xl px-3 py-2 text-[12px] font-bold transition-all border ${
+                  ativo
+                    ? 'bg-sagb-blue text-white border-sagb-blue shadow-[0_4px_12px_rgba(37,99,235,0.3)]'
+                    : 'bg-sagb-panel text-sagb-text border-sagb-line hover:border-sagb-blue/50 hover:text-sagb-blue'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-base">{item.icone}</span>
+                  <span>{item.label}</span>
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <section className="space-y-5">
+            {rotaInterna === '/metodologias' && (
+              <MetodologiasHomePage
+                titulo="Núcleo de Metodologias"
+                subtitulo="Centro vivo de construção e consolidação metodológica"
+                descricao="Home estratégica em formato cockpit para reduzir verticalização, separar contextos de uso e sustentar crescimento modular do núcleo."
+                totalAtivos={metodologiasCanonicas.length}
+                totalEntradasBrutas={entradasBrutasLocal.length}
+                totalAtivosOficiais={totalOficiais}
+                ultimasEntradas={ultimasEntradas}
+                ativosOficiaisRecentes={ativosOficiaisRecentes}
+                ultimosMovimentos={ultimosMovimentos}
+                onIrMesa={() => navegar('/metodologias/mesa')}
+                onIrCatalogo={() => navegar('/metodologias/catalogo')}
+                onIrSaude={() => navegar('/metodologias/saude')}
+                onAbrirAtivo={handleAbrirAtivo}
+              />
+            )}
+
+            {rotaInterna === '/metodologias/mesa' && (
+              <MetodologiasMesaPage
+                entradasBrutasLocal={entradasBrutasLocal}
+                entradaSelecionada={entradaSelecionada}
+                leituraAssistida={leituraAssistida}
+                perguntasEstruturacao={perguntasEstruturacao}
+                conversaoAssistida={conversaoAssistida}
+                ativoEmEstruturacaoLocal={ativoEmEstruturacaoLocal}
+                totalBrutas={totalBrutas}
+                totalEmEstruturacao={totalEmEstruturacao}
+                totalConsolidados={metodologiasCanonicas.length}
+                novoTitulo={novoTitulo}
+                novoTipoEntrada={novoTipoEntrada}
+                novaOrigem={novaOrigem}
+                novoConteudoBruto={novoConteudoBruto}
+                tiposEntradaDisponiveis={TIPOS_ENTRADA_DISPONIVEIS}
+                onNovoTituloChange={setNovoTitulo}
+                onNovoTipoEntradaChange={setNovoTipoEntrada}
+                onNovaOrigemChange={setNovaOrigem}
+                onNovoConteudoBrutoChange={setNovoConteudoBruto}
+                onRegistrarEntradaBruta={handleRegistrarEntradaBruta}
+                onSelecionarEntrada={handleSelecionarEntrada}
+                onDefinirModoConversao={setModoConversao}
+                modoConversao={modoConversao}
+                onAbrirEdicaoGuiada={handleAbrirEdicaoGuiada}
+                indicadoresOperacionais={leituraOperacionalMesa.indicadores}
+                itensOperacionais={itensOrdenadosMesa}
+                gruposOperacionais={gruposOperacionaisMesa}
+                filtrosOperacionais={filtrosOperacionaisMesa}
+                ordenacaoOperacional={ordenacaoOperacionalMesa}
+                agrupamentoOperacional={agrupamentoOperacionalMesa}
+                onAtualizarFiltrosOperacionais={setFiltrosOperacionaisMesa}
+                onAlterarOrdenacaoOperacional={setOrdenacaoOperacionalMesa}
+                onAlterarAgrupamentoOperacional={setAgrupamentoOperacionalMesa}
+                onLimparFiltrosOperacionais={() => setFiltrosOperacionaisMesa(criarFiltrosOperacionaisMesaIniciais())}
+              />
+            )}
+
+            {rotaInterna === '/metodologias/mesa' && carregandoPersistencia && (
+              <section className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 text-[12px] text-sagb-muted">
+                Carregando persistência real da mesa de estruturação...
+              </section>
+            )}
+
+            {rotaInterna === '/metodologias/saude' && (
+              <MetodologiasSaudePage
+                indicadores={indicadoresNucleo}
+                onVoltar={() => navegar('/metodologias')}
+              />
+            )}
+
+            {rotaInterna === '/metodologias/catalogo' && (
+                <MetodologiasCatalogoPage ativos={metodologiasCanonicas} onAbrirAtivo={handleAbrirAtivo} />
+            )}
+
+            {rotaInterna.startsWith('/metodologias/ativos/') && !rotaInterna.endsWith('/editar') && ativoSelecionado && (
+              <MetodologiaAtivoPage
+                metodologia={ativoSelecionado}
+                ativosContexto={metodologiasCanonicas}
+                onVoltarCatalogo={() => navegar('/metodologias/catalogo')}
+                onEditarAtivo={() => navegar(`/metodologias/ativos/${ativoSelecionado.slug}/editar`)}
+                onAbrirAtivoRelacionado={handleAbrirAtivo}
+                modoEdicaoLabel={ativoCanonicoSelecionado ? 'Manutenção canônica' : 'Edição guiada'}
+              />
+            )}
+
+            {rotaInterna.endsWith('/editar') && ativoCanonicoSelecionado && (
+              <MetodologiaCanonicoEditarPage
+                ativo={ativoCanonicoSelecionado}
+                blocosOrigemDisponiveis={blocosOrigemDisponiveisParaCanonico}
+                statusEditoriaisDisponiveis={STATUS_EDITORIAIS_DISPONIVEIS}
+                maturidadesDisponiveis={MATURIDADES_DISPONIVEIS}
+                estadosGovernancaDisponiveis={ESTADOS_GOVERNANCA_DISPONIVEIS}
+                tiposDisponiveis={taxonomiaOficial.map((item) => ({ tipo: item.tipo, label: item.label }))}
+                tiposBlocoDisponiveis={ATIVO_EM_ESTRUTURACAO_BLOCO_TIPOS.map((tipo) => ({
+                  tipo,
+                  label: TIPO_BLOCO_LABEL[tipo]
+                }))}
+                onAtualizarAtivo={handleAtualizarAtivoCanonico}
+                onAtualizarBloco={handleAtualizarBlocoCanonico}
+                onRemoverBloco={handleRemoverBlocoCanonico}
+                onMoverBloco={handleMoverBlocoCanonico}
+                onCriarBlocoFromOrigem={handleCriarBlocoCanonicoFromOrigem}
+                onRegistrarVersaoCanonica={handleRegistrarVersaoCanonica}
+                statusSnapshots={statusSnapshotsCanonicos}
+                onGerarSnapshotsFaltantes={handleGerarSnapshotsFaltantes}
+                onRevalidarSnapshot={handleRevalidarSnapshotCanonico}
+                onRegenerarSnapshot={handleRegenerarSnapshotCanonico}
+                onVoltarAtivo={() => navegar(`/metodologias/ativos/${ativoCanonicoSelecionado.slug}`)}
+              />
+            )}
+
+            {rotaInterna.endsWith('/editar') && !ativoCanonicoSelecionado && ativoEmEstruturacaoLocal && diagnosticoEstruturacao && (
+              <MetodologiaAtivoEditarPage
+                ativo={ativoEmEstruturacaoLocal}
+                diagnostico={diagnosticoEstruturacao}
+                statusEditoriaisDisponiveis={STATUS_EDITORIAIS_DISPONIVEIS}
+                maturidadesDisponiveis={MATURIDADES_DISPONIVEIS}
+                estadosGovernancaDisponiveis={ESTADOS_GOVERNANCA_DISPONIVEIS}
+                tiposDisponiveis={taxonomiaOficial.map((item) => ({ tipo: item.tipo, label: item.label }))}
+                tiposBlocoDisponiveis={ATIVO_EM_ESTRUTURACAO_BLOCO_TIPOS.map((tipo) => ({
+                  tipo,
+                  label: TIPO_BLOCO_LABEL[tipo]
+                }))}
+                tiposRelacaoDisponiveis={ATIVO_METODOLOGICO_RELACAO_TIPOS}
+                ativosCanonicosRelacionaveis={ativosCanonicosPersistidos
+                  .filter((item) => item.origem_ativo_em_estruturacao_id !== ativoEmEstruturacaoLocal.id_estruturacao)
+                  .map((item) => ({ id: item.id, nome: item.nome, slug: item.slug }))}
+                onAdicionarBlocoInterno={handleAdicionarBlocoInterno}
+                onAtualizarBlocoInterno={handleAtualizarBlocoInterno}
+                onRemoverBlocoInterno={handleRemoverBlocoInterno}
+                onMoverBlocoInterno={handleMoverBlocoInterno}
+                onAdicionarRelacaoEstruturacao={handleAdicionarRelacaoEstruturacao}
+                onRemoverRelacaoEstruturacao={handleRemoverRelacaoEstruturacao}
+                onAtualizarAtivo={handleAtualizarAtivoEstruturacao}
+                diagnosticoPromocao={
+                  diagnosticoPromocao ?? {
+                    pronto_para_promocao: false,
+                    total_criterios: 0,
+                    criterios_atendidos: 0,
+                    criterios_pendentes: 0,
+                    percentual_prontidao: 0,
+                    criterios: [],
+                    pendencias: [],
+                    recomendacao: ''
+                  }
+                }
+                previewPromocao={
+                  previewPromocao ?? {
+                    id_preview_promocao: '',
+                    slug_sugerido: '',
+                    nome: '',
+                    resumo: '',
+                    definicao: '',
+                    objetivo: '',
+                    tipo_de_ativo: ativoEmEstruturacaoLocal.tipo_de_ativo,
+                    status_editorial: 'em_revisao',
+                    maturidade_pratica: ativoEmEstruturacaoLocal.maturidade_pratica,
+                    governanca_estado: ativoEmEstruturacaoLocal.governanca.estado,
+                    versao_atual: '1.0.0',
+                    origem_entrada_bruta_id: ativoEmEstruturacaoLocal.origem_entrada_id,
+                    origem_ativo_em_estruturacao_id: ativoEmEstruturacaoLocal.id_estruturacao
+                  }
+                }
+                promovendo={promovendoAssistido}
+                ultimoAtivoCanonicoPromovido={ultimoAtivoCanonicoPromovido}
+                onPromoverAssistido={handlePromoverAssistido}
+                onAbrirCanonicoPromovido={handleAbrirCanonicoPromovido}
+                onVoltarMesa={() => navegar('/metodologias/mesa')}
+              />
+            )}
+
+            {rotaInterna.startsWith('/metodologias/ativos/') && !ativoSelecionado && (
+              <section className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-5">
+                <p className="text-[12px] font-bold text-rose-500">Ativo não encontrado para a rota solicitada.</p>
+                <button
+                  type="button"
+                  onClick={() => navegar('/metodologias/catalogo')}
+                  className="mt-3 px-3 py-1.5 rounded-lg bg-rose-500 text-white text-[11px] font-black uppercase tracking-wide hover:opacity-90 transition"
+                >
+                  Voltar para catálogo
+                </button>
+              </section>
+            )}
         </section>
-
-        {rotaInterna === '/metodologias' && (
-          <MetodologiasHomePage
-            titulo="Núcleo de Metodologias"
-            subtitulo="Centro vivo de construção e consolidação metodológica"
-            descricao="Home estratégica em formato cockpit para reduzir verticalização, separar contextos de uso e sustentar crescimento modular do núcleo."
-            totalAtivos={metodologiasCanonicas.length}
-            totalEntradasBrutas={entradasBrutasLocal.length}
-            totalAtivosOficiais={totalOficiais}
-            ultimasEntradas={ultimasEntradas}
-            ativosOficiaisRecentes={ativosOficiaisRecentes}
-            ultimosMovimentos={ultimosMovimentos}
-            onIrMesa={() => navegar('/metodologias/mesa')}
-            onIrCatalogo={() => navegar('/metodologias/catalogo')}
-            onIrSaude={() => navegar('/metodologias/saude')}
-            onAbrirAtivo={handleAbrirAtivo}
-          />
-        )}
-
-        {rotaInterna === '/metodologias/mesa' && (
-          <MetodologiasMesaPage
-            entradasBrutasLocal={entradasBrutasLocal}
-            entradaSelecionada={entradaSelecionada}
-            leituraAssistida={leituraAssistida}
-            perguntasEstruturacao={perguntasEstruturacao}
-            conversaoAssistida={conversaoAssistida}
-            ativoEmEstruturacaoLocal={ativoEmEstruturacaoLocal}
-            totalBrutas={totalBrutas}
-            totalEmEstruturacao={totalEmEstruturacao}
-            totalConsolidados={metodologiasCanonicas.length}
-            novoTitulo={novoTitulo}
-            novoTipoEntrada={novoTipoEntrada}
-            novaOrigem={novaOrigem}
-            novoConteudoBruto={novoConteudoBruto}
-            tiposEntradaDisponiveis={TIPOS_ENTRADA_DISPONIVEIS}
-            onNovoTituloChange={setNovoTitulo}
-            onNovoTipoEntradaChange={setNovoTipoEntrada}
-            onNovaOrigemChange={setNovaOrigem}
-            onNovoConteudoBrutoChange={setNovoConteudoBruto}
-            onRegistrarEntradaBruta={handleRegistrarEntradaBruta}
-            onSelecionarEntrada={handleSelecionarEntrada}
-            onDefinirModoConversao={setModoConversao}
-            modoConversao={modoConversao}
-            onAbrirEdicaoGuiada={handleAbrirEdicaoGuiada}
-            indicadoresOperacionais={leituraOperacionalMesa.indicadores}
-            itensOperacionais={itensOrdenadosMesa}
-            gruposOperacionais={gruposOperacionaisMesa}
-            filtrosOperacionais={filtrosOperacionaisMesa}
-            ordenacaoOperacional={ordenacaoOperacionalMesa}
-            agrupamentoOperacional={agrupamentoOperacionalMesa}
-            onAtualizarFiltrosOperacionais={setFiltrosOperacionaisMesa}
-            onAlterarOrdenacaoOperacional={setOrdenacaoOperacionalMesa}
-            onAlterarAgrupamentoOperacional={setAgrupamentoOperacionalMesa}
-            onLimparFiltrosOperacionais={() => setFiltrosOperacionaisMesa(criarFiltrosOperacionaisMesaIniciais())}
-          />
-        )}
-
-        {rotaInterna === '/metodologias/mesa' && carregandoPersistencia && (
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-            Carregando persistência real da mesa de estruturação...
-          </section>
-        )}
-
-        {rotaInterna === '/metodologias/saude' && (
-          <MetodologiasSaudePage
-            indicadores={indicadoresNucleo}
-            onVoltar={() => navegar('/metodologias')}
-          />
-        )}
-
-        {rotaInterna === '/metodologias/catalogo' && (
-            <MetodologiasCatalogoPage ativos={metodologiasCanonicas} onAbrirAtivo={handleAbrirAtivo} />
-        )}
-
-        {rotaInterna.startsWith('/metodologias/ativos/') && !rotaInterna.endsWith('/editar') && ativoSelecionado && (
-          <MetodologiaAtivoPage
-            metodologia={ativoSelecionado}
-            ativosContexto={metodologiasCanonicas}
-            onVoltarCatalogo={() => navegar('/metodologias/catalogo')}
-            onEditarAtivo={() => navegar(`/metodologias/ativos/${ativoSelecionado.slug}/editar`)}
-            onAbrirAtivoRelacionado={handleAbrirAtivo}
-            modoEdicaoLabel={ativoCanonicoSelecionado ? 'Manutenção canônica' : 'Edição guiada'}
-          />
-        )}
-
-        {rotaInterna.endsWith('/editar') && ativoCanonicoSelecionado && (
-          <MetodologiaCanonicoEditarPage
-            ativo={ativoCanonicoSelecionado}
-            blocosOrigemDisponiveis={blocosOrigemDisponiveisParaCanonico}
-            statusEditoriaisDisponiveis={STATUS_EDITORIAIS_DISPONIVEIS}
-            maturidadesDisponiveis={MATURIDADES_DISPONIVEIS}
-            estadosGovernancaDisponiveis={ESTADOS_GOVERNANCA_DISPONIVEIS}
-            tiposDisponiveis={taxonomiaOficial.map((item) => ({ tipo: item.tipo, label: item.label }))}
-            tiposBlocoDisponiveis={ATIVO_EM_ESTRUTURACAO_BLOCO_TIPOS.map((tipo) => ({
-              tipo,
-              label: TIPO_BLOCO_LABEL[tipo]
-            }))}
-            onAtualizarAtivo={handleAtualizarAtivoCanonico}
-            onAtualizarBloco={handleAtualizarBlocoCanonico}
-            onRemoverBloco={handleRemoverBlocoCanonico}
-            onMoverBloco={handleMoverBlocoCanonico}
-            onCriarBlocoFromOrigem={handleCriarBlocoCanonicoFromOrigem}
-            onRegistrarVersaoCanonica={handleRegistrarVersaoCanonica}
-            statusSnapshots={statusSnapshotsCanonicos}
-            onGerarSnapshotsFaltantes={handleGerarSnapshotsFaltantes}
-            onRevalidarSnapshot={handleRevalidarSnapshotCanonico}
-            onRegenerarSnapshot={handleRegenerarSnapshotCanonico}
-            onVoltarAtivo={() => navegar(`/metodologias/ativos/${ativoCanonicoSelecionado.slug}`)}
-          />
-        )}
-
-        {rotaInterna.endsWith('/editar') && !ativoCanonicoSelecionado && ativoEmEstruturacaoLocal && diagnosticoEstruturacao && (
-          <MetodologiaAtivoEditarPage
-            ativo={ativoEmEstruturacaoLocal}
-            diagnostico={diagnosticoEstruturacao}
-            statusEditoriaisDisponiveis={STATUS_EDITORIAIS_DISPONIVEIS}
-            maturidadesDisponiveis={MATURIDADES_DISPONIVEIS}
-            estadosGovernancaDisponiveis={ESTADOS_GOVERNANCA_DISPONIVEIS}
-            tiposDisponiveis={taxonomiaOficial.map((item) => ({ tipo: item.tipo, label: item.label }))}
-            tiposBlocoDisponiveis={ATIVO_EM_ESTRUTURACAO_BLOCO_TIPOS.map((tipo) => ({
-              tipo,
-              label: TIPO_BLOCO_LABEL[tipo]
-            }))}
-            tiposRelacaoDisponiveis={ATIVO_METODOLOGICO_RELACAO_TIPOS}
-            ativosCanonicosRelacionaveis={ativosCanonicosPersistidos
-              .filter((item) => item.origem_ativo_em_estruturacao_id !== ativoEmEstruturacaoLocal.id_estruturacao)
-              .map((item) => ({ id: item.id, nome: item.nome, slug: item.slug }))}
-            onAdicionarBlocoInterno={handleAdicionarBlocoInterno}
-            onAtualizarBlocoInterno={handleAtualizarBlocoInterno}
-            onRemoverBlocoInterno={handleRemoverBlocoInterno}
-            onMoverBlocoInterno={handleMoverBlocoInterno}
-            onAdicionarRelacaoEstruturacao={handleAdicionarRelacaoEstruturacao}
-            onRemoverRelacaoEstruturacao={handleRemoverRelacaoEstruturacao}
-            onAtualizarAtivo={handleAtualizarAtivoEstruturacao}
-            diagnosticoPromocao={
-              diagnosticoPromocao ?? {
-                pronto_para_promocao: false,
-                total_criterios: 0,
-                criterios_atendidos: 0,
-                criterios_pendentes: 0,
-                percentual_prontidao: 0,
-                criterios: [],
-                pendencias: [],
-                recomendacao: ''
-              }
-            }
-            previewPromocao={
-              previewPromocao ?? {
-                id_preview_promocao: '',
-                slug_sugerido: '',
-                nome: '',
-                resumo: '',
-                definicao: '',
-                objetivo: '',
-                tipo_de_ativo: ativoEmEstruturacaoLocal.tipo_de_ativo,
-                status_editorial: 'em_revisao',
-                maturidade_pratica: ativoEmEstruturacaoLocal.maturidade_pratica,
-                governanca_estado: ativoEmEstruturacaoLocal.governanca.estado,
-                versao_atual: '1.0.0',
-                origem_entrada_bruta_id: ativoEmEstruturacaoLocal.origem_entrada_id,
-                origem_ativo_em_estruturacao_id: ativoEmEstruturacaoLocal.id_estruturacao
-              }
-            }
-            promovendo={promovendoAssistido}
-            ultimoAtivoCanonicoPromovido={ultimoAtivoCanonicoPromovido}
-            onPromoverAssistido={handlePromoverAssistido}
-            onAbrirCanonicoPromovido={handleAbrirCanonicoPromovido}
-            onVoltarMesa={() => navegar('/metodologias/mesa')}
-          />
-        )}
-
-        {rotaInterna.startsWith('/metodologias/ativos/') && !ativoSelecionado && (
-          <section className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
-            <p className="text-sm font-bold text-rose-900">Ativo não encontrado para a rota solicitada.</p>
-            <button
-              type="button"
-              onClick={() => navegar('/metodologias/catalogo')}
-              className="mt-3 px-3 py-1.5 rounded-lg bg-rose-700 text-white text-[11px] font-black uppercase tracking-wide"
-            >
-              Voltar para catálogo
-            </button>
-          </section>
-        )}
       </div>
     </div>
   );

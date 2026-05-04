@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChatAttachment, UploadStatus } from '../types';
-import { AlertTriangleIcon, CheckIcon, CloudUploadIcon, FileTextIcon, MicIcon, XIcon } from '../../../../components/Icon';
+import { AlertTriangleIcon, CheckIcon, CloudUploadIcon, FileTextIcon, MicIcon, XIcon } from './ui/Icon';
 
 interface ChatAttachmentCardProps {
   attachment: ChatAttachment;

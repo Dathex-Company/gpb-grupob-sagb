@@ -25,6 +25,7 @@ import ChatMessage from '../src/modules/nucleo-conversacional/components/ChatMes
 import ChatAttachmentCard from '../src/modules/nucleo-conversacional/components/ChatAttachmentCard';
 import { ncLog } from '../src/modules/nucleo-conversacional/utils/observability';
 import { persistBotPlaceholder, touchChatSessionMetadata } from '../src/modules/nucleo-conversacional/services/chatPersistence';
+import { TitleSuggestionPanel, TaskSuggestionPanel } from '../src/modules/nucleo-conversacional/components/SuggestionPanel';
 
 
 interface SystemicVisionProps {
@@ -3086,45 +3087,15 @@ ${selectedVaultContext}
                                             />
                                         ))}
 
-                                        {titleOptions && (
-                                            <div className="mt-7 flex flex-col items-center gap-4 border-t border-dashed border-gray-200 pt-6 pb-6 animate-msg">
-                                                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">Qual destas opções define melhor esta pauta?</p>
-                                                <div className="flex flex-wrap justify-center gap-3">
-                                                    {titleOptions.map((title, idx) => (
-                                                        <button
-                                                            key={idx}
-                                                            onClick={() => handleApplyTitle(title)}
-                                                            className="px-6 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:border-bitrix-nav hover:text-bitrix-nav hover:shadow-md transition-all shadow-sm"
-                                                        >
-                                                            {title}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                        {isSuggestionPanelVisible && (
-                                            <div className="mt-5 flex flex-col items-center gap-4 pt-4 pb-6 animate-msg">
-                                                <p className="rounded-full border border-green-100 bg-green-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-green-600">Sugestões acionadas manualmente</p>
-                                                {taskSuggestions && taskSuggestions.length > 0 ? (
-                                                    <div className="flex flex-wrap justify-center gap-3">
-                                                        {taskSuggestions.map((title, idx) => (
-                                                            <button
-                                                                key={idx}
-                                                                onClick={() => handleSuggestionClick(title)}
-                                                                className="px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:border-green-500 hover:text-green-600 hover:shadow-md transition-all shadow-sm flex items-center gap-2"
-                                                            >
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                                                {title}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-5 py-4 text-center text-[11px] font-bold text-gray-400">
-                                                        Nenhuma sugestão disponível para este trecho da conversa.
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
+                                        <TitleSuggestionPanel
+                                            titleOptions={titleOptions}
+                                            onApplyTitle={handleApplyTitle}
+                                        />
+                                        <TaskSuggestionPanel
+                                            isVisible={isSuggestionPanelVisible}
+                                            taskSuggestions={taskSuggestions}
+                                            onSuggestionClick={handleSuggestionClick}
+                                        />
                                     </div>
 
                                     <div ref={chatEndRef} />

@@ -43,3 +43,7 @@ Toda resposta final ao usuário deve terminar com a tag:
 
 `[ 📝 Auto-log: OK ]`
 
+O seu time de agentes esta em Z:\SagB\_ventures\dathex\agentes
+
+
+

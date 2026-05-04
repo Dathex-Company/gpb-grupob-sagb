@@ -6,5 +6,10 @@ export const mentoriasManifest: ModuleManifest = {
   displayName: 'Central de Mentorias',
   baseRoute: '/mentorias',
   icon: 'BookIcon',
-  initialStatus: 'active'
+  initialStatus: 'active',
+  owner: {
+    type: 'agent',
+    id: 'mentorias-agent',
+    displayName: 'Agente de Mentorias'
+  }
 };
