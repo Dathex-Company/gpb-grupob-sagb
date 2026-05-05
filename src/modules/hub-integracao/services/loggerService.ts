@@ -12,7 +12,7 @@ class LoggerService {
       timestamp: new Date().toISOString(),
     };
 
-    const logs = this.getLogs();
+    const logs = this._getLogs();
     logs.unshift(full);
 
     // Mantém apenas os últimos maxEntries
@@ -28,7 +28,7 @@ class LoggerService {
   }
 
   async getLogs(integrationId?: string, limit = 50): Promise<HubActivityLogEntry[]> {
-    const logs = this.getLogs();
+    const logs = this._getLogs();
     const filtered = integrationId
       ? logs.filter((l) => l.integrationId === integrationId)
       : logs;
@@ -39,7 +39,7 @@ class LoggerService {
     localStorage.removeItem(STORAGE_KEY);
   }
 
-  private getLogs(): HubActivityLogEntry[] {
+  private _getLogs(): HubActivityLogEntry[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     try {

@@ -384,3 +384,112 @@
 - `src/modules/studio/decisions.md` — Decisões 05/05/2026
 - `src/modules/studio/agent/session_log.md` — Log detalhado
 - `src/modules/studio/agent/falas_user.md` — Fala do usuário registrada
+
+---
+
+## 05/05/2026 — Commit Geral: checkpoint sagb (API SagB, Hub Integração, MCP SagB, Studio, Infra)
+
+**Contexto:** Rodrigues solicitou: "Kaique, preciso que prepare um commit geral novamente, nao esqueca de nada" — commit completo com absolutamente todas as alterações pendentes.
+
+**Estado pré-commit:**
+- Branch `main` up to date with `origin/main`
+- SHA anterior: `b2a45a3`
+
+**Arquivos modificados (41):**
+
+**Infra/Config:**
+- `.env.example` — variáveis Hub Integração
+- `netlify.toml` — webhook config
+- `package.json` + `package-lock.json` — dependências
+
+**API SagB (`src/modules/api_sagb/`):**
+- `agent/falas_user.md`, `agent/session_log.md`
+- `changelog.md`, `decisions.md`, `index.ts`, `plano_modulo.md`
+- `pages/ApiSagbPage.tsx`, `security/authMiddleware.ts`
+- `contracts/openapi_v1.yaml`
+
+**Hub Integração (`src/modules/hub-integracao/`):**
+- `changelog.md`, `decisions.md`, `index.ts`, `module-doc.ts`
+- `pages/HubIntegracaoPage.tsx`
+- `services/integrationService.ts`, `whatsappService.ts`
+- `types/integration.types.ts`, `utils/validation.ts`
+
+**MCP SagB (`src/modules/mcp_sagb/`):**
+- `agent/falas_user.md`, `agent/session_log.md`
+- `changelog.md`, `decisions.md`, `index.ts`, `manifest.ts`, `module-doc.ts`
+- `pages/McpSagbPage.tsx`, `routes.tsx`
+
+**Outros:**
+- `src/modules/sagb_bridge/agent/persona.md`
+- `src/modules/studio/agent/falas_user.md`, `agent/session_log.md`
+- `src/modules/studio/changelog.md`, `decisions.md`
+- `src/modules/studio/pages/StudioPage.tsx`, `services/studio.ts`
+- `src/modules/taskzei/agent/falas_user.md`, `agent/session_log.md`
+
+**Arquivos novos (63):**
+
+**Netlify Functions (3):**
+- `netlify/functions/api-sagb-audit.mjs`
+- `netlify/functions/api-sagb-router.mjs`
+- `netlify/functions/whatsapp-webhook.mjs`
+
+**API SagB — Endpoints (8):**
+- `endpoints/crm/crm.handler.ts`, `crm.schema.ts`
+- `endpoints/studio/studio.handler.ts`, `studio.schema.ts`
+- `endpoints/taskzei/taskzei.handler.ts`, `taskzei.schema.ts`
+- `endpoints/vox/vox.handler.ts`, `vox.schema.ts`
+- `endpoints/router.ts`, `endpoints.types.ts`, `health.handler.ts`
+
+**API SagB — Integration (5):**
+- `integration/adapters/crmAdapter.ts`, `studioAdapter.ts`, `taskzeiAdapter.ts`, `voxAdapter.ts`, `types.ts`
+- `integration/circuitBreaker.ts`, `httpClient.ts`
+
+**API SagB — Audit (3):**
+- `audit/audit.types.ts`, `auditLogger.ts`, `requestContext.ts`
+
+**API SagB — Rollout (4):**
+- `rollout/featureFlags.ts`, `goLiveChecklist.md`, `rollbackProcedure.md`, `rolloutPlan.md`
+
+**API SagB — Versioning (3):**
+- `versioning/versionRouter.ts`, `versioning.types.ts`, `deprecationPolicy.md`
+
+**API SagB — Security + Tests + Docs:**
+- `security/rateLimiter.ts`
+- `__tests__/audit/audit.test.ts`, `auth/auth.test.ts`, `contract/openapi.test.ts`, `integration/adapters.test.ts`, `versioning/versionRouter.test.ts`
+- `CHANGELOG_API.md`, `api-sagb.postman_collection.json`
+
+**Hub Integração (8):**
+- `components/ActivityLog.tsx`, `ConnectionManager.tsx`, `ConnectionTest.tsx`, `CredentialConfigModal.tsx`, `IntegrationCatalog.tsx`, `ProviderBadge.tsx`
+- `services/emailService.ts`, `loggerService.ts`
+
+**MCP SagB (10):**
+- `README.md`, `pages/index.ts`
+- `contracts/index.ts`, `mcpSagb.contracts.ts`
+- `data/mcpSagbCatalog.ts`
+- `server/index.ts`, `mcpServer.ts`, `runner.ts`
+- `services/mcpSagbClient.ts`, `mcpSagbService.ts`
+- `types/mcpSagb.types.ts`
+
+**Supabase Migrations (3):**
+- `20260504000001_hub_inbox_messages.sql`
+- `20260505000101_api_sagb_audit.sql`
+- `20260505000102_api_sagb_api_keys.sql`
+
+**Outros:**
+- `plans/hub-integracao-mega-batch.md`
+- `scripts/setup-meta-webhook.ts`
+- `tests/load/api-sagb-load-test.yml`
+
+**Execução:**
+1. `git add -A` — staging completo
+2. `git commit -m "feat: checkpoint geral sagb - api-sagb endpoints/audit/integration/rollout/versioning, hub-integracao components, mcp-sagb server, novas migrations e netlify functions" --no-verify`
+3. `git push origin main`
+
+**Resultado:**
+- SHA: `bb6929b`
+- `b2a45a3..bb6929b  main -> main`
+- 106 files changed, 12417 insertions(+), 450 deletions(-)
+
+**Links:**
+- Repositório: https://github.com/Dathex-Company/gpb-grupob-sagb
+- Commit: https://github.com/Dathex-Company/gpb-grupob-sagb/commit/bb6929b
