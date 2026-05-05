@@ -3,9 +3,11 @@ import { RAIAgent } from '../types';
 
 interface RAIAgentsPanelProps {
   agents: RAIAgent[];
+  onRunNow?: (agentId: string) => void;
+  runningAgentId?: string | null;
 }
 
-const RAIAgentsPanel: React.FC<RAIAgentsPanelProps> = ({ agents }) => {
+const RAIAgentsPanel: React.FC<RAIAgentsPanelProps> = ({ agents, onRunNow, runningAgentId }) => {
   return (
     <div className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-3xl p-6 shadow-sm overflow-hidden h-full">
       <div className="flex items-center justify-between mb-6">
@@ -30,9 +32,17 @@ const RAIAgentsPanel: React.FC<RAIAgentsPanelProps> = ({ agents }) => {
                <span className="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">
                  Tema: {agent.theme}
                </span>
-               <button className="opacity-0 group-hover:opacity-100 text-[10px] font-black text-blue-500 transition-opacity">
-                 Ver Logs
-               </button>
+               <div className="flex items-center gap-2">
+                 <button
+                   onClick={() => onRunNow?.(agent.id)}
+                   className="opacity-0 group-hover:opacity-100 text-[10px] font-black text-emerald-600 transition-opacity"
+                 >
+                   {runningAgentId === agent.id ? 'Executando...' : 'Rodar agora'}
+                 </button>
+                 <button className="opacity-0 group-hover:opacity-100 text-[10px] font-black text-blue-500 transition-opacity">
+                    Ver Logs
+                 </button>
+               </div>
             </div>
           </div>
         ))}

@@ -14,3 +14,6 @@
 - **[05/05/2026]**: Implementadas **labels editáveis** com persistência em `localStorage('studio_device_labels')`. Clique duplo no nome do microfone ativa `input[type=text]` inline.
 - **[05/05/2026]**: Implementado **download individual de trilhas** na sidebar de sessões. Serviço `fetchSessionAudioTracks` busca tracks da tabela `studio_audio_tracks` com fallback em `payload.audioTracks`.
 - **[05/05/2026]**: Decisão de manter items P1/P2 (Waveform, Preview áudio, IndexedDB, Silent Detection, Metadata) para próxima sprint, pois exigem componentes visuais complexos ou novos serviços de persistência.
+- **[05/05/2026]**: Implementado **gate de permissão de workspace** no frontend do Studio para iniciar gravação e upload, com validação por `workspaceId` + `ownerUserId`/papéis privilegiados em `userProfile`.
+- **[05/05/2026]**: Implementado **controle de concorrência de start/stop** com lock transacional (`isStartStopTransitionRef`) e cooldown de 2s entre inícios para evitar corrida e dupla inicialização.
+- **[05/05/2026]**: Implementado **hardening de memória para gravações longas** com `MediaRecorder.start(timeslice=15000)` + buffer cap de partes (`pushPartWithCap`) para limitar crescimento de blobs em RAM.

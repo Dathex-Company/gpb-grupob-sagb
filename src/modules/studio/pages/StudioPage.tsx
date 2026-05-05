@@ -35,7 +35,20 @@ interface StudioViewProps {
 
 const DEFAULT_WORKSPACE_ID = '00000000-0000-0000-0000-000000000000';
 const MAX_SIMULTANEOUS_CAMERAS = 4;
+const START_COOLDOWN_MS = 2000;
+const MAX_BUFFERED_RECORDER_BYTES = 64 * 1024 * 1024;
 const studioDebug = (...args: any[]) => console.info('[StudioDebug]', ...args);
+
+const estimatePartsBytes = (parts: Blob[]) => parts.reduce((acc, part) => acc + (part?.size || 0), 0);
+
+const pushPartWithCap = (parts: Blob[], next: Blob, maxBytes = MAX_BUFFERED_RECORDER_BYTES) => {
+  parts.push(next);
+  let total = estimatePartsBytes(parts);
+  while (total > maxBytes && parts.length > 1) {
+    const removed = parts.shift();
+    total -= removed?.size || 0;
+  }
+};
 
 export const fmtDuration = (seconds?: number | null) => {
   const total = Math.max(0, Math.round(Number(seconds || 0)));
@@ -95,6 +108,7 @@ const RecordingTimer = ({
 const StudioView: React.FC<StudioViewProps> = ({
   workspaceId,
   ownerUserId,
+  userProfile,
   onBack
 }) => {
   const scopedWorkspaceId = workspaceId || DEFAULT_WORKSPACE_ID;
@@ -180,6 +194,8 @@ const StudioView: React.FC<StudioViewProps> = ({
   const audioLevelRafRef = useRef<number | null>(null);
 
   const isRecordingRef = useRef<boolean>(false);
+  const isStartStopTransitionRef = useRef<boolean>(false);
+  const lastStartAtRef = useRef<number>(0);
   
   const currentChunkIndexRef = useRef<number>(1);
   const isProcessingChunkRef = useRef<boolean>(false);
@@ -201,6 +217,16 @@ const StudioView: React.FC<StudioViewProps> = ({
   const [playbackAudioUrl, setPlaybackAudioUrl] = useState<string | null>(null);
   const [selectedVideoTab, setSelectedVideoTab] = useState<string | null>(null);
   const [isLoadingPlayback, setIsLoadingPlayback] = useState(false);
+
+  const canManageStudio = useMemo(() => {
+    const profileWorkspaceId = (userProfile as any)?.workspaceId || null;
+    const profileUid = (userProfile as any)?.uid || null;
+    const profileRole = String((userProfile as any)?.role || '').toLowerCase();
+    const sameWorkspace = !workspaceId || !profileWorkspaceId || workspaceId === profileWorkspaceId;
+    const isOwner = !!ownerUserId && !!profileUid && ownerUserId === profileUid;
+    const isPrivileged = ['admin', 'owner', 'diretor', 'director', 'superadmin'].includes(profileRole);
+    return sameWorkspace && (isOwner || isPrivileged);
+  }, [ownerUserId, userProfile, workspaceId]);
 
   // Sessão ativa (completa) a partir da lista
   const activeSession = useMemo(
@@ -719,6 +745,22 @@ useEffect(() => {
   };
 
   const startRecording = async () => {
+    if (!canManageStudio) {
+      setFeedback('Sem permissão para iniciar gravação neste workspace.');
+      return;
+    }
+    if (isRecordingRef.current || isBusy || isStartStopTransitionRef.current) {
+      setFeedback('Ação bloqueada: já existe uma operação de gravação em andamento.');
+      return;
+    }
+    const now = Date.now();
+    if (now - lastStartAtRef.current < START_COOLDOWN_MS) {
+      setFeedback('Aguarde 2 segundos antes de iniciar uma nova gravação.');
+      return;
+    }
+
+    isStartStopTransitionRef.current = true;
+    lastStartAtRef.current = now;
     try {
       setIsBusy(true);
       const audioSourceCount = selectedAudioDeviceIds.length + (includeSystemAudio ? 1 : 0);
@@ -919,7 +961,7 @@ useEffect(() => {
           const parts: Blob[] = [];
           const startedAt = Date.now();
           videoRecorder.ondataavailable = (e) => {
-            if (e.data && e.data.size > 0) parts.push(e.data);
+            if (e.data && e.data.size > 0) pushPartWithCap(parts, e.data);
           };
           videoRecorder.onstop = () => {
             const durationSeconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
@@ -949,7 +991,7 @@ useEffect(() => {
             deviceId: camera.deviceId
           });
 
-          videoRecorder.start();
+          videoRecorder.start(15000);
         });
 
         setCameraPreviews((prev) => prev.map((c) => ({ ...c, status: c.stream ? 'recording' : c.status })));
@@ -965,23 +1007,10 @@ useEffect(() => {
         const trackKey = trackRole;
 
         trackRecorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) parts.push(e.data);
+          if (e.data && e.data.size > 0) pushPartWithCap(parts, e.data);
         };
         trackRecorder.onstop = () => {
-          const durationSeconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
-          const blob = new Blob(parts, { type: getAudioMimeType() });
-          void saveAudioTrackPipeline({
-            sessionId,
-            workspaceId: scopedWorkspaceId,
-            trackRole,
-            sourceLabel,
-            deviceId,
-            audioBlob: blob,
-            durationSeconds
-          }).catch((error) => {
-            studioDebug('saveAudioTrackPipelineError', { trackRole, sourceLabel, error });
-            console.error(`[Studio] erro ao salvar trilha de áudio "${trackRole}":`, error);
-          });
+          // Persistência controlada em stopRecording para evitar duplicidade.
         };
 
         audioTrackRecordersRef.current.set(trackKey, {
@@ -993,7 +1022,7 @@ useEffect(() => {
           trackRole
         });
 
-        trackRecorder.start();
+        trackRecorder.start(15000);
       }
 
       // ==============================================
@@ -1003,10 +1032,10 @@ useEffect(() => {
       const masterAudioRecorder = new MediaRecorder(masterMixStream, { mimeType: getAudioMimeType() });
       masterAudioPartsRef.current = [];
       masterAudioRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) masterAudioPartsRef.current.push(e.data);
+        if (e.data && e.data.size > 0) pushPartWithCap(masterAudioPartsRef.current, e.data);
       };
       masterAudioRecorderRef.current = masterAudioRecorder;
-      masterAudioRecorder.start();
+      masterAudioRecorder.start(15000);
 
       // ==============================================
       // 8. INICIAR CHUNK RECORDER (transcrição em tempo real)
@@ -1053,117 +1082,137 @@ useEffect(() => {
       stopAllPreviewStreams();
     } finally {
       setIsBusy(false);
+      isStartStopTransitionRef.current = false;
     }
   };
 
   const stopRecording = async () => {
-    setIsBusy(true);
-    setFeedback('Finalizando e salvando trilhas de áudio...');
-    setIsRecording(false);
-    isRecordingRef.current = false;
+    if (!isRecordingRef.current || isStartStopTransitionRef.current) return;
+    isStartStopTransitionRef.current = true;
+    try {
+      setIsBusy(true);
+      setFeedback('Finalizando e salvando trilhas de áudio...');
+      setIsRecording(false);
+      isRecordingRef.current = false;
 
-    if (chunkTimerRef.current) window.clearTimeout(chunkTimerRef.current);
-    if (audioRecorderRef.current?.state === 'recording') audioRecorderRef.current.stop();
+      if (chunkTimerRef.current) window.clearTimeout(chunkTimerRef.current);
+      if (audioRecorderRef.current?.state === 'recording') audioRecorderRef.current.stop();
 
-    // 1. Para gravadores de vídeo
-    cameraRecordersRef.current.forEach(({ recorder }) => {
-      if (recorder.state === 'recording') {
-        try { recorder.stop(); } catch { /* recorder já parou */ }
+      // 1. Para gravadores de vídeo
+      cameraRecordersRef.current.forEach(({ recorder }) => {
+        if (recorder.state === 'recording') {
+          try { recorder.stop(); } catch { /* recorder já parou */ }
+        }
+      });
+      cameraRecordersRef.current.clear();
+
+      // 2. Para gravadores de áudio multitrack (cada fonte isolada)
+      const trackSavePromises: Promise<any>[] = [];
+      audioTrackRecordersRef.current.forEach(({ recorder, parts, startedAt, sourceLabel, deviceId, trackRole }) => {
+        if (recorder.state === 'paused') {
+          try { recorder.resume(); } catch { /* já parou */ }
+        }
+        if (recorder.state === 'recording' || recorder.state === 'paused') {
+          try { recorder.stop(); } catch { /* já parou */ }
+        }
+        if (parts.length > 0 && activeSessionId) {
+          const durationSeconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+          const blob = new Blob(parts, { type: getAudioMimeType() });
+          trackSavePromises.push(
+            saveAudioTrackPipeline({
+              sessionId: activeSessionId,
+              workspaceId: scopedWorkspaceId,
+              trackRole,
+              sourceLabel,
+              deviceId,
+              audioBlob: blob,
+              durationSeconds
+            }).catch((error) => {
+              studioDebug('saveAudioTrackPipelineError', { trackRole, sourceLabel, error });
+              console.error(`[Studio] erro ao salvar trilha "${trackRole}":`, error);
+            })
+          );
+        }
+      });
+      audioTrackRecordersRef.current.clear();
+
+      // 3. Para gravador mestre (mix para transcrição)
+      if (masterAudioRecorderRef.current?.state === 'recording') {
+        masterAudioRecorderRef.current.stop();
       }
-    });
-    cameraRecordersRef.current.clear();
 
-    // 2. Para gravadores de áudio multitrack (cada fonte isolada)
-    const trackSavePromises: Promise<any>[] = [];
-    audioTrackRecordersRef.current.forEach(({ recorder, parts, startedAt, sourceLabel, deviceId, trackRole }) => {
-      if (recorder.state === 'recording') {
-        try { recorder.stop(); } catch { /* já parou */ }
-      }
-      // Só salva se tiver dados
-      if (parts.length > 0 && activeSessionId) {
-        const durationSeconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
-        const blob = new Blob(parts, { type: getAudioMimeType() });
+      if (activeSessionId && masterAudioPartsRef.current.length > 0) {
+        const durationSeconds = Math.max(1, Math.round((Date.now() - sessionStartedAtRef.current) / 1000));
+        const blob = new Blob(masterAudioPartsRef.current, { type: getAudioMimeType() });
         trackSavePromises.push(
-          saveAudioTrackPipeline({
+          saveMasterAudioPipeline({
             sessionId: activeSessionId,
             workspaceId: scopedWorkspaceId,
-            trackRole,
-            sourceLabel,
-            deviceId,
             audioBlob: blob,
             durationSeconds
           }).catch((error) => {
-            studioDebug('saveAudioTrackPipelineError', { trackRole, sourceLabel, error });
-            console.error(`[Studio] erro ao salvar trilha "${trackRole}":`, error);
+            studioDebug('saveMasterAudioPipelineError', {
+              sessionId: activeSessionId,
+              error
+            });
+            console.error('[Studio] erro ao salvar áudio mestre:', error);
           })
         );
       }
-    });
-    audioTrackRecordersRef.current.clear();
 
-    // 3. Para gravador mestre (mix para transcrição)
-    if (masterAudioRecorderRef.current?.state === 'recording') {
-      masterAudioRecorderRef.current.stop();
-    }
+      // 4. Aguarda todas as trilhas serem salvas em paralelo
+      await Promise.all(trackSavePromises);
 
-    if (activeSessionId && masterAudioPartsRef.current.length > 0) {
-      const durationSeconds = Math.max(1, Math.round((Date.now() - sessionStartedAtRef.current) / 1000));
-      const blob = new Blob(masterAudioPartsRef.current, { type: getAudioMimeType() });
-      trackSavePromises.push(
-        saveMasterAudioPipeline({
-          sessionId: activeSessionId,
-          workspaceId: scopedWorkspaceId,
-          audioBlob: blob,
-          durationSeconds
-        }).catch((error) => {
-          studioDebug('saveMasterAudioPipelineError', {
+      // 5. Cleanup dos streams
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(() => {});
+      }
+      audioContextRef.current = null;
+      masterMixDestRef.current = null;
+      masterAudioStreamRef.current?.getTracks().forEach((track) => track.stop());
+      masterAudioStreamRef.current = null;
+      stopAllPreviewStreams();
+
+      // 6. Finaliza sessão
+      if (activeSessionId) {
+        const duration = Math.round((Date.now() - sessionStartedAtRef.current) / 1000);
+        try {
+          await updateStudioSession(activeSessionId, {
+            status: 'completed',
+            totalDurationSeconds: duration
+          });
+        } catch (error) {
+          studioDebug('updateStudioSessionOnStopError', {
             sessionId: activeSessionId,
+            duration,
             error
           });
-          console.error('[Studio] erro ao salvar áudio mestre:', error);
-        })
-      );
-    }
-
-    // 4. Aguarda todas as trilhas serem salvas em paralelo
-    await Promise.all(trackSavePromises);
-
-    // 5. Cleanup dos streams
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      audioContextRef.current.close().catch(() => {});
-    }
-    audioContextRef.current = null;
-    masterMixDestRef.current = null;
-    masterAudioStreamRef.current?.getTracks().forEach((track) => track.stop());
-    masterAudioStreamRef.current = null;
-    stopAllPreviewStreams();
-
-    // 6. Finaliza sessão
-    if (activeSessionId) {
-      const duration = Math.round((Date.now() - sessionStartedAtRef.current) / 1000);
-      try {
-        await updateStudioSession(activeSessionId, {
-          status: 'completed',
-          totalDurationSeconds: duration
-        });
-      } catch (error) {
-        studioDebug('updateStudioSessionOnStopError', {
-          sessionId: activeSessionId,
-          duration,
-          error
-        });
-        console.error('[Studio] erro ao finalizar sessão:', error);
+          console.error('[Studio] erro ao finalizar sessão:', error);
+        }
       }
+
+      setActiveSessionId(null);
+      setIsPaused(false);
+      setFeedback('Sessão finalizada. Todas as trilhas de áudio preservadas.');
+    } finally {
+      setIsBusy(false);
+      isStartStopTransitionRef.current = false;
     }
-    
-    setActiveSessionId(null);
-    setIsBusy(false);
-    setFeedback('Sessão finalizada. Todas as trilhas de áudio preservadas.');
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!canManageStudio) {
+      setFeedback('Sem permissão para processar uploads neste workspace.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    if (isBusy || isRecordingRef.current || isStartStopTransitionRef.current) {
+      setFeedback('Ação bloqueada: finalize a operação atual antes de novo upload.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
 
     try {
       setIsBusy(true);
@@ -1467,7 +1516,7 @@ useEffect(() => {
                         {!isRecording ? (
                           <button
                             onClick={startRecording}
-                            disabled={isBusy}
+                            disabled={isBusy || !canManageStudio}
                             className="px-10 py-4 rounded-3xl bg-white text-slate-950 font-black shadow-2xl flex items-center gap-3 hover:bg-slate-100 hover:scale-105 transition-all disabled:opacity-50"
                           >
                             <MicIcon className="w-6 h-6" />
@@ -1810,7 +1859,7 @@ useEffect(() => {
                 
                 <button 
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isBusy}
+                  disabled={isBusy || !canManageStudio}
                   className="px-10 py-4 rounded-3xl bg-slate-900 text-white font-black shadow-xl hover:bg-slate-800 hover:scale-105 transition-all disabled:opacity-50"
                 >
                   Selecionar Arquivo

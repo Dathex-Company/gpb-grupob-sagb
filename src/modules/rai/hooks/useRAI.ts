@@ -172,17 +172,43 @@ export const useRAICaptures = (initialFilters?: RAIFilters) => {
             status: currentFilters.status,
             category: currentFilters.category,
           });
-          if (realCaptures.length > 0) {
-            setCaptures(realCaptures);
-            setLoading(false);
-            return;
-          }
+          const filteredReal = realCaptures.filter((cap) => {
+            if (currentFilters.query) {
+              const q = currentFilters.query.toLowerCase();
+              const haystack = `${cap.title} ${cap.content} ${cap.summary || ''} ${cap.sourceName} ${cap.tags.join(' ')}`.toLowerCase();
+              if (!haystack.includes(q)) return false;
+            }
+            if (typeof currentFilters.minRelevance === 'number' && cap.relevance < currentFilters.minRelevance) return false;
+            if (currentFilters.startDate && cap.timestamp < currentFilters.startDate) return false;
+            if (currentFilters.endDate && cap.timestamp > currentFilters.endDate) return false;
+            if (currentFilters.tags?.length) {
+              const capTags = new Set(cap.tags.map((t) => t.toLowerCase()));
+              const ok = currentFilters.tags.every((t) => capTags.has(t.toLowerCase()));
+              if (!ok) return false;
+            }
+            return true;
+          });
+          setCaptures(filteredReal);
+          setLoading(false);
+          return;
         }
       }
 
       // Fallback para mocks
       const mockData = await raiCapturesService.getCaptures(currentFilters);
-      setCaptures(mockData);
+      const filteredMock = mockData.filter((cap) => {
+        if (currentFilters.query) {
+          const q = currentFilters.query.toLowerCase();
+          const haystack = `${cap.title} ${cap.content} ${cap.summary || ''} ${cap.sourceName} ${cap.tags.join(' ')}`.toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+        if (currentFilters.agentId && cap.agentId !== currentFilters.agentId) return false;
+        if (currentFilters.status && cap.status !== currentFilters.status) return false;
+        if (currentFilters.category && cap.category !== currentFilters.category) return false;
+        if (typeof currentFilters.minRelevance === 'number' && cap.relevance < currentFilters.minRelevance) return false;
+        return true;
+      });
+      setCaptures(filteredMock);
     } catch (err: any) {
       const msg = err?.message || 'Erro ao carregar capturas';
       setLocalError(msg);

@@ -31,3 +31,6 @@
 - Implementado **download individual de trilhas**: botões por track na sidebar de sessões, usa `downloadBlobFromSupabaseStorage` + `triggerBlobDownload`.
 - Áudio do sistema também ganhou VU meter e gain slider próprios.
 - Compilação validada com `npx tsc --noEmit`: zero erros no módulo Studio.
+- Implementado **gate de permissão de workspace** no frontend para iniciar gravação e processar upload.
+- Implementado **controle anti-concorrência** em gravação com lock de transição start/stop e cooldown de 2 segundos para nova inicialização.
+- Implementado **hardening de memória** para gravações longas com `MediaRecorder.start(15000)` e limite de buffer em RAM por gravador (`pushPartWithCap`).

@@ -67,3 +67,14 @@ Resposta: leu o arquivo, confirmou a compreensão das regras canônicas e inicio
 ## 05/05/2026, 00:16:11
 Usuario perguntou: "me fale como esta o seu modulo agora..."
 Resposta: Apresentou relatorio completo de status do modulo TaskZei (Agenda Inteligente) com 11 fases, estrutura de paginas, provider, stores, servicos e proximos passos.
+
+## 05/05/2026 11:38
+**usuario:** pode fazer a implementacao total
+**cassio_mendes:** Implementacao total da conexao do Event Bridge entre Hub de Integracoes e TaskZei:
+- taskzei.hub.ts: substituido placeholder por conexao real com integrationHub, escuta de hub:inbound-message, processamento via conversationalHandler, marcacao como lida via markAsRead
+- AgendaInteligenteLayout.tsx: adicionado useEffect para iniciar listener do Event Bridge na montagem do layout
+- Build validado com sucesso
+
+## 05/05/2026 12:04
+**usuario:** pode executar
+**cassio_mendes:** Iniciada execucao do plano total em lote unico para TaskZei com os blocos: home com dados reais, health check periodico, melhorias operacionais de inbox inbound e atualizacao de handoff/governanca.

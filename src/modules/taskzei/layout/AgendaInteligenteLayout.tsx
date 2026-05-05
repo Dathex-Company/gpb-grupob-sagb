@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AgendaInteligenteHomePage } from '../pages/home/AgendaInteligenteHomePage';
 import { AgendaInteligenteTasksPage } from '../pages/tasks/AgendaInteligenteTasksPage';
 import { AgendaInteligenteInboxPage } from '../pages/inbox/AgendaInteligenteInboxPage';
@@ -8,6 +8,9 @@ import { AgendaInteligenteProjectsPage } from '../pages/projects/AgendaInteligen
 import { AgendaInteligenteProcessesPage } from '../pages/processes/AgendaInteligenteProcessesPage';
 import { AgendaInteligenteSettingsPage } from '../pages/settings/AgendaInteligenteSettingsPage';
 import { MockModeBanner } from '../components/MockModeBanner';
+import { hubIntegration } from '../services/taskzei.hub';
+import { taskzeiFacade } from '../services/taskzei.facade';
+import { monitorService } from '../services/taskzei.monitor';
 
 // Sub-rotas internas do módulo TaskZei simuladas por estado (Shell isolado)
 type TaskZeiView = 'home' | 'tasks' | 'inbox' | 'meetings' | 'monitor' | 'projects' | 'processes' | 'settings';
@@ -15,6 +18,40 @@ type TaskZeiView = 'home' | 'tasks' | 'inbox' | 'meetings' | 'monitor' | 'projec
 export const AgendaInteligenteLayout: React.FC = () => {
   // A aba inicial com destaque é Tarefas
   const [currentView, setCurrentView] = useState<TaskZeiView>('tasks');
+
+  // Inicia o Event Bridge listener para receber mensagens do Hub de Integrações
+  useEffect(() => {
+    const cleanup = hubIntegration.startListening();
+    return cleanup;
+  }, []);
+
+  // Health check periódico do provider (60s)
+  useEffect(() => {
+    const runHealthCheck = async () => {
+      const startedAt = Date.now();
+      try {
+        await taskzeiFacade.loadTasks();
+        const latency = Date.now() - startedAt;
+        monitorService.recordSyncSuccess();
+        if (latency > 2000) {
+          monitorService.recordEvent(
+            'provider_latency_high',
+            `Latência elevada no provider: ${latency}ms`,
+            latency > 5000 ? 'critical' : 'warning',
+            'taskzei-provider',
+            { latency }
+          );
+        }
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error('Erro desconhecido no health check');
+        monitorService.recordSyncError(err, 'Health check periódico do provider');
+      }
+    };
+
+    runHealthCheck();
+    const interval = window.setInterval(runHealthCheck, 60000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const navigationItems: { id: TaskZeiView; label: string; icon: React.ReactNode }[] = [
     {

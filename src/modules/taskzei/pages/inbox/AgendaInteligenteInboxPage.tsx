@@ -25,9 +25,19 @@ export const AgendaInteligenteInboxPage: React.FC = () => {
   const [newContent, setNewContent] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'classified' | 'converted' | 'dismissed'>('all');
   const [classifyingId, setClassifyingId] = useState<string | null>(null);
+  const [showInboundOnly, setShowInboundOnly] = useState(false);
 
   useEffect(() => {
     loadItems();
+  }, []);
+
+  useEffect(() => {
+    const handleInbound = () => {
+      // refresh incremental ao chegar mensagem do Hub
+      loadItems();
+    };
+    window.addEventListener('hub:inbound-message', handleInbound);
+    return () => window.removeEventListener('hub:inbound-message', handleInbound);
   }, []);
 
   const loadItems = async () => {
@@ -91,11 +101,16 @@ export const AgendaInteligenteInboxPage: React.FC = () => {
     }
   };
 
-  const filteredItems = filter === 'all'
+  const filteredItemsBase = filter === 'all'
     ? inboxItems
     : inboxItems.filter(i => i.status === filter);
 
+  const filteredItems = showInboundOnly
+    ? filteredItemsBase.filter(i => i.source === 'whatsapp' || i.source === 'email')
+    : filteredItemsBase;
+
   const pendingCount = inboxItems.filter(i => i.status === 'pending').length;
+  const inboundPendingCount = inboxItems.filter(i => (i.source === 'whatsapp' || i.source === 'email') && i.status === 'pending').length;
 
   return (
     <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -153,6 +168,16 @@ export const AgendaInteligenteInboxPage: React.FC = () => {
               {f !== 'all' && ` (${inboxItems.filter(i => i.status === f).length})`}
             </button>
           ))}
+          <button
+            onClick={() => setShowInboundOnly(v => !v)}
+            className={`rounded-lg px-3 py-1 text-[11px] font-medium transition-colors border ${
+              showInboundOnly
+                ? 'bg-[#fff4e8] text-[#9a5b00] border-[#ffd8a8]'
+                : 'text-[#6f7887] hover:bg-[#f5f6f7] border-transparent'
+            }`}
+          >
+            Inbound Hub {inboundPendingCount > 0 ? `(${inboundPendingCount})` : ''}
+          </button>
         </div>
       </div>
 

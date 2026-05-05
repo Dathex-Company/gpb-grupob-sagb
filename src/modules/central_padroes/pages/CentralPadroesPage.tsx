@@ -1,204 +1,121 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { BookIcon, CalendarIcon } from '../../../../components/Icon';
 import { manifest } from '../manifest';
-import { moduleDoc } from '../module-doc';
-import governancaReadmeMd from '../../../../docs/governanca_sagb/_readme.md?raw';
-import padraoModulosPlugaveisMd from '../../../../docs/governanca_sagb/padrao_modulos_plugaveis.md?raw';
-import padraoPosturaCondutaMd from '../../../../docs/governanca_sagb/padrao_postura_e_conduta_agentes.md?raw';
-import protocoloLogContinuoMd from '../../../../docs/governanca_sagb/protocolo_log_continuo_agentes.md?raw';
-import catalogoUnicoGovernancaMd from '../../../../docs/governanca_sagb/catalogo_unico_governanca.md?raw';
-import mapaEquivalenciaMd from '../../../../docs/governanca_sagb/mapa_equivalencia_runtime_docs.md?raw';
-import ownersAccountabilityMd from '../../../../docs/governanca_sagb/owners_e_accountability.md?raw';
-import decisoesPendenciasMd from '../../../../docs/governanca_sagb/decisoes_e_pendencias.md?raw';
-import templateSessionLogMd from '../../../../docs/governanca_sagb/template_session_log_agente.md?raw';
-import qgModulosVendaveisMd from '../../../../docs/governanca_sagb/qg_modulos_vendaveis_template.md?raw';
-import relacaoMonitoramentosExistentesMd from '../../../../docs/governanca_sagb/relacao_monitoramentos_existentes.md?raw';
-
-import metadataJson from '../../../../docs/governanca_sagb/metadata.json';
-
-type GovernanceDocStatus = 'ativo' | 'parcial' | 'pendente';
-type GovernanceDocCategory = 'normas' | 'operacional' | 'templates';
-
-interface GovernanceDoc {
-  id: string;
-  fileName: string;
-  nomeBonito: string;
-  description: string;
-  category: GovernanceDocCategory;
-  status: GovernanceDocStatus;
-  content: string;
-  criadoEm: string;
-  ultimaAlteracao: string;
-}
+import {
+  GovernanceRule,
+  listGovernanceRules,
+  publishGovernanceRule,
+  saveGovernanceRuleDraft,
+} from '../services/governanceRulesService';
 
 const CentralPadroesPage: React.FC = () => {
   const [docsAberto, setDocsAberto] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<GovernanceDoc | null>(null);
+  const [governanceDocs, setGovernanceDocs] = useState<GovernanceRule[]>([]);
+  const [selectedDoc, setSelectedDoc] = useState<GovernanceRule | null>(null);
+  const [editorContent, setEditorContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-  const governanceDocs: GovernanceDoc[] = [
-    {
-      id: 'padrao_modulos_plugaveis',
-      fileName: 'padrao_modulos_plugaveis.md',
-      nomeBonito: metadataJson['padrao_modulos_plugaveis.md'].nome_bonito,
-      description: 'Contrato técnico oficial de módulos plugáveis no runtime SagB.',
-      category: 'normas',
-      status: 'ativo',
-      content: padraoModulosPlugaveisMd,
-      criadoEm: metadataJson['padrao_modulos_plugaveis.md'].criado_em,
-      ultimaAlteracao: metadataJson['padrao_modulos_plugaveis.md'].ultima_alteracao,
-    },
-    {
-      id: 'padrao_postura_e_conduta_agentes',
-      fileName: 'padrao_postura_e_conduta_agentes.md',
-      nomeBonito: metadataJson['padrao_postura_e_conduta_agentes.md'].nome_bonito,
-      description: 'Define a conduta obrigatória para todos os agentes do ecossistema.',
-      category: 'normas',
-      status: 'ativo',
-      content: padraoPosturaCondutaMd,
-      criadoEm: metadataJson['padrao_postura_e_conduta_agentes.md'].criado_em,
-      ultimaAlteracao: metadataJson['padrao_postura_e_conduta_agentes.md'].ultima_alteracao,
-    },
-    {
-      id: 'protocolo_log_continuo_agentes',
-      fileName: 'protocolo_log_continuo_agentes.md',
-      nomeBonito: metadataJson['protocolo_log_continuo_agentes.md'].nome_bonito,
-      description: 'Regra mandatória de registro contínuo turno a turno.',
-      category: 'normas',
-      status: 'ativo',
-      content: protocoloLogContinuoMd,
-      criadoEm: metadataJson['protocolo_log_continuo_agentes.md'].criado_em,
-      ultimaAlteracao: metadataJson['protocolo_log_continuo_agentes.md'].ultima_alteracao,
-    },
-    {
-      id: 'catalogo_unico_governanca',
-      fileName: 'catalogo_unico_governanca.md',
-      nomeBonito: metadataJson['catalogo_unico_governanca.md'].nome_bonito,
-      description: 'Inventário macro dos itens de governança e classificação oficial.',
-      category: 'operacional',
-      status: 'ativo',
-      content: catalogoUnicoGovernancaMd,
-      criadoEm: metadataJson['catalogo_unico_governanca.md'].criado_em,
-      ultimaAlteracao: metadataJson['catalogo_unico_governanca.md'].ultima_alteracao,
-    },
-    {
-      id: 'mapa_equivalencia_runtime_docs',
-      fileName: 'mapa_equivalencia_runtime_docs.md',
-      nomeBonito: metadataJson['mapa_equivalencia_runtime_docs.md'].nome_bonito,
-      description: 'Mapa de equivalência entre runtime ativo e documentação macro.',
-      category: 'operacional',
-      status: 'parcial',
-      content: mapaEquivalenciaMd,
-      criadoEm: metadataJson['mapa_equivalencia_runtime_docs.md'].criado_em,
-      ultimaAlteracao: metadataJson['mapa_equivalencia_runtime_docs.md'].ultima_alteracao,
-    },
-    {
-      id: 'owners_e_accountability',
-      fileName: 'owners_e_accountability.md',
-      nomeBonito: metadataJson['owners_e_accountability.md'].nome_bonito,
-      description: 'Matriz oficial de owner principal, backup e accountability.',
-      category: 'operacional',
-      status: 'parcial',
-      content: ownersAccountabilityMd,
-      criadoEm: metadataJson['owners_e_accountability.md'].criado_em,
-      ultimaAlteracao: metadataJson['owners_e_accountability.md'].ultima_alteracao,
-    },
-    {
-      id: 'decisoes_e_pendencias',
-      fileName: 'decisoes_e_pendencias.md',
-      nomeBonito: metadataJson['decisoes_e_pendencias.md'].nome_bonito,
-      description: 'Trilha executiva de decisões fechadas e pendências em aberto.',
-      category: 'operacional',
-      status: 'ativo',
-      content: decisoesPendenciasMd,
-      criadoEm: metadataJson['decisoes_e_pendencias.md'].criado_em,
-      ultimaAlteracao: metadataJson['decisoes_e_pendencias.md'].ultima_alteracao,
-    },
-    {
-      id: 'template_session_log_agente',
-      fileName: 'template_session_log_agente.md',
-      nomeBonito: metadataJson['template_session_log_agente.md'].nome_bonito,
-      description: 'Template padrão para iniciar logs de novos agentes e módulos.',
-      category: 'templates',
-      status: 'ativo',
-      content: templateSessionLogMd,
-      criadoEm: metadataJson['template_session_log_agente.md'].criado_em,
-      ultimaAlteracao: metadataJson['template_session_log_agente.md'].ultima_alteracao,
-    },
-    {
-      id: 'qg_modulos_vendaveis_template',
-      fileName: 'qg_modulos_vendaveis_template.md',
-      nomeBonito: metadataJson['qg_modulos_vendaveis_template.md'].nome_bonito,
-      description: 'Guia de origem QG para módulos vendáveis plugados no SagB.',
-      category: 'templates',
-      status: 'ativo',
-      content: qgModulosVendaveisMd,
-      criadoEm: metadataJson['qg_modulos_vendaveis_template.md'].criado_em,
-      ultimaAlteracao: metadataJson['qg_modulos_vendaveis_template.md'].ultima_alteracao,
-    },
-    {
-      id: 'governanca_readme',
-      fileName: '_readme.md',
-      nomeBonito: metadataJson['_readme.md'].nome_bonito,
-      description: 'Índice oficial da governança com fronteiras anti-duplicação.',
-      category: 'normas',
-      status: 'ativo',
-      content: governancaReadmeMd,
-      criadoEm: metadataJson['_readme.md'].criado_em,
-      ultimaAlteracao: metadataJson['_readme.md'].ultima_alteracao,
-    },
-    {
-      id: 'relacao_monitoramentos_existentes',
-      fileName: 'relacao_monitoramentos_existentes.md',
-      nomeBonito: metadataJson['relacao_monitoramentos_existentes.md'].nome_bonito,
-      description: 'Inventário completo dos 132 itens de monitoramento em 13 submódulos do SagB.',
-      category: 'operacional',
-      status: 'ativo',
-      content: relacaoMonitoramentosExistentesMd,
-      criadoEm: metadataJson['relacao_monitoramentos_existentes.md'].criado_em,
-      ultimaAlteracao: metadataJson['relacao_monitoramentos_existentes.md'].ultima_alteracao,
-    },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const docs = await listGovernanceRules();
+        setGovernanceDocs(docs);
+        const first = docs[0] || null;
+        setSelectedDoc(first);
+        setEditorContent(first?.content_md || '');
+      } catch (error) {
+        setFeedback(`Falha ao carregar regras do Supabase: ${String((error as Error)?.message || error)}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const stats = useMemo(() => {
     const total = governanceDocs.length;
-    const ativos = governanceDocs.filter(doc => doc.status === 'ativo').length;
-    const parciais = governanceDocs.filter(doc => doc.status === 'parcial').length;
-    const pendentes = governanceDocs.filter(doc => doc.status === 'pendente').length;
+    const ativos = governanceDocs.filter((doc) => doc.sync_status === 'synced').length;
+    const parciais = governanceDocs.filter((doc) => doc.sync_status === 'failed').length;
+    const pendentes = governanceDocs.filter((doc) => doc.sync_status === 'pending').length;
 
     return { total, ativos, parciais, pendentes };
   }, [governanceDocs]);
 
-  const categoryMap: Array<{ key: GovernanceDocCategory; title: string; docs: GovernanceDoc[]; accent: string }> = [
+  const categoryMap: Array<{ key: string; title: string; docs: GovernanceRule[]; accent: string }> = [
     {
       key: 'normas',
       title: 'Normas Oficiais',
-      docs: governanceDocs.filter(doc => doc.category === 'normas'),
+      docs: governanceDocs.filter((doc) => doc.domain === 'normas'),
       accent: 'text-sagb-blue'
     },
     {
       key: 'operacional',
       title: 'Governança Operacional',
-      docs: governanceDocs.filter(doc => doc.category === 'operacional'),
+      docs: governanceDocs.filter((doc) => doc.domain === 'operacional'),
       accent: 'text-sagb-text'
     },
     {
       key: 'templates',
       title: 'Templates de Apoio',
-      docs: governanceDocs.filter(doc => doc.category === 'templates'),
+      docs: governanceDocs.filter((doc) => doc.domain === 'templates'),
       accent: 'text-sagb-text'
     }
   ];
 
-  const getStatusBadge = (status: GovernanceDocStatus) => {
-    if (status === 'ativo') return 'bg-green-500';
-    if (status === 'parcial') return 'bg-yellow-500';
+  const getStatusBadge = (status: string) => {
+    if (status === 'synced') return 'bg-emerald-500';
+    if (status === 'pending') return 'bg-amber-500';
     return 'bg-red-500';
   };
 
-  const openDoc = (doc: GovernanceDoc) => {
+  const openDoc = (doc: GovernanceRule) => {
     setSelectedDoc(doc);
+    setEditorContent(doc.content_md || '');
     setDocsAberto(true);
+  };
+
+  const refreshRules = async (focusId?: string) => {
+    const docs = await listGovernanceRules();
+    setGovernanceDocs(docs);
+    const focused = (focusId && docs.find((doc) => doc.id === focusId)) || docs[0] || null;
+    setSelectedDoc(focused);
+    setEditorContent(focused?.content_md || '');
+  };
+
+  const handleSaveDraft = async () => {
+    if (!selectedDoc) return;
+    try {
+      setSaving(true);
+      setFeedback(null);
+      const updated = await saveGovernanceRuleDraft(selectedDoc, editorContent);
+      await refreshRules(updated.id);
+      setFeedback('Rascunho salvo no Supabase com status pending.');
+    } catch (error) {
+      setFeedback(`Falha ao salvar rascunho: ${String((error as Error)?.message || error)}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!selectedDoc) return;
+    try {
+      setPublishing(true);
+      setFeedback(null);
+      const result = await publishGovernanceRule(selectedDoc, editorContent);
+      await refreshRules(result.rule.id);
+      setFeedback(`Publicação concluída. Sync status: ${result.rule.sync_status}`);
+    } catch (error) {
+      setFeedback(`Falha ao publicar: ${String((error as Error)?.message || error)}`);
+      await refreshRules(selectedDoc.id);
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const renderDocsModal = () => {
@@ -206,36 +123,71 @@ const CentralPadroesPage: React.FC = () => {
 
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="bg-sagb-panel rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
           <div className="p-6 border-b border-sagb-line flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-black text-sagb-text">{selectedDoc?.nomeBonito || 'Documento de Governança'}</h2>
+              <h2 className="text-2xl font-black text-sagb-text">{selectedDoc?.title || 'Documento de Governança'}</h2>
               <p className="text-[12px] text-sagb-muted">
-                docs/governanca_sagb/{selectedDoc?.fileName || '_readme.md'}
+                {selectedDoc?.sync_target_path || 'docs/governanca_sagb/_readme.md'}
               </p>
               <div className="flex items-center gap-4 mt-2 text-[10px] text-sagb-muted">
                 <div className="flex items-center gap-1">
                   <CalendarIcon className="w-3 h-3" />
-                  <span>Criado: {selectedDoc?.criadoEm || '—'}</span>
+                  <span>Criado: {selectedDoc?.created_at || '—'}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <CalendarIcon className="w-3 h-3" />
-                  <span>Última: {selectedDoc?.ultimaAlteracao || '—'}</span>
+                  <span>Última: {selectedDoc?.updated_at || '—'}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>Versão: {selectedDoc?.version || 0}</span>
                 </div>
               </div>
             </div>
             <button
               onClick={() => setDocsAberto(false)}
-              className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold"
+              className="px-4 py-2 rounded-lg bg-sagb-bg hover:bg-sagb-bg-2 text-sagb-text font-semibold"
             >
               Fechar
             </button>
           </div>
 
-          <div className="p-6 overflow-y-auto">
-            <article className="prose prose-sm max-w-none text-[12px] text-sagb-text">
-              <ReactMarkdown>{selectedDoc?.content || '_Documento não encontrado._'}</ReactMarkdown>
-            </article>
+          <div className="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <section className="space-y-2">
+              <div className="text-[10px] font-black uppercase tracking-widest text-sagb-muted">Editor Markdown</div>
+              <textarea
+                value={editorContent}
+                onChange={(event) => setEditorContent(event.target.value)}
+                className="w-full min-h-[420px] p-3 rounded-lg bg-sagb-bg border border-sagb-line text-[12px] text-sagb-text font-mono"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSaveDraft}
+                  disabled={saving || publishing || !selectedDoc}
+                  className="px-4 py-2 rounded-lg bg-sagb-bg-2 border border-sagb-line text-[12px] font-semibold disabled:opacity-50"
+                >
+                  {saving ? 'Salvando...' : 'Salvar rascunho'}
+                </button>
+                <button
+                  onClick={handlePublish}
+                  disabled={publishing || saving || !selectedDoc}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white text-[12px] font-semibold disabled:opacity-50"
+                >
+                  {publishing ? 'Publicando...' : 'Publicar'}
+                </button>
+              </div>
+              {selectedDoc?.last_sync_error && (
+                <div className="text-[10px] text-red-500">Erro sync: {selectedDoc.last_sync_error}</div>
+              )}
+              {feedback && <div className="text-[10px] text-sagb-muted">{feedback}</div>}
+            </section>
+
+            <section>
+              <div className="text-[10px] font-black uppercase tracking-widest text-sagb-muted mb-2">Preview</div>
+              <article className="prose prose-sm max-w-none text-[12px] text-sagb-text">
+                <ReactMarkdown>{editorContent || '_Documento vazio._'}</ReactMarkdown>
+              </article>
+            </section>
           </div>
         </div>
       </div>
@@ -252,13 +204,13 @@ const CentralPadroesPage: React.FC = () => {
           </p>
         </div>
         <div className="text-right">
-          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Módulo Oficial</div>
+          <div className="text-[10px] font-black text-sagb-muted uppercase tracking-widest mb-1">Módulo Oficial</div>
           <div className="text-lg font-bold text-sagb-text">Central de Padrões</div>
           <div className="mt-2 text-[12px] text-sagb-muted">
             Responsável: <span className="font-semibold text-sagb-text">{manifest.owner?.displayName || 'A definir'}</span>
           </div>
           <button
-            onClick={() => openDoc(governanceDocs[0])}
+            onClick={() => selectedDoc && openDoc(selectedDoc)}
             className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-[12px] font-semibold"
           >
             <BookIcon className="w-4 h-4" />
@@ -294,16 +246,16 @@ const CentralPadroesPage: React.FC = () => {
           <div className="text-xl font-black text-sagb-text">{stats.total}</div>
         </article>
         <article className="bg-sagb-panel p-4 rounded-xl border border-green-500/20">
-          <div className="text-[10px] text-sagb-muted">🟢 Ativos</div>
-          <div className="text-xl font-black text-green-600">{stats.ativos}</div>
+          <div className="text-[10px] text-sagb-muted">🟢 Synced</div>
+          <div className="text-xl font-black text-sagb-text">{stats.ativos}</div>
         </article>
-        <article className="bg-sagb-panel p-4 rounded-xl border border-yellow-500/20">
-          <div className="text-[10px] text-sagb-muted">🟡 Parciais</div>
-          <div className="text-xl font-black text-yellow-600">{stats.parciais}</div>
+        <article className="bg-sagb-panel p-4 rounded-xl border border-sagb-line">
+          <div className="text-[10px] text-sagb-muted">🟡 Failed</div>
+          <div className="text-xl font-black text-sagb-text">{stats.parciais}</div>
         </article>
-        <article className="bg-sagb-panel p-4 rounded-xl border border-red-500/20">
+        <article className="bg-sagb-panel p-4 rounded-xl border border-sagb-line">
           <div className="text-[10px] text-sagb-muted">🔴 Pendentes</div>
-          <div className="text-xl font-black text-red-600">{stats.pendentes}</div>
+          <div className="text-xl font-black text-sagb-text">{stats.pendentes}</div>
         </article>
       </section>
 
@@ -325,21 +277,21 @@ const CentralPadroesPage: React.FC = () => {
                     <div className="flex items-start gap-2 mb-1">
                       <span className={`inline-block w-2.5 h-2.5 rounded-full ${getStatusBadge(doc.status)}`} />
                       <div className="flex-1">
-                        <div className="text-[12px] font-semibold text-sagb-text">{doc.nomeBonito}</div>
-                        <div className="text-[10px] text-sagb-muted mt-0.5">{doc.fileName}</div>
+                        <div className="text-[12px] font-semibold text-sagb-text">{doc.title}</div>
+                        <div className="text-[10px] text-sagb-muted mt-0.5">{doc.rule_key}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-[10px] text-sagb-muted">
                       <div className="flex items-center gap-1">
                         <CalendarIcon className="w-2.5 h-2.5" />
-                        <span>{doc.criadoEm}</span>
+                        <span>{doc.created_at}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <CalendarIcon className="w-2.5 h-2.5" />
-                        <span>{doc.ultimaAlteracao}</span>
+                        <span>{doc.updated_at}</span>
                       </div>
                     </div>
-                    <p className="text-[10px] text-sagb-muted mt-1">{doc.description}</p>
+                    <p className="text-[10px] text-sagb-muted mt-1">status: {doc.sync_status} • versão: {doc.version}</p>
                   </button>
                 </li>
               ))}
@@ -347,6 +299,8 @@ const CentralPadroesPage: React.FC = () => {
           </article>
         ))}
       </section>
+
+      {loading && <div className="mt-4 text-[12px] text-sagb-muted">Carregando regras de governança...</div>}
 
       {renderDocsModal()}
     </div>

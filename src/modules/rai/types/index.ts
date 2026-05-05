@@ -79,11 +79,12 @@ export interface RAIAlert {
 }
 
 export interface RAIFilters {
-  search?: string;
+  query?: string;
   startDate?: Date;
   endDate?: Date;
   agentId?: string;        // Filtro por agent do SagB
   category?: string;
+  status?: RAICapture['status'];
   minRelevance?: number;
   tags?: string[];
 }

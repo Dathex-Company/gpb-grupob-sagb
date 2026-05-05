@@ -15,13 +15,13 @@
 | 1.2 Adicionar exportação/download de áudio, vídeo e transcrições | ✅ |
 | 1.3 Corrigir gaps de governança (persona, decisions, changelog) | ✅ |
 
-## Prioridade 2 — 🔧 Em Planejamento
+## Prioridade 2 — ✅ Concluído
 
 | Item | Status |
 |------|--------|
-| 2.1 Gerenciamento de memória em gravações longas | 🔧 |
-| 2.2 Rate limiting e proteção contra múltiplas gravações | 🔧 |
-| 2.3 Validação de permissão do workspace no frontend | 🔧 |
+| 2.1 Gerenciamento de memória em gravações longas | ✅ |
+| 2.2 Rate limiting e proteção contra múltiplas gravações | ✅ |
+| 2.3 Validação de permissão do workspace no frontend | ✅ |
 
 ## Prioridade 3 — 🔧 Em Planejamento
 
@@ -59,3 +59,4 @@ Relatório completo em [`plans/auditoria-studio-fabi-nunes.md`](../../plans/audi
 | 18/04/2026 | Criação do módulo Studio com captura multicâmera |
 | 03/05/2026 | Plano de evolução P1-P4 criado; P1 concluído |
 | 03/05/2026 | Auditoria de código + 17 bugs corrigidos |
+| 05/05/2026 | P2 concluído: hardening de memória, lock/cooldown de gravação e gate de permissão |
