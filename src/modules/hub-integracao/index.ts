@@ -27,7 +27,7 @@ export type {
 //   // Escutar mensagens em tempo real (event bridge)
 //   window.addEventListener('hub:inbound-message', (event) => {
 //     const msg = (event as CustomEvent<HubInboundMessage>).detail;
-//     useInboxStore.getState().addInboxItem({ ... });
+//     // processar mensagem...
 //   });
 //
 //   // Consultar mensagens pendentes
@@ -35,7 +35,3 @@ export type {
 //
 //   // Marcar como lida após processamento
 //   await integrationHub.markAsRead(message.id);
-//
-// Exportamos os métodos diretamente para conveniência:
-export const getInboxMessages = integrationHub.getInboxMessages.bind(integrationHub);
-export const markAsRead = integrationHub.markAsRead.bind(integrationHub);
