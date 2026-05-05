@@ -78,3 +78,35 @@ Registro de mudanças técnicas, decisões de arquitetura e evolução do módul
 - **Integração com SagB**: zero duplicação de cadastro de agentes. `rai_configs` como extensão de `agents`.
 - **Build/Dev**: servidor roda sem erros de importação.
 - Pendente: conectar `RAIPage.tsx` ao contexto de `activatedAgents` do `App.tsx`.
+
+## [v1.2.1] - 2026-05-04
+
+### Adicionado
+- Sidebar modificada para exibir SOMENTE o módulo RAI no menu de navegação.
+
+### Alterado
+- `components/Sidebar.tsx`: filtro `menuItems` para mostrar apenas item com id 'rai'.
+
+### Diagnóstico
+- RAI module registrado em `moduleRegistry.ts`, manifesto com `initialStatus: 'active'`, rota `/rai`.
+- Sidebar exibe RAI via `dynamicModules`. Sem conflito de ID/label com staticItemIds.
+- Possível causa de inacessibilidade: localStorage com toggle `rai: false` de sessão anterior.
+- Servidor dev reiniciado para limpar cache do Vite.
+
+### Status
+- Navegação: apenas RAI visível no sidebar.
+- Risco: usuário perde acesso a outros módulos via sidebar (intencional).
+
+## [v1.2.2] - 2026-05-04
+
+### Corrigido (hotfix crítico)
+- **Infinite loop no hook `useRAIAgents`**: o hook assinava o store Zustand inteiro via `const store = useRAIStore()`. Quando `store.setLoading(true)` era chamado, o estado do store mudava → o componente re-renderizava → `store` virava nova referência de objeto → `useCallback` com `[store]` recriava `fetchAgents` → `useEffect` re-executava → loop infinito. Sintoma: tela trava (browser freeze) ao clicar no módulo RAI.
+- **Mesmo padrão replicado em `useRAICaptures`**: idem, `[store, filters]` como dependência causava o mesmo loop.
+- **Correção aplicada**: store quebrado em dois hooks auxiliares:
+  - `useRAIStoreActions()` — seletores individuais com `useRAIStore(s => s.setLoading)`, que retornam referências de função ESTÁVEIS (não causam re-render).
+  - `useRAIStoreValues()` — seletores individuais para leitura de valores reativos (`loading`, `error`, `captures`).
+  - `useRef` para `sagbAgents` e `filters` — evita que arrays/objetos criados no render do parente forcem recriação do `useCallback`.
+
+### Registro
+- Análise completa documentada em `agent/session_log.md`.
+- Decisão registrada em `decisions.md`.

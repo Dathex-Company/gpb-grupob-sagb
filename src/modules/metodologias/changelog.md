@@ -112,6 +112,30 @@ Registro de mudanças técnicas, decisões de arquitetura e evolução do módul
 
 ---
 
+## [v1.3.0-sidebar-refined] - 2026-05-04
+
+### Modificado
+- `MetodologiasHubPage.tsx` — sidebar refinado com visual integrado à paleta SagB:
+  - Sidebar: largura fixa `w-64` (independente da quantidade de itens), fundo `bg-sagb-panel`, sombra `shadow-sm`, borda `border-r border-sagb-line`
+  - Nav buttons em estilo pill sutil: ativo `bg-sagb-bg-2 text-sagb-text border-sagb-line shadow-sm`, inativo `text-sagb-muted hover:bg-sagb-bg-2 hover:text-sagb-text hover:border-sagb-line`
+  - Header com `backdrop-blur-sm` para efeito vidro translúcido
+  - Badge "Módulo Oficial" no estilo sutil: `bg-sagb-bg-2 text-sagb-muted border-sagb-line`
+  - Botão "Voltar ao SagB" refinado como link sutil no rodapé: `hover:text-sagb-blue hover:bg-sagb-bg-2 hover:border-sagb-line`
+- `changelog.md` — adicionada documentação da versão v1.3.0
+
+### Removido
+- `MetodologiasInternalMenu.tsx` — componente substituído por sidebar inline no HubPage (arquivo órfão)
+
+### Padrão Canônico Aplicado (v1.3.0 — Sidebar refinado)
+- ✅ Sidebar vertical refinado com visual integrado ao SagB (paleta clara, sem azul pesado)
+- ✅ Largura fixa `w-64` independente da quantidade de itens (2, 5 ou 10)
+- ✅ Nav buttons como pills sutis: `bg-sagb-bg-2 text-sagb-text border-sagb-line shadow-sm` (ativo)
+- ✅ Badge "Módulo Oficial" sutil: `bg-sagb-bg-2 text-sagb-muted border-sagb-line`
+- ✅ Header com `backdrop-blur-sm` para efeito vidro translúcido
+- ✅ Botão "Voltar ao SagB" refinado como link sutil no rodapé
+
+---
+
 ## [v1.0.0-governance-bootstrap] - 2026-04-09
 
 ### Adicionado

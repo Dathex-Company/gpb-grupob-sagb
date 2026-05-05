@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { TaskzeiTask } from '../types/task.types';
+import { TaskzeiTaskInlineInput } from '../types/taskzei.contracts';
 import { TaskKanbanBoard } from '../components/tasks/task_kanban_board';
 import { TaskFilters } from '../components/tasks/task_filters';
+import { TaskList } from '../components/tasks/task_list';
 import { TaskDrawer } from '../components/tasks/task_drawer';
 import { useTaskzeiStore } from '../store/taskzei.store';
 import { taskzeiFacade } from '../services/taskzei.facade';
@@ -61,6 +63,30 @@ export const AgendaInteligentePage: React.FC = () => {
       await taskzeiFacade.addNewTask(title, 'Nova tarefa criada');
     } catch (err) {
       console.error('Erro ao criar tarefa:', err);
+    }
+  };
+
+  const handleDuplicateTask = async (id: string) => {
+    try {
+      await taskzeiFacade.duplicateTask(id);
+    } catch (err) {
+      console.error('Erro ao duplicar tarefa:', err);
+    }
+  };
+
+  const handleArchiveTask = async (id: string) => {
+    try {
+      await taskzeiFacade.archiveTask(id);
+    } catch (err) {
+      console.error('Erro ao arquivar tarefa:', err);
+    }
+  };
+
+  const handleUpdateTask = async (id: string, updates: Partial<TaskzeiTaskInlineInput>) => {
+    try {
+      await taskzeiFacade.updateTask(id, updates);
+    } catch (err) {
+      console.error('Erro ao atualizar tarefa:', err);
     }
   };
 
@@ -162,34 +188,15 @@ export const AgendaInteligentePage: React.FC = () => {
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
-          <div className="space-y-2">
-            {tasks.map(task => (
-              <div
-                key={task.id}
-                onClick={() => handleTaskClick(task)}
-                className="p-4 bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow hover:border-gray-200 transition-all cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className={`font-medium ${task.status === 'concluida' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                      {task.title}
-                    </h3>
-                    {task.description && (
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">{task.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-medium px-2 py-1 rounded border bg-gray-50 text-gray-600">
-                      {task.priority === 'alta' ? 'Alta' : task.priority === 'media' ? 'Média' : 'Baixa'}
-                    </span>
-                    <span className="text-xs font-medium px-2 py-1 rounded border bg-gray-50 text-gray-600">
-                      {task.status === 'aberta' ? 'Aberta' : task.status === 'em_andamento' ? 'Em Andamento' : 'Concluída'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <TaskList
+            tasks={tasks}
+            onTaskClick={handleTaskClick}
+            onCompleteTask={handleCompleteTask}
+            onChangeStatus={handleChangeStatus}
+            onUpdateTask={handleUpdateTask}
+            onDuplicate={handleDuplicateTask}
+            onArchive={handleArchiveTask}
+          />
         </div>
       )}
 

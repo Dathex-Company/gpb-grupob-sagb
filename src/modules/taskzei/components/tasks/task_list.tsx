@@ -9,6 +9,8 @@ interface TaskListProps {
   onCompleteTask: (id: string, e: React.MouseEvent) => void;
   onChangeStatus?: (id: string, status: TaskzeiTask['status']) => void;
   onUpdateTask?: (id: string, updates: Partial<TaskzeiTaskInlineInput>) => void;
+  onDuplicate?: (id: string) => void;
+  onArchive?: (id: string) => void;
   isCreatingRow?: boolean;
   onCreateTask?: (input: TaskzeiTaskInlineInput) => Promise<void> | void;
   onCancelCreate?: () => void;
@@ -109,6 +111,8 @@ export const TaskList: React.FC<TaskListProps> = ({
   onCompleteTask,
   onChangeStatus,
   onUpdateTask,
+  onDuplicate,
+  onArchive,
   isCreatingRow,
   onCreateTask,
   onCancelCreate,
@@ -132,13 +136,15 @@ export const TaskList: React.FC<TaskListProps> = ({
       ) : null}
 
       {tasks.map(task => (
-        <TaskListItem 
-          key={task.id} 
-          task={task} 
-          onClick={onTaskClick} 
-          onComplete={onCompleteTask} 
+        <TaskListItem
+          key={task.id}
+          task={task}
+          onClick={onTaskClick}
+          onComplete={onCompleteTask}
           onChangeStatus={onChangeStatus}
           onUpdateTask={onUpdateTask}
+          onDuplicate={onDuplicate}
+          onArchive={onArchive}
         />
       ))}
       </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { TaskzeiTask } from '../../types/task.types';
 import { TaskzeiTaskInlineInput } from '../../types/taskzei.contracts';
 import { useFocusStore } from '../../../foco_total/stores/focusStore';
@@ -9,6 +9,8 @@ interface TaskListItemProps {
   onComplete: (id: string, e: React.MouseEvent) => void;
   onChangeStatus?: (id: string, status: TaskzeiTask['status']) => void;
   onUpdateTask?: (id: string, updates: Partial<TaskzeiTaskInlineInput>) => void;
+  onDuplicate?: (id: string) => void;
+  onArchive?: (id: string) => void;
   variant?: 'table' | 'card';
 }
 
@@ -18,11 +20,26 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
   onComplete,
   onChangeStatus,
   onUpdateTask,
+  onDuplicate,
+  onArchive,
   variant = 'table'
 }) => {
   const isCompleted = task.status === 'concluida';
   const [titleDraft, setTitleDraft] = useState(task.title);
   const [assigneeDraft, setAssigneeDraft] = useState(task.assigneeName ?? '');
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const contextRef = useRef<HTMLDivElement>(null);
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (contextRef.current && !contextRef.current.contains(e.target as Node)) {
+        setShowContextMenu(false);
+      }
+    };
+    if (showContextMenu) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showContextMenu]);
 
   const handleFocusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -248,6 +265,42 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
           <span className="rounded-md border border-[#d9dee5] bg-[#f5f6f7] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#6f7887]">
             {getStatusLabel()}
           </span>
+        )}
+      </div>
+
+      {/* ── Menu de contexto (⋯) ─────────────────────── */}
+      <div className="relative flex items-center justify-center" onClick={(e) => e.stopPropagation()} ref={contextRef}>
+        <button
+          onClick={() => setShowContextMenu(prev => !prev)}
+          className="flex h-6 w-6 items-center justify-center rounded text-[#95a0b1] opacity-0 group-hover:opacity-100 hover:bg-[#f0f2f4] hover:text-[#414854] transition-all"
+          title="Mais ações"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" />
+          </svg>
+        </button>
+
+        {showContextMenu && (
+          <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-lg border border-[#d9dee5] bg-white shadow-lg py-1">
+            <button
+              onClick={() => { onDuplicate?.(task.id); setShowContextMenu(false); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[11px] text-[#414854] hover:bg-[#f5f6f7] transition-colors"
+            >
+              <svg className="w-3.5 h-3.5 text-[#95a0b1]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Duplicar
+            </button>
+            <button
+              onClick={() => { onArchive?.(task.id); setShowContextMenu(false); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[11px] text-[#414854] hover:bg-[#f5f6f7] transition-colors"
+            >
+              <svg className="w-3.5 h-3.5 text-[#95a0b1]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+              Arquivar
+            </button>
+          </div>
         )}
       </div>
     </div>

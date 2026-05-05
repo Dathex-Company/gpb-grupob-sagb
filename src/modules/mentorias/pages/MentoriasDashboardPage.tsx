@@ -5,14 +5,13 @@ import { mentoriasManifest } from '../manifest';
 
 interface MentoriasDashboardPageProps {
   onNavigate: (view: 'library' | 'detail', id?: string) => void;
-  onBackToSagB?: () => void;
 }
 
-export const MentoriasDashboardPage: React.FC<MentoriasDashboardPageProps> = ({ onNavigate, onBackToSagB }) => {
+export const MentoriasDashboardPage: React.FC<MentoriasDashboardPageProps> = ({ onNavigate }) => {
   return (
-    <div className="flex-1 p-10 bg-sagb-bg text-sagb-text min-h-full font-inter">
+    <div className="flex-1 overflow-auto p-8">
       {/* Header canônico 2 colunas */}
-      <header className="mb-10 flex justify-between items-start gap-6">
+      <header className="mb-8 flex justify-between items-start gap-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-sagb-blue/10 text-sagb-blue border border-sagb-blue/20 px-3 py-0.5 text-[10px] font-black uppercase tracking-widest">
@@ -39,16 +38,6 @@ export const MentoriasDashboardPage: React.FC<MentoriasDashboardPageProps> = ({ 
             <span className="font-semibold text-sagb-text">
               {mentoriasManifest.owner?.displayName || 'A definir'}
             </span>
-          </div>
-          <div className="mt-3 flex gap-2 justify-end">
-            {onBackToSagB && (
-              <button
-                onClick={onBackToSagB}
-                className="inline-flex items-center gap-2 rounded-xl border border-sagb-line text-sagb-text px-4 py-2 text-[10px] font-black uppercase tracking-wider transition hover:bg-sagb-panel"
-              >
-                ← Voltar ao SagB
-              </button>
-            )}
           </div>
         </div>
       </header>

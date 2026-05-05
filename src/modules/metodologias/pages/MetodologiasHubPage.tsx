@@ -1175,38 +1175,17 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
       : 'Detalhe do ativo';
 
   return (
-    <div className="flex-1 p-10 bg-sagb-bg text-sagb-text min-h-full font-inter">
-      {/* Header canônico — 2 colunas */}
-      <header className="flex items-start justify-between gap-6 mb-8">
-        <div className="space-y-3">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sagb-blue/10 text-sagb-blue text-[10px] font-black uppercase tracking-[0.22em] border border-sagb-blue/20">
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            Módulo Oficial
-          </span>
-          <h1 className="text-3xl font-black tracking-tight">Núcleo de Metodologias</h1>
-          <p className="text-[12px] text-sagb-muted max-w-2xl leading-relaxed">
-            Governar o catálogo, estruturação, versionamento, saúde e operação das metodologias do SagB.
-          </p>
-          <div className="flex items-center gap-4 pt-1">
-            <span className="text-[11px] text-sagb-muted">
-              <span className="font-bold text-sagb-text">Owner:</span> Agente de Metodologias
-            </span>
-          </div>
+    <div className="flex-1 flex overflow-hidden bg-sagb-bg text-sagb-text font-inter">
+      {/* Sidebar vertical — Padrão SagB integrado */}
+      <aside className="w-64 shrink-0 bg-sagb-panel flex flex-col shadow-sm border-r border-sagb-line">
+        {/* Branding / Título do módulo */}
+        <div className="px-5 pt-6 pb-4 border-b border-sagb-line">
+          <p className="text-[9px] uppercase tracking-[0.28em] font-black text-sagb-muted mb-1">Núcleo de Metodologias</p>
+          <h2 className="text-lg font-black tracking-tight text-sagb-text">Metodologias</h2>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={onBackToSagB}
-            className="px-3 py-1.5 rounded-lg bg-sagb-blue text-white text-[11px] font-black uppercase tracking-wide hover:opacity-90 transition"
-          >
-            ← Voltar ao SagB
-          </button>
-        </div>
-      </header>
 
-      {/* Navbar horizontal */}
-      <div className="max-w-[1400px] mx-auto space-y-6">
-        <nav className="flex flex-wrap items-center gap-2 rounded-2xl border border-sagb-line bg-sagb-panel p-2 shadow-sm">
+        {/* Navegação interna */}
+        <nav className="flex-1 overflow-auto p-3 space-y-0.5">
           {([
             { id: '/metodologias' as RotaInterna, label: 'Home', icone: '🏠' },
             { id: '/metodologias/mesa' as RotaInterna, label: 'Mesa', icone: '🪟' },
@@ -1222,14 +1201,14 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
                 key={item.id}
                 type="button"
                 onClick={() => navegar(item.id)}
-                className={`rounded-xl px-3 py-2 text-[12px] font-bold transition-all border ${
+                className={`w-full text-left px-3 py-2 rounded-lg text-[12px] font-semibold transition-all ${
                   ativo
-                    ? 'bg-sagb-blue text-white border-sagb-blue shadow-[0_4px_12px_rgba(37,99,235,0.3)]'
-                    : 'bg-sagb-panel text-sagb-text border-sagb-line hover:border-sagb-blue/50 hover:text-sagb-blue'
+                    ? 'bg-sagb-bg-2 text-sagb-text border border-sagb-line shadow-sm'
+                    : 'text-sagb-muted border border-transparent hover:bg-sagb-bg-2 hover:text-sagb-text hover:border-sagb-line'
                 }`}
               >
-                <span className="flex items-center gap-2">
-                  <span className="text-base">{item.icone}</span>
+                <span className="flex items-center gap-2.5">
+                  <span className="text-sm">{item.icone}</span>
                   <span>{item.label}</span>
                 </span>
               </button>
@@ -1237,7 +1216,43 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
           })}
         </nav>
 
-        <section className="space-y-5">
+        {/* Rodapé da sidebar — Voltar ao SagB */}
+        <div className="p-3 border-t border-sagb-line">
+          <button
+            type="button"
+            onClick={onBackToSagB}
+            className="w-full text-left px-3 py-2 rounded-lg text-[11px] font-semibold tracking-wide text-sagb-muted hover:text-sagb-blue hover:bg-sagb-bg-2 transition-all border border-transparent hover:border-sagb-line"
+          >
+            ← Voltar ao SagB
+          </button>
+        </div>
+      </aside>
+
+      {/* Conteúdo principal */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <header className="shrink-0 px-8 py-4 bg-sagb-panel/80 backdrop-blur-sm border-b border-sagb-line flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sagb-bg-2 text-sagb-muted text-[9px] font-semibold uppercase tracking-[0.18em] border border-sagb-line">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Módulo Oficial
+            </span>
+            <h1 className="text-xl font-black tracking-tight truncate text-sagb-text">
+              {rotaInterna === '/metodologias' ? 'Núcleo de Metodologias'
+                : rotaInterna === '/metodologias/mesa' ? 'Mesa de Estruturação'
+                : rotaInterna === '/metodologias/catalogo' ? 'Catálogo'
+                : rotaInterna === '/metodologias/saude' ? 'Saúde do Núcleo'
+                : rotaInterna.endsWith('/editar')
+                  ? ativoCanonicoSelecionado ? 'Manutenção canônica' : 'Edição guiada'
+                  : 'Detalhe do ativo'}
+            </h1>
+          </div>
+          <span className="shrink-0 text-[11px] text-sagb-muted hidden sm:block">
+            <span className="font-semibold text-sagb-text">Owner:</span> Agente de Metodologias
+          </span>
+        </header>
+
+        <div className="flex-1 overflow-auto p-8">
+          <section className="space-y-5 max-w-[1400px]">
             {rotaInterna === '/metodologias' && (
               <MetodologiasHomePage
                 titulo="Núcleo de Metodologias"
@@ -1421,7 +1436,8 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
               </section>
             )}
         </section>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

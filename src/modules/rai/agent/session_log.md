@@ -90,3 +90,18 @@ Histórico oficial e log operacional contínuo do agente deste módulo.
 **Causa raiz:** Caminho relativo incorreto. `../../../services/supabase` a partir de `src/modules/rai/hooks/` resolve para `src/modules/services/supabase` (inexistente). O correto é `../../../../services/supabase` (4 níveis até `src/`).
 **Correção:** Ajustado import path em ambos os arquivos.
 **Validação:** Servidor dev rodando em http://localhost:7000 sem erros de transformação. `curl` confirma resolução correta: `import { restFetch } from "/@fs/E:/DATHEX_STACK/SagB/services/supabase.ts"`.
+
+### 04/05/2026 ~20:13 — Sidebar: somente RAI + diagnóstico de acesso
+**Usuário:** "agora nao estou conseguindo entrar na tela do RAI... verifique. Outra coisa, deixe somente RAI no menu do sidebar..."
+**Diagnóstico da tela RAI:**
+- Módulo registrado corretamente em `moduleRegistry.ts` (linhas 98-101)
+- Manifest: `id: 'rai'`, `initialStatus: 'active'`, rota `/rai`
+- `getModuleRoutes()` retorna `{ rai: { path: '/rai', element: RAIPage } }`
+- Sistema de toggles: `rai: true` por default (initialStatus active)
+- Sidebar exibe RAI via `dynamicModules` (id 'rai' não conflita com staticItemIds)
+- Rota no App.tsx (linha 1784-1788): verifica `moduleRoutes[resolvedActiveTab]` e `isModuleEnabledByToggle`
+- **Risco identificado:** localStorage `sagb:module-toggles:v3` pode ter `rai: false` se salvo anteriormente sem RAI registrado. Solução: limpar localStorage ou reiniciar servidor.
+- **Ação:** Modificar sidebar para exibir SOMENTE RAI + reiniciar servidor dev
+**Alterações:**
+1. `components/Sidebar.tsx` — filtro para exibir apenas item 'rai' no menu
+2. Servidor dev reiniciado

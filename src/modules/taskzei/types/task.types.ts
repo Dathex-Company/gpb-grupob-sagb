@@ -1,5 +1,7 @@
+import { TaskOrigin } from './origin.types';
+
 export type TaskStatus = 'aberta' | 'em_andamento' | 'concluida';
-export type TaskPriority = 'baixa' | 'media' | 'alta';
+export type TaskPriority = 'baixa' | 'media' | 'alta' | 'urgente';
 
 export interface TaskChecklistItem {
   id: string;
@@ -24,6 +26,9 @@ export interface TaskzeiTask {
   dueDate?: string;
   checklist?: TaskChecklistItem[];
   comments?: TaskComment[];
+  archived?: boolean;
+  origin?: TaskOrigin;
+  relatedDocIds?: string[];
   createdAt: string;
   updatedAt: string;
 }

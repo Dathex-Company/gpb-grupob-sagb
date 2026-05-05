@@ -20,3 +20,12 @@
 6. **Owner no manifest** — Definido `owner.type: 'agent'` como placeholder. Deve ser atualizado quando houver um responsável humano ou agente específico designado.
 
 7. **`plano_modulo.md` sem planejamento futuro** — Documentado apenas o estado atual do módulo, conforme solicitação do usuário. Nenhuma ET (etapa futura) foi incluída.
+
+---
+
+## 04/05/2026 — Sidebar vertical no padrão Metodologias
+
+### Decisões
+
+8. **Sidebar vertical no container em vez de nas páginas individuais** — Diferente do Metodologias (que tem HubPage como orquestrador), o módulo Mentorias usa um container (`MentoriasModuleContainer`) com `useState` para alternar entre 3 views. O sidebar foi implementado no container, persistindo visualmente entre as navegações internas. A página de Detalhamento exibe um item "📄 Detalhamento" como indicador (disabled) no sidebar quando ativa.
+9. **Removido `onBackToSagB` das props do Dashboard** — O botão "Voltar ao SagB" foi movido para o sidebar no container, eliminando a necessidade de propagar a prop `onBackToSagB` para as páginas filhas.

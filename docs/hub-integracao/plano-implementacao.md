@@ -2,8 +2,8 @@
 
 **Data:** 2026-04-19  
 **Autor:** Pierre Zanulli (Agente Mestre de Orquestração)  
-**Revisado por:** Alan Flow (Diretor de Automações)  
-**Status:** Aprovado para execução  
+**Revisado por:** Alan Flow (Diretor de Automações)
+**Status:** Em execução — Prioridades revisadas em 04/05/2026
 
 ---
 
@@ -91,31 +91,43 @@ src/modules/hub-integracao/
 - [ ] 2.4 Logs básicos de atividade
 - [ ] 2.5 Interface de configuração de credenciais
 
-### FASE 3 - Drivers de Integração (Semana 3)
-- [ ] 3.1 Driver ClickUp (tasks, spaces, lists)
-- [ ] 3.2 Driver WhatsApp Business API
-- [ ] 3.3 Sistema de mapeamento de escopos/permissões
-- [ ] 3.4 Health check automático
+### FASE 3 - Drivers de Integração (Semana 3) — [Prioridade Revisada 04/05]
+- [ ] 3.1 **Driver WhatsApp Business API** (Inbound via webhook + Outbound)
+- [ ] 3.2 Webhook handler para receber mensagens da Meta e processar payload
+- [ ] 3.3 Integração com `taskzei.hub.ts` — injeção de mensagens no Inbox Inteligente
+- [ ] 3.4 Sistema de mapeamento de escopos/permissões
+- [ ] 3.5 Health check automático
 
-### FASE 4 - Integração com Módulos (Semana 4)
-- [ ] 4.1 Atualizar Taskzei para usar Hub (ClickUp)
-- [ ] 4.2 Atualizar CRM Ziplia para usar Hub (WhatsApp)
-- [ ] 4.3 Documentação para desenvolvedores
-- [ ] 4.4 Testes end-to-end
+### FASE 4 - Integração com Módulos (Semana 4) — [Prioridade Revisada 04/05]
+- [ ] 4.1 **Taskzei consumindo WhatsApp via Hub** (injetar mensagens no Inbox)
+- [ ] 4.2 Atualizar CRM Ziplia para usar Hub (WhatsApp outbound)
+- [ ] 4.3 Driver E-mail (Gmail e Titan) com OAuth2
+- [ ] 4.4 Documentação para desenvolvedores
+- [ ] 4.5 Testes end-to-end
 
-## 🧪 POC - Integrações Críticas
+## 🧪 POC - Integrações Críticas (Prioridades revisadas em 04/05/2026)
 
-### ClickUp (Prioridade Alta)
-- **Justificativa:** Já usado no Taskzei, complexidade média, ROI alto
-- **Escopo MVP:** Listar espaços, criar tasks, webhooks básicos
-- **Configuração:** API Token + Space ID
-- **Módulo consumidor:** Taskzei (já existe integração)
+> **Nota estratégica:** O ClickUp foi removido do escopo de integração do Hub. O sistema proprietário **Taskzei** substitui o ClickUp como plataforma de gestão de tarefas do SagB. O Taskzei já possui interface `taskzei.hub.ts` aberta para receber payloads do Hub.
 
-### WhatsApp Business API (Prioridade Alta)
-- **Justificativa:** Crítico para CRM, alto valor de negócio
-- **Escopo MVP:** Enviar mensagens, status de entrega
+### WhatsApp Business API (Prioridade Máxima — Urgência Operacional)
+- **Justificativa:** Maior gargalo operacional do Taskzei. Muitas demandas nascem soltas no WhatsApp. Com a Fase 6 (Inbox Inteligente) e Fase 8 (Parser de Linguagem Natural) já entregues no Taskzei, o Hub precisa capturar mensagens do WhatsApp (inbound via webhook) e injetar no Inbox do Taskzei para que a IA classifique e converta em tarefas automaticamente.
+- **Escopo MVP:**
+  - **Inbound (webhook):** Receber mensagens da Meta, autenticar, processar payload e injetar no `taskzei.hub.ts`
+  - **Outbound:** Enviar mensagens, status de entrega (já possui alicerce inicial no `whatsappService.ts`)
 - **Configuração:** Token + Number ID + Webhook URL
-- **Módulo consumidor:** CRM Ziplia (já existe necessidade)
+- **Módulo consumidor primário:** Taskzei (Inbox Inteligente)
+- **Módulo consumidor secundário:** CRM Ziplia
+
+### E-mail — Gmail e Titan (Alta Prioridade)
+- **Justificativa:** Demandas formais e aprovações chegam por e-mail corporativo. Transformar threads de e-mail em tarefas com contexto anexo acelera o backoffice.
+- **Escopo MVP:** Capturar e-mails inbound (webhook/IMAP), converter em payload para `taskzei.hub.ts`
+- **Configuração:** OAuth2 com refresh token
+- **Módulo consumidor:** Taskzei
+
+### Ecossistema Meta — Facebook/Instagram (Baixa Prioridade para Taskzei)
+- **Justificativa:** Integração mais relevante para CRM/Vendas (Ziplia) do que para gestão de tarefas.
+- **Status:** Congelado para Taskzei. Será atendido quando CRM Ziplia demandar.
+- **Módulo consumidor:** CRM Ziplia
 
 ### Backup (se necessário)
 - **Google Calendar** (simples, OAuth bem documentado)
@@ -141,18 +153,20 @@ src/modules/hub-integracao/
 
 ## 📊 Definição de Prontidão (DoR)
 
-### MVP Pronto quando:
+### MVP Pronto quando — [Prioridade Revisada 04/05]
 - [ ] Módulo aparece no Sidebar como "Hub de Integrações"
-- [ ] Dashboard mostra catálogo com ClickUp e WhatsApp
-- [ ] É possível configurar credenciais para ambas
+- [ ] Dashboard mostra catálogo com WhatsApp (prioridade máxima) e E-mail (alta prioridade)
+- [ ] Webhook do WhatsApp configurado e recebendo mensagens no Hub
+- [ ] Hub injeta mensagens do WhatsApp no `taskzei.hub.ts` (Inbox Inteligente)
+- [ ] É possível configurar credenciais para WhatsApp e E-mail
 - [ ] Teste de conexão retorna "Conectado" ou "Erro"
-- [ ] Taskzei consegue criar task no ClickUp via Hub
-- [ ] CRM Ziplia consegue enviar mensagem WhatsApp via Hub
+- [ ] Taskzei recebe mensagens do WhatsApp via Hub e converte em tarefas (NLP)
+- [ ] CRM Ziplia consegue enviar mensagem WhatsApp via Hub (outbound)
 - [ ] Logs mostram atividade das integrações
 
 ### Métricas de Sucesso (30 dias)
-- 2 integrações funcionais no catálogo
-- 2 módulos consumindo o Hub
+- 1 integração funcional no catálogo (WhatsApp inbound + outbound)
+- 2 módulos consumindo o Hub (Taskzei + CRM Ziplia)
 - Redução de 50% no código de integração duplicado
 - Tempo de setup de nova integração reduzido em 70%
 
@@ -200,18 +214,18 @@ interface IntegrationTemplate {
 - Compliance e auditoria
 - Certificações de segurança
 
-## 📝 Próximos Passos Imediatos
+## 📝 Próximos Passos Imediatos — [Revisado 04/05]
 
 ### Hoje/amanhã
-1. **Criar repositório de decisões** - `docs/hub-integracao/decisions.md`
-2. **Definir equipe mínima** - Alan Flow + 1 dev front + 1 dev back
-3. **Estimar esforço** - ~4 semanas para MVP
-4. **Priorizar no backlog** - Colocar como prioridade alta
+1. ~~Criar repositório de decisões~~ ✅ — `docs/hub-integracao/decisions.md` já criado
+2. **Atualizar prioridades no backlog** — WhatsApp (inbound/outbound) como prioridade máxima
+3. **Alinhar com Dani Freitas (Taskzei)** — Já realizado. Arquitetura aberta via `taskzei.hub.ts`
+4. **Mapear estrutura do webhook WhatsApp** — Definir endpoints e payloads
 
 ### Semana que vem
-1. **Kickoff com time técnico** - Segunda-feira, 10h
-2. **Iniciar Fase 1 (estrutura)**
-3. **Definir reuniões de sync semanais** - Quintas, 16h
+1. **Iniciar desenvolvimento do webhook handler para WhatsApp inbound**
+2. **Estruturar injeção de payload no `taskzei.hub.ts`**
+3. **Definir reuniões de sync semanais** — Quintas, 16h
 4. **Criar canal #hub-integracoes no Slack**
 
 ## 👥 Equipe
@@ -223,10 +237,10 @@ interface IntegrationTemplate {
 - **Backend:** [Definir]
 - **QA:** [Definir]
 
-### Dependências
-- **Taskzei team** - Para integração ClickUp
-- **CRM Ziplia team** - Para integração WhatsApp
-- **Infra team** - Para segurança/criptografia
+### Dependências — [Revisado 04/05]
+- **Taskzei team (Dani Freitas)** — Para integração WhatsApp inbound (Inbox Inteligente)
+- **CRM Ziplia team** — Para integração WhatsApp outbound
+- **Infra team** — Para segurança/criptografia e configuração de webhooks Meta
 
 ## 📞 Contato e Comunicação
 
@@ -246,13 +260,16 @@ interface IntegrationTemplate {
 
 ## ✅ Checklist de Início
 
-- [ ] Alan confirmado como Agente responsável
+- [x] Alan confirmado como Agente responsável
 - [ ] Time técnico alocado
-- [ ] Kickoff agendado
-- [ ] Repositório do módulo criado
-- [ ] Primeira task da Fase 1 em andamento
+- [x] Kickoff realizado com Dani Freitas (Taskzei) — 04/05
+- [x] Repositório do módulo criado
+- [x] Estrutura base do módulo implementada (manifest, routes, services)
+- [x] Driver WhatsApp outbound com alicerce inicial
+- [ ] **Webhook WhatsApp inbound em desenvolvimento**
+- [ ] Primeira task da Fase 3 (Driver WhatsApp) em andamento
 
 ---
 
-**Última atualização:** 2026-04-19  
-**Próxima revisão:** 2026-04-26 (após kickoff)
+**Última atualização:** 2026-05-04
+**Próxima revisão:** 2026-05-11 (após avanço do webhook WhatsApp)

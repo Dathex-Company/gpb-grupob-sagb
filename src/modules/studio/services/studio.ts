@@ -72,7 +72,9 @@ export type StudioAudioTrack = {
   id?: string;
   workspaceId: string;
   sessionId: string;
-  trackRole: 'master';
+  trackRole: 'master' | 'mic_headset' | 'mic_room' | 'system' | 'custom';
+  sourceLabel?: string;
+  deviceId?: string;
   storagePath: string;
   mimeType: string;
   durationSeconds: number;
@@ -636,9 +638,60 @@ export const saveMasterAudioPipeline = async (params: {
     console.warn('[Studio] Tabela studio_audio_tracks indisponível. Salvando no payload da sessão.', error);
     await appendToSessionPayloadArray(params.sessionId, 'audioTracks', trackPayload as any);
   }
-
-  return storagePath;
+return storagePath;
 };
+
+/**
+* Salva uma trilha de áudio individual (multitrack) em arquivo isolado no Supabase Storage.
+* Cada fonte de áudio (headset, sala, sistema) tem seu próprio arquivo para isolamento de falhas.
+* O campo `trackRole` identifica a origem: 'mic_headset' | 'mic_room' | 'system' | 'custom'.
+*/
+export const saveAudioTrackPipeline = async (params: {
+sessionId: string;
+workspaceId: string;
+trackRole: StudioAudioTrack['trackRole'];
+sourceLabel?: string;
+deviceId?: string;
+audioBlob: Blob;
+durationSeconds: number;
+}) => {
+const safeSessionId = params.sessionId.replace(/[^a-zA-Z0-9.-]/g, '');
+const safeRole = params.trackRole.replace(/[^a-zA-Z0-9.-]/g, '');
+const fileName = `track_${safeRole}_${Date.now()}.webm`;
+const storagePath = `${params.workspaceId}/${safeSessionId}/audio/tracks/${safeRole}/${fileName}`;
+
+await uploadBlobToSupabaseStorage({
+  bucket: 'studio',
+  path: storagePath,
+  blob: params.audioBlob,
+  mimeType: params.audioBlob.type || 'audio/webm'
+});
+
+const trackPayload: StudioAudioTrack = {
+  workspaceId: params.workspaceId,
+  sessionId: params.sessionId,
+  trackRole: params.trackRole,
+  sourceLabel: params.sourceLabel,
+  deviceId: params.deviceId,
+  storagePath,
+  mimeType: params.audioBlob.type || 'audio/webm',
+  durationSeconds: params.durationSeconds,
+  payload: {
+    version: 2,
+    multiTrack: true
+  }
+};
+
+try {
+  await addDoc(collection(db, 'studio_audio_tracks'), trackPayload);
+} catch (error) {
+  console.warn('[Studio] Tabela studio_audio_tracks indisponível. Salvando no payload da sessão.', error);
+  await appendToSessionPayloadArray(params.sessionId, 'audioTracks', trackPayload as any);
+}
+
+return storagePath;
+};
+
 
 /**
  * Extrai e valida os chunks completos (transcritos) de uma sessão.
@@ -869,4 +922,85 @@ export const processFullFilePipeline = async (params: {
     console.error('Erro no processamento de arquivo completo:', error);
     await updateStudioSession(params.sessionId, { status: 'error' });
   }
+};
+
+// ==========================================
+// PLAYBACK — busca vídeos e áudio para reprodução
+// ==========================================
+
+/**
+ * Busca os arquivos de câmera (vídeos) de uma sessão para reprodução.
+ * Tenta por ordem:
+ * 1. Tabela `studio_camera_files`
+ * 2. Payload da sessão (`payload.cameraFiles`)
+ * 3. `rawVideoPath` da sessão (legado — última câmera)
+ */
+export const fetchSessionCameraFiles = async (
+  sessionId: string,
+  session?: StudioSession | null
+): Promise<StudioCameraFile[]> => {
+  // 1. Tentar tabela dedicada
+  try {
+    const q = query(
+      collection(db, 'studio_camera_files'),
+      where('sessionId', '==', sessionId)
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.docs.length > 0) {
+      return snapshot.docs.map((d: any) => ({ ...d.data(), id: d.id })) as StudioCameraFile[];
+    }
+  } catch {
+    // tabela pode não existir
+  }
+
+  // 2. Fallback: payload da sessão
+  if (session?.payload?.cameraFiles && Array.isArray(session.payload.cameraFiles)) {
+    return session.payload.cameraFiles as StudioCameraFile[];
+  }
+
+  // 3. Fallback legado: rawVideoPath
+  if (session?.rawVideoPath) {
+    return [{
+      workspaceId: session.workspaceId,
+      sessionId,
+      cameraId: 'legacy',
+      storagePath: session.rawVideoPath,
+      mimeType: 'video/webm',
+      durationSeconds: session.totalDurationSeconds || 0,
+      status: 'uploaded'
+    }];
+  }
+
+  return [];
+};
+
+/**
+ * Busca o áudio master de uma sessão para reprodução.
+ */
+export const fetchSessionMasterAudio = async (
+  sessionId: string,
+  session?: StudioSession | null
+): Promise<StudioAudioTrack | null> => {
+  // 1. Tentar tabela dedicada
+  try {
+    const q = query(
+      collection(db, 'studio_audio_tracks'),
+      where('sessionId', '==', sessionId),
+      where('trackRole', '==', 'master')
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.docs.length > 0) {
+      return { ...snapshot.docs[0].data(), id: snapshot.docs[0].id } as StudioAudioTrack;
+    }
+  } catch {
+    // tabela pode não existir
+  }
+
+  // 2. Fallback: payload da sessão
+  if (session?.payload?.audioTracks && Array.isArray(session.payload.audioTracks)) {
+    const master = session.payload.audioTracks.find((t: any) => t.trackRole === 'master');
+    return master || null;
+  }
+
+  return null;
 };

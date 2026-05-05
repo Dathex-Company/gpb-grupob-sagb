@@ -8,7 +8,7 @@ export class TaskzeiAdapter {
 
   static getProvider(): ITaskzeiRepository {
     if (!this.instance) {
-      const provider = String(import.meta.env.VITE_TASKZEI_PROVIDER || 'mock').toLowerCase();
+      const provider = String(import.meta.env.VITE_TASKZEI_PROVIDER || 'supabase').toLowerCase();
       this.instance = provider === 'supabase' ? new SupabaseTaskzeiProvider() : new MockTaskzeiProvider();
     }
     return this.instance;

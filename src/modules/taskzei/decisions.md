@@ -47,3 +47,42 @@
 
 ### decisao_013
 - Integracoes externas (ClickUp, WhatsApp, e-mail) devem obrigatoriamente passar pelo `hub-integracao`, nunca por conexao direta.
+
+## 2026_05_04
+
+### decisao_014
+- `module-doc.ts` reescrito para implementar a interface `ModuleDoc` com tipagem TypeScript, alinhado ao contrato `src/core/modules/module.types.ts`.
+- `README.md` criado como documento oficial de identidade do modulo.
+- Relatorio de conformidade (ET-04) gerado e documentado no `changelog.md` v1.6.1.
+- Nao conformidade visual (hex inline, tipografia fora da tabela canonica, header canonico ausente) documentada como pendencia para fase futura de refatoracao de design tokens.
+
+### decisao_015
+- Provider Supabase promovido a default de producao (`VITE_TASKZEI_PROVIDER=supabase`).
+- Mock mantido como fallback explicito de desenvolvimento, ativado via `VITE_TASKZEI_PROVIDER=mock`.
+- `MockModeBanner` criado para alertar visualmente quando em modo mock.
+- Enquanto nao houver projeto Supabase dedicado, usa-se o banco compartilhado do SagB (shared pool).
+
+### decisao_016
+- FASE 4 (CRUD Completo de Tarefas) implementada em lote unico: ET-09 (drawer editavel), ET-10 (checklist), ET-11 (comentarios), ET-12 (acoes rapidas).
+- `task_drawer.tsx` reescrito integralmente com edicao em todos os 6 campos, auto-save por blur, checklist funcional e comentarios.
+- `task_list_item.tsx` ganhou menu de contexto com "Duplicar" e "Arquivar" via callbacks `onDuplicate`/`onArchive`.
+- `AgendaInteligentePage.tsx` migrou list-view manual para componente `TaskList`, garantindo que edicao inline e menu de contexto funcionem.
+- Todos os 6 novos metodos adicionados em ambas as interfaces (ITaskzeiRepository, ITaskzeiService) e implementados nos dois providers (mock e supabase) e no facade.
+- Prioridade `'urgente'` adicionada ao tipo `TaskPriority`.
+- Build validado: 701 modulos, 24.09s.
+
+### decisao_017
+- Fases 5, 6, 7 e 10 (origem, meetings, inbox, auditoria) implementadas em Batch unico (1+2) para acelerar entrega, conforme plano_execucao_unificada.md.
+- `origin.types.ts`, `meeting.types.ts`, `inbox.types.ts` criados como tipos independentes e reaproveitaveis.
+- MeetingStore e InboxStore criadas como Zustand stores separadas para evitar poluicao da TaskStore original.
+- `autoAudit` implementado no facade como metodo privado silencioso (try/catch, nunca bloqueia operacao principal).
+- Auditoria e logs usam o banco compartilhado do SagB ate que o projeto Supabase dedicado seja criado.
+- Integracoes externas (ClickUp, WhatsApp, e-mail) continuam obrigadas a passar pelo hub-integracao (conforme decisao_013).
+
+### decisao_018
+- Todos os 5 Batches do plano_execucao_unificada.md implementados em lote unico apos aprovacao "pode fazer".
+- Batch 3 (servicos de logica): nlParser.service.ts (regex NLP), taskzei.audit.ts, taskzei.metrics.ts, taskzei.monitor.ts — servicos modulares com singletons.
+- Batch 4 (UI): InboxPage reescrita com fluxo completo (add, classificar, converter, descartar); MeetingsPage criada com criacao inline e modal de detalhe com pauta/decisoes; MonitorPage criada com metricas em tempo real e saude do modulo; navegacao lateral expandida com icones de reunioes e monitor.
+- Batch 5 (Integracoes): conversationalHandler (parse + acao + sugestoes), hubIntegration (placeholder para hub-integracao real).
+- Nenhuma integracao externa direta foi implementada — todas passarao pelo hub-integracao quando disponivel (conforme decisao_013).
+- FASE 2 (Infraestrutura propria Supabase) permanece pendente ate decisao financeira do orcamento TaskZei/GrupoB.

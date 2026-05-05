@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RAIAgent, RAICapture, RAIConfig, RAIReading, RAIAlert, RAIFilters } from '../types';
 import { raiAgentsService, raiCapturesService, raiInsightsService } from '../services/raiServices';
 import { raiSupabaseService } from '../services/raiSupabaseService';
@@ -53,6 +53,31 @@ const composeRAIAgents = (
   });
 };
 
+/**
+ * Hook auxiliar para extrair APENAS as ações do store zustand,
+ * sem inscrever o componente em todo o estado. Isso evita
+ * infinite loop causado por store.set*() → re-render → novo objeto store → nova dependência.
+ */
+const useRAIStoreActions = () => {
+  const setLoading = useRAIStore((s) => s.setLoading);
+  const setError = useRAIStore((s) => s.setError);
+  const setConfigs = useRAIStore((s) => s.setConfigs);
+  const setCaptures = useRAIStore((s) => s.setCaptures);
+  const reset = useRAIStore((s) => s.reset);
+  return { setLoading, setError, setConfigs, setCaptures, reset };
+};
+
+/**
+ * Hook auxiliar para ler valores reativos do store sem causar loops.
+ */
+const useRAIStoreValues = () => {
+  const loading = useRAIStore((s) => s.loading);
+  const error = useRAIStore((s) => s.error);
+  const captures = useRAIStore((s) => s.captures);
+  const configs = useRAIStore((s) => s.configs);
+  return { loading, error, captures, configs };
+};
+
 // ===================== Agents (composição SagB + RAI) =====================
 
 /**
@@ -60,20 +85,26 @@ const composeRAIAgents = (
  * Se não fornecido, tenta usar mocks.
  */
 export const useRAIAgents = (sagbAgents?: any[]) => {
-  const store = useRAIStore();
-  const [error, setError] = useState<string | null>(null);
+  const { setLoading, setError: setStoreError, setConfigs } = useRAIStoreActions();
+  const storeValues = useRAIStoreValues();
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  // Ref estável para evitar que sagbAgents (array novo a cada render) force recriação
+  const sagbAgentsRef = useRef(sagbAgents);
+  sagbAgentsRef.current = sagbAgents;
 
   const fetchAgents = useCallback(async () => {
-    store.setLoading(true);
-    store.setError(null);
+    setLoading(true);
+    setStoreError(null);
 
     try {
-      if (USE_REAL_DATA && sagbAgents && sagbAgents.length > 0) {
+      const currentSagbAgents = sagbAgentsRef.current;
+      if (USE_REAL_DATA && currentSagbAgents && currentSagbAgents.length > 0) {
         const workspaceId = getWorkspaceId();
         if (workspaceId) {
           const configs = await raiSupabaseService.getConfigs(workspaceId);
-          const composed = composeRAIAgents(sagbAgents, configs);
-          store.setConfigs(configs);
+          const composed = composeRAIAgents(currentSagbAgents, configs);
+          setConfigs(configs);
           return composed;
         }
       }
@@ -83,8 +114,8 @@ export const useRAIAgents = (sagbAgents?: any[]) => {
       return mockAgents;
     } catch (err: any) {
       const msg = err?.message || 'Erro ao carregar agentes';
-      setError(msg);
-      store.setError(msg);
+      setLocalError(msg);
+      setStoreError(msg);
 
       // Fallback para mocks
       try {
@@ -93,9 +124,9 @@ export const useRAIAgents = (sagbAgents?: any[]) => {
         return [];
       }
     } finally {
-      store.setLoading(false);
+      setLoading(false);
     }
-  }, [store, sagbAgents]);
+  }, [setLoading, setStoreError, setConfigs]); // dependências estáveis — sem infinite loop!
 
   const [agents, setLocalAgents] = useState<RAIAgent[]>([]);
 
@@ -109,8 +140,8 @@ export const useRAIAgents = (sagbAgents?: any[]) => {
 
   return {
     agents,
-    loading: store.loading,
-    error: error || store.error,
+    loading: storeValues.loading,
+    error: localError || storeValues.error,
     refetch: fetchAgents,
   };
 };
@@ -118,60 +149,66 @@ export const useRAIAgents = (sagbAgents?: any[]) => {
 // ===================== Captures =====================
 
 export const useRAICaptures = (initialFilters?: RAIFilters) => {
-  const store = useRAIStore();
+  const { setLoading, setError: setStoreError, setCaptures } = useRAIStoreActions();
+  const storeValues = useRAIStoreValues();
   const [filters, setFilters] = useState<RAIFilters>(initialFilters || {});
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  // Ref para evitar que filters como dependência cause loop
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
 
   const fetchCaptures = useCallback(async () => {
-    store.setLoading(true);
-    store.setError(null);
+    setLoading(true);
+    setStoreError(null);
 
     try {
+      const currentFilters = filtersRef.current;
       if (USE_REAL_DATA) {
         const workspaceId = getWorkspaceId();
         if (workspaceId) {
           const realCaptures = await raiSupabaseService.getCaptures(workspaceId, {
-            agentId: filters.agentId,
-            status: filters.status,
-            category: filters.category,
+            agentId: currentFilters.agentId,
+            status: currentFilters.status,
+            category: currentFilters.category,
           });
           if (realCaptures.length > 0) {
-            store.setCaptures(realCaptures);
-            store.setLoading(false);
+            setCaptures(realCaptures);
+            setLoading(false);
             return;
           }
         }
       }
 
       // Fallback para mocks
-      const mockData = await raiCapturesService.getCaptures(filters);
-      store.setCaptures(mockData);
+      const mockData = await raiCapturesService.getCaptures(currentFilters);
+      setCaptures(mockData);
     } catch (err: any) {
       const msg = err?.message || 'Erro ao carregar capturas';
-      setError(msg);
-      store.setError(msg);
+      setLocalError(msg);
+      setStoreError(msg);
 
       try {
-        const mockData = await raiCapturesService.getCaptures(filters);
-        store.setCaptures(mockData);
+        const mockData = await raiCapturesService.getCaptures(filtersRef.current);
+        setCaptures(mockData);
       } catch {
         // Silencia
       }
     } finally {
-      store.setLoading(false);
+      setLoading(false);
     }
-  }, [store, filters]);
+  }, [setLoading, setStoreError, setCaptures]); // dependências estáveis!
 
   useEffect(() => {
     fetchCaptures();
   }, [fetchCaptures]);
 
   return {
-    captures: store.captures,
+    captures: storeValues.captures,
     filters,
     setFilters,
-    loading: store.loading,
-    error: error || store.error,
+    loading: storeValues.loading,
+    error: localError || storeValues.error,
     refetch: fetchCaptures,
   };
 };

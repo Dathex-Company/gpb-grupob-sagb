@@ -1,0 +1,74 @@
+openapi: 3.0.3
+info:
+  title: API SagB
+  version: 1.0.0
+  description: "API Oficial do ecossistema SagB para consumo por sistemas internos e externos."
+servers:
+  - url: "https://api.sagb.com.br/v1"
+    description: Produção
+  - url: "https://api-sandbox.sagb.com.br/v1"
+    description: Sandbox
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Parâmetros inválidos."
+            details:
+              type: array
+              items:
+                type: string
+  responses:
+    BadRequest:
+      description: Requisição mal formatada ou inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Falha de autenticação.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso não encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+security:
+  - ApiKeyAuth: []
+paths:
+  /health:
+    get:
+      summary: Healthcheck da API
+      tags:
+        - System
+      responses:
+        '200':
+          description: API online
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  version:
+                    type: string
+                    example: "1.0.0"

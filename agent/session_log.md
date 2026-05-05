@@ -71,3 +71,157 @@
 - [`MetodologiasHubPage.tsx:84`](src/modules/metodologias/pages/MetodologiasHubPage.tsx:84) — import do `MetodologiasInternalMenu`
 - [`MetodologiasHubPage.tsx:1210-1402`](src/modules/metodologias/pages/MetodologiasHubPage.tsx:1210) — navbar horizontal substituída por grid `lg:grid-cols-[280px_1fr]`
 - `max-w` expandido de `[1400px]` para `[1600px]`
+
+---
+
+## 04/05/2026 — Operação: Git Push (agente Kaique Zambram)
+
+**Agente acionado:** Kaique Zambram — Deploy, Netlify e Ambientes Web da Dathex
+
+**Tarefa:** Executar `git push origin main` do commit `59a8cdd` (autorizado por Rodrigues)
+
+**Estado pré-push:**
+- Branch `main` ahead of `origin/main` by 1 commit
+- SHA: `59a8cdd` — `feat: checkpoint completo sagb - metodologias, mentorias, nucleo-conversacional, rai e infra`
+
+**Execução:**
+- Remote: `https://github.com/Dathex-Company/gpb-grupob-sagb.git`
+- Comando: `git push origin main`
+- Resultado: `3e84ca7..59a8cdd  main -> main`
+
+**Estado pós-push:**
+- Branch `main` up to date with `origin/main`
+- Push bem-sucedido sem necessidade de autenticação adicional (credenciais em cache)
+
+**Logs do agente:**
+- [`session_log.md`](_ventures/dathex/agentes/kaique_zambram_grb_eng_o_017/session_log.md) — atualizado
+- [`falas_user.md`](_ventures/dathex/agentes/kaique_zambram_grb_eng_o_017/falas_user.md) — atualizado
+
+**Links:**
+- Repositório: https://github.com/Dathex-Company/gpb-grupob-sagb
+- Commit: https://github.com/Dathex-Company/gpb-grupob-sagb/commit/59a8cdd
+
+---
+
+## 04/05/2026 — Hotfix: infinite loop RAI (causa do travamento)
+
+**Contexto:** O usuário Rodrigues reportou que o módulo RAI trava ao clicar. Investigação revelou infinite loop nos hooks `useRAIAgents` e `useRAICaptures`.
+
+**Análise da causa raiz:**
+1. `useRAIAgents()` chamava `const store = useRAIStore()` — assinatura do store Zustand inteiro.
+2. `fetchAgents` (useCallback) dependia de `[store]`.
+3. Ao chamar `store.setLoading(true)`, o store mudava → React re-renderizava o hook.
+4. Estado novo do store → `useRAIStore()` retornava novo objeto `store`.
+5. `useCallback` via `store` mudou → recriava `fetchAgents`.
+6. `useEffect` com `[fetchAgents]` via `fetchAgents` mudou → re-executava.
+7. Loop infinito: browser freeze.
+
+**Correção aplicada:**
+- Criado `useRAIStoreActions()`: seletores individuais `useRAIStore(s => s.setLoading)` — referências de função ESTÁVEIS.
+- Criado `useRAIStoreValues()`: seletores individuais para leitura de valores.
+- `useRef` para `sagbAgents` e `filters` nos callbacks.
+
+**Arquivos modificados:**
+- `src/modules/rai/hooks/useRAI.ts` — correção principal
+- `src/modules/rai/changelog.md` — registro v1.2.2
+- `src/modules/rai/decisions.md` — decisão arquitetural
+- `agent/session_log.md` — este registro
+- `agent/falas_user.md` — fala do usuário registrada
+
+---
+
+## 04/05/2026 — Sidebar vertical no módulo Mentorias (mesmo padrão Metodologias)
+
+**Contexto:** Usuário aprovou o sidebar refinado do Metodologias e pediu: "agora faca no central de mentorias".
+
+**Mudanças aplicadas:**
+1. [`routes.tsx`](src/modules/mentorias/routes.tsx:7) — `MentoriasModuleContainer` refatorado:
+   - Layout `flex-1 flex overflow-hidden` com sidebar + conteúdo (mesmo pattern do Metodologias)
+   - Sidebar `w-64` com: branding "Central de Mentorias", nav items (Dashboard, Biblioteca), "Voltar ao SagB"
+   - Indicador de "Detalhamento" exibido quando `view === 'detail'`
+2. [`MentoriasDashboardPage.tsx`](src/modules/mentorias/pages/MentoriasDashboardPage.tsx:11) — removido container externo e `onBackToSagB`
+
+**Arquivos modificados:**
+- `src/modules/mentorias/routes.tsx` — sidebar adicionado
+- `src/modules/mentorias/pages/MentoriasDashboardPage.tsx` — ajustado para novo layout
+- `src/modules/mentorias/changelog.md` — entrada v1.2.0-sidebar-refined
+- `src/modules/mentorias/decisions.md` — decisões #8 e #9
+- `agent/session_log.md` — este registro
+- `agent/falas_user.md` — fala do usuário registrada
+
+---
+
+### 05/05/2026 — Studio: Gravação Multitrack de Áudio
+
+**Contexto:** Usuário perguntou como capturar áudio de reuniões/navegador além do microfone. Expliquei que `getUserMedia` não captura áudio do sistema, e propus `getDisplayMedia` + `AudioContext` mixer para multitrack isolado. Usuário autorizou: "pode fazer".
+
+**O que foi implementado:**
+
+**1. Tipos e service (`studio.ts`):**
+- `StudioAudioTrack.trackRole` extendido: `'master' | 'mic_headset' | 'mic_room' | 'system' | 'custom'`
+- Campos adicionados: `sourceLabel?`, `deviceId?`
+- [`saveAudioTrackPipeline()`](src/modules/studio/services/studio.ts:649) — nova função para salvar trilhas de áudio individuais em Supabase Storage
+  - Storage path: `\`${workspaceId}/${sessionId}/audio/tracks/${safeRole}/${fileName}\``
+  - Cria registro `StudioAudioTrack` no Firestore (fallback: localStorage)
+
+**2. Estado e Refs (`StudioPage.tsx`):**
+- `audioDevices`, `selectedAudioDeviceIds`, `includeSystemAudio`, `systemAudioStreamName`
+- `audioTrackRecordersRef` — `Map<string, {recorder, parts, startedAt, sourceLabel, deviceId?, trackRole}>`
+- `audioContextRef` — `AudioContext` para mixer
+- `masterMixDestRef` — `MediaStreamAudioDestinationNode`
+
+**3. Novas funções:**
+- [`refreshAudioDevices()`](src/modules/studio/pages/StudioPage.tsx:297) — enumera `audioinput` devices
+- [`requestAudioStream(deviceId?)`](src/modules/studio/pages/StudioPage.tsx:459) — agora aceita `deviceId` específico para seleção direcionada
+- [`requestSystemAudioStream()`](src/modules/studio/pages/StudioPage.tsx:490) — `getDisplayMedia({video: true, audio: true})`, para o track de vídeo imediatamente
+- [`startRecording()`](src/modules/studio/pages/StudioPage.tsx:625) — reescrita:
+  1. Abre streams de áudio individuais por `deviceId` selecionado
+  2. Classifica papel por heurística de label (headset/ear → `mic_headset`, room/sala → `mic_room`)
+  3. Opcional: áudio do sistema via `getDisplayMedia`
+  4. Cria `AudioContext` + `MediaStreamAudioDestinationNode` para mix master
+  5. Conecta todos os source nodes ao destination
+  6. Sessão com payload `version: 3` contendo `multiAudio.sources`
+  7. Inicia `MediaRecorder` isolado para cada trilha + gravador master
+- [`stopRecording()`](src/modules/studio/pages/StudioPage.tsx:926) — reescrita:
+  1. Para gravadores de câmera
+  2. Para TODOS os gravadores de áudio isolados, salva cada via `saveAudioTrackPipeline()`
+  3. Para/salva gravador master via `saveMasterAudioPipeline()`
+  4. `Promise.all` para saves paralelos
+  5. Fecha AudioContext
+  6. Finaliza sessão
+
+**4. UI:**
+- Seção "Fontes de Áudio" com checkboxes para cada microfone detectado
+- Toggle "Áudio do Sistema (Navegador)" com badge "(Experimental)"
+- Status dinâmico explicando o que esperar
+
+**5. Compilação:**
+- `npx tsc --noEmit` — sem erros no módulo Studio
+- Erros pré-existentes em `module-doc.ts` de outros módulos ignorados
+
+**Arquivos modificados:**
+- `src/modules/studio/services/studio.ts` — tipos extendidos + `saveAudioTrackPipeline()`
+- `src/modules/studio/pages/StudioPage.tsx` — estado, refs, funções, UI de seleção de áudio + multitrack recording
+- `agent/session_log.md` — este registro
+- `agent/falas_user.md` — fala do usuário registrada
+
+---
+
+## 04/05/2026 — Refinamento visual do sidebar Metodologias
+
+**Contexto:** O usuário Rodrigues aprovou a estrutura de tela cheia com sidebar próprio do módulo Metodologias (mesmo pattern usado no CRM Ziplia), mas rejeitou a primeira versão visual (azul escuro pesado, cores destoantes do padrão SagB). Solicitou uma segunda opção "de cor, mas da mesma estrutura, do mesmo jeito, independente da quantidade de itens".
+
+**Mudanças aplicadas:**
+1. [`MetodologiasHubPage.tsx`](src/modules/metodologias/pages/MetodologiasHubPage.tsx:1180) — Sidebar refinado com paleta SagB:
+   - Sidebar: `w-64` (fixo), `bg-sagb-panel`, `shadow-sm`, `border-r border-sagb-line`
+   - Nav buttons como pills sutis: ativo `bg-sagb-bg-2 text-sagb-text border-sagb-line shadow-sm`, inativo `text-sagb-muted hover:bg-sagb-bg-2 hover:text-sagb-text hover:border-sagb-line`
+   - Header: `backdrop-blur-sm` para efeito vidro translúcido
+   - Badge "Módulo Oficial": `bg-sagb-bg-2 text-sagb-muted border-sagb-line`
+   - "Voltar ao SagB": `hover:text-sagb-blue hover:bg-sagb-bg-2 hover:border-sagb-line`
+
+**Arquivos modificados:**
+- `src/modules/metodologias/pages/MetodologiasHubPage.tsx` — sidebar refinado
+- `src/modules/metodologias/changelog.md` — entrada v1.3.0-sidebar-refined
+- `src/modules/metodologias/decisions.md` — decisão #15
+- `agent/session_log.md` — este registro
+- `agent/falas_user.md` — fala do usuário registrada

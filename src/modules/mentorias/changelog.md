@@ -45,6 +45,25 @@ Registro de mudanças técnicas, decisões de arquitetura e evolução do módul
 
 ---
 
+## [v1.2.0-sidebar-refined] - 2026-05-04
+
+### Modificado
+- `routes.tsx` — `MentoriasModuleContainer` refatorado para incluir sidebar vertical no padrão Metodologias:
+  - Layout `flex-1 flex overflow-hidden` com sidebar + conteúdo
+  - Sidebar `w-64` com branding, navegação interna e "Voltar ao SagB" no rodapé
+  - Nav buttons em estilo pill sutil: ativo `bg-sagb-bg-2 text-sagb-text border-sagb-line shadow-sm`, inativo `text-sagb-muted hover:bg-sagb-bg-2 hover:text-sagb-text hover:border-sagb-line`
+  - Indicador de "Detalhamento" ativo quando `view === 'detail'`
+- `MentoriasDashboardPage.tsx` — removido container `flex-1 p-10` externo (agora no routes), removido botão "Voltar ao SagB" (agora no sidebar), removida prop `onBackToSagB`
+
+### Adicionado
+- Sidebar vertical com 2 itens fixos: Dashboard (🏠) e Biblioteca (📚)
+
+### Removido
+- Botão "Voltar ao SagB" do header do Dashboard (movido para o sidebar)
+- Prop `onBackToSagB` do `MentoriasDashboardPageProps`
+
+---
+
 ## [v1.0.0-governance-bootstrap] - 2026-04-09
 
 ### Adicionado

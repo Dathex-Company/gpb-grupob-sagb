@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { BackIcon, MicIcon, StopCircleIcon, CloudUploadIcon, FileTextIcon, DownloadIcon } from '../../../../components/Icon';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { BackIcon, MicIcon, StopCircleIcon, CloudUploadIcon, FileTextIcon, DownloadIcon, PlayIcon } from '../../../../components/Icon';
 import {
   StudioSession,
   StudioChunk,
@@ -13,12 +13,16 @@ import {
   registerSessionCameras,
   saveCameraFilePipeline,
   saveMasterAudioPipeline,
+  saveAudioTrackPipeline,
   processFullFilePipeline,
   exportSessionTranscript,
   exportSessionTranscriptPlain,
   downloadSessionMasterAudio,
-  downloadSessionCameraVideo
+  downloadSessionCameraVideo,
+  fetchSessionCameraFiles,
+  fetchSessionMasterAudio
 } from '../services/studio';
+import { getSupabasePublicUrl } from '../../../../services/storage';
 import { UserProfile } from '../../../../types';
 
 interface StudioViewProps {
@@ -122,14 +126,36 @@ const StudioView: React.FC<StudioViewProps> = ({
   const [selectedCameraIds, setSelectedCameraIds] = useState<string[]>([]);
   const [cameraPreviews, setCameraPreviews] = useState<Array<{ cameraId: string; label: string; stream: MediaStream | null; status: 'ready' | 'recording' | 'error' | 'offline' }>>([]);
 
+  // Áudio multitrack — dispositivos de entrada de áudio
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedAudioDeviceIds, setSelectedAudioDeviceIds] = useState<string[]>([]);
+  const [includeSystemAudio, setIncludeSystemAudio] = useState(false);
+  const [systemAudioStreamName, setSystemAudioStreamName] = useState<string | null>(null);
+
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const previewStreamsRef = useRef<Map<string, MediaStream>>(new Map());
   const cameraRecordersRef = useRef<Map<string, { recorder: MediaRecorder; parts: Blob[]; startedAt: number; deviceId: string }>>(new Map());
 
+  // Refs para áudio multitrack — cada fonte de áudio tem seu próprio gravador isolado
+  const audioTrackRecordersRef = useRef<Map<string, {
+    recorder: MediaRecorder;
+    parts: Blob[];
+    startedAt: number;
+    sourceLabel: string;
+    deviceId?: string;
+    trackRole: 'mic_headset' | 'mic_room' | 'system' | 'custom';
+  }>>(new Map());
+
+  // Áudio mestre (master mix) para transcrição via chunks
   const masterAudioStreamRef = useRef<MediaStream | null>(null);
   const masterAudioRecorderRef = useRef<MediaRecorder | null>(null);
   const masterAudioPartsRef = useRef<Blob[]>([]);
   const audioRecorderRef = useRef<MediaRecorder | null>(null);
+
+  // AudioContext para mixagem multitrack → master
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const masterMixDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+
   const isRecordingRef = useRef<boolean>(false);
   
   const currentChunkIndexRef = useRef<number>(1);
@@ -141,6 +167,74 @@ const StudioView: React.FC<StudioViewProps> = ({
   const [exportingId, setExportingId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Playback state — quando uma sessão completada é selecionada
+  const [playbackVideos, setPlaybackVideos] = useState<Array<{
+    cameraId: string;
+    label: string;
+    url: string;
+    durationSeconds: number;
+  }>>([]);
+  const [playbackAudioUrl, setPlaybackAudioUrl] = useState<string | null>(null);
+  const [selectedVideoTab, setSelectedVideoTab] = useState<string | null>(null);
+  const [isLoadingPlayback, setIsLoadingPlayback] = useState(false);
+
+  // Sessão ativa (completa) a partir da lista
+  const activeSession = useMemo(
+    () => sessions.find((s) => s.id === activeSessionId) || null,
+    [sessions, activeSessionId]
+  );
+
+  // Carrega vídeos/áudio para playback quando uma sessão completada é selecionada
+  useEffect(() => {
+    if (!activeSessionId || isRecording) {
+      setPlaybackVideos([]);
+      setPlaybackAudioUrl(null);
+      setSelectedVideoTab(null);
+      return;
+    }
+
+    const session = sessions.find((s) => s.id === activeSessionId);
+    const isCompleted = session?.status === 'completed' || session?.status === 'processing';
+    if (!isCompleted) {
+      setPlaybackVideos([]);
+      setPlaybackAudioUrl(null);
+      setSelectedVideoTab(null);
+      return;
+    }
+
+    setIsLoadingPlayback(true);
+    const loadPlayback = async () => {
+      try {
+        const [cameraFiles, masterAudio] = await Promise.all([
+          fetchSessionCameraFiles(activeSessionId, session),
+          fetchSessionMasterAudio(activeSessionId, session),
+        ]);
+
+        const videos = cameraFiles
+          .filter((f) => f.storagePath)
+          .map((f) => ({
+            cameraId: f.cameraId || 'unknown',
+            label: f.cameraId === 'legacy' ? 'Gravação' : `Câmera ${f.cameraId.replace('cam_', '')}`,
+            url: getSupabasePublicUrl('studio', f.storagePath),
+            durationSeconds: f.durationSeconds || 0,
+          }));
+
+        setPlaybackVideos(videos);
+        if (videos.length > 0) setSelectedVideoTab(videos[0].cameraId);
+
+        if (masterAudio?.storagePath) {
+          setPlaybackAudioUrl(getSupabasePublicUrl('studio', masterAudio.storagePath));
+        }
+      } catch (error) {
+        console.warn('[Studio] Erro ao carregar playback:', error);
+      } finally {
+        setIsLoadingPlayback(false);
+      }
+    };
+
+    loadPlayback();
+  }, [activeSessionId, isRecording, sessions]);
 
   // Handlers para download/export
   const handleDownloadAudio = useCallback(async (session: StudioSession) => {
@@ -201,6 +295,21 @@ const StudioView: React.FC<StudioViewProps> = ({
     });
   };
 
+  const refreshAudioDevices = async () => {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const onlyAudio = devices.filter((d) => d.kind === 'audioinput');
+    studioDebug('refreshAudioDevices', {
+      totalDevices: devices.length,
+      audioDevices: onlyAudio.map((d) => ({ deviceId: d.deviceId, label: d.label || 'sem-label', groupId: d.groupId }))
+    });
+    setAudioDevices(onlyAudio);
+    setSelectedAudioDeviceIds((prev) => {
+      const valid = prev.filter((id) => onlyAudio.some((d) => d.deviceId === id));
+      return valid;
+    });
+  };
+
   useEffect(() => {
     studioDebug('captureModeChanged', captureMode);
   }, [captureMode]);
@@ -208,6 +317,10 @@ const StudioView: React.FC<StudioViewProps> = ({
   useEffect(() => {
     studioDebug('selectedCameraIdsChanged', selectedCameraIds);
   }, [selectedCameraIds]);
+
+  useEffect(() => {
+    studioDebug('selectedAudioDeviceIdsChanged', selectedAudioDeviceIds);
+  }, [selectedAudioDeviceIds]);
 
   const stopAllPreviewStreams = () => {
     previewStreamsRef.current.forEach((stream) => stream.getTracks().forEach((t) => t.stop()));
@@ -280,28 +393,43 @@ const StudioView: React.FC<StudioViewProps> = ({
       return () => unsub();
     }
   }, [activeSessionId, sessions]);
-
-  useEffect(() => {
+useEffect(() => {
+  void refreshVideoDevices();
+  void refreshAudioDevices();
+  const handler = () => {
     void refreshVideoDevices();
-    const handler = () => {
-      void refreshVideoDevices();
-    };
-    navigator.mediaDevices?.addEventListener?.('devicechange', handler);
-    return () => {
-      navigator.mediaDevices?.removeEventListener?.('devicechange', handler);
-      // Cleanup completo de todas as streams no unmount
-      stopAllPreviewStreams();
-      masterAudioStreamRef.current?.getTracks().forEach((t) => t.stop());
-      masterAudioStreamRef.current = null;
-      cameraRecordersRef.current.forEach(({ recorder }) => {
-        if (recorder.state === 'recording') {
-          try { recorder.stop(); } catch { /* já parou */ }
-        }
-      });
-      cameraRecordersRef.current.clear();
-      if (chunkTimerRef.current) window.clearTimeout(chunkTimerRef.current);
-    };
-  }, []);
+    void refreshAudioDevices();
+  };
+  navigator.mediaDevices?.addEventListener?.('devicechange', handler);
+  return () => {
+    navigator.mediaDevices?.removeEventListener?.('devicechange', handler);
+    // Cleanup completo de todas as streams no unmount
+    stopAllPreviewStreams();
+    masterAudioStreamRef.current?.getTracks().forEach((t) => t.stop());
+    masterAudioStreamRef.current = null;
+    cameraRecordersRef.current.forEach(({ recorder }) => {
+      if (recorder.state === 'recording') {
+        try { recorder.stop(); } catch { /* já parou */ }
+      }
+    });
+    cameraRecordersRef.current.clear();
+    // Cleanup gravadores multitrack
+    audioTrackRecordersRef.current.forEach(({ recorder }) => {
+      if (recorder.state === 'recording') {
+        try { recorder.stop(); } catch { /* já parou */ }
+      }
+    });
+    audioTrackRecordersRef.current.clear();
+    // Cleanup AudioContext
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(() => {});
+    }
+    audioContextRef.current = null;
+    masterMixDestRef.current = null;
+    if (chunkTimerRef.current) window.clearTimeout(chunkTimerRef.current);
+  };
+}, []);
+
 
   useEffect(() => {
     if (isRecording) return;
@@ -324,15 +452,74 @@ const StudioView: React.FC<StudioViewProps> = ({
     void openCameraPreviews(manualIds);
   }, [captureMode, selectedCameraIds, videoDevices, isRecording]);
 
-  const requestAudioStream = async () => {
+  /**
+   * Solicita stream de áudio de um dispositivo específico.
+   * Se deviceId for informado, usa constraints exatas para capturar aquele microfone.
+   * Se vazio, usa o microfone padrão do sistema.
+   */
+  const requestAudioStream = async (deviceId?: string) => {
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error('Navegador não suporta captura de mídia.');
     }
 
+    const baseConstraints: MediaTrackConstraints = {
+      echoCancellation: { ideal: true },
+      noiseSuppression: { ideal: true },
+    };
+
+    if (deviceId) {
+      return await navigator.mediaDevices.getUserMedia({
+        video: false,
+        audio: {
+          ...baseConstraints,
+          deviceId: { exact: deviceId }
+        }
+      });
+    }
+
     return await navigator.mediaDevices.getUserMedia({
       video: false,
-      audio: { echoCancellation: true, noiseSuppression: true }
+      audio: baseConstraints
     });
+  };
+
+  /**
+   * Captura áudio do sistema (navegador/tela) usando getDisplayMedia.
+   * O usuário vê o seletor nativo do navegador e precisa marcar "Compartilhar áudio".
+   * Após capturar, para a track de vídeo imediatamente (só queremos áudio).
+   */
+  const requestSystemAudioStream = async (): Promise<MediaStream> => {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      throw new Error('Navegador não suporta captura de tela/áudio do sistema.');
+    }
+
+    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true
+    });
+
+    // Para a track de vídeo — só queremos o áudio do sistema
+    displayStream.getVideoTracks().forEach((t) => {
+      t.stop();
+    });
+
+    const audioTracks = displayStream.getAudioTracks();
+    if (audioTracks.length === 0) {
+      throw new Error('Nenhum áudio detectado na captura de tela. Certifique-se de marcar "Compartilhar áudio".');
+    }
+
+    // Atualiza o nome do stream para feedback visual
+    const label = audioTracks[0].label || 'Áudio do Sistema';
+    setSystemAudioStreamName(label);
+
+    // Escuta o fim do compartilhamento (usuário clicou "Parar" no seletor nativo)
+    audioTracks[0].onended = () => {
+      setIncludeSystemAudio(false);
+      setSystemAudioStreamName(null);
+      setFeedback('Compartilhamento de áudio do sistema interrompido.');
+    };
+
+    return new MediaStream(audioTracks);
   };
 
   const requestCameraStream = async (deviceId?: string) => {
@@ -439,11 +626,15 @@ const StudioView: React.FC<StudioViewProps> = ({
   const startRecording = async () => {
     try {
       setIsBusy(true);
-      setFeedback('Inicializando áudio mestre e câmeras...');
+      const audioSourceCount = selectedAudioDeviceIds.length + (includeSystemAudio ? 1 : 0);
+      setFeedback('Inicializando áudio multitrack e câmeras...');
       studioDebug('startRecording', {
         captureMode,
         selectedCameraIds,
-        availableVideoDevices: videoDevices.map((d) => ({ deviceId: d.deviceId, label: d.label || 'sem-label' }))
+        selectedAudioDeviceIds,
+        includeSystemAudio,
+        availableVideoDevices: videoDevices.map((d) => ({ deviceId: d.deviceId, label: d.label || 'sem-label' })),
+        availableAudioDevices: audioDevices.map((d) => ({ deviceId: d.deviceId, label: d.label || 'sem-label' }))
       });
 
       const autoCameraIds = selectedCameraIds.slice(0, MAX_SIMULTANEOUS_CAMERAS);
@@ -458,9 +649,79 @@ const StudioView: React.FC<StudioViewProps> = ({
         setFeedback('Limite de 4 câmeras simultâneas aplicado automaticamente.');
       }
 
-      const audioStream = await requestAudioStream();
-      masterAudioStreamRef.current = audioStream;
+      // ==============================================
+      // 1. ÁUDIO MULTITRACK — abrir streams individuais
+      // ==============================================
+      const audioTrackStreams: Array<{
+        stream: MediaStream;
+        trackRole: 'mic_headset' | 'mic_room' | 'system' | 'custom';
+        sourceLabel: string;
+        deviceId?: string;
+      }> = [];
 
+      // 1a. Microfones selecionados
+      for (const deviceId of selectedAudioDeviceIds) {
+        const found = audioDevices.find((d) => d.deviceId === deviceId);
+        const label = found?.label || 'Microfone';
+        try {
+          const stream = await requestAudioStream(deviceId);
+          // Determina o papel: tenta diferenciar headset vs sala pelo label
+          const lowerLabel = label.toLowerCase();
+          const trackRole: 'mic_headset' | 'mic_room' | 'custom' =
+            lowerLabel.includes('headset') || lowerLabel.includes('headphone') || lowerLabel.includes('ear') || lowerLabel.includes('fone')
+              ? 'mic_headset'
+              : lowerLabel.includes('room') || lowerLabel.includes('sala') || lowerLabel.includes('ambiente')
+                ? 'mic_room'
+                : 'custom';
+          audioTrackStreams.push({ stream, trackRole, sourceLabel: label, deviceId });
+          studioDebug('audioTrackReady', { trackRole, label, deviceId });
+        } catch (error) {
+          studioDebug('audioTrackError', { deviceId, label, error });
+          console.warn(`[Studio] Falha ao abrir microfone "${label}":`, error);
+        }
+      }
+
+      // 1b. Áudio do sistema (se ativado)
+      if (includeSystemAudio) {
+        try {
+          const systemStream = await requestSystemAudioStream();
+          audioTrackStreams.push({
+            stream: systemStream,
+            trackRole: 'system',
+            sourceLabel: systemAudioStreamName || 'Áudio do Sistema (Navegador)'
+          });
+          studioDebug('systemAudioTrackReady');
+        } catch (error: any) {
+          studioDebug('systemAudioTrackError', { error: error.message });
+          setFeedback(`Áudio do sistema: ${error.message}. A gravação continuará sem ele.`);
+          setIncludeSystemAudio(false);
+        }
+      }
+
+      if (audioTrackStreams.length === 0) {
+        throw new Error('Nenhuma fonte de áudio disponível. Selecione ao menos um microfone.');
+      }
+
+      // ==============================================
+      // 2. CRIAÇÃO DO MIXER MASTER (AudioContext)
+      // ==============================================
+      const audioCtx = new AudioContext();
+      audioContextRef.current = audioCtx;
+      const dest = audioCtx.createMediaStreamDestination();
+      masterMixDestRef.current = dest;
+
+      const sourceNodes: AudioNode[] = [];
+      for (const { stream } of audioTrackStreams) {
+        const sourceNode = audioCtx.createMediaStreamSource(stream);
+        sourceNode.connect(dest);
+        sourceNodes.push(sourceNode);
+      }
+
+      masterAudioStreamRef.current = dest.stream;
+
+      // ==============================================
+      // 3. CÂMERAS (se aplicável)
+      // ==============================================
       const selectedCameras: StudioCaptureCamera[] = [];
       const previews: Array<{ cameraId: string; label: string; stream: MediaStream | null; status: 'ready' | 'recording' | 'error' | 'offline' }> = [];
 
@@ -501,16 +762,26 @@ const StudioView: React.FC<StudioViewProps> = ({
 
       setCameraPreviews(previews);
 
+      // ==============================================
+      // 4. CRIAÇÃO DA SESSÃO
+      // ==============================================
       const sessionId = await createStudioSession({
         workspaceId: scopedWorkspaceId,
         title: sessionTitle,
         chunkIntervalMin,
         captureMode,
         payload: {
-          version: 2,
+          version: 3,
           multiCamera: {
             maxSimultaneous: MAX_SIMULTANEOUS_CAMERAS,
             selectedDeviceIds: effectiveCameraIds
+          },
+          multiAudio: {
+            sources: audioTrackStreams.map((t) => ({
+              trackRole: t.trackRole,
+              sourceLabel: t.sourceLabel,
+              deviceId: t.deviceId
+            }))
           }
         }
       });
@@ -519,6 +790,9 @@ const StudioView: React.FC<StudioViewProps> = ({
       sessionStartedAtRef.current = Date.now();
       currentChunkIndexRef.current = 1;
 
+      // ==============================================
+      // 5. INICIAR GRAVADORES DE VÍDEO (por câmera)
+      // ==============================================
       if (captureMode === 'audio_video') {
         await registerSessionCameras({
           sessionId,
@@ -570,7 +844,52 @@ const StudioView: React.FC<StudioViewProps> = ({
         setCameraPreviews((prev) => prev.map((c) => ({ ...c, status: c.stream ? 'recording' : c.status })));
       }
 
-      const masterAudioRecorder = new MediaRecorder(audioStream, { mimeType: getAudioMimeType() });
+      // ==============================================
+      // 6. INICIAR GRAVADORES DE ÁUDIO ISOLADOS (multitrack)
+      // ==============================================
+      for (const { stream, trackRole, sourceLabel, deviceId } of audioTrackStreams) {
+        const trackRecorder = new MediaRecorder(stream, { mimeType: getAudioMimeType() });
+        const parts: Blob[] = [];
+        const startedAt = Date.now();
+        const trackKey = trackRole;
+
+        trackRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) parts.push(e.data);
+        };
+        trackRecorder.onstop = () => {
+          const durationSeconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+          const blob = new Blob(parts, { type: getAudioMimeType() });
+          void saveAudioTrackPipeline({
+            sessionId,
+            workspaceId: scopedWorkspaceId,
+            trackRole,
+            sourceLabel,
+            deviceId,
+            audioBlob: blob,
+            durationSeconds
+          }).catch((error) => {
+            studioDebug('saveAudioTrackPipelineError', { trackRole, sourceLabel, error });
+            console.error(`[Studio] erro ao salvar trilha de áudio "${trackRole}":`, error);
+          });
+        };
+
+        audioTrackRecordersRef.current.set(trackKey, {
+          recorder: trackRecorder,
+          parts,
+          startedAt,
+          sourceLabel,
+          deviceId,
+          trackRole
+        });
+
+        trackRecorder.start();
+      }
+
+      // ==============================================
+      // 7. GRAVADOR MESTRE (mix das fontes para transcrição)
+      // ==============================================
+      const masterMixStream = dest.stream;
+      const masterAudioRecorder = new MediaRecorder(masterMixStream, { mimeType: getAudioMimeType() });
       masterAudioPartsRef.current = [];
       masterAudioRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) masterAudioPartsRef.current.push(e.data);
@@ -578,13 +897,27 @@ const StudioView: React.FC<StudioViewProps> = ({
       masterAudioRecorderRef.current = masterAudioRecorder;
       masterAudioRecorder.start();
 
+      // ==============================================
+      // 8. INICIAR CHUNK RECORDER (transcrição em tempo real)
+      // ==============================================
       isRecordingRef.current = true;
       setIsRecording(true);
       await startAudioChunkRecorder(sessionId);
-      setFeedback('Gravação multicâmera em andamento com áudio mestre único...');
+      setFeedback(`Gravação multitrack em andamento (${audioTrackStreams.length} fonte(s) de áudio + ${selectedCameras.length} câmera(s))...`);
     } catch (error: any) {
       setFeedback(error.message || 'Falha ao iniciar.');
+      // Cleanup parcial em caso de erro
+      audioTrackRecordersRef.current.forEach(({ recorder }) => {
+        if (recorder.state === 'recording') try { recorder.stop(); } catch {}
+      });
+      audioTrackRecordersRef.current.clear();
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(() => {});
+      }
+      audioContextRef.current = null;
+      masterMixDestRef.current = null;
       masterAudioStreamRef.current?.getTracks().forEach((t) => t.stop());
+      masterAudioStreamRef.current = null;
       stopAllPreviewStreams();
     } finally {
       setIsBusy(false);
@@ -593,13 +926,14 @@ const StudioView: React.FC<StudioViewProps> = ({
 
   const stopRecording = async () => {
     setIsBusy(true);
-    setFeedback('Finalizando e salvando...');
+    setFeedback('Finalizando e salvando trilhas de áudio...');
     setIsRecording(false);
     isRecordingRef.current = false;
 
     if (chunkTimerRef.current) window.clearTimeout(chunkTimerRef.current);
     if (audioRecorderRef.current?.state === 'recording') audioRecorderRef.current.stop();
 
+    // 1. Para gravadores de vídeo
     cameraRecordersRef.current.forEach(({ recorder }) => {
       if (recorder.state === 'recording') {
         try { recorder.stop(); } catch { /* recorder já parou */ }
@@ -607,6 +941,35 @@ const StudioView: React.FC<StudioViewProps> = ({
     });
     cameraRecordersRef.current.clear();
 
+    // 2. Para gravadores de áudio multitrack (cada fonte isolada)
+    const trackSavePromises: Promise<any>[] = [];
+    audioTrackRecordersRef.current.forEach(({ recorder, parts, startedAt, sourceLabel, deviceId, trackRole }) => {
+      if (recorder.state === 'recording') {
+        try { recorder.stop(); } catch { /* já parou */ }
+      }
+      // Só salva se tiver dados
+      if (parts.length > 0 && activeSessionId) {
+        const durationSeconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+        const blob = new Blob(parts, { type: getAudioMimeType() });
+        trackSavePromises.push(
+          saveAudioTrackPipeline({
+            sessionId: activeSessionId,
+            workspaceId: scopedWorkspaceId,
+            trackRole,
+            sourceLabel,
+            deviceId,
+            audioBlob: blob,
+            durationSeconds
+          }).catch((error) => {
+            studioDebug('saveAudioTrackPipelineError', { trackRole, sourceLabel, error });
+            console.error(`[Studio] erro ao salvar trilha "${trackRole}":`, error);
+          })
+        );
+      }
+    });
+    audioTrackRecordersRef.current.clear();
+
+    // 3. Para gravador mestre (mix para transcrição)
     if (masterAudioRecorderRef.current?.state === 'recording') {
       masterAudioRecorderRef.current.stop();
     }
@@ -614,26 +977,36 @@ const StudioView: React.FC<StudioViewProps> = ({
     if (activeSessionId && masterAudioPartsRef.current.length > 0) {
       const durationSeconds = Math.max(1, Math.round((Date.now() - sessionStartedAtRef.current) / 1000));
       const blob = new Blob(masterAudioPartsRef.current, { type: getAudioMimeType() });
-      try {
-        await saveMasterAudioPipeline({
+      trackSavePromises.push(
+        saveMasterAudioPipeline({
           sessionId: activeSessionId,
           workspaceId: scopedWorkspaceId,
           audioBlob: blob,
           durationSeconds
-        });
-      } catch (error) {
-        studioDebug('saveMasterAudioPipelineError', {
-          sessionId: activeSessionId,
-          error
-        });
-        console.error('[Studio] erro ao salvar áudio mestre:', error);
-      }
+        }).catch((error) => {
+          studioDebug('saveMasterAudioPipelineError', {
+            sessionId: activeSessionId,
+            error
+          });
+          console.error('[Studio] erro ao salvar áudio mestre:', error);
+        })
+      );
     }
 
+    // 4. Aguarda todas as trilhas serem salvas em paralelo
+    await Promise.all(trackSavePromises);
+
+    // 5. Cleanup dos streams
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(() => {});
+    }
+    audioContextRef.current = null;
+    masterMixDestRef.current = null;
     masterAudioStreamRef.current?.getTracks().forEach((track) => track.stop());
     masterAudioStreamRef.current = null;
     stopAllPreviewStreams();
 
+    // 6. Finaliza sessão
     if (activeSessionId) {
       const duration = Math.round((Date.now() - sessionStartedAtRef.current) / 1000);
       try {
@@ -653,7 +1026,7 @@ const StudioView: React.FC<StudioViewProps> = ({
     
     setActiveSessionId(null);
     setIsBusy(false);
-    setFeedback('Sessão finalizada.');
+    setFeedback('Sessão finalizada. Todas as trilhas de áudio preservadas.');
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -689,6 +1062,46 @@ const StudioView: React.FC<StudioViewProps> = ({
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+
+  // Combina câmeras selecionadas (com stream) + detectadas não selecionadas para exibição no grid
+  const gridItems = useMemo(() => {
+    if (captureMode !== 'audio_video') return [];
+
+    const items: Array<{
+      cameraId: string;
+      label: string;
+      stream: MediaStream | null;
+      status: string;
+      isSelected: boolean;
+    }> = [];
+
+    const selectedSet = new Set(selectedCameraIds);
+
+    // 1. Câmeras selecionadas (já têm preview/stream)
+    cameraPreviews.forEach((cam) => {
+      items.push({ ...cam, isSelected: true });
+    });
+
+    // 2. Câmeras detectadas mas não selecionadas (preenchem até MAX_SIMULTANEOUS_CAMERAS)
+    const remainingSlots = MAX_SIMULTANEOUS_CAMERAS - items.length;
+    if (remainingSlots > 0) {
+      let added = 0;
+      for (const device of videoDevices) {
+        if (added >= remainingSlots) break;
+        if (selectedSet.has(device.deviceId)) continue;
+        items.push({
+          cameraId: `detected_${device.deviceId}`,
+          label: device.label || 'Câmera disponível',
+          stream: null,
+          status: 'inactive',
+          isSelected: false,
+        });
+        added++;
+      }
+    }
+
+    return items;
+  }, [cameraPreviews, videoDevices, selectedCameraIds, captureMode]);
 
   return (
     <div className="flex-1 h-full overflow-y-auto bg-slate-50 custom-scrollbar">
@@ -740,87 +1153,207 @@ const StudioView: React.FC<StudioViewProps> = ({
             
             {activeTab === 'live' ? (
               <>
-                <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-black text-slate-900">Monitor de Captura</h2>
-                    <RecordingTimer
-                      sessionStartedAt={sessionStartedAtRef.current}
-                      chunkStartedAt={chunkStartedAtRef.current}
-                      running={isRecording}
-                    />
-                  </div>
-                  
-                  <div className="relative w-full min-h-[320px] bg-slate-950 rounded-[24px] overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center p-4">
-                    {captureMode === 'audio_video' ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
-                        {cameraPreviews.length === 0 && (
-                          <div className="col-span-full flex items-center justify-center text-slate-300 text-sm font-bold">
-                            Abrindo câmeras automaticamente...
-                          </div>
-                        )}
-                        {cameraPreviews.map((cam) => (
-                          <div key={cam.cameraId} className="rounded-2xl border border-slate-700 bg-slate-900 overflow-hidden">
-                            <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-300 flex items-center justify-between">
-                              <span>{cam.label}</span>
-                              <span className={`${cam.status === 'recording' ? 'text-emerald-400' : cam.status === 'error' ? 'text-rose-400' : 'text-amber-300'}`}>{cam.status}</span>
-                            </div>
-                            {cam.stream ? (
+                {/* PLAYBACK — quando uma sessão completada é selecionada */}
+                {playbackVideos.length > 0 ? (
+                  <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-cyan-50 flex items-center justify-center text-cyan-600">
+                          <PlayIcon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-black text-slate-900">Reprodução</h2>
+                          <p className="text-[11px] text-slate-400 font-bold truncate max-w-[300px]">
+                            {activeSession?.title || 'Gravação'}
+                          </p>
+                        </div>
+                      </div>
+                      {activeSession?.totalDurationSeconds ? (
+                        <span className="text-[10px] font-bold text-slate-400">
+                          {fmtDuration(activeSession.totalDurationSeconds)}
+                        </span>
+                      ) : null}
+                    </div>
+                    
+                    <div className="w-full bg-slate-950 rounded-[24px] overflow-hidden border border-slate-800 shadow-2xl">
+                      {/* Abas de seleção de câmera (quando há múltiplos vídeos) */}
+                      {playbackVideos.length > 1 && (
+                        <div className="flex gap-1 px-4 pt-4 pb-0 overflow-x-auto">
+                          {playbackVideos.map((video) => (
+                            <button
+                              key={video.cameraId}
+                              onClick={() => setSelectedVideoTab(video.cameraId)}
+                              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                                selectedVideoTab === video.cameraId
+                                  ? 'bg-white/15 text-white'
+                                  : 'text-slate-400 hover:text-slate-300 hover:bg-white/5'
+                              }`}
+                            >
+                              {video.label}
+                            </button>
+                          ))}
+                          {playbackAudioUrl && (
+                            <button
+                              onClick={() => setSelectedVideoTab('_audio_')}
+                              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                                selectedVideoTab === '_audio_'
+                                  ? 'bg-white/15 text-white'
+                                  : 'text-slate-400 hover:text-slate-300 hover:bg-white/5'
+                              }`}
+                            >
+                              <MicIcon className="w-3 h-3" />
+                              Áudio Master
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Corpo do player */}
+                      <div className="p-4">
+                        {(() => {
+                          if (selectedVideoTab === '_audio_' && playbackAudioUrl) {
+                            return (
+                              <div className="flex flex-col items-center justify-center gap-6 py-12">
+                                <div className="w-20 h-20 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center text-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.15)]">
+                                  <MicIcon className="w-8 h-8 animate-pulse" />
+                                </div>
+                                <audio controls src={playbackAudioUrl} className="w-full max-w-md" />
+                                <p className="text-xs text-slate-500 font-bold">Áudio Mestre da Sessão</p>
+                              </div>
+                            );
+                          }
+
+                          const activeVideo = playbackVideos.find((v) => v.cameraId === selectedVideoTab) || playbackVideos[0];
+                          if (!activeVideo) {
+                            return (
+                              <div className="flex items-center justify-center py-16 text-slate-500 text-sm font-bold">
+                                Nenhum vídeo disponível para reprodução.
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="space-y-3">
                               <video
-                                ref={(el) => {
-                                  videoRefs.current[cam.cameraId] = el;
-                                  if (el && cam.stream) {
-                                    el.srcObject = cam.stream;
-                                    el.muted = true;
-                                  }
-                                }}
+                                key={activeVideo.cameraId}
+                                controls
                                 autoPlay
-                                playsInline
-                                muted
-                                className="w-full h-48 object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-48 flex items-center justify-center text-slate-500 text-xs font-bold">
-                                Sem sinal desta câmera
+                                className="w-full rounded-2xl bg-black max-h-[480px]"
+                                src={activeVideo.url}
+                              >
+                                Seu navegador não suporta reprodução de vídeo.
+                              </video>
+                              {playbackAudioUrl && playbackVideos.length <= 1 && (
+                                <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-700">
+                                  <MicIcon className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                                  <audio controls src={playbackAudioUrl} className="flex-1 h-8" />
+                                  <span className="text-[9px] font-bold text-slate-400 flex-shrink-0">Áudio Master</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* MONITOR DE CAPTURA AO VIVO */
+                  <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-black text-slate-900">Monitor de Captura</h2>
+                      <RecordingTimer
+                        sessionStartedAt={sessionStartedAtRef.current}
+                        chunkStartedAt={chunkStartedAtRef.current}
+                        running={isRecording}
+                      />
+                    </div>
+                    
+                    <div className="w-full bg-slate-950 rounded-[24px] overflow-hidden border border-slate-800 shadow-2xl">
+                      {/* Grid de câmeras — mostra até 4, combinando selecionadas + detectadas */}
+                      <div className="p-4 min-h-[320px] flex items-center justify-center">
+                        {captureMode === 'audio_video' ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
+                            {gridItems.length === 0 && (
+                              <div className="col-span-full flex items-center justify-center text-slate-300 text-sm font-bold" style={{minHeight: 280}}>
+                                Abrindo câmeras automaticamente...
                               </div>
                             )}
+                            {gridItems.map((cam) => (
+                              <div key={cam.cameraId} className="rounded-2xl border border-slate-700 bg-slate-900 overflow-hidden transition-all hover:border-slate-600">
+                                {/* Header com indicador visual verde/vermelho */}
+                                <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest flex items-center justify-between">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                                      cam.isSelected
+                                        ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]'
+                                        : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
+                                    }`} />
+                                    <span className="truncate text-slate-300">{cam.label}</span>
+                                  </div>
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ml-2 ${
+                                    cam.isSelected
+                                      ? 'bg-emerald-400/15 text-emerald-400'
+                                      : 'bg-rose-500/15 text-rose-400'
+                                  }`}>
+                                    {cam.isSelected ? 'Ativa' : 'Disponível'}
+                                  </span>
+                                </div>
+                                {cam.stream ? (
+                                  <video
+                                    ref={(el) => {
+                                      videoRefs.current[cam.cameraId] = el;
+                                      if (el && cam.stream) {
+                                        el.srcObject = cam.stream;
+                                        el.muted = true;
+                                      }
+                                    }}
+                                    autoPlay
+                                    playsInline
+                                    muted
+                                    className="w-full h-48 object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-48 flex items-center justify-center text-slate-500 text-xs font-bold bg-slate-900/50">
+                                    {cam.isSelected ? 'Aguardando sinal...' : 'Clique em "Ativar" abaixo'}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        ) : (
+                          <div className="flex flex-col items-center gap-4 text-slate-600">
+                            <div className={`w-24 h-24 rounded-full bg-slate-900 border-2 border-slate-800 flex items-center justify-center ${isRecording ? 'text-cyan-500 shadow-[0_0_40px_rgba(6,182,212,0.2)]' : 'text-slate-700'}`}>
+                              <MicIcon className={`w-10 h-10 ${isRecording ? 'animate-pulse' : ''}`} />
+                            </div>
+                            <span className="text-xs font-black uppercase tracking-widest opacity-50">Capturando apenas áudio (Prioridade v1)</span>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-4 text-slate-600">
-                        <div className={`w-24 h-24 rounded-full bg-slate-900 border-2 border-slate-800 flex items-center justify-center ${isRecording ? 'text-cyan-500 shadow-[0_0_40px_rgba(6,182,212,0.2)]' : 'text-slate-700'}`}>
-                          <MicIcon className={`w-10 h-10 ${isRecording ? 'animate-pulse' : ''}`} />
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-widest opacity-50">Capturando apenas áudio (Prioridade v1)</span>
+                      
+                      {/* Botão de ação principal — SEMPRE abaixo do grid, nunca sobreposto */}
+                      <div className="px-4 pb-4 pt-0 flex justify-center">
+                        {!isRecording ? (
+                          <button
+                            onClick={startRecording}
+                            disabled={isBusy}
+                            className="px-10 py-4 rounded-3xl bg-white text-slate-950 font-black shadow-2xl flex items-center gap-3 hover:bg-slate-100 hover:scale-105 transition-all disabled:opacity-50"
+                          >
+                            <MicIcon className="w-6 h-6" />
+                            Iniciar Gravação
+                          </button>
+                        ) : (
+                          <button
+                            onClick={stopRecording}
+                            className="px-10 py-4 rounded-3xl bg-rose-500 text-white font-black shadow-2xl flex items-center gap-3 hover:bg-rose-600 hover:scale-105 transition-all"
+                          >
+                            <StopCircleIcon className="w-6 h-6" />
+                            Finalizar Sessão
+                          </button>
+                        )}
                       </div>
-                    )}
-                    
-                    {!isRecording && (
-                      <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center">
-                        <button 
-                          onClick={startRecording}
-                          disabled={isBusy}
-                          className="px-8 py-4 rounded-3xl bg-white text-slate-950 font-black shadow-2xl flex items-center gap-3 hover:scale-105 transition-transform disabled:opacity-50"
-                        >
-                          <MicIcon className="w-6 h-6" />
-                          Iniciar Gravação
-                        </button>
-                      </div>
-                    )}
-
-                    {isRecording && (
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-                        <button 
-                          onClick={stopRecording}
-                          className="px-8 py-4 rounded-3xl bg-rose-500 text-white font-black shadow-2xl flex items-center gap-3 hover:bg-rose-600 hover:scale-105 transition-all"
-                        >
-                          <StopCircleIcon className="w-6 h-6" />
-                          Finalizar Sessão
-                        </button>
-                      </div>
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
@@ -902,6 +1435,70 @@ const StudioView: React.FC<StudioViewProps> = ({
                         </div>
                       </div>
                     )}
+
+                    {/* SEÇÃO DE ÁUDIO MULTITRACK — SEMPRE visível (áudio é obrigatório) */}
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Fontes de Áudio</span>
+                        <span className="text-[10px] font-black text-slate-500">multitrack</span>
+                      </div>
+                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        {audioDevices.map((device, idx) => {
+                          const checked = selectedAudioDeviceIds.includes(device.deviceId);
+                          return (
+                            <label key={device.deviceId} className={`flex items-center gap-3 p-2 rounded-xl border ${checked ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 bg-white'}`}>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={isRecording}
+                                onChange={() => {
+                                  setSelectedAudioDeviceIds((prev) => {
+                                    if (prev.includes(device.deviceId)) {
+                                      return prev.filter((id) => id !== device.deviceId);
+                                    }
+                                    return [...prev, device.deviceId];
+                                  });
+                                }}
+                              />
+                              <span className="text-xs font-bold text-slate-700 truncate">{device.label || `Microfone ${idx + 1}`}</span>
+                            </label>
+                          );
+                        })}
+                        
+                        {/* Opção de áudio do sistema (getDisplayMedia) */}
+                        <label className={`flex items-center gap-3 p-2 rounded-xl border ${includeSystemAudio ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 bg-white'}`}>
+                          <input
+                            type="checkbox"
+                            checked={includeSystemAudio}
+                            disabled={isRecording}
+                            onChange={() => {
+                              setIncludeSystemAudio((prev) => !prev);
+                              if (!includeSystemAudio) {
+                                setSystemAudioStreamName(null);
+                              }
+                            }}
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold text-slate-700 truncate flex items-center gap-2">
+                              Áudio do Sistema (Navegador)
+                              <span className="text-[8px] font-black uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Experimental</span>
+                            </span>
+                            <span className="text-[9px] text-slate-400">
+                              {includeSystemAudio
+                                ? systemAudioStreamName
+                                  ? `Compartilhando: ${systemAudioStreamName}`
+                                  : 'Clique em "Iniciar Gravação" e selecione a aba com áudio'
+                                : 'Captura reuniões/áudio do navegador'}
+                            </span>
+                          </div>
+                        </label>
+                        
+                        {audioDevices.length === 0 && !includeSystemAudio && (
+                          <p className="text-xs text-slate-500 font-bold">Nenhum microfone detectado. Use o áudio do sistema.</p>
+                        )}
+                      </div>
+                    </div>
+
                   </div>
                   
                   <div className="space-y-4">
