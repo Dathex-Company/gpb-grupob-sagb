@@ -14,6 +14,19 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# ─── API SagB — Variáveis de Ambiente ──────────────────────────────
+
+[functions."api-sagb-router"]
+  environment = { SUPABASE_URL = "https://sagb.supabase.co", SUPABASE_SERVICE_KEY = "@@SUPABASE_SERVICE_KEY@@", TASKZEI_API_URL = "https://taskzei.sagb.com.br/api", CRM_API_URL = "https://crm.ziplia.com.br/api", STUDIO_API_URL = "https://studio.sagb.com.br/api", VOX_API_URL = "https://vox.sagb.com.br/api", RATE_LIMIT_CAPACITY = "100", RATE_LIMIT_REFILL = "10" }
+
+[functions."api-sagb-audit"]
+  environment = { SUPABASE_URL = "https://sagb.supabase.co", SUPABASE_SERVICE_KEY = "@@SUPABASE_SERVICE_KEY@@" }
+
+# ─── Hub de Integrações — Webhook WhatsApp ────────────────────────
+
+[functions."whatsapp-webhook"]
+  environment = { SUPABASE_URL = "https://sagb.supabase.co", SUPABASE_SERVICE_KEY = "@@SUPABASE_SERVICE_KEY@@", MOCK_META_VERIFY_TOKEN = "@@MOCK_META_VERIFY_TOKEN@@" }
+
 # Headers de segurança e performance
 
 [[headers]]
@@ -40,6 +53,20 @@
 [[redirects]]
   from = "/api/ai"
   to = "/.netlify/functions/ai"
+  status = 200
+  force = true
+
+# ─── API SagB — Redirects para Funções Serverless ─────────────────
+
+[[redirects]]
+  from = "/api-sagb/*"
+  to = "/.netlify/functions/api-sagb-router"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api-sagb-audit/*"
+  to = "/.netlify/functions/api-sagb-audit"
   status = 200
   force = true
 

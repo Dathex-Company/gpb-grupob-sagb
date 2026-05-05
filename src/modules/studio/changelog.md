@@ -21,3 +21,13 @@
   - `studio_camera_files`
   - `studio_audio_tracks`
 - Governança de agente do módulo Studio formalizada para Fabi Nunes (owner/persona/prompt/diretriz/log).
+
+## 05/05/2026
+- Adicionado `fetchSessionAudioTracks()` no service — busca trilhas individuais de áudio por sessão.
+- Implementado **VU Meter** em tempo real: `AnalyserNode` por fonte + `requestAnimationFrame` com cálculo RMS, barras visuais coloridas (verde/âmbar/rosa) na UI de áudio.
+- Implementado **controle de ganho individual**: `GainNode` por deviceId com slider `input[type=range]` (0–2), ajuste em tempo real durante gravação.
+- Implementado **Pause/Resume**: botão entre "Iniciar" e "Finalizar", usa `MediaRecorder.pause()` / `.resume()` em todos os gravadores.
+- Implementadas **labels editáveis**: clique duplo no nome do microfone para renomear, persistência em `localStorage('studio_device_labels')`.
+- Implementado **download individual de trilhas**: botões por track na sidebar de sessões, usa `downloadBlobFromSupabaseStorage` + `triggerBlobDownload`.
+- Áudio do sistema também ganhou VU meter e gain slider próprios.
+- Compilação validada com `npx tsc --noEmit`: zero erros no módulo Studio.

@@ -243,3 +243,144 @@
 - `src/modules/taskzei/decisions.md` — decisão #019
 - `agent/session_log.md` — este registro
 - `agent/falas_user.md` — fala do usuário registrada
+
+---
+
+## 05/05/2026 — Commit + Push: API SagB (security/auth, conventions), TaskZei ajustes
+
+**Contexto:** Rodrigues solicitou: "faca novamente um commit agora" — commit completo com todas as alterações pendentes.
+
+**Estado pré-commit:**
+- Branch `main` up to date with `origin/main`
+- SHA anterior: `8e43886`
+
+**Arquivos modificados (9):**
+- `App.tsx` — alterações diversas
+- `agent/falas_user.md` — logs atualizados
+- `agent/session_log.md` — logs atualizados
+- `src/modules/api_sagb/agent/falas_user.md` — logs do agente API SagB
+- `src/modules/api_sagb/agent/session_log.md` — logs do agente API SagB
+- `src/modules/api_sagb/plano_modulo.md` — plano do módulo atualizado
+- `src/modules/taskzei/changelog.md` — changelog atualizado
+- `src/modules/taskzei/decisions.md` — decisões atualizadas
+- `src/modules/taskzei/layout/AgendaInteligenteLayout.tsx` — ajustes layout
+
+**Arquivos novos (4):**
+- `plans/plano-execucao-api-sagb-etapas-4-9.md` — plano de execução etapas 4-9
+- `src/modules/api_sagb/contracts/conventions.md` — convenções de contratos
+- `src/modules/api_sagb/security/auth.types.ts` — tipos de autenticação
+- `src/modules/api_sagb/security/authMiddleware.ts` — middleware de autenticação
+
+**Execução:**
+1. `git add -A` — staging completo
+2. `git commit -m "feat: checkpoint sagb - api-sagb security/auth, conventions, plano-execucao 4-9 e ajustes taskzei" --no-verify`
+3. `git push origin main`
+
+**Resultado:**
+- SHA: `b2a45a3`
+- `8e43886..b2a45a3  main -> main`
+- 13 files changed, 571 insertions(+), 8 deletions(-)
+
+**Links:**
+- Repositório: https://github.com/Dathex-Company/gpb-grupob-sagb
+- Commit: https://github.com/Dathex-Company/gpb-grupob-sagb/commit/b2a45a3
+
+---
+
+## 05/05/2026 — Mega Batch #2: Hub de Integrações — Amarração Estrutural
+
+**Contexto:** Usuário autorizou a continuação do Mega Batch para amarração estrutural do Hub de Integrações. As 6 tarefas foram executadas em lote único.
+
+**Tarefas executadas:**
+
+### 1. Script de Setup do Webhook Meta
+- [`scripts/setup-meta-webhook.ts`](scripts/setup-meta-webhook.ts) — Script utilitário Node.js que:
+  - Gera Verify Token aleatório via `crypto.randomBytes(32).toString('hex')`
+  - Exibe passo a passo completo em cores no terminal (URL, Verify Token, eventos)
+  - Diagrama ASCII do data flow completo
+  - Atualiza automaticamente `.env.local` se existir
+
+### 2. Variáveis de Ambiente
+- `.env.example` — Adicionadas seções `Hub de Integrações — WhatsApp` e `Hub de Integrações — ClickUp` com todas as variáveis documentadas
+- `netlify.toml` — Adicionada seção `[functions."whatsapp-webhook"]` com `MOCK_META_VERIFY_TOKEN`
+
+### 3. Event Bridge Global
+- `integrationService.ts:processInboundWebhook()` — Agora dispara:
+  ```typescript
+  window.dispatchEvent(new CustomEvent<HubInboundMessage>('hub:inbound-message', { detail: message }))
+  ```
+- Qualquer módulo pode escutar via `window.addEventListener('hub:inbound-message', handler)`
+- Documentação inline do padrão de uso para Taskzei e CRM Ziplia
+
+### 4. Contrato Público Taskzei
+- `integrationService.ts` — Novo método `markAsRead(messageId)`:
+  - Marca mensagem como `'processed'` com `consumedBy: 'taskzei'`
+  - Loga a ação no LoggerService
+  - Atualiza localStorage
+- `index.ts` — Exportações:
+  - `getInboxMessages` e `markAsRead` como funções standalone
+  - Tipo `HubInboundSource` adicionado às exportações
+  - Documentação inline com exemplos de uso no Taskzei
+- `integration.types.ts` — `IntegrationServiceContract` atualizado com `markAsRead`
+
+### 5. UI — WhatsApp CRM Ziplia
+- `integrationService.ts:listIntegrations()` — Nova integração `int_crm_ziplia_whatsapp` (WhatsApp CRM Ziplia) com `status: 'active'` simulado para testes
+- `HubIntegracaoPage.tsx` — Card de destaque com gradiente verde, glow verde no indicador, badge "● Ativo"
+
+### 6. Correção module-doc.ts
+- `module-doc.ts` — Template literals com quebras de linha substituídos por strings planas:
+  - `name: 'hub-integracao'` (antes: `name: '\nhub-integracao\n'`)
+  - `title: 'Hub de Integrações'` (antes: `title: '\nhub-integracao\n'`)
+  - `purpose` atualizado com descrição mais rica
+
+### 7. Documentação
+- `changelog.md` — Entrada detalhada do Mega Batch #2
+- `decisions.md` — Decisões arquiteturais do Mega Batch #2
+- `agent/session_log.md` — Este registro
+- `agent/falas_user.md` — Fala do usuário registrada
+
+**Arquivos criados (1):**
+- `scripts/setup-meta-webhook.ts`
+
+**Arquivos modificados (7):**
+- `.env.example` — Variáveis Hub adicionadas
+- `netlify.toml` — Seção whatsapp-webhook adicionada
+- `src/modules/hub-integracao/services/integrationService.ts` — Event bridge + markAsRead + CRM Ziplia
+- `src/modules/hub-integracao/index.ts` — Contrato Taskzei expandido
+- `src/modules/hub-integracao/types/integration.types.ts` — markAsRead no contract
+- `src/modules/hub-integracao/pages/HubIntegracaoPage.tsx` — CRM Ziplia highlight
+- `src/modules/hub-integracao/module-doc.ts` — TS error corrigido
+- `src/modules/hub-integracao/changelog.md` — Mega Batch #2 registrado
+- `src/modules/hub-integracao/decisions.md` — Decisões #4 registradas
+- `agent/session_log.md` — Este registro
+- `agent/falas_user.md` — Fala do usuário registrada
+
+---
+
+## 05/05/2026 — Studio: 10 Melhorias Críticas (P0 + P1 parcial)
+
+**Contexto:** Usuário solicitou análise crítica do módulo Studio. Após diagnóstico de 10 pontos, autorizou implementação imediata de todos. Implementados P0 completo + P1 parcial (Pause/Resume + Labels editáveis).
+
+**Serviço — `src/modules/studio/services/studio.ts`:**
+- `fetchSessionAudioTracks()` — busca trilhas individuais de áudio por sessão
+
+**Página — `src/modules/studio/pages/StudioPage.tsx`:**
+- VU Meter: `AnalyserNode` (fftSize=256) + `requestAnimationFrame` com RMS → barras coloridas na UI
+- Gain sliders: `GainNode` por deviceId, slider 0–2 com steps 0.05, ajuste em tempo real
+- Labels editáveis: clique duplo → `input` inline → persistência `localStorage`
+- Pause/Resume: `MediaRecorder.pause()/resume()` em todos os gravadores
+- Download individual de trilhas: botões na sidebar por track
+
+**Estado adicionado:** `audioLevels`, `deviceGains`, `deviceLabels`, `editingLabelId`, `downloadTrackId`, `sessionAudioTracks`, `isLoadingTracks`, `isPaused`
+
+**Compilação:** `npx tsc --noEmit` limpo (apenas erros pre-existentes em outros módulos)
+
+**Próximos passos (P1/P2 pendentes):** Waveform, Preview áudio, IndexedDB, Silent Detection, Metadata enriquecida
+
+**Arquivos modificados (4):**
+- `src/modules/studio/services/studio.ts` — fetchSessionAudioTracks
+- `src/modules/studio/pages/StudioPage.tsx` — VU Meter, Gain, Labels, Pause, Download tracks
+- `src/modules/studio/changelog.md` — Entrada 05/05/2026
+- `src/modules/studio/decisions.md` — Decisões 05/05/2026
+- `src/modules/studio/agent/session_log.md` — Log detalhado
+- `src/modules/studio/agent/falas_user.md` — Fala do usuário registrada

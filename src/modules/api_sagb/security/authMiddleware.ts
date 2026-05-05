@@ -1,4 +1,5 @@
 import { ApiScope, AuthContext } from './auth.types';
+import type { AuditEntry } from '../audit/audit.types';
 
 export class UnauthorizedError extends Error {
   constructor(message: string = 'Unauthorized') {
@@ -15,29 +16,86 @@ export class ForbiddenError extends Error {
 }
 
 /**
- * Módulo de validação de API Key.
- * Em um cenário real, deve conectar-se a um Redis ou Banco de Dados (Supabase)
- * para validar o hash da chave e carregar os escopos do cliente.
+ * Configuração para validação de API Key via Supabase.
+ * As variáveis de ambiente são carregadas em runtime.
+ */
+function getSupabaseConfig() {
+  return {
+    url: process.env.SUPABASE_URL || 'http://localhost:54321',
+    serviceKey: process.env.SUPABASE_SERVICE_KEY || '',
+  };
+}
+
+/**
+ * Valida uma API Key consultando a tabela `api_keys` no Supabase.
+ *
+ * A chave (`X-API-Key`) é comparada contra registros na tabela via
+ * consulta REST anônima (protegida por RLS) ou via service_role em
+ * contexto de função serverless.
+ *
+ * Expects: apiKeys com prefixo `sgb_` (sandbox) ou `sgp_` (production).
  */
 export async function validateApiKey(apiKey: string): Promise<AuthContext> {
-  if (!apiKey || !apiKey.startsWith('sgb_')) {
-    throw new UnauthorizedError('Invalid API Key format');
+  if (!apiKey) {
+    throw new UnauthorizedError('API Key is required');
   }
 
-  // Mock implementation for structural foundation
-  // TODO: Retrieve client and key details from database
-  const isSandbox = apiKey.startsWith('sgb_sandbox_');
-  
+  // Se for uma chave de teste mock (ambiente de desenvolvimento/teste),
+  // retorna contexto fixo sem consultar banco
   if (apiKey === 'sgb_sandbox_test_key') {
     return {
       clientId: 'client_test_001',
+      apiKey,
       environment: 'sandbox',
       scopes: ['system:read', 'system:write'],
       requestId: crypto.randomUUID(),
     };
   }
 
-  throw new UnauthorizedError('Invalid API Key');
+  try {
+    // Consulta a tabela api_keys via REST do Supabase
+    const { url, serviceKey } = getSupabaseConfig();
+    const response = await fetch(
+      `${url}/rest/v1/api_keys?key_hash=eq.${apiKey}&select=client_id,environment,scopes,active,client_name`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new UnauthorizedError('Failed to validate API Key');
+    }
+
+    const data = await response.json();
+
+    if (!data || data.length === 0) {
+      throw new UnauthorizedError('Invalid API Key');
+    }
+
+    const keyRecord = data[0];
+
+    if (keyRecord.active === false) {
+      throw new UnauthorizedError('API Key is inactive');
+    }
+
+    return {
+      clientId: keyRecord.client_id,
+      apiKey,
+      environment: keyRecord.environment || 'production',
+      scopes: keyRecord.scopes || [],
+      requestId: crypto.randomUUID(),
+    };
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      throw error;
+    }
+    // Erro de conectividade com Supabase — falha segura
+    throw new UnauthorizedError('Unable to validate API Key');
+  }
 }
 
 /**

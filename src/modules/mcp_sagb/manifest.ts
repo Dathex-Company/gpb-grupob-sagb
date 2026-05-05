@@ -6,7 +6,7 @@ export const mcpSagbManifest: ModuleManifest = {
   displayName: 'MCP SagB',
   baseRoute: '/mcp_sagb',
   icon: 'TerminalIcon',
-  initialStatus: 'inactive',
+  initialStatus: 'active',
   owner: {
     type: 'agent',
     id: 'savio_codare',

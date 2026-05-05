@@ -109,3 +109,33 @@ pode fazer
 ```
 analise o modulo Z:\SagB\src\modules\taskzei. ele ja esta com um sidebar proprio, bem legal. Atualize apenas tirando o side bar do sagb e colocando o "voltar ao sagb" embaixo
 ```
+
+### 05/05/2026 — Commit completo
+```
+faca novamente um commit agora
+```
+
+### 05/05/2026 — Mega Batch #2 Hub de Integrações
+```
+Alan, a implementação do Mega Batch no Hub de Integração ficou excelente. A base técnica para tráfego de dados está sólida.
+
+Eu autorizo a continuação imediata via Lote Único (Mega Batch) para as próximas etapas.
+
+Diretrizes:
+1. scripts/setup-meta-webhook.ts com passo a passo e Verify Token
+2. .env.example e netlify.toml com MOCK_META_VERIFY_TOKEN
+3. Event bridge global (window.dispatchEvent) no integrationService.ts
+4. Contrato Taskzei (getInboxMessages, markAsRead) no index.ts
+5. UI mostrar "WhatsApp CRM Ziplia" como ativo
+6. Corrigir module-doc.ts TS error
+7. Atualizar changelog.md, decisions.md, session_log.md
+```
+
+### 05/05/2026 — Studio: 10 Melhorias Críticas
+```
+na sua opiniao critica, o que esta faltando, ou poderia ter este modulo?
+```
+
+```
+Eu autorizo a execução imediata de TODAS as 10 soluções sugeridas. Assuma o controle total do StudioPage.tsx e dos serviços associados. Crie um plano de ataque interno e vá implementando as soluções da Prioridade P0 (VU Meter, Ganho, Download Individual) até a P2 (IndexedDB). Confio na sua capacidade técnica. Pode iniciar a codificação das melhorias agora. Retorne apenas quando todos os itens estiverem implementados e o módulo atualizado.
+```

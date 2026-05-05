@@ -18,6 +18,7 @@
   "dependencies": {
     "@google/genai": "^1.33.0",
     "@hookform/resolvers": "^5.2.2",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@supabase/supabase-js": "^2.102.1",
     "@vitejs/plugin-react": "^5.1.2",
     "react": "^19.2.3",
@@ -33,6 +34,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^9.2.1",
     "husky": "^9.1.7",
+    "js-yaml": "^4.1.1",
     "localtunnel": "^2.0.2",
     "supabase": "^2.84.10",
     "typescript": "~5.8.2",

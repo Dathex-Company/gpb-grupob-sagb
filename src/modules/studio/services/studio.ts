@@ -1004,3 +1004,35 @@ export const fetchSessionMasterAudio = async (
 
   return null;
 };
+
+/**
+ * Busca TODAS as trilhas de áudio de uma sessão (master + individuais).
+ * Usado para exibir tracks disponíveis para download individual.
+ */
+export const fetchSessionAudioTracks = async (
+  sessionId: string,
+  session?: StudioSession | null
+): Promise<StudioAudioTrack[]> => {
+  const tracks: StudioAudioTrack[] = [];
+
+  // 1. Tentar tabela dedicada
+  try {
+    const q = query(
+      collection(db, 'studio_audio_tracks'),
+      where('sessionId', '==', sessionId)
+    );
+    const snapshot = await getDocs(q);
+    snapshot.docs.forEach((doc) => {
+      tracks.push({ ...doc.data(), id: doc.id } as StudioAudioTrack);
+    });
+  } catch {
+    // tabela pode não existir
+  }
+
+  // 2. Fallback: payload da sessão
+  if (tracks.length === 0 && session?.payload?.audioTracks && Array.isArray(session.payload.audioTracks)) {
+    session.payload.audioTracks.forEach((t: any) => tracks.push(t));
+  }
+
+  return tracks;
+};

@@ -34,3 +34,8 @@ Refinar o monitor de captura do módulo Studio para exibir câmeras online em gr
 [... texto completo da tarefa ...]"
 
 **usuario:** "Quando eu terminar de gravar, depois eu quero clicar embaixo e abrir, eu quero clicar em cima daquele documento ali, naquele arquivo, e eu ver a gravação, entendeu? Não está acontecendo isso. Só tem um botão para fazer download e eu acho que transcrição, né? Então eu quero também ver a gravação que foi feita."
+
+### 05/05/2026
+**usuario:** "na sua opiniao critica, o que esta faltando, ou poderia ter este modulo?"
+
+**usuario:** "Eu autorizo a execução imediata de TODAS as 10 soluções sugeridas. Assuma o controle total do StudioPage.tsx e dos serviços associados. Crie um plano de ataque interno e vá implementando as soluções da Prioridade P0 (VU Meter, Ganho, Download Individual) até a P2 (IndexedDB). Confio na sua capacidade técnica. Pode iniciar a codificação das melhorias agora. Retorne apenas quando todos os itens estiverem implementados e o módulo atualizado."

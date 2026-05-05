@@ -1,0 +1,493 @@
+{
+  "info": {
+    "name": "API SagB v1.0.0",
+    "description": "Coleção oficial da API SagB — gateway unificado para os serviços do ecossistema SagB.\n\n## Autenticação\nTodas as requisições exigem o header `X-API-Key` com uma chave válida.\n\n## Versionamento\nVersão padrão: `v1`. Use o header `Accept-Version` para especificar uma versão.\n\n## Documentação\n- OpenAPI: https://api.sagb.com.br/docs\n- Changelog: https://github.com/sagb/api-sagb/blob/main/CHANGELOG_API.md\n- Política de Depreciação: vide docs internos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "sagb-dande-conec"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "sgb_sandbox_admin",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "System",
+      "description": "Endpoints de sistema e healthcheck",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "health"]
+            },
+            "description": "Verifica o status da API SagB. Não requer autenticação para leitura básica."
+          },
+          "response": [
+            {
+              "name": "Sucesso",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                { "key": "X-Request-Id", "value": "uuid-v4" },
+                { "key": "X-API-Version", "value": "1.0.0" },
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": "{\n  \"status\": \"ok\",\n  \"version\": \"1.0.0\",\n  \"timestamp\": \"2026-05-05T00:00:00.000Z\",\n  \"module\": \"api-sagb\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TaskZei",
+      "description": "Integração com o sistema de notificações TaskZei",
+      "item": [
+        {
+          "name": "Listar Notificações",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/taskzei/notifications?recipient_id={{recipientId}}&status=pending&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "taskzei", "notifications"],
+              "query": [
+                { "key": "recipient_id", "value": "{{recipientId}}" },
+                { "key": "status", "value": "pending" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Lista notificações do TaskZei com filtros opcionais."
+          },
+          "response": [
+            {
+              "name": "Sucesso",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"notif-001\",\n      \"title\": \"Nova mensagem\",\n      \"message\": \"Você recebeu uma nova mensagem de Sandri\",\n      \"type\": \"info\",\n      \"status\": \"pending\",\n      \"created_at\": \"2026-05-05T00:00:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"total\": 1,\n    \"limit\": 20,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Enviar Notificação",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/taskzei/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "taskzei", "notifications"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bem-vindo à API SagB\",\n  \"message\": \"Sua integração foi configurada com sucesso!\",\n  \"type\": \"success\",\n  \"recipient_ids\": [\"user-123\", \"user-456\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Envia uma nova notificação através do TaskZei."
+          },
+          "response": [
+            {
+              "name": "Criado",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"notif-002\",\n    \"title\": \"Bem-vindo à API SagB\",\n    \"status\": \"sent\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CRM",
+      "description": "Gestão de leads via CRM Ziplia",
+      "item": [
+        {
+          "name": "Listar Leads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/crm/leads?status=active&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "crm", "leads"],
+              "query": [
+                { "key": "status", "value": "active" },
+                { "key": "limit", "value": "10" }
+              ]
+            },
+            "description": "Lista leads do CRM com filtros opcionais."
+          },
+          "response": [
+            {
+              "name": "Sucesso",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"lead-001\",\n      \"name\": \"Empresa Exemplo Ltda\",\n      \"email\": \"contato@exemplo.com\",\n      \"phone\": \"(11) 99999-8888\",\n      \"status\": \"active\",\n      \"created_at\": \"2026-01-15T00:00:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"total\": 1,\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Criar Lead",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/crm/leads",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "crm", "leads"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nova Empresa\",\n  \"email\": \"novo@empresa.com\",\n  \"phone\": \"(21) 99999-0000\",\n  \"source\": \"api-sagb\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Cria um novo lead no CRM."
+          },
+          "response": [
+            {
+              "name": "Criado",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"lead-002\",\n    \"name\": \"Nova Empresa\",\n    \"email\": \"novo@empresa.com\",\n    \"status\": \"new\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Obter Lead",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/crm/leads/{{leadId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "crm", "leads", "{{leadId}}"]
+            },
+            "description": "Obtém detalhes de um lead específico."
+          },
+          "response": [
+            {
+              "name": "Sucesso",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"lead-001\",\n    \"name\": \"Empresa Exemplo Ltda\",\n    \"email\": \"contato@exemplo.com\",\n    \"phone\": \"(11) 99999-8888\",\n    \"status\": \"active\",\n    \"created_at\": \"2026-01-15T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Atualizar Lead",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/crm/leads/{{leadId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "crm", "leads", "{{leadId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Empresa Exemplo Atualizada\",\n  \"status\": \"qualified\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Atualiza os dados de um lead existente."
+          },
+          "response": [
+            {
+              "name": "Sucesso",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"lead-001\",\n    \"name\": \"Empresa Exemplo Atualizada\",\n    \"status\": \"qualified\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Studio",
+      "description": "Acesso aos projetos do Studio Fabi Nunes",
+      "item": [
+        {
+          "name": "Listar Projetos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/studio/projects?status=active&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "studio", "projects"],
+              "query": [
+                { "key": "status", "value": "active" },
+                { "key": "limit", "value": "10" }
+              ]
+            },
+            "description": "Lista projetos do Studio."
+          },
+          "response": [
+            {
+              "name": "Sucesso",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"proj-001\",\n      \"name\": \"Campanha Verão 2026\",\n      \"status\": \"active\",\n      \"client_id\": \"client-abc\",\n      \"created_at\": \"2026-03-01T00:00:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"total\": 1,\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Obter Projeto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/studio/projects/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "studio", "projects", "{{projectId}}"]
+            },
+            "description": "Obtém detalhes completos de um projeto, incluindo assets."
+          },
+          "response": [
+            {
+              "name": "Sucesso",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"proj-001\",\n    \"name\": \"Campanha Verão 2026\",\n    \"status\": \"active\",\n    \"client_id\": \"client-abc\",\n    \"assets\": [\n      {\n        \"id\": \"asset-001\",\n        \"type\": \"video\",\n        \"url\": \"https://studio.sagb.com.br/assets/asset-001.mp4\"\n      }\n    ],\n    \"created_at\": \"2026-03-01T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Vox",
+      "description": "Serviço de transcrição de áudio Vox",
+      "item": [
+        {
+          "name": "Transcrever Áudio",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vox/transcriptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "vox", "transcriptions"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"audio_url\": \"https://storage.sagb.com.br/audios/reuniao-2026-05-05.mp3\",\n  \"language\": \"pt-BR\",\n  \"webhook_url\": \"https://webhook.sagb.com.br/vox/callback\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Envia um áudio para transcrição assíncrona."
+          },
+          "response": [
+            {
+              "name": "Aceito",
+              "status": "Accepted",
+              "code": 202,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"trans-001\",\n    \"status\": \"processing\",\n    \"estimated_time\": \"30s\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Obter Transcrição",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vox/transcriptions/{{transcriptionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "vox", "transcriptions", "{{transcriptionId}}"]
+            },
+            "description": "Obtém o resultado de uma transcrição."
+          },
+          "response": [
+            {
+              "name": "Sucesso",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"trans-001\",\n    \"status\": \"completed\",\n    \"text\": \"Olá, esta é a transcrição completa do áudio enviado...\",\n    \"duration\": 120.5,\n    \"language\": \"pt-BR\",\n    \"created_at\": \"2026-05-05T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Listar Transcrições",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vox/transcriptions?status=completed&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "vox", "transcriptions"],
+              "query": [
+                { "key": "status", "value": "completed" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Lista transcrições com filtros."
+          },
+          "response": [
+            {
+              "name": "Sucesso",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"trans-001\",\n      \"status\": \"completed\",\n      \"language\": \"pt-BR\",\n      \"created_at\": \"2026-05-05T00:00:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"total\": 1,\n    \"limit\": 20,\n    \"offset\": 0\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth (Erros)",
+      "description": "Cenários de erro de autenticação para validação",
+      "item": [
+        {
+          "name": "401 - Sem API Key",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "health"]
+            },
+            "description": "Requisição sem header X-API-Key. Deve retornar 401."
+          },
+          "response": [
+            {
+              "name": "Não Autorizado",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"API Key is required\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "401 - API Key Inválida",
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                { "key": "in", "value": "header", "type": "string" },
+                { "key": "value", "value": "invalid_key_123", "type": "string" },
+                { "key": "key", "value": "X-API-Key", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "health"]
+            },
+            "description": "Requisição com API Key inválida. Deve retornar 401."
+          },
+          "response": [
+            {
+              "name": "Não Autorizado",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"Invalid API Key\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "403 - Scope Insuficiente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/crm/leads",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "crm", "leads"]
+            },
+            "description": "Requisição com API Key que não possui o scope `agents:read`. Deve retornar 403."
+          },
+          "response": [
+            {
+              "name": "Proibido",
+              "status": "Forbidden",
+              "code": 403,
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Missing one or more required scopes: agents:read\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rate Limiting",
+      "description": "Testes de rate limiting (429 Too Many Requests)",
+      "item": [
+        {
+          "name": "429 - Excedeu Limite",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "health"]
+            },
+            "description": "Após exceder o limite de requisições por minuto. Deve retornar 429 com header Retry-After."
+          },
+          "response": [
+            {
+              "name": "Muitas Requisições",
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                { "key": "Retry-After", "value": "6" },
+                { "key": "X-RateLimit-Limit", "value": "100" },
+                { "key": "X-RateLimit-Remaining", "value": "0" }
+              ],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"RATE_LIMIT_EXCEEDED\",\n    \"message\": \"Too many requests. Please retry after the specified time.\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.sagb.com.br",
+      "type": "string"
+    },
+    {
+      "key": "recipientId",
+      "value": "user-123",
+      "type": "string"
+    },
+    {
+      "key": "leadId",
+      "value": "lead-001",
+      "type": "string"
+    },
+    {
+      "key": "projectId",
+      "value": "proj-001",
+      "type": "string"
+    },
+    {
+      "key": "transcriptionId",
+      "value": "trans-001",
+      "type": "string"
+    }
+  ]
+}

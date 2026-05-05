@@ -1,8 +1,9 @@
 import React from 'react';
 import { ModuleRoute } from '../../core/modules/module.types';
-import { McpSagbPage } from './pages/McpSagbPage';
+import { mcpSagbManifest } from './manifest';
+import McpSagbPage from './pages/McpSagbPage';
 
 export const mcpSagbRoutes: ModuleRoute = {
-  path: '/mcp_sagb/*',
+  path: mcpSagbManifest.baseRoute + '/*',
   element: <McpSagbPage />
 };

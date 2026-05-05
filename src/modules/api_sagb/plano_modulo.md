@@ -6,13 +6,22 @@ Estabelecer a API oficial do SagB como camada de consumo para sistemas internos 
 
 ## 1.1 status executivo
 
-- fase atual: `03/09 ET | Segurança e identidade`
+- fase atual: `09/09 ET | Rollout Controlado ✅`
 - responsável atual: `Dande Conec`
-- progresso estimado: `33%`
-- próximo marco: implementar auditoria e observabilidade (correlation id)
-- bloqueio principal: integração com mecanismo de logs distribuídos
+- progresso estimado: `100%`
+- próximo marco: go-live da API SagB v1.0.0
+- bloqueio principal: nenhum
 
 ## 1.2 changelog curto
+
+### 05/05/2026 — Mega Batch: Etapas 4 a 9
+
+- **etapa 4 concluída**: auditoria com correlation id (`X-Request-Id`), `AuditLogger`, tabela `api_audit_log` no Supabase e função serverless dedicada
+- **etapa 5 concluída**: camada de integração com `HttpClient` (retry/timeout), `CircuitBreaker` e 4 adapters (TaskZei, CRM, Studio, Vox)
+- **etapa 6 concluída**: 12 endpoints implementados (health, taskzei, crm, studio, vox) com schemas de validação, handlers com scoping e roteador Netlify
+- **etapa 7 concluída**: sistema de versionamento multi-versão, política de depreciação e `CHANGELOG_API.md`
+- **etapa 8 concluída**: testes de contrato, auth, integração, auditoria e versionamento (Vitest) + load test k6
+- **etapa 9 concluída**: plano de rollout em 4 ondas, procedimento de rollback em 4 níveis, feature flags e go-live checklist
 
 ### 01/05/2026
 
@@ -37,13 +46,16 @@ Em caso de conflito, a norma canônica prevalece.
 2. MCP SagB permanecerá voltado a agentes.
 3. Hub de Integração permanecerá como camada de conectores e credenciais.
 4. Acesso direto ao banco não será contrato oficial para consumidores externos.
+5. Mega Batch autorizado para execução das etapas 4 a 9 em lote único.
+6. Roteador Netlify auto-contido (fetch + inline) com versão TypeScript para testes.
 
 ## 4. estado atual
 
-- módulo `api_sagb` criado e plugado em `src/core/modules/moduleRegistry.ts`
-- rota base ativa em `src/modules/api_sagb/routes.tsx`
-- documentação base criada (`module-doc`, `decisions`, `changelog`)
-- agente do módulo criado em `src/modules/api_sagb/agent`
+- todas as 9 etapas concluídas
+- módulo `api_sagb` com 37+ arquivos de código, documentação e testes
+- contrato OpenAPI com 12 endpoints documentados
+- deployável via Netlify Functions
+- pronto para rollout conforme `rollout/rolloutPlan.md`
 
 ## 5. estado alvo
 
@@ -51,7 +63,7 @@ API oficial versionada (`/v1`) com autenticação, autorização por escopo, aud
 
 ## 6. trilha oficial em 9 etapas
 
-### etapa 1 — definição de fronteiras
+### etapa 1 — definição de fronteiras ✅
 
 **objetivo**
 Formalizar fronteiras entre API, MCP, Hub e dados.
@@ -60,7 +72,7 @@ Formalizar fronteiras entre API, MCP, Hub e dados.
 - matriz de responsabilidades aprovada
 - fluxos proibidos/permitidos documentados
 
-### etapa 2 — contrato inicial `/v1`
+### etapa 2 — contrato inicial `/v1` ✅
 
 **objetivo**
 Definir recursos e padrões de resposta/erro.
@@ -69,7 +81,7 @@ Definir recursos e padrões de resposta/erro.
 - contrato OpenAPI inicial
 - convenções de paginação, erros e idempotência
 
-### etapa 3 — segurança e identidade
+### etapa 3 — segurança e identidade ✅
 
 **objetivo**
 Implementar authn/authz por escopo.
@@ -78,7 +90,7 @@ Implementar authn/authz por escopo.
 - chaves/tokens por cliente
 - escopos por produto e por operação
 
-### etapa 4 — auditoria e observabilidade
+### etapa 4 — auditoria e observabilidade ✅
 
 **objetivo**
 Rastrear chamadas ponta a ponta.
@@ -87,7 +99,7 @@ Rastrear chamadas ponta a ponta.
 - correlation id por request
 - trilha de ator, origem, escopo e resultado
 
-### etapa 5 — camada de integração interna
+### etapa 5 — camada de integração interna ✅
 
 **objetivo**
 Conectar API ao Hub sem acoplamento de borda.
@@ -96,7 +108,7 @@ Conectar API ao Hub sem acoplamento de borda.
 - adapters internos definidos
 - políticas de timeout/retry por conector
 
-### etapa 6 — endpoints prioritários
+### etapa 6 — endpoints prioritários ✅
 
 **objetivo**
 Subir primeiros endpoints para consumidores críticos.
@@ -104,7 +116,7 @@ Subir primeiros endpoints para consumidores críticos.
 **critérios de aceitação**
 - TaskZei, CRM, Studio e Vox com casos cobertos
 
-### etapa 7 — governança de versão
+### etapa 7 — governança de versão ✅
 
 **objetivo**
 Controlar evolução sem quebra.
@@ -113,7 +125,7 @@ Controlar evolução sem quebra.
 - política de depreciação
 - changelog de API por versão
 
-### etapa 8 — hardening e testes
+### etapa 8 — hardening e testes ✅
 
 **objetivo**
 Elevar confiabilidade operacional.
@@ -122,7 +134,7 @@ Elevar confiabilidade operacional.
 - testes de contrato e segurança
 - cenários de carga e falha
 
-### etapa 9 — rollout controlado
+### etapa 9 — rollout controlado ✅
 
 **objetivo**
 Migrar consumidores com risco mínimo.
@@ -133,10 +145,10 @@ Migrar consumidores com risco mínimo.
 
 ## 7. riscos arquiteturais
 
-- confusão de fronteiras API x MCP x Hub
-- acoplamento indevido ao banco como contrato externo
-- falta de escopos finos de autorização
-- ausência de trilha de auditoria por chamada
+- confusão de fronteiras API x MCP x Hub (mitigado por decisões documentadas)
+- acoplamento indevido ao banco como contrato externo (mitigado por camada de adapters)
+- falta de escopos finos de autorização (mitigado por 6 escopos definidos)
+- ausência de trilha de auditoria por chamada (mitigado por audit logging)
 
 ## 8. dependências futuras
 
@@ -146,9 +158,14 @@ Migrar consumidores com risco mínimo.
 
 ## 9. próxima etapa recomendada
 
-`04/09 ET | Auditoria e observabilidade`
+Go-Live da API SagB v1.0.0 conforme plano de rollout.
 
 ## 10. versionamento
+
+### v1.0.0 - 05/05/2026
+
+- todas as 9 etapas concluídas
+- API SagB pronta para produção
 
 ### v0.1.0 - 01/05/2026
 

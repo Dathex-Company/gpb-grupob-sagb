@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { BackIcon, MicIcon, StopCircleIcon, CloudUploadIcon, FileTextIcon, DownloadIcon, PlayIcon } from '../../../../components/Icon';
+import { BackIcon, MicIcon, StopCircleIcon, CloudUploadIcon, FileTextIcon, DownloadIcon, PlayIcon, PauseIcon } from '../../../../components/Icon';
 import {
   StudioSession,
   StudioChunk,
@@ -20,9 +20,10 @@ import {
   downloadSessionMasterAudio,
   downloadSessionCameraVideo,
   fetchSessionCameraFiles,
-  fetchSessionMasterAudio
+  fetchSessionMasterAudio,
+  fetchSessionAudioTracks
 } from '../services/studio';
-import { getSupabasePublicUrl } from '../../../../services/storage';
+import { getSupabasePublicUrl, downloadBlobFromSupabaseStorage, triggerBlobDownload } from '../../../../services/storage';
 import { UserProfile } from '../../../../types';
 
 interface StudioViewProps {
@@ -132,6 +133,21 @@ const StudioView: React.FC<StudioViewProps> = ({
   const [includeSystemAudio, setIncludeSystemAudio] = useState(false);
   const [systemAudioStreamName, setSystemAudioStreamName] = useState<string | null>(null);
 
+  // VU Meter + Preview + Ganho
+  const [audioLevels, setAudioLevels] = useState<Record<string, number>>({});
+  const [deviceGains, setDeviceGains] = useState<Record<string, number>>({});
+  const [deviceLabels, setDeviceLabels] = useState<Record<string, string>>(() => {
+    try {
+      const stored = localStorage.getItem('studio_device_labels');
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
+  const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
+  const [downloadTrackId, setDownloadTrackId] = useState<string | null>(null);
+  const [sessionAudioTracks, setSessionAudioTracks] = useState<StudioAudioTrack[]>([]);
+  const [isLoadingTracks, setIsLoadingTracks] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const previewStreamsRef = useRef<Map<string, MediaStream>>(new Map());
   const cameraRecordersRef = useRef<Map<string, { recorder: MediaRecorder; parts: Blob[]; startedAt: number; deviceId: string }>>(new Map());
@@ -155,6 +171,13 @@ const StudioView: React.FC<StudioViewProps> = ({
   // AudioContext para mixagem multitrack → master
   const audioContextRef = useRef<AudioContext | null>(null);
   const masterMixDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+
+  // Gain nodes por deviceId — permite controle de volume individual
+  const gainNodesRef = useRef<Map<string, GainNode>>(new Map());
+  // Analyser nodes por deviceId — usado para VU meter
+  const analyserNodesRef = useRef<Map<string, AnalyserNode>>(new Map());
+  // RAF ID para ciclo de atualização do VU meter
+  const audioLevelRafRef = useRef<number | null>(null);
 
   const isRecordingRef = useRef<boolean>(false);
   
@@ -236,6 +259,23 @@ const StudioView: React.FC<StudioViewProps> = ({
     loadPlayback();
   }, [activeSessionId, isRecording, sessions]);
 
+  // Carrega trilhas de áudio individuais da sessão selecionada (para download individual)
+  useEffect(() => {
+    if (!activeSessionId || isRecording) return;
+    const loadTracks = async () => {
+      setIsLoadingTracks(true);
+      try {
+        const tracks = await fetchSessionAudioTracks(activeSessionId, activeSession);
+        setSessionAudioTracks(tracks);
+      } catch (error) {
+        console.warn('[Studio] Erro ao carregar trilhas de áudio:', error);
+      } finally {
+        setIsLoadingTracks(false);
+      }
+    };
+    loadTracks();
+  }, [activeSessionId, isRecording, activeSession]);
+
   // Handlers para download/export
   const handleDownloadAudio = useCallback(async (session: StudioSession) => {
     setDownloadingId(session.id);
@@ -248,6 +288,61 @@ const StudioView: React.FC<StudioViewProps> = ({
       setDownloadingId(null);
     }
   }, [scopedWorkspaceId]);
+
+  const handleDownloadIndividualTrack = useCallback(async (track: StudioAudioTrack, sessionTitle?: string) => {
+    setDownloadTrackId(track.id || 'unknown');
+    try {
+      if (!track.storagePath) {
+        throw new Error('Caminho do arquivo não encontrado para esta trilha.');
+      }
+      const blob = await downloadBlobFromSupabaseStorage({
+        bucket: 'studio',
+        path: track.storagePath
+      });
+      const safeLabel = (track.sourceLabel || track.trackRole)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]+/g, '-')
+        .toLowerCase();
+      const safeTitle = (sessionTitle || 'track')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]+/g, '-')
+        .toLowerCase();
+      triggerBlobDownload(blob, `studio_track_${safeLabel}_${safeTitle}.webm`);
+      setFeedback(`Download da trilha "${track.sourceLabel || track.trackRole}" iniciado.`);
+    } catch (error: any) {
+      setFeedback(`Erro ao baixar trilha: ${error.message}`);
+    } finally {
+      setDownloadTrackId(null);
+    }
+  }, []);
+
+  const handlePauseResume = useCallback(() => {
+    if (isPaused) {
+      // Resume todos os gravadores
+      masterAudioRecorderRef.current?.resume();
+      audioTrackRecordersRef.current.forEach(({ recorder }) => {
+        if (recorder.state === 'paused') recorder.resume();
+      });
+      cameraRecordersRef.current.forEach(({ recorder }) => {
+        if (recorder.state === 'paused') recorder.resume();
+      });
+      setIsPaused(false);
+      setFeedback('Gravação retomada.');
+    } else {
+      // Pause todos os gravadores
+      masterAudioRecorderRef.current?.pause();
+      audioTrackRecordersRef.current.forEach(({ recorder }) => {
+        if (recorder.state === 'recording') recorder.pause();
+      });
+      cameraRecordersRef.current.forEach(({ recorder }) => {
+        if (recorder.state === 'recording') recorder.pause();
+      });
+      setIsPaused(true);
+      setFeedback('Gravação pausada.');
+    }
+  }, [isPaused]);
 
   const handleExportTranscript = useCallback(async (session: StudioSession) => {
     setExportingId(session.id);
@@ -711,9 +806,25 @@ useEffect(() => {
       masterMixDestRef.current = dest;
 
       const sourceNodes: AudioNode[] = [];
-      for (const { stream } of audioTrackStreams) {
+      gainNodesRef.current.clear();
+      analyserNodesRef.current.clear();
+      for (const { stream, deviceId, trackRole, sourceLabel } of audioTrackStreams) {
         const sourceNode = audioCtx.createMediaStreamSource(stream);
-        sourceNode.connect(dest);
+        const gainNode = audioCtx.createGain();
+        const gainKey = deviceId || trackRole;
+        const savedGain = deviceGains[gainKey] ?? 1.0;
+        gainNode.gain.value = savedGain;
+        gainNodesRef.current.set(gainKey, gainNode);
+
+        // AnalyserNode para VU meter
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        analyserNodesRef.current.set(gainKey, analyser);
+
+        sourceNode.connect(gainNode);
+        gainNode.connect(analyser);
+        analyser.connect(dest);
+
         sourceNodes.push(sourceNode);
       }
 
@@ -903,6 +1014,27 @@ useEffect(() => {
       isRecordingRef.current = true;
       setIsRecording(true);
       await startAudioChunkRecorder(sessionId);
+
+      // Inicia ciclo RAF do VU meter
+      const updateLevels = () => {
+        if (!isRecordingRef.current) return;
+        const newLevels: Record<string, number> = {};
+        analyserNodesRef.current.forEach((analyser, key) => {
+          const data = new Uint8Array(analyser.frequencyBinCount);
+          analyser.getByteTimeDomainData(data);
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) {
+            const value = (data[i] - 128) / 128;
+            sum += value * value;
+          }
+          const rms = Math.sqrt(sum / data.length);
+          newLevels[key] = Math.min(1, rms * 3);
+        });
+        setAudioLevels(newLevels);
+        audioLevelRafRef.current = requestAnimationFrame(updateLevels);
+      };
+      audioLevelRafRef.current = requestAnimationFrame(updateLevels);
+
       setFeedback(`Gravação multitrack em andamento (${audioTrackStreams.length} fonte(s) de áudio + ${selectedCameras.length} câmera(s))...`);
     } catch (error: any) {
       setFeedback(error.message || 'Falha ao iniciar.');
@@ -1331,7 +1463,7 @@ useEffect(() => {
                       </div>
                       
                       {/* Botão de ação principal — SEMPRE abaixo do grid, nunca sobreposto */}
-                      <div className="px-4 pb-4 pt-0 flex justify-center">
+                      <div className="px-4 pb-4 pt-0 flex items-center justify-center gap-3">
                         {!isRecording ? (
                           <button
                             onClick={startRecording}
@@ -1342,13 +1474,27 @@ useEffect(() => {
                             Iniciar Gravação
                           </button>
                         ) : (
-                          <button
-                            onClick={stopRecording}
-                            className="px-10 py-4 rounded-3xl bg-rose-500 text-white font-black shadow-2xl flex items-center gap-3 hover:bg-rose-600 hover:scale-105 transition-all"
-                          >
-                            <StopCircleIcon className="w-6 h-6" />
-                            Finalizar Sessão
-                          </button>
+                          <>
+                            <button
+                              onClick={handlePauseResume}
+                              className={`px-6 py-4 rounded-3xl font-black shadow-xl flex items-center gap-2 transition-all hover:scale-105 ${
+                                isPaused
+                                  ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                  : 'bg-amber-500 text-white hover:bg-amber-600'
+                              }`}
+                              title={isPaused ? 'Retomar gravação' : 'Pausar gravação'}
+                            >
+                              {isPaused ? <PlayIcon className="w-5 h-5" /> : <PauseIcon className="w-5 h-5" />}
+                              {isPaused ? 'Retomar' : 'Pausar'}
+                            </button>
+                            <button
+                              onClick={stopRecording}
+                              className="px-10 py-4 rounded-3xl bg-rose-500 text-white font-black shadow-2xl flex items-center gap-3 hover:bg-rose-600 hover:scale-105 transition-all"
+                            >
+                              <StopCircleIcon className="w-6 h-6" />
+                              Finalizar
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -1442,56 +1588,173 @@ useEffect(() => {
                         <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Fontes de Áudio</span>
                         <span className="text-[10px] font-black text-slate-500">multitrack</span>
                       </div>
-                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                         {audioDevices.map((device, idx) => {
                           const checked = selectedAudioDeviceIds.includes(device.deviceId);
+                          const gainKey = device.deviceId;
+                          const level = audioLevels[gainKey] ?? 0;
+                          const gain = deviceGains[gainKey] ?? 1.0;
+                          const label = deviceLabels[gainKey] || device.label || `Microfone ${idx + 1}`;
+                          const isEditing = editingLabelId === gainKey;
                           return (
-                            <label key={device.deviceId} className={`flex items-center gap-3 p-2 rounded-xl border ${checked ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 bg-white'}`}>
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                disabled={isRecording}
-                                onChange={() => {
-                                  setSelectedAudioDeviceIds((prev) => {
-                                    if (prev.includes(device.deviceId)) {
-                                      return prev.filter((id) => id !== device.deviceId);
-                                    }
-                                    return [...prev, device.deviceId];
-                                  });
-                                }}
-                              />
-                              <span className="text-xs font-bold text-slate-700 truncate">{device.label || `Microfone ${idx + 1}`}</span>
-                            </label>
+                            <div key={device.deviceId} className={`p-2 rounded-xl border transition-all ${checked ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 bg-white'}`}>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  disabled={isRecording}
+                                  onChange={() => {
+                                    setSelectedAudioDeviceIds((prev) => {
+                                      if (prev.includes(device.deviceId)) {
+                                        return prev.filter((id) => id !== device.deviceId);
+                                      }
+                                      return [...prev, device.deviceId];
+                                    });
+                                  }}
+                                />
+                                {/* Label editável — clique duplo para renomear */}
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={label}
+                                    autoFocus
+                                    className="flex-1 text-xs font-bold text-slate-700 bg-white border border-slate-300 rounded px-1.5 py-0.5 outline-none focus:ring-2 focus:ring-cyan-400"
+                                    onChange={(e) => {
+                                      const newLabels = { ...deviceLabels, [gainKey]: e.target.value };
+                                      setDeviceLabels(newLabels);
+                                      localStorage.setItem('studio_device_labels', JSON.stringify(newLabels));
+                                    }}
+                                    onBlur={() => setEditingLabelId(null)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') setEditingLabelId(null); }}
+                                  />
+                                ) : (
+                                  <span
+                                    className="flex-1 text-xs font-bold text-slate-700 truncate cursor-pointer hover:text-cyan-600 transition-colors"
+                                    onDoubleClick={() => setEditingLabelId(gainKey)}
+                                    title="Clique duplo para renomear"
+                                  >
+                                    {label}
+                                  </span>
+                                )}
+
+                                {/* VU Meter — apenas durante gravação e quando selecionado */}
+                                {isRecording && checked && (
+                                  <div className="flex items-center gap-1 min-w-[60px]">
+                                    <div className="w-12 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full transition-all duration-75 ${
+                                          level > 0.8 ? 'bg-rose-500' :
+                                          level > 0.5 ? 'bg-amber-400' :
+                                          'bg-emerald-400'
+                                        }`}
+                                        style={{ width: `${Math.min(100, level * 100)}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-[8px] font-black text-slate-400 w-6 text-right">{Math.round(level * 100)}%</span>
+                                  </div>
+                                )}
+
+                                {/* Controle de ganho individual — slider */}
+                                {checked && (
+                                  <div className="flex items-center gap-1 min-w-[50px]">
+                                    <span className="text-[8px] font-black text-slate-400">G</span>
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="2"
+                                      step="0.05"
+                                      value={gain}
+                                      disabled={!isRecording}
+                                      onChange={(e) => {
+                                        const newGain = parseFloat(e.target.value);
+                                        setDeviceGains((prev) => ({ ...prev, [gainKey]: newGain }));
+                                        // Aplica ao GainNode em tempo real
+                                        const node = gainNodesRef.current.get(gainKey);
+                                        if (node) node.gain.value = newGain;
+                                      }}
+                                      className="w-16 h-1 accent-cyan-500"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           );
                         })}
                         
                         {/* Opção de áudio do sistema (getDisplayMedia) */}
-                        <label className={`flex items-center gap-3 p-2 rounded-xl border ${includeSystemAudio ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 bg-white'}`}>
-                          <input
-                            type="checkbox"
-                            checked={includeSystemAudio}
-                            disabled={isRecording}
-                            onChange={() => {
-                              setIncludeSystemAudio((prev) => !prev);
-                              if (!includeSystemAudio) {
-                                setSystemAudioStreamName(null);
-                              }
-                            }}
-                          />
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-bold text-slate-700 truncate flex items-center gap-2">
-                              Áudio do Sistema (Navegador)
-                              <span className="text-[8px] font-black uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Experimental</span>
-                            </span>
-                            <span className="text-[9px] text-slate-400">
-                              {includeSystemAudio
-                                ? systemAudioStreamName
-                                  ? `Compartilhando: ${systemAudioStreamName}`
-                                  : 'Clique em "Iniciar Gravação" e selecione a aba com áudio'
-                                : 'Captura reuniões/áudio do navegador'}
-                            </span>
+                        <div className={`p-2 rounded-xl border transition-all ${includeSystemAudio ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 bg-white'}`}>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={includeSystemAudio}
+                              disabled={isRecording}
+                              onChange={() => {
+                                setIncludeSystemAudio((prev) => !prev);
+                                if (!includeSystemAudio) {
+                                  setSystemAudioStreamName(null);
+                                }
+                              }}
+                            />
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-xs font-bold text-slate-700 truncate flex items-center gap-2">
+                                Áudio do Sistema (Navegador)
+                                <span className="text-[8px] font-black uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Experimental</span>
+                              </span>
+                              <span className="text-[9px] text-slate-400">
+                                {includeSystemAudio
+                                  ? systemAudioStreamName
+                                    ? `Compartilhando: ${systemAudioStreamName}`
+                                    : 'Clique em "Iniciar Gravação" e selecione a aba com áudio'
+                                  : 'Captura reuniões/áudio do navegador'}
+                              </span>
+                            </div>
+
+                            {/* VU Meter para áudio do sistema */}
+                            {isRecording && includeSystemAudio && (() => {
+                              const sysLevel = audioLevels['system'] ?? 0;
+                              return (
+                                <div className="flex items-center gap-1 min-w-[60px]">
+                                  <div className="w-12 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-75 ${
+                                        sysLevel > 0.8 ? 'bg-rose-500' :
+                                        sysLevel > 0.5 ? 'bg-amber-400' :
+                                        'bg-emerald-400'
+                                      }`}
+                                      style={{ width: `${Math.min(100, sysLevel * 100)}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-[8px] font-black text-slate-400 w-6 text-right">{Math.round(sysLevel * 100)}%</span>
+                                </div>
+                              );
+                            })()}
+
+                            {/* Gain slider para áudio do sistema */}
+                            {includeSystemAudio && (() => {
+                              const sysGain = deviceGains['system'] ?? 1.0;
+                              return (
+                                <div className="flex items-center gap-1 min-w-[50px]">
+                                  <span className="text-[8px] font-black text-slate-400">G</span>
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="2"
+                                    step="0.05"
+                                    value={sysGain}
+                                    disabled={!isRecording}
+                                    onChange={(e) => {
+                                      const newGain = parseFloat(e.target.value);
+                                      setDeviceGains((prev) => ({ ...prev, system: newGain }));
+                                      const node = gainNodesRef.current.get('system');
+                                      if (node) node.gain.value = newGain;
+                                    }}
+                                    className="w-16 h-1 accent-cyan-500"
+                                  />
+                                </div>
+                              );
+                            })()}
                           </div>
-                        </label>
+                        </div>
                         
                         {audioDevices.length === 0 && !includeSystemAudio && (
                           <p className="text-xs text-slate-500 font-bold">Nenhum microfone detectado. Use o áudio do sistema.</p>
@@ -1646,7 +1909,7 @@ useEffect(() => {
                       </span>
                     </div>
                     {/* Ações de download/export */}
-                    <div className="flex items-center gap-1 mt-2 pt-2 border-t border-slate-200/30"
+                    <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-slate-200/30"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -1675,6 +1938,34 @@ useEffect(() => {
                         <FileTextIcon className="w-3 h-3" />
                         {exportingId === session.id ? '...' : 'Transcrição'}
                       </button>
+
+                      {/* Download individual de trilhas de áudio (quando disponíveis) */}
+                      {activeSessionId === session.id && sessionAudioTracks.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1 ml-1 pl-2 border-l border-slate-200/30">
+                          {isLoadingTracks ? (
+                            <span className="text-[8px] text-slate-400 font-bold animate-pulse">Carregando trilhas...</span>
+                          ) : (
+                            sessionAudioTracks
+                              .filter(t => t.trackRole !== 'master')
+                              .map(track => (
+                                <button
+                                  key={track.id || `${track.trackRole}_${track.deviceId}`}
+                                  onClick={() => handleDownloadIndividualTrack(track, session.title)}
+                                  disabled={downloadTrackId === (track.id || 'unknown')}
+                                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                                    activeSessionId === session.id
+                                      ? 'bg-white/10 text-white hover:bg-white/20'
+                                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                  } disabled:opacity-50`}
+                                  title={`Download: ${track.sourceLabel || track.trackRole}`}
+                                >
+                                  <DownloadIcon className="w-3 h-3" />
+                                  {downloadTrackId === (track.id || 'unknown') ? '...' : (track.sourceLabel || track.trackRole).substring(0, 10)}
+                                </button>
+                              ))
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -109,6 +109,58 @@ export interface ConnectionConfig {
   settings?: Record<string, any>;
 }
 
+// ────────── Webhook / Inbound ──────────
+
+export type HubInboundSource = 'whatsapp' | 'email' | 'webhook';
+
+export interface HubInboundMessage {
+  id: string;
+  source: HubInboundSource;
+  from: string;
+  fromName?: string;
+  content: string;
+  mediaUrl?: string;
+  externalId: string;
+  conversationId?: string;
+  integrationId: string;
+  workspaceId: string;
+  receivedAt: string;
+  status: 'pending' | 'processed' | 'error';
+  consumedBy?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface HubInboundWebhookPayload {
+  source: HubInboundSource;
+  integrationId: string;
+  workspaceId: string;
+  raw: unknown;
+  parsed: {
+    from: string;
+    fromName?: string;
+    content: string;
+    mediaUrl?: string;
+    externalId: string;
+    conversationId?: string;
+  };
+}
+
+// ────────── Activity Log ──────────
+
+export interface HubActivityLogEntry {
+  id: string;
+  integrationId: string;
+  integrationName: string;
+  provider: string;
+  action: 'test' | 'send' | 'receive' | 'config' | 'error' | 'health';
+  status: 'success' | 'failure';
+  summary: string;
+  details?: string;
+  timestamp: string;
+}
+
+// ────────── Integration Service Contract (atualizado) ──────────
+
 export interface IntegrationServiceContract {
   getClient(provider: string): Promise<any>;
   testConnection(integrationId: string): Promise<boolean>;
@@ -116,4 +168,13 @@ export interface IntegrationServiceContract {
   getConnectionStatus(integrationId: string): Promise<'active' | 'inactive' | 'error'>;
   createTaskViaClickUp(input: HubCreateTaskInput): Promise<HubCreateTaskResult>;
   sendWhatsAppMessage(input: HubSendWhatsAppMessageInput): Promise<HubSendWhatsAppMessageResult>;
+
+  // Novos métodos Fase 3/4
+  processInboundWebhook(payload: HubInboundWebhookPayload): Promise<HubInboundMessage>;
+  getInboxMessages(integrationId?: string, limit?: number): Promise<HubInboundMessage[]>;
+  markAsRead(messageId: string): Promise<void>;
+  sendEmail(input: HubMailSendInput): Promise<HubMailSendResult>;
+  getActivityLog(integrationId?: string, limit?: number): Promise<HubActivityLogEntry[]>;
+  getCredentialAudit(limit?: number): Promise<any[]>;
+  updateIntegrationConfig(integrationId: string, config: ConnectionConfig): Promise<void>;
 }
