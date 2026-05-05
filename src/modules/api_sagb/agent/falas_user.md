@@ -6,3 +6,5 @@ verifique se tem algum arquivo especifico que tem o plano de implementacao total
 
 faca a etapa 2
 
+pode fazer a etapa 3
+

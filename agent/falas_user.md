@@ -104,3 +104,8 @@ Eu quero sim... tem que ter opções ali para eu... como a câmera... selecionar
 ```
 pode fazer
 ```
+
+### 05/05/2026 — TaskZei: sidebar do SagB + Voltar ao SagB
+```
+analise o modulo Z:\SagB\src\modules\taskzei. ele ja esta com um sidebar proprio, bem legal. Atualize apenas tirando o side bar do sagb e colocando o "voltar ao sagb" embaixo
+```

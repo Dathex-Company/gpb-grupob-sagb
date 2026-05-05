@@ -279,3 +279,14 @@ As seguintes não conformidades foram identificadas e **não foram resolvidas no
 - Esta versão implementa todos os 5 Batches do plano_execucao_unificada.md, completando as Fases 5 a 10 do plano_modulo.md.
 - Pendente: FASE 2 (Infraestrutura própria Supabase — aguardando definição financeira).
 - Build validado: nenhum erro de compilação no módulo taskzei.
+
+---
+
+## [1.10.0] — 2026-05-04 — SagB sidebar removido + "Voltar ao SagB" no sidebar do módulo
+
+### Modificado
+- `App.tsx` — adicionado `'agenda'` à lista `hideSidebar` para ocultar a sidebar global do SagB quando o módulo taskzei estiver ativo.
+- `AgendaInteligenteLayout.tsx` — adicionado botão "← Voltar ao SagB" no rodapé da sidebar do módulo, com evento `sagb:navigate` para retornar ao ecosystem.
+
+### Adicionado
+- Rodapé da sidebar do taskzei com "Voltar ao SagB" — mesmo padrão dos módulos Metodologias e Mentorias.

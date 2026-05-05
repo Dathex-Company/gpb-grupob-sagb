@@ -6,11 +6,11 @@ Estabelecer a API oficial do SagB como camada de consumo para sistemas internos 
 
 ## 1.1 status executivo
 
-- fase atual: `01/09 ET | Fundação do módulo`
-- responsável atual: `Dante Conec`
-- progresso estimado: `10%`
-- próximo marco: definir contratos iniciais `/v1` e políticas de acesso
-- bloqueio principal: separar fronteiras definitivas entre API, MCP, Hub e acesso direto a dados
+- fase atual: `03/09 ET | Segurança e identidade`
+- responsável atual: `Dande Conec`
+- progresso estimado: `33%`
+- próximo marco: implementar auditoria e observabilidade (correlation id)
+- bloqueio principal: integração com mecanismo de logs distribuídos
 
 ## 1.2 changelog curto
 
@@ -20,6 +20,8 @@ Estabelecer a API oficial do SagB como camada de consumo para sistemas internos 
 - integrado ao registry de módulos
 - definido guardião e base documental
 - criado `plano_modulo.md` para governança operacional
+- **etapa 2 concluída**: criados `openapi_v1.yaml` e `conventions.md` com padrões de erro, paginação e idempotência
+- **etapa 3 concluída**: criados `auth.types.ts` e `authMiddleware.ts` definindo estrutura de clientes, chaves, validação e autorização por escopos
 
 ## 2. precedência canônica obrigatória
 
@@ -144,7 +146,7 @@ Migrar consumidores com risco mínimo.
 
 ## 9. próxima etapa recomendada
 
-`02/09 ET | Contrato inicial /v1 + matriz de fronteiras`
+`04/09 ET | Auditoria e observabilidade`
 
 ## 10. versionamento
 

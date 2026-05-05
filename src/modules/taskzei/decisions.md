@@ -81,6 +81,11 @@
 
 ### decisao_018
 - Todos os 5 Batches do plano_execucao_unificada.md implementados em lote unico apos aprovacao "pode fazer".
+
+### decisao_019 — 2026_05_04
+- Sidebar global do SagB ocultada quando o módulo taskzei está ativo (`hideSidebar` inclui `'agenda'`), já que o módulo possui sidebar próprio.
+- Botão "Voltar ao SagB" adicionado no rodapé da sidebar do taskzei, usando o evento `sagb:navigate` (mesmo padrão dos módulos Metodologias e Mentorias).
+- A navegação interna do módulo permanece via `useState<TaskZeiView>` no layout, sem necessidade de rotas aninhadas.
 - Batch 3 (servicos de logica): nlParser.service.ts (regex NLP), taskzei.audit.ts, taskzei.metrics.ts, taskzei.monitor.ts — servicos modulares com singletons.
 - Batch 4 (UI): InboxPage reescrita com fluxo completo (add, classificar, converter, descartar); MeetingsPage criada com criacao inline e modal de detalhe com pauta/decisoes; MonitorPage criada com metricas em tempo real e saude do modulo; navegacao lateral expandida com icones de reunioes e monitor.
 - Batch 5 (Integracoes): conversationalHandler (parse + acao + sugestoes), hubIntegration (placeholder para hub-integracao real).

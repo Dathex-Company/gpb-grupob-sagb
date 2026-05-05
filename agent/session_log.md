@@ -225,3 +225,21 @@
 - `src/modules/metodologias/decisions.md` — decisão #15
 - `agent/session_log.md` — este registro
 - `agent/falas_user.md` — fala do usuário registrada
+
+---
+
+## 04/05/2026 — TaskZei: sidebar do SagB removido + "Voltar ao SagB" no sidebar do módulo
+
+**Contexto:** O usuário Rodrigues pediu para analisar o módulo taskzei, que já tem um sidebar próprio, e fazer dois ajustes: (1) tirar o sidebar do SagB de aparecer quando no módulo; (2) colocar "Voltar ao SagB" no rodapé do sidebar do módulo.
+
+**Mudanças aplicadas:**
+1. [`App.tsx:1710`](App.tsx:1710) — adicionado `'agenda'` à lista `hideSidebar`
+2. [`AgendaInteligenteLayout.tsx:122-135`](src/modules/taskzei/layout/AgendaInteligenteLayout.tsx:122) — adicionado botão "Voltar ao SagB" no rodapé da sidebar
+
+**Arquivos modificados:**
+- `App.tsx` — hideSidebar inclui 'agenda'
+- `src/modules/taskzei/layout/AgendaInteligenteLayout.tsx` — rodapé da sidebar
+- `src/modules/taskzei/changelog.md` — entrada v1.10.0
+- `src/modules/taskzei/decisions.md` — decisão #019
+- `agent/session_log.md` — este registro
+- `agent/falas_user.md` — fala do usuário registrada

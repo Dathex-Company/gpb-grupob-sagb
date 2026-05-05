@@ -119,6 +119,20 @@ export const AgendaInteligenteLayout: React.FC = () => {
             <p className="text-[11px] text-[#6f7887]">Operação • 28 tarefas</p>
           </div>
         </nav>
+
+        {/* Rodapé da sidebar — Voltar ao SagB */}
+        <div className="shrink-0 border-t border-[#e1e6ec] p-3">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: 'ecosystem' }))}
+            className="flex h-9 w-full items-center gap-3 rounded-[10px] border border-transparent px-3 text-[13px] font-medium text-[#6f7887] transition-colors hover:bg-[#fafbfc] hover:text-[#414854]"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Voltar ao SagB
+          </button>
+        </div>
       </aside>
 
       {/* Conteúdo Principal do Módulo */}
