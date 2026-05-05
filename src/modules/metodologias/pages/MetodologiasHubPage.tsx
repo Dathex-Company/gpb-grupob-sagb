@@ -307,6 +307,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
   const [novoTipoEntrada, setNovoTipoEntrada] = React.useState<EntradaMetodologicaTipoDeEntrada>('ideia_crua');
   const [novaOrigem, setNovaOrigem] = React.useState('Entrada manual no Núcleo de Metodologias');
   const [novoConteudoBruto, setNovoConteudoBruto] = React.useState('');
+  const [arquivosBrutos, setArquivosBrutos] = React.useState<File[]>([]);
   const [ativoEmEstruturacaoLocal, setAtivoEmEstruturacaoLocal] = React.useState<AtivoEmEstruturacao | null>(null);
   const [ativosCanonicosPersistidos, setAtivosCanonicosPersistidos] = React.useState<AtivoCanonico[]>([]);
   const [ativosEmEstruturacaoPersistidos, setAtivosEmEstruturacaoPersistidos] = React.useState<AtivoEmEstruturacao[]>([]);
@@ -314,12 +315,22 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
   const [ultimoAtivoCanonicoPromovido, setUltimoAtivoCanonicoPromovido] = React.useState<AtivoCanonico | null>(null);
   const [promovendoAssistido, setPromovendoAssistido] = React.useState<boolean>(false);
   const [carregandoPersistencia, setCarregandoPersistencia] = React.useState<boolean>(true);
+  const [erroPersistencia, setErroPersistencia] = React.useState<string | null>(null);
   const [filtrosOperacionaisMesa, setFiltrosOperacionaisMesa] = React.useState<MesaEstruturacaoFiltrosOperacionais>(() =>
     criarFiltrosOperacionaisMesaIniciais()
   );
   const [ordenacaoOperacionalMesa, setOrdenacaoOperacionalMesa] = React.useState<MesaEstruturacaoOrdenacaoOperacional>('mais_recentes');
   const [agrupamentoOperacionalMesa, setAgrupamentoOperacionalMesa] =
     React.useState<MesaEstruturacaoAgrupamentoOperacional>('nenhum');
+
+  const registrarErroPersistencia = React.useCallback((contexto: string, error: unknown) => {
+    const mensagemOriginal = error instanceof Error ? error.message : 'Falha não identificada';
+    const mensagem = mensagemOriginal.includes("Could not find the table 'public.metodologias_entradas_brutas'")
+      ? 'Banco ainda sem migrations do módulo metodologias (tabela metodologias_entradas_brutas ausente). Operando com fallback local até provisionar o schema.'
+      : mensagemOriginal;
+    console.error(contexto, error);
+    setErroPersistencia(`${contexto}: ${mensagem}`);
+  }, []);
 
   React.useEffect(() => {
     const onHashChange = () => setRotaInterna(lerRotaHash());
@@ -332,6 +343,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
 
     const carregarEntradasPersistidas = async () => {
       setCarregandoPersistencia(true);
+      setErroPersistencia(null);
       try {
         const [persistidas, canonicos, estruturacao] = await Promise.all([
           listarEntradasBrutasPersistidas(),
@@ -344,7 +356,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
         setAtivosEmEstruturacaoPersistidos(estruturacao);
         setEntradaSelecionadaId((atual) => atual || persistidas[0]?.id || entradasBrutasBase[0]?.id || '');
       } catch (error) {
-        console.error('Falha ao carregar entradas metodológicas persistidas. Mantendo fallback local/mock.', error);
+        registrarErroPersistencia('Falha ao carregar entradas metodológicas persistidas', error);
         if (!ativo) return;
         setEntradasBrutasLocal(entradasBrutasBase);
         setEntradaSelecionadaId((atual) => atual || entradasBrutasBase[0]?.id || '');
@@ -396,7 +408,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
           return;
         }
       } catch (error) {
-        console.error('Falha ao carregar ativo persistido por entrada. Mantendo estado transitório local.', error);
+        registrarErroPersistencia('Falha ao carregar ativo persistido por entrada', error);
       }
 
       if (ativo) {
@@ -536,12 +548,34 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
     event.preventDefault();
     if (!novoTitulo.trim() || !novoConteudoBruto.trim()) return;
 
+    const anexosTexto = await Promise.all(
+      arquivosBrutos.map(async (arquivo) => {
+        const nome = arquivo.name;
+        const tipo = arquivo.type || 'desconhecido';
+        const tamanhoKb = Math.max(1, Math.round(arquivo.size / 1024));
+        const isTextual =
+          tipo.startsWith('text/') ||
+          tipo.includes('json') ||
+          tipo.includes('xml') ||
+          /\.(txt|md|json|csv|xml)$/i.test(nome);
+
+        if (!isTextual) {
+          return `\n\n[ANEXO BRUTO]\narquivo: ${nome}\ntipo: ${tipo}\ntamanho_kb: ${tamanhoKb}\nconteudo: [arquivo binário não textual]`;
+        }
+
+        const conteudo = await arquivo.text();
+        return `\n\n[ANEXO BRUTO]\narquivo: ${nome}\ntipo: ${tipo}\ntamanho_kb: ${tamanhoKb}\nconteudo:\n${conteudo}`;
+      })
+    );
+
+    const conteudoBrutoComAnexos = `${novoConteudoBruto.trim()}${anexosTexto.join('')}`;
+
     let novaEntrada: EntradaMetodologicaBruta;
     try {
       novaEntrada = await criarEntradaBrutaPersistida({
         titulo: novoTitulo.trim(),
         tipo_de_entrada: novoTipoEntrada,
-        conteudo_bruto: novoConteudoBruto.trim(),
+        conteudo_bruto: conteudoBrutoComAnexos,
         origem: novaOrigem.trim() || 'Origem não informada',
         status_de_estruturacao: 'bruto'
       });
@@ -552,7 +586,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
         id: `ent-bruta-local-${Date.now()}`,
         titulo: novoTitulo.trim(),
         tipo_de_entrada: novoTipoEntrada,
-        conteudo_bruto: novoConteudoBruto.trim(),
+        conteudo_bruto: conteudoBrutoComAnexos,
         origem: novaOrigem.trim() || 'Origem não informada',
         status_de_estruturacao: 'bruto',
         created_at: agora,
@@ -564,6 +598,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
     setEntradaSelecionadaId(novaEntrada.id);
     setNovoTitulo('');
     setNovoConteudoBruto('');
+    setArquivosBrutos([]);
     setModoConversao('preview');
   };
 
@@ -580,7 +615,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
 
     if (ativoEmEstruturacaoLocal?.id_estruturacao) {
       atualizarAtivoEmEstruturacaoPersistido(ativoEmEstruturacaoLocal.id_estruturacao, patch).catch((error) => {
-        console.error('Falha ao persistir patch de edição guiada.', error);
+        registrarErroPersistencia('Falha ao persistir patch de edição guiada', error);
       });
     }
   };
@@ -606,7 +641,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
         };
       });
     } catch (error) {
-      console.error('Falha ao adicionar bloco interno do ativo em estruturação.', error);
+      registrarErroPersistencia('Falha ao adicionar bloco interno do ativo em estruturação', error);
     }
   };
 
@@ -631,7 +666,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
     });
 
     atualizarBlocoInternoPersistido(blocoId, patch).catch((error) => {
-      console.error('Falha ao atualizar bloco interno persistido.', error);
+      registrarErroPersistencia('Falha ao atualizar bloco interno persistido', error);
     });
   };
 
@@ -647,7 +682,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
           atual.id_estruturacao,
           blocos.map((bloco) => bloco.id)
         ).catch((error) => {
-          console.error('Falha ao reordenar blocos internos após remoção.', error);
+          registrarErroPersistencia('Falha ao reordenar blocos internos após remoção', error);
         });
       }
 
@@ -659,7 +694,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
     });
 
     removerBlocoInternoPersistido(blocoId).catch((error) => {
-      console.error('Falha ao remover bloco interno persistido.', error);
+      registrarErroPersistencia('Falha ao remover bloco interno persistido', error);
     });
   };
 
@@ -689,7 +724,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
           atual.id_estruturacao,
           blocosReordenados.map((bloco) => bloco.id)
         ).catch((error) => {
-          console.error('Falha ao persistir reordenação de blocos internos.', error);
+          registrarErroPersistencia('Falha ao persistir reordenação de blocos internos', error);
         });
       }
 
@@ -730,7 +765,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
         };
       });
     } catch (error) {
-      console.error('Falha ao adicionar relação em estruturação.', error);
+      registrarErroPersistencia('Falha ao adicionar relação em estruturação', error);
     }
   };
 
@@ -753,7 +788,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
     });
 
     removerRelacaoEstruturacaoPersistida(relacaoId).catch((error) => {
-      console.error('Falha ao remover relação em estruturação.', error);
+      registrarErroPersistencia('Falha ao remover relação em estruturação', error);
     });
   };
 
@@ -1201,6 +1236,8 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
                 key={item.id}
                 type="button"
                 onClick={() => navegar(item.id)}
+                aria-current={ativo ? 'page' : undefined}
+                aria-label={`Navegar para ${item.label}`}
                 className={`w-full text-left px-3 py-2 rounded-lg text-[12px] font-semibold transition-all ${
                   ativo
                     ? 'bg-sagb-bg-2 text-sagb-text border border-sagb-line shadow-sm'
@@ -1221,6 +1258,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
           <button
             type="button"
             onClick={onBackToSagB}
+            aria-label="Voltar ao SagB"
             className="w-full text-left px-3 py-2 rounded-lg text-[11px] font-semibold tracking-wide text-sagb-muted hover:text-sagb-blue hover:bg-sagb-bg-2 transition-all border border-transparent hover:border-sagb-line"
           >
             ← Voltar ao SagB
@@ -1253,6 +1291,12 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
 
         <div className="flex-1 overflow-auto p-8">
           <section className="space-y-5 max-w-[1400px]">
+            {erroPersistencia && (
+              <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+                <p className="text-[12px] font-semibold text-amber-500">Persistência em modo degradado</p>
+                <p className="text-[11px] text-amber-500/90 mt-1">{erroPersistencia}</p>
+              </section>
+            )}
             {rotaInterna === '/metodologias' && (
               <MetodologiasHomePage
                 titulo="Núcleo de Metodologias"
@@ -1286,11 +1330,13 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
                 novoTipoEntrada={novoTipoEntrada}
                 novaOrigem={novaOrigem}
                 novoConteudoBruto={novoConteudoBruto}
+                arquivosBrutos={arquivosBrutos}
                 tiposEntradaDisponiveis={TIPOS_ENTRADA_DISPONIVEIS}
                 onNovoTituloChange={setNovoTitulo}
                 onNovoTipoEntradaChange={setNovoTipoEntrada}
                 onNovaOrigemChange={setNovaOrigem}
                 onNovoConteudoBrutoChange={setNovoConteudoBruto}
+                onArquivosBrutosChange={(files) => setArquivosBrutos(files)}
                 onRegistrarEntradaBruta={handleRegistrarEntradaBruta}
                 onSelecionarEntrada={handleSelecionarEntrada}
                 onDefinirModoConversao={setModoConversao}

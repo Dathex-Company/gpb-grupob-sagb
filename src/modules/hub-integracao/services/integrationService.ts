@@ -3,6 +3,7 @@ import {
   HubCreateTaskResult,
   HubSendWhatsAppMessageInput,
   HubSendWhatsAppMessageResult,
+  HubWhatsAppQrStatus,
   HubMailSendInput,
   HubMailSendResult,
   HubInboundMessage,
@@ -79,18 +80,31 @@ export class IntegrationHubService implements IntegrationServiceContract {
 
     let success = false;
     let summary = '';
+    let integrationName = integrationId;
+    let provider = 'unknown';
 
     try {
       if (integrationId === this.clickUpIntegrationId) {
+        integrationName = 'ClickUp Oficial';
+        provider = 'clickup';
         const credentials = await credentialManager.getCredential('clickup', this.clickUpIntegrationId, this.workspaceId, 'integration-hub');
         if (!credentials?.apiToken) throw new Error('ClickUp não configurado');
         success = await clickUpDriver.healthCheck({ apiToken: credentials.apiToken, listId: credentials.listId || '' });
         summary = success ? 'ClickUp conectado' : 'ClickUp inacessível';
       } else if (integrationId === this.whatsAppIntegrationId) {
+        integrationName = 'WhatsApp API';
+        provider = 'whatsapp';
         const credentials = await credentialManager.getCredential('whatsapp', this.whatsAppIntegrationId, this.workspaceId, 'integration-hub');
         if (!credentials?.accessToken || !credentials?.phoneNumberId) throw new Error('WhatsApp não configurado');
         success = await whatsAppDriver.healthCheck({ accessToken: credentials.accessToken, phoneNumberId: credentials.phoneNumberId });
         summary = success ? 'WhatsApp conectado' : 'WhatsApp inacessível';
+      } else if (integrationId === 'int_gmail_01') {
+        integrationName = 'Gmail';
+        provider = 'gmail';
+        const credentials = await credentialManager.getCredential('gmail', 'int_gmail_01', this.workspaceId, 'integration-hub');
+        if (!credentials?.refreshToken) throw new Error('Gmail não configurado (refresh token ausente)');
+        success = await emailService.health('gmail');
+        summary = success ? 'Gmail conectado' : 'Gmail inacessível';
       } else {
         summary = 'Integração desconhecida';
       }
@@ -101,8 +115,8 @@ export class IntegrationHubService implements IntegrationServiceContract {
 
     await loggerService.log({
       integrationId,
-      integrationName: integrationId === this.clickUpIntegrationId ? 'ClickUp Oficial' : 'WhatsApp API',
-      provider: integrationId === this.clickUpIntegrationId ? 'clickup' : 'whatsapp',
+      integrationName,
+      provider,
       action: 'test',
       status: success ? 'success' : 'failure',
       summary,
@@ -259,6 +273,103 @@ export class IntegrationHubService implements IntegrationServiceContract {
       integrationId: this.whatsAppIntegrationId,
       status: result.status,
     };
+  }
+
+  // ────────── WhatsApp QR (Baileys Service) ──────────
+
+  private getWhatsAppQrBaseUrl(): string {
+    return String(import.meta.env.VITE_HUB_WHATSAPP_QR_BASE_URL || '/hub/whatsapp-qr').trim();
+  }
+
+  private getWhatsAppQrApiKey(): string {
+    return String(import.meta.env.VITE_HUB_WHATSAPP_QR_API_KEY || '').trim();
+  }
+
+  async connectWhatsAppQr(sessionId = 'default'): Promise<HubWhatsAppQrStatus> {
+    const baseUrl = this.getWhatsAppQrBaseUrl();
+    const apiKey = this.getWhatsAppQrApiKey();
+
+    const response = await fetch(`${baseUrl}/connect?sessionId=${encodeURIComponent(sessionId)}`, {
+      method: 'POST',
+      headers: {
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Falha ao iniciar conexão WhatsApp QR (${response.status}): ${err}`);
+    }
+
+    const data = await response.json() as { sessionId: string; status: HubWhatsAppQrStatus['status']; qrDataUrl?: string | null; lastError?: string | null };
+
+    await loggerService.log({
+      integrationId: this.whatsAppIntegrationId,
+      integrationName: 'WhatsApp QR (Baileys)',
+      provider: 'whatsapp',
+      action: 'config',
+      status: 'success',
+      summary: `Sessão QR iniciada (${sessionId}) com status ${data.status}`,
+    });
+
+    return {
+      sessionId: data.sessionId || sessionId,
+      status: data.status,
+      qrDataUrl: data.qrDataUrl ?? null,
+      lastError: data.lastError ?? null,
+    };
+  }
+
+  async getWhatsAppQrStatus(sessionId = 'default'): Promise<HubWhatsAppQrStatus> {
+    const baseUrl = this.getWhatsAppQrBaseUrl();
+    const apiKey = this.getWhatsAppQrApiKey();
+
+    const response = await fetch(`${baseUrl}/status?sessionId=${encodeURIComponent(sessionId)}`, {
+      method: 'GET',
+      headers: {
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Falha ao consultar status WhatsApp QR (${response.status}): ${err}`);
+    }
+
+    const data = await response.json() as { sessionId: string; status: HubWhatsAppQrStatus['status']; qrDataUrl?: string | null; lastError?: string | null };
+
+    return {
+      sessionId: data.sessionId || sessionId,
+      status: data.status,
+      qrDataUrl: data.qrDataUrl ?? null,
+      lastError: data.lastError ?? null,
+    };
+  }
+
+  async logoutWhatsAppQr(sessionId = 'default'): Promise<void> {
+    const baseUrl = this.getWhatsAppQrBaseUrl();
+    const apiKey = this.getWhatsAppQrApiKey();
+
+    const response = await fetch(`${baseUrl}/logout?sessionId=${encodeURIComponent(sessionId)}`, {
+      method: 'POST',
+      headers: {
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Falha ao logout da sessão WhatsApp QR (${response.status}): ${err}`);
+    }
+
+    await loggerService.log({
+      integrationId: this.whatsAppIntegrationId,
+      integrationName: 'WhatsApp QR (Baileys)',
+      provider: 'whatsapp',
+      action: 'config',
+      status: 'success',
+      summary: `Sessão QR encerrada (${sessionId})`,
+    });
   }
 
   // ────────── WhatsApp Inbound (Webhook) ──────────

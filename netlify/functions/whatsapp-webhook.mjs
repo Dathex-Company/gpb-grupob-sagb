@@ -1,6 +1,8 @@
 /**
  * WhatsApp Webhook — Hub de Integrações SagB
  *
+ * Requer @supabase/supabase-js instalado como dependência do projeto.
+ *
  * Endpoint para receber webhooks da Meta Cloud API (WhatsApp Business).
  *
  * GET  /.netlify/functions/whatsapp-webhook  → Verificação do webhook (Meta challenge)
@@ -8,6 +10,13 @@
  */
 
 // ─────────── Helpers ───────────
+
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL',
+  process.env.SUPABASE_SERVICE_KEY || 'YOUR_SUPABASE_SERVICE_KEY'
+);
 
 const json = (statusCode, payload) => ({
   statusCode,
@@ -53,10 +62,29 @@ async function handleVerification(event) {
   const challenge = event.queryStringParameters?.['hub.challenge'];
 
   // O token de verificação esperado (configurado via env var)
-  const expectedToken =
+  import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL',
+  process.env.SUPABASE_SERVICE_KEY || 'YOUR_SUPABASE_SERVICE_KEY'
+);
+
+const expectedToken =
+    process.env.MOCK_META_VERIFY_TOKEN ||
     process.env.HUB_WABA_VERIFY_TOKEN ||
     process.env.VITE_HUB_WABA_VERIFY_TOKEN ||
     'sagb_hub_verify_2026';
+
+// Log the token source for debugging
+if (!process.env.MOCK_META_VERIFY_TOKEN && !process.env.HUB_WABA_VERIFY_TOKEN && !process.env.VITE_HUB_WABA_VERIFY_TOKEN) {
+  console.warn('[WhatsApp Webhook] Usando token de verificação padrão: sagb_hub_verify_2026');
+} else if (process.env.MOCK_META_VERIFY_TOKEN) {
+  console.log('[WhatsApp Webhook] Usando MOCK_META_VERIFY_TOKEN');
+} else if (process.env.HUB_WABA_VERIFY_TOKEN) {
+  console.log('[WhatsApp Webhook] Usando HUB_WABA_VERIFY_TOKEN');
+} else if (process.env.VITE_HUB_WABA_VERIFY_TOKEN) {
+  console.log('[WhatsApp Webhook] Usando VITE_HUB_WABA_VERIFY_TOKEN');
+}
 
   if (mode === 'subscribe' && token === expectedToken && challenge) {
     console.log('[WhatsApp Webhook] Verificação bem-sucedida');

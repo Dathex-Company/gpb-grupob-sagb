@@ -1,0 +1,38 @@
+export type SagbNavigateDestination =
+  | 'home'
+  | 'nic'
+  | 'intelligence-flow'
+  | 'nagi'
+  | 'management'
+  | 'nucleo_de_agentes'
+  | 'central_padroes'
+  | 'ecosystem'
+  | 'cadastro-empresas'
+  | 'nucleo-conversacional'
+  | 'team'
+  | 'sala-dev'
+  | 'programmers-room'
+  | 'vault'
+  | 'cid'
+  | 'continuous-memory'
+  | 'studio'
+  | 'karaoke'
+  | 'monitoramento'
+  | 'missions'
+  | 'agentes_comerciais'
+  | 'fabrica-ca'
+  | 'quadro_de_elite'
+  | 'foco-total'
+  | 'agenda'
+  | 'mentorias'
+  | 'gestao-financeira'
+  | 'hub-integracao'
+  | 'configuracoes-sistema'
+  | '_orquestracao-principal'
+  | 'crm-ziplia'
+  | 'metodologias';
+
+export const dispatchNavigate = (destination: SagbNavigateDestination): void => {
+  window.dispatchEvent(new CustomEvent<SagbNavigateDestination>('sagb:navigate', { detail: destination }));
+};
+

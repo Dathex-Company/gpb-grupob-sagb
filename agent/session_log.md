@@ -39,7 +39,7 @@
 **FASE 4 — Registro:**
 - [`changelog.md`](src/modules/metodologias/changelog.md) — v1.1.0-canonic-refactor
 - [`decisions.md`](src/modules/metodologias/decisions.md) — 10 decisões arquiteturais
-- [`App.tsx`](App.tsx:1698) — `'metodologias'` adicionado ao `isImmersiveMode`
+- [`App.tsx`](App.tsx:1698) — `metodologias` adicionado ao `isImmersiveMode`
 - [`session_log.md`](src/modules/metodologias/agent/session_log.md) — registrado
 - [`falas_user.md`](src/modules/metodologias/agent/falas_user.md) — registrado
 
@@ -161,7 +161,7 @@
 - `StudioAudioTrack.trackRole` extendido: `'master' | 'mic_headset' | 'mic_room' | 'system' | 'custom'`
 - Campos adicionados: `sourceLabel?`, `deviceId?`
 - [`saveAudioTrackPipeline()`](src/modules/studio/services/studio.ts:649) — nova função para salvar trilhas de áudio individuais em Supabase Storage
-  - Storage path: `\`${workspaceId}/${sessionId}/audio/tracks/${safeRole}/${fileName}\``
+  - Storage path: `` `${workspaceId}/${sessionId}/audio/tracks/${safeRole}/${fileName}` ``
   - Cria registro `StudioAudioTrack` no Firestore (fallback: localStorage)
 
 **2. Estado e Refs (`StudioPage.tsx`):**
@@ -233,11 +233,11 @@
 **Contexto:** O usuário Rodrigues pediu para analisar o módulo taskzei, que já tem um sidebar próprio, e fazer dois ajustes: (1) tirar o sidebar do SagB de aparecer quando no módulo; (2) colocar "Voltar ao SagB" no rodapé do sidebar do módulo.
 
 **Mudanças aplicadas:**
-1. [`App.tsx:1710`](App.tsx:1710) — adicionado `'agenda'` à lista `hideSidebar`
+1. [`App.tsx:1710`](App.tsx:1710) — adicionado `agenda` à lista `hideSidebar`
 2. [`AgendaInteligenteLayout.tsx:122-135`](src/modules/taskzei/layout/AgendaInteligenteLayout.tsx:122) — adicionado botão "Voltar ao SagB" no rodapé da sidebar
 
 **Arquivos modificados:**
-- `App.tsx` — hideSidebar inclui 'agenda'
+- `App.tsx` — hideSidebar inclui `agenda`
 - `src/modules/taskzei/layout/AgendaInteligenteLayout.tsx` — rodapé da sidebar
 - `src/modules/taskzei/changelog.md` — entrada v1.10.0
 - `src/modules/taskzei/decisions.md` — decisão #019
@@ -252,7 +252,7 @@
 
 **Estado pré-commit:**
 - Branch `main` up to date with `origin/main`
-- SHA anterior: `8e43886`
+- SHA anterior: `b2a45a3`
 
 **Arquivos modificados (9):**
 - `App.tsx` — alterações diversas
@@ -378,7 +378,7 @@
 **Próximos passos (P1/P2 pendentes):** Waveform, Preview áudio, IndexedDB, Silent Detection, Metadata enriquecida
 
 **Arquivos modificados (4):**
-- `src/modules/studio/services/studio.ts` — fetchSessionAudioTracks
+- `src/modules/studio/services/studio.ts` — tipos extendidos + `saveAudioTrackPipeline()`
 - `src/modules/studio/pages/StudioPage.tsx` — VU Meter, Gain, Labels, Pause, Download tracks
 - `src/modules/studio/changelog.md` — Entrada 05/05/2026
 - `src/modules/studio/decisions.md` — Decisões 05/05/2026
@@ -493,6 +493,8 @@
 **Links:**
 - Repositório: https://github.com/Dathex-Company/gpb-grupob-sagb
 - Commit: https://github.com/Dathex-Company/gpb-grupob-sagb/commit/bb6929b
+
+---
 
 ## 05/05/2026 — Hotfix: White Screen (MCP SagB barrel + loggerService)
 
@@ -632,3 +634,73 @@
 **usuario:** como posso comecar outro chat com da Fani para dar continuidade?
 
 **cassio-mendes:** Orientou o usuário a criar um novo chat no modo "Agente Ativado | Conversa" apontando para `src/modules/studio/agent/`. Os 4 arquivos canônicos (persona.md, prompt_ativacao_cline.md, session_log.md, falas_user.md) são carregados automaticamente, permitindo continuidade exata de onde parou.
+"## 05/05/2026 15:30"  
+"**cassio_mendes:** Documento can�nico unificado do organograma da 3forB criado em _ventures/3forb/organogramas_3forb/organograma_3forb_v1.md. Consolida 22 agentes das duas fontes (governance/ + ChatGPT Zara). 7 agentes marcados como pendente_revisao, 5 como novo. Inclui tabelas, mermaid, ASCII tree, regras de consist�ncia e atualiza��o." 
+"## 05/05/2026 15:35"  
+"**cassio_mendes:** Leitura completa do documento `Zara Bittencourt CEO ChatGPT` (linhas 1-14155) realizada. Identificado organograma inicial de 39 agentes, depois organogramas detalhados de Marketing (64 agentes), Vendas (49 agentes) e Expans�o (38 agentes) com IDs CA.XX. Capturada estrutura do QG (10 m�dulos), prompts de diversos agentes (Cael Voss/Rian Mercer, Nolan Krev, Maikon Bell, Jason Fod, Bia Fanel, Anton Borselli). Agora, consolidar todas as informa��es em um organograma completo e unificado." 
+
+## 05/05/2026 16:50
+
+**usuário:** "Sim, aprovo! Execute todos os 8 estágios agora."
+
+**cassio-mendes:** Execução autorizada do mega blaster de refatoração do módulo metodologias. Contexto herdado: auditoria completa concluída e plano consolidado em `plans/prompt-mega-blaster-refatoracao-metodologias.md`. Objetivo técnico: aplicar 8 estágios (persistência, performance, concorrência, tipagem, UX de erro, navegação tipada, documentação e ARIA) com alterações mínimas e validação por build/typecheck.
+
+**escopo previsto:**
+- `src/modules/metodologias/services/metodologiasPersistencia.ts`
+- `src/modules/metodologias/services/metodologiasSnapshotCanonicoLifecycle.ts`
+- `src/modules/metodologias/pages/MetodologiasHubPage.tsx`
+- `src/modules/metodologias/routes.tsx`
+- `src/modules/metodologias/changelog.md`
+- `src/modules/metodologias/decisions.md`
+- `components/Sidebar.tsx` (se aplicável ao ponto ARIA)
+  
+## 05/05/2026 16:45  
+  
+**cassio_mendes:** Organograma consolidado completo criado em `_ventures/3forb/organogramas_3forb/organograma_3forb_v1_completo.md`. 180 agentes totais: 5 lideran�a, 63 Marketing, 49 Vendas, 38 Expans�o, 25 pendentes (Ops/Tech/Fin/RHM/Jur). Hierarquia visual com mermaid e ASCII tree. Regras de consist�ncia e atualiza��o. QG resumido em 6 macrocamadas.  
+  
+**usu�rio:** "Analisando isso, Zara, o que voce sugere?"  
+  
+**cassio_mendes:** Respondeu com an�lise estrat�gica: (1) Organograma est� consolidado como fonte da verdade �nica; (2) Pr�ximo passo � criar os agentes em fases: Fase 1 = lideran�a + agentes-chave j� com prompt definido (Rian, Bia, Anton, Max, Liora, Paula, Nolan, Maikon, Jason); Fase 2 = agentes CA.XX de Marketing; Fase 3 = agentes CA.XX de Vendas e Expans�o; Fase 4 = times de suporte (Ops, Tec, Fin, RHM, Jur); (3) Cuidado com escala realista - 180 agentes � vis�o completa, mas startup come�a com ~15-20 agentes; (4) Sugeriu criar Nolan Krev, Maikon Bell e Jason Fod como agentes individuais (t�m nome e prompt definido) antes de criar os 63 CA.XX de Marketing; (5) Validar com Paula Zurik o desenho do QG antes de implementar m�dulos. 
+
+---
+
+## 05/05/2026 — Verificação de prontidão WhatsApp + Gmail (Hub Integrações)
+
+**Usuário:** ja esta no ponte de conectar p whatsapp e gmail no mudulo? Ou ainda falta alguma coisa? Verifique
+
+**Diagnóstico técnico (modo debug):**
+- WhatsApp: infraestrutura está pronta para conectar (outbound + inbound webhook + healthcheck + bridge de evento).
+- Gmail: integração está parcialmente pronta, mas ainda depende de ajustes de autenticação OAuth (token lifecycle) e de validação de healthcheck específico no IntegrationHubService.
+
+**Hipóteses levantadas (5-7 fontes):**
+1. Credenciais de ambiente ausentes/incorretas (`VITE_HUB_WABA_*` / credenciais gmail).
+2. Verify token divergente entre Meta e ENV (`MOCK_META_VERIFY_TOKEN` / `VITE_HUB_WABA_VERIFY_TOKEN`).
+3. `GmailDriver` exige `accessToken`, enquanto status usa `refreshToken` (inconsistência funcional).
+4. Ausência de refresh automático do token Gmail (expiração quebra envio/sync).
+5. `testConnection()` não possui branch de healthcheck para `int_gmail_01`.
+6. Dependência de callback URL pública para webhook da Meta.
+7. Titan é placeholder e não deve entrar como bloqueador de Gmail.
+
+**Mais prováveis (1-2):**
+- Inconsistência no contrato de credenciais Gmail (`refreshToken` para status vs `accessToken` para uso real).
+- Falta de `testConnection` dedicado para Gmail no Hub.
+
+**Próximo passo recomendado:**
+- Adicionar logs instrumentados no fluxo Gmail (`send`, `sync`, `health`, `testConnection`) e normalizar política de token antes de declarar pronto para produção.
+
+---
+
+## 05/05/2026 — Problema com `edit` Tool em `netlify/functions/whatsapp-webhook.mjs`
+
+**Contexto:** Ao tentar aplicar patch em `netlify/functions/whatsapp-webhook.mjs` para corrigir a lógica de `expectedToken` e adicionar persistência Supabase, o `edit` tool falhou repetidamente com "No match found for 'old_string'".
+
+**Observações:**
+- O conteúdo do arquivo foi lido várias vezes para garantir a string exata.
+- Tentativas com e sem `replace_all=True` falharam.
+- Isso indica um comportamento inesperado da ferramenta `edit` em relação a este arquivo específico ou uma sutil diferença de caracteres invisíveis que não são capturados pela leitura do tool.
+
+**Impacto:** As tarefas de alinhamento do verify token do WhatsApp webhook e a implementação da persistência inbound do WhatsApp no Supabase estão bloqueadas até que o problema com a ferramenta `edit` seja resolvido.
+
+**Contorno (temporário):** As mensagens inbound do WhatsApp continuarão sendo apenas logadas no console do Netlify, sem persistência no Supabase ou no armazenamento local do Hub, e o token de verificação seguirá a lógica original (sem priorizar `MOCK_META_VERIFY_TOKEN`). O fluxo outbound não é afetado.
+
+**Próximo passo:** Prosseguir com os ajustes do Gmail, que não dependem deste arquivo.

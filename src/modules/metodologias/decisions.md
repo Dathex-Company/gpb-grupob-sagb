@@ -48,3 +48,5 @@
 ### Decisões
 
 15. **Sidebar refinado com paleta SagB em vez de azul pesado** — Após o usuário rejeitar a primeira versão do sidebar (com fundo azul escuro `bg-sagb-blue` e texto branco), foi implementada uma segunda opção usando exclusivamente os tokens `--sagb-*` do tema claro do SagB. O sidebar agora usa `bg-sagb-panel` com `shadow-sm` e `border-r border-sagb-line`, e os botões de navegação são pills sutis — ativo `bg-sagb-bg-2 text-sagb-text border-sagb-line shadow-sm`, inativo `text-sagb-muted hover:bg-sagb-bg-2 hover:text-sagb-text hover:border-sagb-line`. A largura é fixa `w-64` e não varia com a quantidade de itens.
+
+16. **Deprecação do `MetodologiasInternalMenu`** — A decisão #14 foi superada pela evolução arquitetural v1.3.0, onde a navegação interna passou a ser renderizada inline no [`MetodologiasHubPage.tsx`](src/modules/metodologias/pages/MetodologiasHubPage.tsx). O componente [`MetodologiasInternalMenu.tsx`](src/modules/metodologias/components/MetodologiasInternalMenu.tsx) deixa de ser referência ativa e permanece apenas como legado técnico até remoção controlada.

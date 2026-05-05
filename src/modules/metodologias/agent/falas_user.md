@@ -22,3 +22,8 @@ agora faca exatamente o que fez no modulo mentoria no modulo metodologias... dei
 ```
 autorizado
 ```
+
+### 2026-05-05 17:40 BRT
+```
+olha o erro... outra coisa, tem que ter opcao de anexar documentos brutos para leitura inicial
+```

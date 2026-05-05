@@ -449,6 +449,21 @@ const StudioView: React.FC<StudioViewProps> = ({
     setCameraPreviews((prev) => prev.map((cam) => ({ ...cam, stream: null, status: 'offline' })));
   };
 
+  const attachPreviewStream = useCallback((cameraId: string, stream: MediaStream | null) => {
+    const el = videoRefs.current[cameraId];
+    if (!el || !stream) return;
+    if (el.srcObject !== stream) {
+      el.srcObject = stream;
+    }
+    el.muted = true;
+    const playPromise = el.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch((error) => {
+        studioDebug('previewPlayError', { cameraId, error });
+      });
+    }
+  }, []);
+
   const openCameraPreviews = async (deviceIds: string[]) => {
     const ids = deviceIds.slice(0, MAX_SIMULTANEOUS_CAMERAS);
     studioDebug('openCameraPreviews:start', { deviceIds, ids });
@@ -487,6 +502,8 @@ const StudioView: React.FC<StudioViewProps> = ({
         previews.push({ cameraId, label, stream, status: isRecordingRef.current ? 'recording' : 'ready' });
       } catch (error) {
         studioDebug('openCameraPreviewsError', { cameraId, deviceId, label, error });
+        const msg = String((error as any)?.message || 'Erro ao abrir câmera. Verifique permissões no navegador/sistema.');
+        setFeedback(`Falha ao ativar "${label}": ${msg}`);
         previews.push({ cameraId, label, stream: null, status: 'error' });
       }
     }
@@ -572,6 +589,12 @@ useEffect(() => {
 
     void openCameraPreviews(manualIds);
   }, [captureMode, selectedCameraIds, videoDevices, isRecording]);
+
+  useEffect(() => {
+    cameraPreviews.forEach((cam) => {
+      if (cam.stream) attachPreviewStream(cam.cameraId, cam.stream);
+    });
+  }, [cameraPreviews, attachPreviewStream]);
 
   /**
    * Solicita stream de áudio de um dispositivo específico.
@@ -1483,10 +1506,7 @@ useEffect(() => {
                                   <video
                                     ref={(el) => {
                                       videoRefs.current[cam.cameraId] = el;
-                                      if (el && cam.stream) {
-                                        el.srcObject = cam.stream;
-                                        el.muted = true;
-                                      }
+                                      if (el && cam.stream) attachPreviewStream(cam.cameraId, cam.stream);
                                     }}
                                     autoPlay
                                     playsInline

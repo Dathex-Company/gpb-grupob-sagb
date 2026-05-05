@@ -45,3 +45,15 @@ Histórico oficial e log operacional contínuo do agente deste módulo.
 - 7 sub-páginas presentacionais recebendo dados via props
 - Sub-páginas sem container próprio
 - Zero `dark:`, zero hardcoded colors, zero `text-sm`/`text-xs`, zero `font-bold` em títulos
+
+### 2026-05-05 17:42 BRT — Correção de erro de persistência + anexo de documentos brutos
+
+**Contexto:** Usuário reportou erro visual de persistência no topo da Mesa e solicitou opção para anexar documentos brutos na leitura inicial.
+
+**Objetivo técnico:**
+- Tratar ausência de tabela no Supabase com fallback controlado e mensagem operacional.
+- Incluir upload de arquivos brutos no formulário da Mesa para compor `conteudo_bruto` da entrada.
+
+**Escopo previsto:**
+- `src/modules/metodologias/pages/MetodologiasHubPage.tsx`
+- `src/modules/metodologias/pages/MetodologiasMesaPage.tsx`

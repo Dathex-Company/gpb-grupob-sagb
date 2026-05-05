@@ -211,8 +211,19 @@ export const useRAICaptures = (initialFilters?: RAIFilters) => {
       setCaptures(filteredMock);
     } catch (err: any) {
       const msg = err?.message || 'Erro ao carregar capturas';
-      setLocalError(msg);
-      setStoreError(msg);
+      const isMissingRaiTable =
+        msg.includes("Could not find the table 'public.rai_captures'") ||
+        msg.includes("rai_captures") && msg.toLowerCase().includes('schema cache');
+
+      // Se a tabela ainda não existe no ambiente, não quebrar a UX:
+      // segue com fallback mock sem exibir erro técnico para o usuário.
+      if (!isMissingRaiTable) {
+        setLocalError(msg);
+        setStoreError(msg);
+      } else {
+        setLocalError(null);
+        setStoreError(null);
+      }
 
       try {
         const mockData = await raiCapturesService.getCaptures(filtersRef.current);

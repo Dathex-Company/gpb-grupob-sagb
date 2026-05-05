@@ -1,5 +1,22 @@
 # Changelog — Hub de Integrações SagB
 
+## [QR Batch] 2026-05-05 — Integração WhatsApp via QR Code (Baileys)
+
+- `package.json` — adicionadas dependências `@whiskeysockets/baileys` e `qrcode`.
+- `.env.example` — adicionadas variáveis `VITE_HUB_WHATSAPP_QR_BASE_URL` e `HUB_WHATSAPP_QR_API_KEY`.
+- `netlify.toml` — adicionada função `whatsapp-qr` e redirect `/hub/whatsapp-qr/*`.
+- `netlify/functions/whatsapp-qr.mjs` — criado serviço dedicado com endpoints:
+  - `POST /connect`
+  - `GET /status`
+  - `POST /send`
+  - `POST /logout`
+- `src/modules/hub-integracao/types/integration.types.ts` — novo tipo `HubWhatsAppQrStatus` e novos métodos no contrato:
+  - `connectWhatsAppQr()`
+  - `getWhatsAppQrStatus()`
+  - `logoutWhatsAppQr()`
+- `src/modules/hub-integracao/services/integrationService.ts` — cliente QR integrado ao Hub e healthcheck Gmail adicionado em `testConnection()`.
+- `src/modules/hub-integracao/index.ts` — export do tipo `HubWhatsAppQrStatus`.
+
 ## [Mega Batch #2] 2026-05-04 — Amarração Estrutural (Event Bridge, Contrato Taskzei, Meta Webhook Setup)
 
 ### Scripts e Configuração

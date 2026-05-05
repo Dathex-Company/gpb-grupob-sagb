@@ -249,6 +249,8 @@ const Sidebar: React.FC<SidebarProps> = ({
             setActiveTab(item.id as TabId);
             setIsMobileMenuOpen(false); // Fecha o menu no mobile ao clicar
           }}
+          aria-current={isActive ? 'page' : undefined}
+          aria-label={`Abrir ${item.label}`}
           className={`
             group flex items-center w-full px-3 py-1.5 rounded-md transition-colors duration-200 relative text-[12px]
             ${isActive 

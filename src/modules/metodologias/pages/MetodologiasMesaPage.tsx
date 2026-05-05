@@ -38,11 +38,13 @@ interface MetodologiasMesaPageProps {
   novoTipoEntrada: EntradaMetodologicaTipoDeEntrada;
   novaOrigem: string;
   novoConteudoBruto: string;
+  arquivosBrutos: File[];
   tiposEntradaDisponiveis: EntradaMetodologicaTipoDeEntrada[];
   onNovoTituloChange: (value: string) => void;
   onNovoTipoEntradaChange: (value: EntradaMetodologicaTipoDeEntrada) => void;
   onNovaOrigemChange: (value: string) => void;
   onNovoConteudoBrutoChange: (value: string) => void;
+  onArquivosBrutosChange: (files: File[]) => void;
   onRegistrarEntradaBruta: (event: React.FormEvent<HTMLFormElement>) => void;
   onSelecionarEntrada: (entradaId: string) => void;
   onDefinirModoConversao: (modo: 'preview' | 'ativo_em_estruturacao' | 'ativo_base_gerado') => void;
@@ -108,11 +110,13 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
   novoTipoEntrada,
   novaOrigem,
   novoConteudoBruto,
+  arquivosBrutos,
   tiposEntradaDisponiveis,
   onNovoTituloChange,
   onNovoTipoEntradaChange,
   onNovaOrigemChange,
   onNovoConteudoBrutoChange,
+  onArquivosBrutosChange,
   onRegistrarEntradaBruta,
   onSelecionarEntrada,
   onDefinirModoConversao,
@@ -550,6 +554,21 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
             rows={4}
             className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text resize-y"
           />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-sagb-muted">Anexos brutos (opcional)</span>
+          <input
+            type="file"
+            multiple
+            onChange={(event) => onArquivosBrutosChange(Array.from(event.target.files ?? []))}
+            className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text"
+          />
+          <p className="text-[11px] text-sagb-muted">
+            {arquivosBrutos.length > 0
+              ? `${arquivosBrutos.length} arquivo(s) anexado(s) para leitura inicial.`
+              : 'Arquivos textuais serão incorporados ao conteúdo bruto para leitura assistida.'}
+          </p>
         </label>
 
         <div className="flex items-center justify-between gap-3">

@@ -29,3 +29,15 @@
 - **Decisão:** Integração `int_crm_ziplia_whatsapp` simulada como ativa para testes. Em produção, será conectada ao número dedicado do CRM Ziplia.
 - **Decisão:** `module-doc.ts` corrigido para usar strings planas em vez de template literais multilinha, resolvendo erro TS1002.
 - **Variáveis de ambiente** documentadas no `.env.example` e configuradas no `netlify.toml` para a função whatsapp-webhook.
+
+## 05/05/2026 — Bloqueio: `edit` Tool falha em `netlify/functions/whatsapp-webhook.mjs`
+- **Decisão:** As tarefas de alinhamento do verify token do WhatsApp e a persistência inbound no Supabase estão **BLOQUEADAS** devido a falhas repetidas do `edit` tool em encontrar o `old_string` exato, mesmo após múltiplas leituras e tentativas com `replace_all=True`. Isso impede a aplicação de patches neste arquivo.
+- **Contorno:** Por enquanto, as mensagens inbound do WhatsApp apenas serão logadas no console do Netlify (conforme implementação atual). A persistência Supabase e o alinhamento de tokens ficam pendentes.
+- **Próximo passo:** Priorizar os ajustes pendentes no fluxo do Gmail.
+
+## 05/05/2026 — Nova estratégia autorizada: WhatsApp via QR Code (Baileys)
+- **Decisão:** Adotar integração WhatsApp via QR Code com `@whiskeysockets/baileys` em serviço Node dedicado.
+- **Motivo:** Usuário solicitou explicitamente conexão por QR Code, em substituição prática ao fluxo Cloud API para este cenário.
+- **Arquitetura:** Hub chama endpoints de sessão QR (`connect`, `status`, `send`, `logout`) em função dedicada.
+- **Segurança:** Endpoints aceitam `x-api-key` opcional com variável `HUB_WHATSAPP_QR_API_KEY`.
+- **Observação operacional:** sessão Baileys em Netlify pode ser efêmera (filesystem temporário em `/tmp`), recomendando migração para serviço persistente dedicado em produção.

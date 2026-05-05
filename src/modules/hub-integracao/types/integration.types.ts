@@ -38,6 +38,13 @@ export interface HubSendWhatsAppMessageResult {
   status: 'sent' | 'queued';
 }
 
+export interface HubWhatsAppQrStatus {
+  sessionId: string;
+  status: 'not_initialized' | 'initializing' | 'qr_ready' | 'connected' | 'disconnected' | 'logged_out';
+  qrDataUrl?: string | null;
+  lastError?: string | null;
+}
+
 // Sprint 2 — Contrato provider-agnostic de e-mail (Gmail + Titan)
 export type HubMailProvider = 'gmail' | 'titan';
 export type HubMailCapability = 'mail.send' | 'mail.sync' | 'mail.health';
@@ -168,6 +175,9 @@ export interface IntegrationServiceContract {
   getConnectionStatus(integrationId: string): Promise<'active' | 'inactive' | 'error'>;
   createTaskViaClickUp(input: HubCreateTaskInput): Promise<HubCreateTaskResult>;
   sendWhatsAppMessage(input: HubSendWhatsAppMessageInput): Promise<HubSendWhatsAppMessageResult>;
+  connectWhatsAppQr(sessionId?: string): Promise<HubWhatsAppQrStatus>;
+  getWhatsAppQrStatus(sessionId?: string): Promise<HubWhatsAppQrStatus>;
+  logoutWhatsAppQr(sessionId?: string): Promise<void>;
 
   // Novos métodos Fase 3/4
   processInboundWebhook(payload: HubInboundWebhookPayload): Promise<HubInboundMessage>;

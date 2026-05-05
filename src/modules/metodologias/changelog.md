@@ -4,6 +4,22 @@ Registro de mudanças técnicas, decisões de arquitetura e evolução do módul
 
 ---
 
+## [v1.4.0-mega-blaster-refactor] - 2026-05-05
+
+### Corrigido
+- [`salvarRelacoesCanonicasPersistidas()`](src/modules/metodologias/services/metodologiasPersistencia.ts:647) agora executa replace-set de relações canônicas por ativo (remove existentes antes de inserir), eliminando duplicação por reprocessamento.
+- [`executarBackfillSnapshotsCanonicosDoAtivo()`](src/modules/metodologias/services/metodologiasSnapshotCanonicoLifecycle.ts:66) migrado para `Promise.allSettled` com consolidação imutável de sucesso/falha.
+
+### Melhorado
+- Redução de fan-out N+1 nas consultas em lote de persistência com chunking por `in` query em [`metodologiasPersistencia.ts`](src/modules/metodologias/services/metodologiasPersistencia.ts).
+- Tipagem endurecida na camada de mapeamento (`toIso` e `map*`) removendo `any` de fronteiras principais.
+- Contrato de navegação tipado com [`dispatchNavigate()`](src/core/navigation/sagbNavigate.ts:35) e [`SagbNavigateDestination`](src/core/navigation/sagbNavigate.ts:1), aplicado em [`routes.tsx`](src/modules/metodologias/routes.tsx:1).
+- Estado degradado de persistência no hub com feedback visual explícito em [`MetodologiasHubPage.tsx`](src/modules/metodologias/pages/MetodologiasHubPage.tsx:316).
+- Acessibilidade ARIA em navegação lateral do módulo e sidebar global ([`MetodologiasHubPage.tsx`](src/modules/metodologias/pages/MetodologiasHubPage.tsx:1200), [`Sidebar.tsx`](components/Sidebar.tsx:247)).
+
+### Documentação
+- `decisions.md` atualizado com deprecação explícita de `MetodologiasInternalMenu` em favor de navegação inline no hub.
+
 ## [v1.1.0-canonic-refactor] - 2026-05-03
 
 ### Adicionado

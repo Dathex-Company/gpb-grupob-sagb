@@ -96,24 +96,27 @@ export const executarBackfillSnapshotsCanonicosDoAtivo = async (ativo: AtivoCano
     };
   }
 
-  const versoesAtualizadas: AtivoCanonicoVersao[] = [];
-  const falhas: BackfillSnapshotFalha[] = [];
-
-  await Promise.all(
+  const resultados = await Promise.allSettled(
     semSnapshot.map(async (versao) => {
-      try {
-        const snapshot = criarSnapshotCanonicoFromAtivo(ativo);
-        const atualizada = await atualizarSnapshotVersaoCanonicaPersistida({ versao, snapshot });
-        versoesAtualizadas.push(atualizada);
-      } catch (error) {
-        falhas.push({
-          versao_id: versao.id,
-          numero_versao: versao.numero_versao,
-          motivo: error instanceof Error ? error.message : 'Falha não identificada no backfill de snapshot.'
-        });
-      }
+      const snapshot = criarSnapshotCanonicoFromAtivo(ativo);
+      const atualizada = await atualizarSnapshotVersaoCanonicaPersistida({ versao, snapshot });
+      return { versao, atualizada };
     })
   );
+
+  const versoesAtualizadas: AtivoCanonicoVersao[] = resultados
+    .filter((resultado): resultado is PromiseFulfilledResult<{ versao: AtivoCanonicoVersao; atualizada: AtivoCanonicoVersao }> =>
+      resultado.status === 'fulfilled'
+    )
+    .map((resultado) => resultado.value.atualizada);
+
+  const falhas: BackfillSnapshotFalha[] = resultados
+    .filter((resultado): resultado is PromiseRejectedResult => resultado.status === 'rejected')
+    .map((resultado, index) => ({
+      versao_id: semSnapshot[index]?.id ?? 'desconhecida',
+      numero_versao: semSnapshot[index]?.numero_versao ?? 'desconhecida',
+      motivo: resultado.reason instanceof Error ? resultado.reason.message : 'Falha não identificada no backfill de snapshot.'
+    }));
 
   return {
     ativo_canonico_id: ativo.id,

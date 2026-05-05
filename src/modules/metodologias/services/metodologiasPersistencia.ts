@@ -55,14 +55,34 @@ const RELACOES_CANONICAS_TABLE = 'metodologias_relacoes_canonicas';
 const VERSOES_CANONICAS_TABLE = 'metodologias_versoes_canonicas';
 const EVENTOS_MANUTENCAO_CANONICA_TABLE = 'metodologias_eventos_manutencao_canonica';
 
-const toIso = (value: any): string => {
+type TimestampLike = { toDate: () => Date };
+
+interface BaseRow {
+  id: string;
+  created_at?: string | Date | TimestampLike | null;
+  updated_at?: string | Date | TimestampLike | null;
+}
+
+const toIso = (value: string | Date | TimestampLike | null | undefined): string => {
   if (!value) return new Date().toISOString();
   if (typeof value?.toDate === 'function') return value.toDate().toISOString();
   if (value instanceof Date) return value.toISOString();
   return String(value);
 };
 
-const mapEntrada = (row: any): EntradaMetodologicaBruta => ({
+const chunkIds = (ids: string[], size = 30): string[][] => {
+  const output: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) output.push(ids.slice(i, i + size));
+  return output;
+};
+
+const addMapItem = <T>(map: Map<string, T[]>, key: string, value: T): void => {
+  const current = map.get(key) ?? [];
+  current.push(value);
+  map.set(key, current);
+};
+
+const mapEntrada = (row: BaseRow & Record<string, unknown>): EntradaMetodologicaBruta => ({
   id: String(row.id),
   titulo: String(row.titulo ?? ''),
   tipo_de_entrada: row.tipo_de_entrada as EntradaMetodologicaTipoDeEntrada,
@@ -73,7 +93,7 @@ const mapEntrada = (row: any): EntradaMetodologicaBruta => ({
   updated_at: toIso(row.updated_at)
 });
 
-const mapBlocoInterno = (row: any): AtivoEmEstruturacaoBlocoInterno => ({
+const mapBlocoInterno = (row: BaseRow & Record<string, unknown>): AtivoEmEstruturacaoBlocoInterno => ({
   id: String(row.id),
   ativo_em_estruturacao_id: String(row.ativo_em_estruturacao_id),
   tipo_de_bloco: row.tipo_de_bloco as AtivoEmEstruturacaoBlocoTipo,
@@ -85,7 +105,7 @@ const mapBlocoInterno = (row: any): AtivoEmEstruturacaoBlocoInterno => ({
   updated_at: toIso(row.updated_at)
 });
 
-const mapBlocoCanonico = (row: any): AtivoCanonicoBloco => ({
+const mapBlocoCanonico = (row: BaseRow & Record<string, unknown>): AtivoCanonicoBloco => ({
   id: String(row.id),
   ativo_canonico_id: String(row.ativo_canonico_id),
   bloco_origem_estruturacao_id: String(row.bloco_origem_estruturacao_id),
@@ -98,7 +118,7 @@ const mapBlocoCanonico = (row: any): AtivoCanonicoBloco => ({
   updated_at: toIso(row.updated_at)
 });
 
-const mapVersaoCanonica = (row: any): AtivoCanonicoVersao => ({
+const mapVersaoCanonica = (row: BaseRow & Record<string, unknown>): AtivoCanonicoVersao => ({
   id: String(row.id),
   ativo_canonico_id: String(row.ativo_canonico_id),
   numero_versao: String(row.numero_versao ?? ''),
@@ -112,7 +132,7 @@ const mapVersaoCanonica = (row: any): AtivoCanonicoVersao => ({
   snapshot_validado_em: row.snapshot_validado_em ? toIso(row.snapshot_validado_em) : undefined
 });
 
-const mapEventoManutencaoCanonica = (row: any): AtivoCanonicoEventoManutencao => ({
+const mapEventoManutencaoCanonica = (row: BaseRow & Record<string, unknown>): AtivoCanonicoEventoManutencao => ({
   id: String(row.id),
   ativo_canonico_id: String(row.ativo_canonico_id),
   bloco_canonico_id: row.bloco_canonico_id ? String(row.bloco_canonico_id) : undefined,
@@ -122,7 +142,7 @@ const mapEventoManutencaoCanonica = (row: any): AtivoCanonicoEventoManutencao =>
   created_at: toIso(row.created_at)
 });
 
-const mapRelacaoCanonica = (row: any): AtivoMetodologicoRelacao => ({
+const mapRelacaoCanonica = (row: BaseRow & Record<string, unknown>): AtivoMetodologicoRelacao => ({
   id: String(row.id),
   tipo_de_relacao: row.tipo_de_relacao as AtivoMetodologicoRelacaoTipo,
   ativo_origem_id: String(row.ativo_origem_id),
@@ -130,7 +150,7 @@ const mapRelacaoCanonica = (row: any): AtivoMetodologicoRelacao => ({
   observacao: row.observacao ? String(row.observacao) : undefined
 });
 
-const mapRelacaoEstruturacao = (row: any): AtivoEmEstruturacaoRelacao => ({
+const mapRelacaoEstruturacao = (row: BaseRow & Record<string, unknown>): AtivoEmEstruturacaoRelacao => ({
   id: String(row.id),
   ativo_em_estruturacao_id: String(row.ativo_em_estruturacao_id),
   ativo_relacionado_canonico_id: String(row.ativo_relacionado_canonico_id),
@@ -142,7 +162,7 @@ const mapRelacaoEstruturacao = (row: any): AtivoEmEstruturacaoRelacao => ({
 });
 
 const mapAtivo = (
-  row: any,
+  row: BaseRow & Record<string, unknown>,
   origemEntradaTitulo: string,
   blocosInternos: AtivoEmEstruturacaoBlocoInterno[] = [],
   relacoesEstruturacao: AtivoEmEstruturacaoRelacao[] = []
@@ -176,7 +196,7 @@ const mapAtivo = (
 });
 
 const mapAtivoCanonico = (
-  row: any,
+  row: BaseRow & Record<string, unknown>,
   blocosCanonicos: AtivoCanonicoBloco[] = [],
   relacoesAtivos: AtivoMetodologicoRelacao[] = [],
   versoesCanonicas: AtivoCanonicoVersao[] = [],
@@ -208,20 +228,24 @@ const mapAtivoCanonico = (
 const listarBlocosCanonicosPorAtivosIds = async (ativosIds: string[]): Promise<Map<string, AtivoCanonicoBloco[]>> => {
   const agrupado = new Map<string, AtivoCanonicoBloco[]>();
   if (!ativosIds.length) return agrupado;
-
+  const t0 = performance.now();
+  const chunks = chunkIds(ativosIds);
   const snapshots = await Promise.all(
-    ativosIds.map((ativoId) =>
-      getDocs(query(collection(db, BLOCOS_CANONICOS_TABLE), where('ativo_canonico_id', '==', ativoId), orderBy('ordem', 'asc')))
+    chunks.map((ids) =>
+      getDocs(query(collection(db, BLOCOS_CANONICOS_TABLE), where('ativo_canonico_id', 'in', ids), orderBy('ordem', 'asc')))
     )
   );
 
-  snapshots.forEach((snapshot, index) => {
-    const ativoId = ativosIds[index];
-    const blocos = snapshot.docs
-      .map((item: any) => mapBlocoCanonico({ id: item.id, ...item.data() }))
-      .sort((a, b) => a.ordem - b.ordem);
-    agrupado.set(ativoId, blocos);
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((item: any) => {
+      const bloco = mapBlocoCanonico({ id: item.id, ...item.data() });
+      addMapItem(agrupado, bloco.ativo_canonico_id, bloco);
+    });
   });
+
+  if (performance.now() - t0 > 10) {
+    console.info('[metodologiasPersistencia] listarBlocosCanonicosPorAtivosIds>10ms', { totalAtivos: ativosIds.length });
+  }
 
   return agrupado;
 };
@@ -230,24 +254,18 @@ const listarVersoesCanonicasPorAtivosIds = async (ativosIds: string[]): Promise<
   const agrupado = new Map<string, AtivoCanonicoVersao[]>();
   if (!ativosIds.length) return agrupado;
 
+  const chunks = chunkIds(ativosIds);
   const snapshots = await Promise.all(
-    ativosIds.map((ativoId) =>
-      getDocs(
-        query(
-          collection(db, VERSOES_CANONICAS_TABLE),
-          where('ativo_canonico_id', '==', ativoId),
-          orderBy('publicada_em', 'desc')
-        )
-      )
+    chunks.map((ids) =>
+      getDocs(query(collection(db, VERSOES_CANONICAS_TABLE), where('ativo_canonico_id', 'in', ids), orderBy('publicada_em', 'desc')))
     )
   );
 
-  snapshots.forEach((snapshot, index) => {
-    const ativoId = ativosIds[index];
-    const versoes = snapshot.docs
-      .map((item: any) => mapVersaoCanonica({ id: item.id, ...item.data() }))
-      .sort((a, b) => +new Date(b.publicada_em) - +new Date(a.publicada_em));
-    agrupado.set(ativoId, versoes);
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((item: any) => {
+      const versao = mapVersaoCanonica({ id: item.id, ...item.data() });
+      addMapItem(agrupado, versao.ativo_canonico_id, versao);
+    });
   });
 
   return agrupado;
@@ -259,16 +277,18 @@ const listarRelacoesCanonicasPorAtivosIds = async (
   const agrupado = new Map<string, AtivoMetodologicoRelacao[]>();
   if (!ativosIds.length) return agrupado;
 
+  const chunks = chunkIds(ativosIds);
   const snapshots = await Promise.all(
-    ativosIds.map((ativoId) =>
-      getDocs(query(collection(db, RELACOES_CANONICAS_TABLE), where('ativo_origem_id', '==', ativoId), orderBy('created_at', 'asc')))
+    chunks.map((ids) =>
+      getDocs(query(collection(db, RELACOES_CANONICAS_TABLE), where('ativo_origem_id', 'in', ids), orderBy('created_at', 'asc')))
     )
   );
 
-  snapshots.forEach((snapshot, index) => {
-    const ativoId = ativosIds[index];
-    const relacoes = snapshot.docs.map((item: any) => mapRelacaoCanonica({ id: item.id, ...item.data() }));
-    agrupado.set(ativoId, relacoes);
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((item: any) => {
+      const relacao = mapRelacaoCanonica({ id: item.id, ...item.data() });
+      addMapItem(agrupado, relacao.ativo_origem_id, relacao);
+    });
   });
 
   return agrupado;
@@ -280,24 +300,18 @@ const listarEventosManutencaoCanonicaPorAtivosIds = async (
   const agrupado = new Map<string, AtivoCanonicoEventoManutencao[]>();
   if (!ativosIds.length) return agrupado;
 
+  const chunks = chunkIds(ativosIds);
   const snapshots = await Promise.all(
-    ativosIds.map((ativoId) =>
-      getDocs(
-        query(
-          collection(db, EVENTOS_MANUTENCAO_CANONICA_TABLE),
-          where('ativo_canonico_id', '==', ativoId),
-          orderBy('ocorrido_em', 'desc')
-        )
-      )
+    chunks.map((ids) =>
+      getDocs(query(collection(db, EVENTOS_MANUTENCAO_CANONICA_TABLE), where('ativo_canonico_id', 'in', ids), orderBy('ocorrido_em', 'desc')))
     )
   );
 
-  snapshots.forEach((snapshot, index) => {
-    const ativoId = ativosIds[index];
-    const eventos = snapshot.docs
-      .map((item: any) => mapEventoManutencaoCanonica({ id: item.id, ...item.data() }))
-      .sort((a, b) => +new Date(b.ocorrido_em) - +new Date(a.ocorrido_em));
-    agrupado.set(ativoId, eventos);
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((item: any) => {
+      const evento = mapEventoManutencaoCanonica({ id: item.id, ...item.data() });
+      addMapItem(agrupado, evento.ativo_canonico_id, evento);
+    });
   });
 
   return agrupado;
@@ -307,18 +321,18 @@ const listarBlocosPorAtivosIds = async (ativosIds: string[]): Promise<Map<string
   const agrupado = new Map<string, AtivoEmEstruturacaoBlocoInterno[]>();
   if (!ativosIds.length) return agrupado;
 
+  const chunks = chunkIds(ativosIds);
   const snapshots = await Promise.all(
-    ativosIds.map((ativoId) =>
-      getDocs(query(collection(db, BLOCOS_TABLE), where('ativo_em_estruturacao_id', '==', ativoId), orderBy('ordem', 'asc')))
+    chunks.map((ids) =>
+      getDocs(query(collection(db, BLOCOS_TABLE), where('ativo_em_estruturacao_id', 'in', ids), orderBy('ordem', 'asc')))
     )
   );
 
-  snapshots.forEach((snapshot, index) => {
-    const ativoId = ativosIds[index];
-    const blocos = snapshot.docs
-      .map((item: any) => mapBlocoInterno({ id: item.id, ...item.data() }))
-      .sort((a, b) => a.ordem - b.ordem);
-    agrupado.set(ativoId, blocos);
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((item: any) => {
+      const bloco = mapBlocoInterno({ id: item.id, ...item.data() });
+      addMapItem(agrupado, bloco.ativo_em_estruturacao_id, bloco);
+    });
   });
 
   return agrupado;
@@ -330,22 +344,18 @@ const listarRelacoesEstruturacaoPorAtivosIds = async (
   const agrupado = new Map<string, AtivoEmEstruturacaoRelacao[]>();
   if (!ativosIds.length) return agrupado;
 
+  const chunks = chunkIds(ativosIds);
   const snapshots = await Promise.all(
-    ativosIds.map((ativoId) =>
-      getDocs(
-        query(
-          collection(db, RELACOES_ESTRUTURACAO_TABLE),
-          where('ativo_em_estruturacao_id', '==', ativoId),
-          orderBy('created_at', 'asc')
-        )
-      )
+    chunks.map((ids) =>
+      getDocs(query(collection(db, RELACOES_ESTRUTURACAO_TABLE), where('ativo_em_estruturacao_id', 'in', ids), orderBy('created_at', 'asc')))
     )
   );
 
-  snapshots.forEach((snapshot, index) => {
-    const ativoId = ativosIds[index];
-    const relacoes = snapshot.docs.map((item: any) => mapRelacaoEstruturacao({ id: item.id, ...item.data() }));
-    agrupado.set(ativoId, relacoes);
+  snapshots.forEach((snapshot) => {
+    snapshot.docs.forEach((item: any) => {
+      const relacao = mapRelacaoEstruturacao({ id: item.id, ...item.data() });
+      addMapItem(agrupado, relacao.ativo_em_estruturacao_id, relacao);
+    });
   });
 
   return agrupado;
@@ -648,6 +658,13 @@ export const salvarRelacoesCanonicasPersistidas = async (params: {
   ativo_canonico_id: string;
   relacoes: AtivoMetodologicoRelacao[];
 }): Promise<AtivoMetodologicoRelacao[]> => {
+  const existentes = await getDocs(
+    query(collection(db, RELACOES_CANONICAS_TABLE), where('ativo_origem_id', '==', params.ativo_canonico_id))
+  );
+  if (existentes.docs.length) {
+    await Promise.all(existentes.docs.map((item: any) => deleteDoc(doc(db, RELACOES_CANONICAS_TABLE, item.id))));
+  }
+
   await Promise.all(
     params.relacoes.map((relacao) =>
       addDoc(collection(db, RELACOES_CANONICAS_TABLE), {

@@ -14,6 +14,7 @@ export type {
   HubInboundWebhookPayload,
   HubMailSendInput,
   HubMailSendResult,
+  HubWhatsAppQrStatus,
   ConnectionConfig,
   IntegrationServiceContract,
 } from './types/integration.types';

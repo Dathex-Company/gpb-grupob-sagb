@@ -27,6 +27,11 @@
 [functions."whatsapp-webhook"]
   environment = { SUPABASE_URL = "https://sagb.supabase.co", SUPABASE_SERVICE_KEY = "@@SUPABASE_SERVICE_KEY@@", MOCK_META_VERIFY_TOKEN = "@@MOCK_META_VERIFY_TOKEN@@" }
 
+# ─── Hub de Integrações — WhatsApp QR (Baileys) ───────────────────
+
+[functions."whatsapp-qr"]
+  environment = { HUB_WHATSAPP_QR_API_KEY = "@@HUB_WHATSAPP_QR_API_KEY@@" }
+
 # Headers de segurança e performance
 
 [[headers]]
@@ -67,6 +72,12 @@
 [[redirects]]
   from = "/api-sagb-audit/*"
   to = "/.netlify/functions/api-sagb-audit"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/hub/whatsapp-qr/*"
+  to = "/.netlify/functions/whatsapp-qr"
   status = 200
   force = true
 
