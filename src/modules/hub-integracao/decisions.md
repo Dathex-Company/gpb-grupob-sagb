@@ -41,3 +41,7 @@
 - **Arquitetura:** Hub chama endpoints de sessão QR (`connect`, `status`, `send`, `logout`) em função dedicada.
 - **Segurança:** Endpoints aceitam `x-api-key` opcional com variável `HUB_WHATSAPP_QR_API_KEY`.
 - **Observação operacional:** sessão Baileys em Netlify pode ser efêmera (filesystem temporário em `/tmp`), recomendando migração para serviço persistente dedicado em produção.
+
+## 06/05/2026 — QR precisa aparecer dentro do Hub
+- **Decisão:** Exibir QR diretamente na UI do módulo Hub de Integrações, evitando uso manual de endpoints para o usuário final.
+- **Implementação:** Card com ações `Gerar QR`, `Atualizar Status`, `Logout`, preview via `qrDataUrl` e exibição de `status`/`lastError`.

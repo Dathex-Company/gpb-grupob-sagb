@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { integrationHub } from '../services/integrationService';
-import { Integration, ConnectionConfig } from '../types/integration.types';
+import { Integration, ConnectionConfig, HubWhatsAppQrStatus } from '../types/integration.types';
 import { IntegrationCatalog } from '../components/IntegrationCatalog';
 import { ConnectionManager } from '../components/ConnectionManager';
 import { ConnectionTest } from '../components/ConnectionTest';
@@ -26,6 +26,11 @@ export function HubIntegracaoPage() {
     error: 0,
   });
 
+  // WhatsApp QR
+  const [qrSessionId] = useState('default');
+  const [qrStatus, setQrStatus] = useState<HubWhatsAppQrStatus | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+
   const fetchIntegrations = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -48,6 +53,50 @@ export function HubIntegracaoPage() {
   useEffect(() => {
     fetchIntegrations();
   }, [fetchIntegrations]);
+
+  const refreshQrStatus = useCallback(async () => {
+    setQrLoading(true);
+    try {
+      const status = await integrationHub.getWhatsAppQrStatus(qrSessionId);
+      setQrStatus(status);
+    } catch (err) {
+      console.error('[Hub][QR] Falha ao consultar status:', err);
+    } finally {
+      setQrLoading(false);
+    }
+  }, [qrSessionId]);
+
+  useEffect(() => {
+    refreshQrStatus();
+  }, [refreshQrStatus]);
+
+  const handleConnectQr = async () => {
+    setQrLoading(true);
+    try {
+      const status = await integrationHub.connectWhatsAppQr(qrSessionId);
+      setQrStatus(status);
+      // Atualiza status após pequeno delay para capturar qr_ready
+      setTimeout(() => {
+        refreshQrStatus();
+      }, 1200);
+    } catch (err) {
+      console.error('[Hub][QR] Falha ao conectar sessão QR:', err);
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  const handleLogoutQr = async () => {
+    setQrLoading(true);
+    try {
+      await integrationHub.logoutWhatsAppQr(qrSessionId);
+      await refreshQrStatus();
+    } catch (err) {
+      console.error('[Hub][QR] Falha ao encerrar sessão QR:', err);
+    } finally {
+      setQrLoading(false);
+    }
+  };
 
   const handleConfigure = (integration: Integration) => {
     setConfiguringIntegration(integration);
@@ -161,6 +210,66 @@ export function HubIntegracaoPage() {
             </div>
           </div>
         )}
+
+        {/* WhatsApp QR Code — Sessão Baileys */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-100 dark:border-gray-700 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                WhatsApp via QR Code (Baileys)
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Sessão: {qrSessionId} · Status: {qrStatus?.status || 'carregando'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleConnectQr}
+                disabled={qrLoading}
+                className="px-3 py-1.5 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
+              >
+                {qrLoading ? 'Conectando...' : 'Gerar QR'}
+              </button>
+              <button
+                onClick={refreshQrStatus}
+                disabled={qrLoading}
+                className="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40"
+              >
+                Atualizar Status
+              </button>
+              <button
+                onClick={handleLogoutQr}
+                disabled={qrLoading}
+                className="px-3 py-1.5 text-xs font-medium rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-40"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+
+          {qrStatus?.qrDataUrl ? (
+            <div className="flex flex-col items-center gap-2">
+              <img
+                src={qrStatus.qrDataUrl}
+                alt="QR Code WhatsApp"
+                className="w-56 h-56 rounded-md border border-gray-200 dark:border-gray-700 bg-white"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                Abra o WhatsApp no celular → Dispositivos conectados → Conectar dispositivo
+              </p>
+            </div>
+          ) : (
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              Nenhum QR disponível ainda. Clique em <strong>Gerar QR</strong>.
+            </div>
+          )}
+
+          {qrStatus?.lastError && (
+            <div className="text-xs text-red-600 dark:text-red-400">
+              Erro da sessão: {qrStatus.lastError}
+            </div>
+          )}
+        </div>
 
         {/* Error Banner */}
         {error && (

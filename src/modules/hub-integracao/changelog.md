@@ -1,5 +1,18 @@
 # Changelog — Hub de Integrações SagB
 
+## [QR UI] 2026-05-06 — QR Code exibido dentro do Hub
+
+- `src/modules/hub-integracao/pages/HubIntegracaoPage.tsx`
+  - Adicionado estado de sessão QR (`qrStatus`, `qrLoading`, `qrSessionId`).
+  - Adicionadas ações de sessão:
+    - `handleConnectQr()`
+    - `refreshQrStatus()`
+    - `handleLogoutQr()`
+  - Adicionado card visual “WhatsApp via QR Code (Baileys)” dentro da página do Hub com:
+    - Botões **Gerar QR**, **Atualizar Status**, **Logout**
+    - Preview do QR via `qrDataUrl`
+    - Exibição de `status` e `lastError`
+
 ## [QR Batch] 2026-05-05 — Integração WhatsApp via QR Code (Baileys)
 
 - `package.json` — adicionadas dependências `@whiskeysockets/baileys` e `qrcode`.

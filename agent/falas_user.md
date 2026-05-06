@@ -28,3 +28,27 @@ a conexao do whats é com qrcode?
 ```
 quero com qrcode a integracao
 ```
+
+## 2026-05-05
+
+```
+nao esta aparecendo nada de qrcode la... verifique ou me de o passo a passo
+```
+
+## 2026-05-05
+
+```
+eu fiz commit/deploy completo... era para esta funcionando
+```
+
+## 2026-05-06
+
+```
+qual é o passo a passo para ver o qrcode? as vezes eu nao estou sabendo onde fica
+```
+
+## 2026-05-06
+
+```
+claro... ja devia ter feito isso... quero ele la dentro
+```
