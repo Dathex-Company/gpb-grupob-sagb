@@ -52,3 +52,9 @@ qual é o passo a passo para ver o qrcode? as vezes eu nao estou sabendo onde fi
 ```
 claro... ja devia ter feito isso... quero ele la dentro
 ```
+
+## 2026-05-06
+
+```
+nnao apareceu o card
+```

@@ -704,3 +704,17 @@
 **Contorno (temporário):** As mensagens inbound do WhatsApp continuarão sendo apenas logadas no console do Netlify, sem persistência no Supabase ou no armazenamento local do Hub, e o token de verificação seguirá a lógica original (sem priorizar `MOCK_META_VERIFY_TOKEN`). O fluxo outbound não é afetado.
 
 **Próximo passo:** Prosseguir com os ajustes do Gmail, que não dependem deste arquivo.
+
+---
+
+## 06/05/2026 — QR card não aparece no Hub (pós-deploy)
+
+**Usuário:** "nnao apareceu o card"
+
+**Verificação técnica executada:**
+- O card de QR está presente no código-fonte em [`HubIntegracaoPage.tsx`](src/modules/hub-integracao/pages/HubIntegracaoPage.tsx:214), incluindo título, botões e renderização de imagem em [`qrStatus?.qrDataUrl`](src/modules/hub-integracao/pages/HubIntegracaoPage.tsx:250).
+- A rota do módulo aponta para a página correta em [`routes.tsx`](src/modules/hub-integracao/routes.tsx:6).
+
+**Diagnóstico atual:**
+- O problema não está na ausência do bloco JSX no repositório atual.
+- Indício principal: mismatch entre build publicado e código local (deploy desatualizado, cache de bundle, ou ambiente carregando outro artefato).
