@@ -16,12 +16,15 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.9",
     "@google/genai": "^1.33.0",
     "@hookform/resolvers": "^5.2.2",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@supabase/supabase-js": "^2.102.1",
     "@vitejs/plugin-react": "^5.1.2",
+    "@whiskeysockets/baileys": "^6.7.9",
+    "imap-simple": "^5.1.0",
+    "mailparser": "^3.9.8",
+    "nodemailer": "^8.0.7",
     "qrcode": "^1.5.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
@@ -32,7 +35,10 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@types/imap-simple": "^4.2.10",
+    "@types/mailparser": "^3.4.6",
     "@types/node": "^22.14.0",
+    "@types/nodemailer": "^8.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^9.2.1",
     "husky": "^9.1.7",

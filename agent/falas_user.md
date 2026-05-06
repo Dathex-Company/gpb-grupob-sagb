@@ -104,5 +104,17 @@ tem certeza que vai dar certo?
 ## 2026-05-06
 
 ```
+agora quero conectar o gmail e o titan no crm tambem... analise de forma critica o que precisa mais
+```
+
+## 2026-05-06
+
+```
+faca uma analise profunda no whatsapp novamente pois nao conectou
+```
+
+## 2026-05-06
+
+```
 analise novamente tudo para ver se nao tem nenhum problema.
 ```

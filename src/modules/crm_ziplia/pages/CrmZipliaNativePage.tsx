@@ -34,15 +34,21 @@ export const CrmZipliaNativePage: React.FC = () => {
 
   const loadWhatsInbox = async () => {
     try {
-      // Load from both WABA (localStorage) and QR (function in-memory)
+      // 1) Pega mensagens WABA/QR (WhatsApp) e Email (hub_inbox_messages com source='email')
+      // Para manter simples sem Supabase no frontend ainda, vamos pegar pelo `getInboxMessages` que lê localStorage 
+      // (as rotas do Supabase devem alimentar este storage via webhook ou sync trigger).
       const [wabaMessages, qrMessages] = await Promise.all([
         integrationHub.getInboxMessages('int_waba_01', 200),
         integrationHub.getWhatsAppQrInbox('default').catch(() => [] as HubInboundMessage[]),
       ]);
 
+      // Recupera também e-mails que o Hub salvou (mock ou reais via webhook)
+      const allMessages = await integrationHub.getInboxMessages();
+      const emailMessages = allMessages.filter(m => m.source === 'email' || m.source === 'webhook');
+
       // Merge and deduplicate by externalId
       const seen = new Set<string>();
-      const merged = [...wabaMessages, ...qrMessages].filter((msg) => {
+      const merged = [...wabaMessages, ...qrMessages, ...emailMessages].filter((msg) => {
         const key = msg.externalId || msg.id;
         if (seen.has(key)) return false;
         seen.add(key);
@@ -57,7 +63,7 @@ export const CrmZipliaNativePage: React.FC = () => {
         setSelectedConversationId(merged[0].conversationId || merged[0].from);
       }
     } catch (err) {
-      console.warn('[CRM Ziplia] Falha ao carregar inbox WhatsApp:', err);
+      console.warn('[CRM Ziplia] Falha ao carregar inbox unificada:', err);
     }
   };
 
@@ -101,7 +107,8 @@ export const CrmZipliaNativePage: React.FC = () => {
     // Register listener FIRST (before loading) to avoid race condition
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<HubInboundMessage>).detail;
-      if (!detail || detail.source !== 'whatsapp') return;
+      // Removendo filtro de "apenas whatsapp" para captar webhook/emails
+      if (!detail) return;
       setWhatsMessages((prev) => {
         if (prev.some((m) => m.id === detail.id)) return prev; // avoid duplicates
         return [detail, ...prev];
@@ -140,11 +147,11 @@ export const CrmZipliaNativePage: React.FC = () => {
 
   const tabItems: Array<{ id: typeof activeTab; label: string }> = [
     { id: 'pipeline', label: 'Pipeline' },
-    { id: 'whatsapp', label: 'WhatsApp' },
+    { id: 'inbox', label: 'Inbox Unificada' },
+    { id: 'whatsapp', label: 'WhatsApp (Legacy)' },
     { id: 'daily', label: 'Lista do Dia' },
     { id: 'dashboard-colab', label: 'Dashboard Colab' },
     { id: 'dashboard-gestor', label: 'Dashboard Gestor' },
-    { id: 'inbox', label: 'Inbox Unificada' },
     { id: 'integrations', label: 'Integrações' },
     { id: 'simulator', label: 'Simulador' },
     { id: 'differences', label: 'Diferenças' },
@@ -201,23 +208,36 @@ export const CrmZipliaNativePage: React.FC = () => {
 
   const followUpPlaybook = useMemo(() => {
     if (!linkedLead) return [];
-    switch (linkedLead.status) {
-      case 'Lead captado':
-        return ['Qualificar necessidade em até 15 min', 'Confirmar canal preferencial', 'Agendar próxima ação hoje'];
-      case 'Qualificado':
-        return ['Enviar prova social', 'Oferecer janela de reunião', 'Registrar objeções no CRM'];
-      case 'Reunião marcada':
-        return ['Confirmar presença 1h antes', 'Enviar pauta curta', 'Preparar proposta base'];
-      case 'Reunião feita':
-        return ['Enviar resumo da reunião', 'Mandar proposta até D+1', 'Definir data de follow-up'];
-      case 'Proposta enviada':
-        return ['Checar recebimento da proposta', 'Mapear bloqueadores', 'Puxar decisão por data'];
-      case 'Negociação':
-        return ['Trabalhar objeção principal', 'Negociar escopo/preço', 'Fechar próximo passo em ata'];
-      default:
-        return ['Manter histórico e registrar próximos passos'];
+    const isEmail = selectedConversationId?.includes('@');
+    
+    if (isEmail) {
+      switch (linkedLead.status) {
+        case 'Lead captado':
+          return ['Responder introdução institucional', 'Enviar material em anexo', 'Sugerir call de 15 min na assinatura'];
+        case 'Proposta enviada':
+          return ['Cobrar retorno educadamente (Email D+2)', 'Solicitar agenda para revisão técnica', 'Checar abertura via rastreio se possível'];
+        default:
+          return ['Manter formalidade', 'Sempre registrar em thread', 'Incluir call-to-action clara no final'];
+      }
+    } else {
+      switch (linkedLead.status) {
+        case 'Lead captado':
+          return ['Qualificar necessidade em até 15 min', 'Confirmar canal preferencial', 'Agendar próxima ação hoje'];
+        case 'Qualificado':
+          return ['Enviar prova social', 'Oferecer janela de reunião', 'Registrar objeções no CRM'];
+        case 'Reunião marcada':
+          return ['Confirmar presença 1h antes', 'Enviar pauta curta', 'Preparar proposta base'];
+        case 'Reunião feita':
+          return ['Enviar resumo da reunião', 'Mandar proposta até D+1', 'Definir data de follow-up'];
+        case 'Proposta enviada':
+          return ['Checar recebimento da proposta', 'Mapear bloqueadores', 'Puxar decisão por data'];
+        case 'Negociação':
+          return ['Trabalhar objeção principal', 'Negociar escopo/preço', 'Fechar próximo passo em ata'];
+        default:
+          return ['Manter histórico e registrar próximos passos'];
+      }
     }
-  }, [linkedLead]);
+  }, [linkedLead, selectedConversationId]);
 
   const handleSelectConversation = async (conversationId: string) => {
     setSelectedConversationId(conversationId);
@@ -233,15 +253,33 @@ export const CrmZipliaNativePage: React.FC = () => {
     if (!message || !selectedConversationId) return;
     setSending(true);
     try {
-      await integrationHub.sendWhatsAppQrMessage({
-        to: selectedConversationId,
-        message,
-        sessionId: 'default',
-      });
+      const isEmail = selectedConversationId.includes('@');
+
+      if (isEmail) {
+        // Obter provider original da mensagem (pode ser gmail ou titan)
+        const currentMsgs = whatsMessages.filter(m => m.conversationId === selectedConversationId || m.from === selectedConversationId);
+        const provider = currentMsgs.length > 0 && currentMsgs[0].integrationId.includes('titan') ? 'titan' : 'gmail';
+
+        await integrationHub.sendEmail({
+          provider: provider as any,
+          from: 'me', // O backend resolve via credenciais
+          to: [selectedConversationId],
+          subject: currentMsgs.length > 0 && currentMsgs[0].metadata?.subject 
+            ? `Re: ${currentMsgs[0].metadata.subject}` 
+            : 'Contato via CRM Ziplia',
+          textBody: message,
+        });
+      } else {
+        await integrationHub.sendWhatsAppQrMessage({
+          to: selectedConversationId,
+          message,
+          sessionId: 'default',
+        });
+      }
       setComposer('');
       await loadWhatsInbox();
     } catch (err) {
-      console.error('[CRM Ziplia] Falha ao enviar mensagem WhatsApp:', err);
+      console.error('[CRM Ziplia] Falha ao enviar mensagem:', err);
     } finally {
       setSending(false);
     }
@@ -475,12 +513,167 @@ export const CrmZipliaNativePage: React.FC = () => {
             {activeTab === 'inbox' && (
               <section className="rounded-2xl border border-slate-200 dark:border-sagb-border bg-white dark:bg-sagb-card overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-200 dark:border-sagb-border flex items-center justify-between">
-                  <div className="text-sm font-semibold">Inbox Unificada</div>
-                  <span className="text-xs text-slate-500">{conversations.length} conversas</span>
+                  <div className="text-sm font-semibold">Inbox Unificada (WhatsApp + Email)</div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-sagb-bg">
+                      {conversations.length} conversas
+                    </span>
+                    <button
+                      onClick={() => loadWhatsInbox()}
+                      className="text-xs text-indigo-600 hover:underline"
+                    >
+                      Sincronizar
+                    </button>
+                  </div>
                 </div>
-                <div className="p-6 text-center">
-                  <p className="text-sm text-slate-500 mb-2">Este espaço vai reunir mensagens de WhatsApp, e-mail e outros canais em uma única interface.</p>
-                  <p className="text-xs text-slate-400">No momento, exibindo apenas conversas do WhatsApp.</p>
+                <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] min-h-[500px]">
+                  <aside className="border-r border-slate-200 dark:border-sagb-border overflow-y-auto">
+                    {conversations.length === 0 ? (
+                      <p className="text-sm text-slate-500 p-4">Sua inbox está limpa.</p>
+                    ) : (
+                      conversations.map((conv) => {
+                        // Identifica a fonte pelo ID da conversa (heurística simples)
+                        const isEmail = conv.id.includes('@');
+                        const SourceIcon = isEmail ? '📧' : '💬';
+                        
+                        return (
+                          <button
+                            key={conv.id}
+                            onClick={() => handleSelectConversation(conv.id)}
+                            className={`w-full text-left px-4 py-3 border-b border-slate-100 dark:border-sagb-border/40 transition-colors ${selectedConversationId === conv.id ? 'bg-indigo-50 dark:bg-sagb-bg border-l-4 border-l-indigo-500' : 'hover:bg-slate-50 dark:hover:bg-sagb-bg/40 border-l-4 border-l-transparent'}`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-sm font-semibold text-slate-800 dark:text-sagb-text flex items-center gap-1.5 truncate">
+                                <span>{SourceIcon}</span>
+                                <span className="truncate">{conv.title}</span>
+                              </p>
+                              {conv.unread > 0 && <span className="shrink-0 text-[10px] font-bold bg-indigo-500 text-white rounded-full px-1.5 py-0.5">{conv.unread}</span>}
+                            </div>
+                            <p className="text-xs text-slate-500 truncate">{conv.lastMessage}</p>
+                            <p className="text-[10px] text-slate-400 mt-1.5 font-medium">{new Date(conv.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                          </button>
+                        );
+                      })
+                    )}
+                  </aside>
+                  <div className="flex flex-col lg:grid lg:grid-cols-[1fr_300px]">
+                    <div className="flex-1 flex flex-col h-[500px]">
+                      <div className="flex-1 p-4 space-y-4 overflow-y-auto bg-slate-50/60 dark:bg-[#0B0F19]">
+                        {selectedMessages.length === 0 ? (
+                          <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                            Selecione uma conversa para visualizar
+                          </div>
+                        ) : (
+                          selectedMessages.map((msg) => {
+                            const outbound = msg.from === 'me' || msg.metadata?.direction === 'outbound';
+                            const isEmail = msg.source === 'email' || msg.source === 'webhook';
+                            
+                            return (
+                              <div key={msg.id} className={`max-w-[85%] flex flex-col ${outbound ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
+                                <div className={`px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed shadow-sm ${
+                                  outbound 
+                                    ? 'bg-indigo-600 text-white rounded-br-none' 
+                                    : 'bg-white dark:bg-sagb-card border border-slate-200 dark:border-gray-800 text-slate-700 dark:text-gray-300 rounded-bl-none'
+                                }`}>
+                                  {isEmail && msg.metadata?.subject && (
+                                    <div className={`font-bold mb-1.5 pb-1.5 border-b ${outbound ? 'border-indigo-500/50' : 'border-slate-100 dark:border-gray-700'}`}>
+                                      Assunto: {msg.metadata.subject}
+                                    </div>
+                                  )}
+                                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                                </div>
+                                <p className="text-[10px] text-slate-400 mt-1 px-1 font-medium flex items-center gap-1">
+                                  {new Date(msg.receivedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  {isEmail && <span>via Email</span>}
+                                </p>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                      
+                      {/* Composer unificado */}
+                      <div className="border-t border-slate-200 dark:border-sagb-border bg-white dark:bg-sagb-card p-3">
+                        <div className="flex flex-col gap-2">
+                          <textarea
+                            value={composer}
+                            onChange={(e) => setComposer(e.target.value)}
+                            placeholder={selectedConversationId?.includes('@') ? "Escreva seu e-mail de resposta..." : "Digite sua mensagem de WhatsApp..."}
+                            className="w-full min-h-[60px] max-h-32 p-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-[#0B0F19] text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-y"
+                          />
+                          <div className="flex justify-between items-center px-1">
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              Enviando para: {selectedConversationId || 'Ninguém selecionado'}
+                            </span>
+                            <button
+                              onClick={handleSendFromComposer}
+                              disabled={sending || !composer.trim() || !selectedConversationId}
+                              className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white text-[13px] font-bold shadow-sm transition-all flex items-center gap-2"
+                            >
+                              {sending ? (
+                                <>
+                                  <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                  Processando
+                                </>
+                              ) : 'Enviar Resposta'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Lateral direita - Vínculo Lead */}
+                    <aside className="border-l border-slate-200 dark:border-sagb-border bg-slate-50/30 dark:bg-sagb-card p-5 space-y-5 h-[500px] overflow-y-auto">
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-gray-500 mb-3">Vínculo de Lead</h4>
+                        {linkedLead ? (
+                          <div className="space-y-3">
+                            <div className="rounded-xl border border-indigo-100 bg-white dark:bg-gray-800 dark:border-gray-700 p-4 shadow-sm">
+                              <p className="text-sm font-bold text-slate-900 dark:text-white mb-0.5">{linkedLead.name}</p>
+                              <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-2">{linkedLead.company}</p>
+                              <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-gray-700">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span className="text-[11px] font-semibold text-slate-600 dark:text-gray-300">{linkedLead.status}</span>
+                              </div>
+                            </div>
+                            
+                            <button
+                              onClick={handleLinkLeadFollowUp}
+                              disabled={leadActionLoading}
+                              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-white hover:bg-slate-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 text-slate-700 dark:text-gray-200 text-xs font-bold shadow-sm transition-all"
+                            >
+                              {leadActionLoading ? 'Atualizando...' : 'Registrar Follow-up Hoje'}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-800/30 p-4 text-center">
+                            <p className="text-[11px] font-medium text-amber-700 dark:text-amber-500">
+                              Nenhum lead encontrado para o contato:<br/>
+                              <strong className="mt-1 block">{selectedConversationPhone || selectedConversationId || 'N/D'}</strong>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {linkedLead && followUpPlaybook.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-gray-500 mb-3">Playbook Ativo</h4>
+                          <div className="rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+                            <ul className="space-y-2.5">
+                              {followUpPlaybook.map((item, idx) => (
+                                <li key={idx} className="flex gap-2.5 items-start">
+                                  <div className="shrink-0 w-4 h-4 rounded-full bg-slate-100 dark:bg-gray-700 flex items-center justify-center mt-0.5">
+                                    <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">{idx + 1}</span>
+                                  </div>
+                                  <span className="text-xs font-medium text-slate-600 dark:text-gray-300 leading-snug">{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                    </aside>
+                  </div>
                 </div>
               </section>
             )}

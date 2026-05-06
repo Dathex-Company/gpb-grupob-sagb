@@ -82,6 +82,18 @@
   force = true
 
 [[redirects]]
+  from = "/hub/email-titan/*"
+  to = "/.netlify/functions/email-titan-driver"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/hub/email-sync/*"
+  to = "/.netlify/functions/email-sync-background"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/404"
   to = "/index.html"
   status = 404

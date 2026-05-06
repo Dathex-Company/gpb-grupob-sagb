@@ -241,30 +241,117 @@ class GmailDriver implements HubMailProviderContract {
   }
 }
 
-// ─────────── Titan (placeholder) ───────────
+// ─────────── Titan (Serverless Function Bridge) ───────────
 
 class TitanDriver implements HubMailProviderContract {
+  private getTitanFunctionUrl(): string {
+    return String(import.meta.env.VITE_HUB_TITAN_BASE_URL || '/hub/email-titan').trim();
+  }
+
   async send(input: HubMailSendInput): Promise<HubMailSendResult> {
     const credentials = await credentialManager.getCredential('titan', 'int_titan_01', 'default', 'email-service');
-    if (!credentials?.apiKey) {
-      console.warn('[TitanDriver] Falha: API Key ausente para int_titan_01. Usando placeholder.');
-      throw new Error('Titan não configurado. API Key necessária.');
+    if (!credentials?.apiKey && !credentials?.password) {
+      console.warn('[TitanDriver] Falha: Credenciais ausentes para int_titan_01.');
+      throw new Error('Titan não configurado. Senha ou API Key necessária.');
     }
 
-    // Placeholder — Titan não possui API pública REST documentada.
-    // A integração real exigirá SMTP ou API proprietária.
-    console.log('[TitanDriver] Envio placeholder para:', input.to);
-    throw new Error('Driver Titan ainda não implementado. Use SMTP diretamente ou aguarde integração via Hub.');
+    const response = await fetch(`${this.getTitanFunctionUrl()}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'send',
+        credentials: {
+          email: credentials.accountEmail || credentials.email || input.from,
+          password: credentials.password || credentials.apiKey,
+        },
+        payload: input
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error('[TitanDriver] Erro no envio de e-mail:', response.status, err);
+      throw new Error(`Titan send failed (${response.status}): ${err}`);
+    }
+
+    const data = await response.json() as { messageId: string, acceptedAt: string };
+    
+    return {
+      provider: 'titan',
+      integrationId: 'int_titan_01',
+      externalMessageId: data.messageId,
+      acceptedAt: data.acceptedAt || new Date().toISOString(),
+    };
   }
 
   async sync(_cursor: HubMailSyncCursor): Promise<HubMailSyncResult> {
-    console.warn('[TitanDriver] Sync placeholder: Driver Titan ainda não implementado.');
-    throw new Error('Driver Titan ainda não implementado.');
+    const credentials = await credentialManager.getCredential('titan', 'int_titan_01', 'default', 'email-sync');
+    if (!credentials?.apiKey && !credentials?.password) {
+      console.warn('[TitanDriver] Falha: Credenciais ausentes para int_titan_01.');
+      throw new Error('Titan não configurado. Senha ou API Key necessária.');
+    }
+
+    const response = await fetch(`${this.getTitanFunctionUrl()}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'sync',
+        credentials: {
+          email: credentials.accountEmail || credentials.email || 'unknown',
+          password: credentials.password || credentials.apiKey,
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error('[TitanDriver] Erro na sincronização do inbox:', response.status, err);
+      throw new Error(`Titan sync failed (${response.status}): ${err}`);
+    }
+
+    const data = await response.json() as { messages: any[] };
+
+    return {
+      provider: 'titan',
+      integrationId: 'int_titan_01',
+      messages: data.messages.map((msg: any) => ({
+        ...msg,
+        provider: 'titan',
+        integrationId: 'int_titan_01'
+      })),
+    };
   }
 
   async health(): Promise<boolean> {
-    console.log('[TitanDriver] Health check: Sempre false para placeholder.');
-    return false;
+    try {
+      const credentials = await credentialManager.getCredential('titan', 'int_titan_01', 'default', 'email-health');
+      if (!credentials?.apiKey && !credentials?.password) {
+        return false;
+      }
+
+      const response = await fetch(`${this.getTitanFunctionUrl()}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'health',
+          credentials: {
+            email: credentials.accountEmail || credentials.email || 'unknown',
+            password: credentials.password || credentials.apiKey,
+          }
+        }),
+      });
+
+      return response.ok;
+    } catch (err) {
+      console.error('[TitanDriver] Health check falhou:', err);
+      return false;
+    }
   }
 }
 

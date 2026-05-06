@@ -739,6 +739,39 @@
 
 ---
 
+## 06/05/2026 — Solicitação de análise crítica: conectar Gmail e Titan no CRM
+
+**Usuário:** "agora quero conectar o gmail e o titan no crm tambem... analise de forma critica o que precisa mais"
+
+**Leitura técnica inicial realizada:**
+- [`emailService.ts`](src/modules/hub-integracao/services/emailService.ts):
+  - [`GmailDriver`](src/modules/hub-integracao/services/emailService.ts:17) implementado para `send`, `sync` e `health`.
+  - [`TitanDriver`](src/modules/hub-integracao/services/emailService.ts:246) ainda placeholder (lança erro em `send` e `sync`).
+- [`HubIntegracaoPage.tsx`](src/modules/hub-integracao/pages/HubIntegracaoPage.tsx): gestão de credenciais existe no Hub, mas não há fluxo dedicado de Inbox de e-mail no CRM.
+- [`integration.types.ts`](src/modules/hub-integracao/types/integration.types.ts): contrato de e-mail provider-agnostic já existe (`HubMailSendInput`, `HubMailSyncResult`).
+
+**Conclusão preliminar:**
+- Gmail está parcialmente pronto no Hub (driver funcional), porém sem aterrissagem operacional no CRM Ziplia (UI de inbox, associação lead↔thread, cadência e SLA).
+- Titan ainda não está pronto tecnicamente para operação (driver explicitamente não implementado).
+
+---
+
+## 06/05/2026 — Nova solicitação: análise profunda de falha de conexão WhatsApp
+
+**Usuário:** "faca uma analise profunda no whatsapp novamente pois nao conectou"
+
+**Contexto atualizado:**
+- Mesmo após correções estruturais no fluxo WhatsApp QR, o usuário reporta falha de conexão.
+- Iniciada investigação em modo Debug para priorizar causa-raiz de conexão da sessão Baileys.
+
+**Plano de investigação (Debug):**
+1. Revisar pontos frágeis no ciclo de vida da sessão em [`whatsapp-qr.mjs`](netlify/functions/whatsapp-qr.mjs).
+2. Validar hipóteses de falha mais prováveis (state corrompido, sessão inválida, cold start, incompatibilidade de device-linking, timeout da função).
+3. Coletar evidências práticas via logs/rotas (`/connect`, `/status`, `/health`) antes de nova correção.
+4. Confirmar diagnóstico com usuário antes de aplicar patch corretivo (regra do modo Debug).
+
+---
+
 ## 06/05/2026 — Auditoria: Análise completa de problemas no fluxo WhatsApp QR → CRM
 
 **Usuário:** "analise novamente tudo para ver se nao tem nenhum problema."
