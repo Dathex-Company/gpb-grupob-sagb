@@ -70,3 +70,27 @@ deploy de erro
 ```
 faca o que precisar fazer....
 ```
+
+## 2026-05-06
+
+```
+apareceu mas ele nao nao conseguiu conectar... a mensagem de erro foi: nao foi possivel conectar a este dispositivo. Mas a pergunta que te faça é: depois de conectado ele vai fazer o que dentro do sagb?
+```
+
+## 2026-05-06
+
+```
+quero receber e enviar msg do whats pelo modulo CRM que é o  Z:\SagB\src\modules\crm_ziplia ainda hoje. Analise no geral tudo e crie um plano total para isso... quero pensamento e analise profunda
+```
+
+## 2026-05-06
+
+```
+e ai? voce nao sugere nada? nao fala nada o que fazer? nao se propoe a fazer um plano mega blaster para isso? quero mais proatividade
+```
+
+## 2026-05-06
+
+```
+execute o plano agora
+```

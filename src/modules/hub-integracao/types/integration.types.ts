@@ -38,6 +38,12 @@ export interface HubSendWhatsAppMessageResult {
   status: 'sent' | 'queued';
 }
 
+export interface HubSendWhatsAppQrMessageInput {
+  to: string;
+  message: string;
+  sessionId?: string;
+}
+
 export interface HubWhatsAppQrStatus {
   sessionId: string;
   status: 'not_initialized' | 'initializing' | 'qr_ready' | 'connected' | 'disconnected' | 'logged_out';
@@ -175,6 +181,7 @@ export interface IntegrationServiceContract {
   getConnectionStatus(integrationId: string): Promise<'active' | 'inactive' | 'error'>;
   createTaskViaClickUp(input: HubCreateTaskInput): Promise<HubCreateTaskResult>;
   sendWhatsAppMessage(input: HubSendWhatsAppMessageInput): Promise<HubSendWhatsAppMessageResult>;
+  sendWhatsAppQrMessage(input: HubSendWhatsAppQrMessageInput): Promise<HubSendWhatsAppMessageResult>;
   connectWhatsAppQr(sessionId?: string): Promise<HubWhatsAppQrStatus>;
   getWhatsAppQrStatus(sessionId?: string): Promise<HubWhatsAppQrStatus>;
   logoutWhatsAppQr(sessionId?: string): Promise<void>;

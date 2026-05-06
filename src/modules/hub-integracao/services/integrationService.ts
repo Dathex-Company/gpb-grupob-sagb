@@ -2,6 +2,7 @@ import {
   HubCreateTaskInput,
   HubCreateTaskResult,
   HubSendWhatsAppMessageInput,
+  HubSendWhatsAppQrMessageInput,
   HubSendWhatsAppMessageResult,
   HubWhatsAppQrStatus,
   HubMailSendInput,
@@ -275,6 +276,69 @@ export class IntegrationHubService implements IntegrationServiceContract {
     };
   }
 
+  async sendWhatsAppQrMessage(input: HubSendWhatsAppQrMessageInput): Promise<HubSendWhatsAppMessageResult> {
+    const baseUrl = this.getWhatsAppQrBaseUrl();
+    const apiKey = this.getWhatsAppQrApiKey();
+    const sessionId = input.sessionId || 'default';
+
+    const response = await fetch(`${baseUrl}/send?sessionId=${encodeURIComponent(sessionId)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
+      },
+      body: JSON.stringify({
+        to: input.to,
+        message: input.message,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Falha ao enviar mensagem via WhatsApp QR (${response.status}): ${err}`);
+    }
+
+    const data = await response.json() as { messageId?: string | null };
+
+    const outboundMessage: HubInboundMessage = {
+      id: crypto.randomUUID(),
+      source: 'whatsapp',
+      from: 'me',
+      fromName: 'CRM Ziplia',
+      content: input.message,
+      externalId: data.messageId || `local-${Date.now()}`,
+      conversationId: input.to,
+      integrationId: this.whatsAppIntegrationId,
+      workspaceId: this.workspaceId,
+      receivedAt: new Date().toISOString(),
+      status: 'processed',
+      consumedBy: 'crm_ziplia',
+      metadata: {
+        direction: 'outbound',
+        to: input.to,
+        sessionId,
+      },
+    };
+
+    this.persistInboxMessage(outboundMessage);
+
+    await loggerService.log({
+      integrationId: this.whatsAppIntegrationId,
+      integrationName: 'WhatsApp QR (Baileys)',
+      provider: 'whatsapp',
+      action: 'send',
+      status: 'success',
+      summary: `Mensagem enviada via QR para ${input.to}`,
+    });
+
+    return {
+      externalId: data.messageId || outboundMessage.externalId,
+      provider: 'whatsapp',
+      integrationId: this.whatsAppIntegrationId,
+      status: 'sent',
+    };
+  }
+
   // ────────── WhatsApp QR (Baileys Service) ──────────
 
   private getWhatsAppQrBaseUrl(): string {
@@ -444,7 +508,7 @@ export class IntegrationHubService implements IntegrationServiceContract {
     if (index === -1) throw new Error(`Mensagem ${messageId} não encontrada`);
 
     messages[index].status = 'processed';
-    messages[index].consumedBy = 'taskzei';
+    messages[index].consumedBy = messages[index].consumedBy || 'crm_ziplia';
     localStorage.setItem(INBOX_STORAGE_KEY, JSON.stringify(messages));
 
     await loggerService.log({
