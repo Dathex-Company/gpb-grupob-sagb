@@ -62,14 +62,7 @@ async function handleVerification(event) {
   const challenge = event.queryStringParameters?.['hub.challenge'];
 
   // O token de verificação esperado (configurado via env var)
-  import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL',
-  process.env.SUPABASE_SERVICE_KEY || 'YOUR_SUPABASE_SERVICE_KEY'
-);
-
-const expectedToken =
+  const expectedToken =
     process.env.MOCK_META_VERIFY_TOKEN ||
     process.env.HUB_WABA_VERIFY_TOKEN ||
     process.env.VITE_HUB_WABA_VERIFY_TOKEN ||

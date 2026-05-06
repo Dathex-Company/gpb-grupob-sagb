@@ -58,3 +58,15 @@ claro... ja devia ter feito isso... quero ele la dentro
 ```
 nnao apareceu o card
 ```
+
+## 2026-05-06
+
+```
+deploy de erro
+```
+
+## 2026-05-06
+
+```
+faca o que precisar fazer....
+```

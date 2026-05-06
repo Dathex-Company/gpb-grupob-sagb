@@ -718,3 +718,21 @@
 **Diagnóstico atual:**
 - O problema não está na ausência do bloco JSX no repositório atual.
 - Indício principal: mismatch entre build publicado e código local (deploy desatualizado, cache de bundle, ou ambiente carregando outro artefato).
+
+---
+
+## 06/05/2026 — Deploy com erro de bundle em Netlify Function
+
+**Usuário:** "deploy de erro"
+
+**Evidência enviada:** erro de build na função `whatsapp-webhook` com `Unexpected "{"` em `netlify/functions/whatsapp-webhook.mjs:65:9`.
+
+**Causa técnica identificada:** há `import { createClient } from '@supabase/supabase-js';` dentro de `handleVerification`, o que quebra parsing ESM de função Netlify.
+
+**Ação executada:**
+- Removido `import` inválido de dentro de [`handleVerification`](netlify/functions/whatsapp-webhook.mjs:59) em [`whatsapp-webhook.mjs`](netlify/functions/whatsapp-webhook.mjs).
+- Mantido apenas o `import` de topo em [`whatsapp-webhook.mjs`](netlify/functions/whatsapp-webhook.mjs:14).
+
+**Validação:**
+- `npx netlify build` executado com sucesso.
+- Bundling de funções concluiu incluindo [`whatsapp-webhook.mjs`](netlify/functions/whatsapp-webhook.mjs).
