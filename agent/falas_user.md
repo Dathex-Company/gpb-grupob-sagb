@@ -94,3 +94,15 @@ e ai? voce nao sugere nada? nao fala nada o que fazer? nao se propoe a fazer um 
 ```
 execute o plano agora
 ```
+
+## 2026-05-06
+
+```
+tem certeza que vai dar certo?
+```
+
+## 2026-05-06
+
+```
+analise novamente tudo para ver se nao tem nenhum problema.
+```

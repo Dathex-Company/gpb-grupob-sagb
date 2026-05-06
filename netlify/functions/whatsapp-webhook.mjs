@@ -155,16 +155,38 @@ async function handleInbound(event) {
       }
     }
 
-    // TODO: Em produção, persistir no Supabase (tabela hub_inbox_messages)
-    // e publicar evento para os módulos consumidores (Taskzei, CRM).
-    //
-    // Exemplo:
-    //   await supabase.from('hub_inbox_messages').insert(messages);
-    //   await pubsub.publish('hub.inbox.new', { messages });
-    //
-    // Por enquanto, loga no console (funcionará em produção com logs da Netlify).
+    // Persiste no Supabase (tabela hub_inbox_messages) para consumo
+    // pelos módulos Taskzei e CRM Ziplia.
+
+    const persistedMessages = [];
+
+    for (const msg of messages) {
+      const record = {
+        id: crypto.randomUUID(),
+        source: 'whatsapp',
+        from: msg.from,
+        from_name: msg.fromName || null,
+        content: msg.content,
+        media_url: msg.mediaUrl || null,
+        external_id: msg.externalId,
+        conversation_id: msg.conversationId,
+        integration_id: 'int_waba_01',
+        workspace_id: 'default',
+        received_at: new Date((msg.timestamp || Date.now() / 1000) * 1000).toISOString(),
+        status: 'pending',
+        metadata: { raw: msg.raw, source: 'meta_waba' },
+      };
+
+      try {
+        const { error } = await supabase.from('hub_inbox_messages').insert(record);
+        if (!error) persistedMessages.push(record);
+      } catch (e) {
+        console.warn('[WhatsApp Webhook] Supabase insert failed:', e.message);
+      }
+    }
 
     console.log('[WhatsApp Webhook] Mensagens recebidas:', messages.length);
+    console.log('[WhatsApp Webhook] Mensagens persistidas:', persistedMessages.length);
     console.log('[WhatsApp Webhook] Status updates:', statusUpdates.length);
 
     if (messages.length > 0) {

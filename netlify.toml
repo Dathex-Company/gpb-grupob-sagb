@@ -30,7 +30,7 @@
 # ─── Hub de Integrações — WhatsApp QR (Baileys) ───────────────────
 
 [functions."whatsapp-qr"]
-  environment = { HUB_WHATSAPP_QR_API_KEY = "@@HUB_WHATSAPP_QR_API_KEY@@" }
+  environment = { SUPABASE_URL = "https://sagb.supabase.co", SUPABASE_SERVICE_KEY = "@@SUPABASE_SERVICE_KEY@@", HUB_WHATSAPP_QR_API_KEY = "@@HUB_WHATSAPP_QR_API_KEY@@" }
 
 # Headers de segurança e performance
 

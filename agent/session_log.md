@@ -736,3 +736,49 @@
 **Validação:**
 - `npx netlify build` executado com sucesso.
 - Bundling de funções concluiu incluindo [`whatsapp-webhook.mjs`](netlify/functions/whatsapp-webhook.mjs).
+
+---
+
+## 06/05/2026 — Auditoria: Análise completa de problemas no fluxo WhatsApp QR → CRM
+
+**Usuário:** "analise novamente tudo para ver se nao tem nenhum problema."
+
+**Arquivos auditados:**
+- [`whatsapp-qr.mjs`](netlify/functions/whatsapp-qr.mjs) — função serverless Baileys
+- [`whatsapp-webhook.mjs`](netlify/functions/whatsapp-webhook.mjs) — função serverless Meta WABA
+- [`integrationService.ts`](src/modules/hub-integracao/services/integrationService.ts) — serviço Hub
+- [`CrmZipliaNativePage.tsx`](src/modules/crm_ziplia/pages/CrmZipliaNativePage.tsx) — página CRM
+- [`integration.types.ts`](src/modules/hub-integracao/types/integration.types.ts) — tipos e contratos
+- [`netlify.toml`](netlify.toml) — configuração de deploy
+
+**Problemas encontrados (por gravidade):**
+
+### 🔴 CRÍTICO #1 — `whatsapp-qr.mjs` não escuta `messages.upsert` (inbound inexistente para QR)
+A função [`whatsapp-qr.mjs`](netlify/functions/whatsapp-qr.mjs) não possui handler para `sock.ev.on('messages.upsert', ...)`. Mensagens recebidas via QR session **NUNCA chegam ao CRM**. O `whatsapp-webhook.mjs` só processa Meta Cloud API (WABA), não Baileys. O QR outbound funciona (envia), mas inbound é zero.
+
+### 🔴 CRÍTICO #2 — Sem mecanismo de persistência para inbound QR
+Mesmo que `messages.upsert` fosse implementado, a mensagem precisaria ser persistida. O sistema atual usa `localStorage` via `integrationHub.processInboundWebhook()`, que NÃO existe no ambiente serverless da Netlify Function. Não há endpoint na função QR que aceite POST de inbound e persista.
+
+### 🟡 ALTO #3 — Sessão QR efêmera (perde conexão ao cold start)
+`useMultiFileAuthState('/tmp/baileys-{sessionId}')` em [`whatsapp-qr.mjs:19`](netlify/functions/whatsapp-qr.mjs:19) armazena estado de autenticação em `/tmp` (disco efêmero). Após cold start da Netlify Function, sessão é perdida e usuário precisa re-escanear QR.
+
+### 🟡 ALTO #4 — `loadWhatsInbox` filtra por `'int_waba_01'` (Meta WABA)
+Em [`CrmZipliaNativePage.tsx:37`](src/modules/crm_ziplia/pages/CrmZipliaNativePage.tsx:37), `getInboxMessages('int_waba_01', 200)` só carrega mensagens com `integrationId === 'int_waba_01'`. As mensagens outbound do QR são salvas com este mesmo ID (correto), mas se inbound QR fosse implementado, precisaria de ID consistente.
+
+### 🟡 ALTO #5 — `whatsapp-webhook.mjs` não publica no Event Bridge
+O webhook da Meta em [`whatsapp-webhook.mjs`](netlify/functions/whatsapp-webhook.mjs:158-175) apenas faz `console.log` das mensagens recebidas. Não persiste no Supabase (TODO comentado) e não aciona `processInboundWebhook`. Mensagens da Meta WABA também não chegam ao CRM.
+
+### 🟠 MÉDIO #6 — Duas tabs duplicadas (whatsapp + inbox)
+Ambas as tabs `'whatsapp'` e `'inbox'` renderizam o mesmo componente WhatsApp em [`CrmZipliaNativePage.tsx:349`](src/modules/crm_ziplia/pages/CrmZipliaNativePage.tsx:349). A tab `'inbox'` deveria ser unificada (email + whatsapp), não duplicata.
+
+### 🟠 MÉDIO #7 — `markAsRead` log diz "pelo Taskzei" mas é CRM
+Em [`integrationService.ts:520`](src/modules/hub-integracao/services/integrationService.ts:520), o log do `markAsRead` diz `"pelo Taskzei"` mas quem chama é o CRM Ziplia. Erro de copy.
+
+### 🟠 MÉDIO #8 — Race condition no effect do WhatsApp
+Em [`CrmZipliaNativePage.tsx:81-96`](src/modules/crm_ziplia/pages/CrmZipliaNativePage.tsx:81), o effect carrega inbox primeiro (`loadWhatsInbox`) e só depois registra o event listener. Mensagens que chegam entre essas duas operações são perdidas.
+
+### 🔵 LEVE #9 — `conversations` memo não atualiza timestamp de mensagens existentes
+Em [`CrmZipliaNativePage.tsx:130-148`](src/modules/crm_ziplia/pages/CrmZipliaNativePage.tsx:130), novas mensagens de conversa existente atualizam `unread` mas NÃO atualizam `lastMessage` nem `timestamp` — a conversa não sobe para o topo da lista.
+
+### 🔵 LEVE #10 — Playbook exibido mesmo sem lead vinculado
+Em [`CrmZipliaNativePage.tsx:410-417`](src/modules/crm_ziplia/pages/CrmZipliaNativePage.tsx:410), o playbook só aparece dentro do bloco `{linkedLead ? ...}` — correto. Mas o botão "Atualizar Follow-up" também está dentro desse bloco. OK, sem problema.

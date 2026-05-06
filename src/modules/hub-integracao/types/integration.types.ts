@@ -186,6 +186,9 @@ export interface IntegrationServiceContract {
   getWhatsAppQrStatus(sessionId?: string): Promise<HubWhatsAppQrStatus>;
   logoutWhatsAppQr(sessionId?: string): Promise<void>;
 
+  // QR Baileys
+  getWhatsAppQrInbox(sessionId?: string): Promise<HubInboundMessage[]>;
+
   // Novos métodos Fase 3/4
   processInboundWebhook(payload: HubInboundWebhookPayload): Promise<HubInboundMessage>;
   getInboxMessages(integrationId?: string, limit?: number): Promise<HubInboundMessage[]>;

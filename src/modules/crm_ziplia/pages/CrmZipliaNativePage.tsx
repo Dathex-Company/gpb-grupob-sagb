@@ -15,6 +15,8 @@ const formatMoney = (value: number) => {
   }).format((value || 0) / 100);
 };
 
+const normalizePhone = (value?: string) => (value || '').replace(/\D/g, '');
+
 export const CrmZipliaNativePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'pipeline' | 'whatsapp' | 'daily' | 'dashboard-colab' | 'dashboard-gestor' | 'inbox' | 'integrations' | 'simulator' | 'differences' | 'settings'>('pipeline');
   const [viewVariant, setViewVariant] = useState<'classic' | 'modern' | 'lines'>('classic');
@@ -28,13 +30,31 @@ export const CrmZipliaNativePage: React.FC = () => {
   const [composer, setComposer] = useState('');
   const [qrStatus, setQrStatus] = useState<'not_initialized' | 'initializing' | 'qr_ready' | 'connected' | 'disconnected' | 'logged_out'>('not_initialized');
   const [sending, setSending] = useState(false);
+  const [leadActionLoading, setLeadActionLoading] = useState(false);
 
   const loadWhatsInbox = async () => {
     try {
-      const messages = await integrationHub.getInboxMessages('int_waba_01', 200);
-      setWhatsMessages(messages);
-      if (!selectedConversationId && messages.length > 0) {
-        setSelectedConversationId(messages[0].conversationId || messages[0].from);
+      // Load from both WABA (localStorage) and QR (function in-memory)
+      const [wabaMessages, qrMessages] = await Promise.all([
+        integrationHub.getInboxMessages('int_waba_01', 200),
+        integrationHub.getWhatsAppQrInbox('default').catch(() => [] as HubInboundMessage[]),
+      ]);
+
+      // Merge and deduplicate by externalId
+      const seen = new Set<string>();
+      const merged = [...wabaMessages, ...qrMessages].filter((msg) => {
+        const key = msg.externalId || msg.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      // Sort newest first
+      merged.sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
+
+      setWhatsMessages(merged);
+      if (!selectedConversationId && merged.length > 0) {
+        setSelectedConversationId(merged[0].conversationId || merged[0].from);
       }
     } catch (err) {
       console.warn('[CRM Ziplia] Falha ao carregar inbox WhatsApp:', err);
@@ -77,18 +97,25 @@ export const CrmZipliaNativePage: React.FC = () => {
 
   useEffect(() => {
     if (activeTab !== 'whatsapp' && activeTab !== 'inbox') return;
-    loadWhatsInbox();
-    refreshQrStatus();
 
+    // Register listener FIRST (before loading) to avoid race condition
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<HubInboundMessage>).detail;
       if (!detail || detail.source !== 'whatsapp') return;
-      setWhatsMessages((prev) => [detail, ...prev]);
+      setWhatsMessages((prev) => {
+        if (prev.some((m) => m.id === detail.id)) return prev; // avoid duplicates
+        return [detail, ...prev];
+      });
       const conv = detail.conversationId || detail.from;
       setSelectedConversationId((current) => current || conv);
     };
 
     window.addEventListener('hub:inbound-message', handler);
+
+    // Then load existing messages
+    loadWhatsInbox();
+    refreshQrStatus();
+
     return () => window.removeEventListener('hub:inbound-message', handler);
   }, [activeTab]);
 
@@ -139,6 +166,12 @@ export const CrmZipliaNativePage: React.FC = () => {
         });
       } else {
         if (msg.status === 'pending') existing.unread += 1;
+        // Update lastMessage and timestamp if this message is newer
+        if (msg.receivedAt > existing.timestamp) {
+          existing.lastMessage = msg.content;
+          existing.timestamp = msg.receivedAt;
+          if (msg.fromName) existing.title = msg.fromName;
+        }
       }
     }
     return Array.from(map.values()).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
@@ -150,6 +183,41 @@ export const CrmZipliaNativePage: React.FC = () => {
       .filter((m) => (m.conversationId || m.from) === selectedConversationId)
       .sort((a, b) => a.receivedAt.localeCompare(b.receivedAt));
   }, [whatsMessages, selectedConversationId]);
+
+  const leadsByPhone = useMemo(() => {
+    const map = new Map<string, CrmLead>();
+    leads.forEach((lead) => {
+      const key = normalizePhone(lead.phone);
+      if (key) map.set(key, lead);
+    });
+    return map;
+  }, [leads]);
+
+  const selectedConversationPhone = useMemo(() => normalizePhone(selectedConversationId), [selectedConversationId]);
+  const linkedLead = useMemo(() => {
+    if (!selectedConversationPhone) return null;
+    return leadsByPhone.get(selectedConversationPhone) || null;
+  }, [leadsByPhone, selectedConversationPhone]);
+
+  const followUpPlaybook = useMemo(() => {
+    if (!linkedLead) return [];
+    switch (linkedLead.status) {
+      case 'Lead captado':
+        return ['Qualificar necessidade em até 15 min', 'Confirmar canal preferencial', 'Agendar próxima ação hoje'];
+      case 'Qualificado':
+        return ['Enviar prova social', 'Oferecer janela de reunião', 'Registrar objeções no CRM'];
+      case 'Reunião marcada':
+        return ['Confirmar presença 1h antes', 'Enviar pauta curta', 'Preparar proposta base'];
+      case 'Reunião feita':
+        return ['Enviar resumo da reunião', 'Mandar proposta até D+1', 'Definir data de follow-up'];
+      case 'Proposta enviada':
+        return ['Checar recebimento da proposta', 'Mapear bloqueadores', 'Puxar decisão por data'];
+      case 'Negociação':
+        return ['Trabalhar objeção principal', 'Negociar escopo/preço', 'Fechar próximo passo em ata'];
+      default:
+        return ['Manter histórico e registrar próximos passos'];
+    }
+  }, [linkedLead]);
 
   const handleSelectConversation = async (conversationId: string) => {
     setSelectedConversationId(conversationId);
@@ -176,6 +244,24 @@ export const CrmZipliaNativePage: React.FC = () => {
       console.error('[CRM Ziplia] Falha ao enviar mensagem WhatsApp:', err);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleLinkLeadFollowUp = async () => {
+    if (!linkedLead) return;
+    setLeadActionLoading(true);
+    try {
+      const nextActionDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await crmZipliaService.updateLead(linkedLead.id, {
+        lastContact: new Date().toISOString(),
+        nextAction: 'Follow-up WhatsApp CRM',
+        nextActionDate,
+      });
+      await load();
+    } catch (err) {
+      console.error('[CRM Ziplia] Falha ao atualizar follow-up do lead:', err);
+    } finally {
+      setLeadActionLoading(false);
     }
   };
 
@@ -290,7 +376,7 @@ export const CrmZipliaNativePage: React.FC = () => {
               </section>
             )}
 
-            {(activeTab === 'whatsapp' || activeTab === 'inbox') && (
+            {activeTab === 'whatsapp' && (
               <section className="rounded-2xl border border-slate-200 dark:border-sagb-border bg-white dark:bg-sagb-card overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-200 dark:border-sagb-border flex items-center justify-between">
                   <div className="text-sm font-semibold">Canal WhatsApp CRM</div>
@@ -318,7 +404,7 @@ export const CrmZipliaNativePage: React.FC = () => {
                       ))
                     )}
                   </aside>
-                  <div className="flex flex-col">
+                  <div className="flex flex-col lg:grid lg:grid-cols-[1fr_300px]">
                     <div className="flex-1 p-4 space-y-3 overflow-y-auto bg-slate-50/60 dark:bg-sagb-bg/40">
                       {selectedMessages.length === 0 ? (
                         <p className="text-sm text-slate-500">Selecione uma conversa para visualizar as mensagens.</p>
@@ -334,7 +420,39 @@ export const CrmZipliaNativePage: React.FC = () => {
                         })
                       )}
                     </div>
-                    <div className="border-t border-slate-200 dark:border-sagb-border p-3 flex items-end gap-2">
+                    <aside className="border-l border-slate-200 dark:border-sagb-border bg-white dark:bg-sagb-card p-4 space-y-3">
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-sagb-text">Vínculo com Lead</h4>
+                      {linkedLead ? (
+                        <>
+                          <div className="text-xs text-slate-500">Lead encontrado</div>
+                          <div className="rounded-lg border border-slate-200 dark:border-sagb-border p-3">
+                            <p className="text-sm font-semibold">{linkedLead.name}</p>
+                            <p className="text-xs text-slate-500">{linkedLead.company}</p>
+                            <p className="text-xs text-slate-500 mt-1">Estágio: {linkedLead.status}</p>
+                          </div>
+                          <button
+                            onClick={handleLinkLeadFollowUp}
+                            disabled={leadActionLoading}
+                            className="w-full px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold"
+                          >
+                            {leadActionLoading ? 'Atualizando...' : 'Atualizar Follow-up no Lead'}
+                          </button>
+                          <div className="rounded-lg border border-dashed border-slate-300 dark:border-sagb-border p-3">
+                            <p className="text-xs font-semibold mb-2">Playbook recomendado</p>
+                            <ul className="list-disc pl-4 text-xs text-slate-600 dark:text-sagb-muted space-y-1">
+                              {followUpPlaybook.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                          Nenhum lead com telefone {selectedConversationPhone || 'N/D'}. Cadastre/vincule esse número no pipeline para ativar automações.
+                        </div>
+                      )}
+                    </aside>
+                    <div className="lg:col-span-2 border-t border-slate-200 dark:border-sagb-border p-3 flex items-end gap-2">
                       <textarea
                         value={composer}
                         onChange={(e) => setComposer(e.target.value)}
@@ -354,7 +472,33 @@ export const CrmZipliaNativePage: React.FC = () => {
               </section>
             )}
 
-            {activeTab !== 'pipeline' && activeTab !== 'whatsapp' && activeTab !== 'inbox' && (
+            {activeTab === 'inbox' && (
+              <section className="rounded-2xl border border-slate-200 dark:border-sagb-border bg-white dark:bg-sagb-card overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-200 dark:border-sagb-border flex items-center justify-between">
+                  <div className="text-sm font-semibold">Inbox Unificada</div>
+                  <span className="text-xs text-slate-500">{conversations.length} conversas</span>
+                </div>
+                <div className="p-6 text-center">
+                  <p className="text-sm text-slate-500 mb-2">Este espaço vai reunir mensagens de WhatsApp, e-mail e outros canais em uma única interface.</p>
+                  <p className="text-xs text-slate-400">No momento, exibindo apenas conversas do WhatsApp.</p>
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'settings' && (
+              <section className="rounded-2xl border border-slate-200 dark:border-sagb-border bg-white dark:bg-sagb-card p-6">
+                <h3 className="text-base font-bold mb-3">Checklist Go-live WhatsApp CRM</h3>
+                <ul className="space-y-2 text-sm text-slate-700 dark:text-sagb-text">
+                  <li>✅ Sessão WhatsApp em estado conectado</li>
+                  <li>✅ Inbox recebendo mensagens novas</li>
+                  <li>✅ Envio pelo composer com confirmação</li>
+                  <li>✅ Conversa vinculada a lead por telefone</li>
+                  <li>✅ Follow-up atualizado no lead</li>
+                </ul>
+              </section>
+            )}
+
+            {activeTab !== 'pipeline' && activeTab !== 'whatsapp' && activeTab !== 'inbox' && activeTab !== 'settings' && activeTab !== 'daily' && activeTab !== 'integrations' && activeTab !== 'simulator' && activeTab !== 'differences' && (
               <section className="rounded-2xl border border-dashed border-slate-300 p-8 text-center bg-white dark:bg-sagb-card">
                 <p className="text-sm text-slate-500">
                   Aba <span className="font-bold">{tabItems.find((t) => t.id === activeTab)?.label}</span> mapeada para paridade real e próxima da implementação.

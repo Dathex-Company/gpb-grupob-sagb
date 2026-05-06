@@ -436,6 +436,29 @@ export class IntegrationHubService implements IntegrationServiceContract {
     });
   }
 
+  // ────────── WhatsApp QR (Baileys Service) — Inbox ──────────
+
+  async getWhatsAppQrInbox(sessionId = 'default'): Promise<HubInboundMessage[]> {
+    const baseUrl = this.getWhatsAppQrBaseUrl();
+    const apiKey = this.getWhatsAppQrApiKey();
+
+    try {
+      const response = await fetch(`${baseUrl}/inbox?sessionId=${encodeURIComponent(sessionId)}`, {
+        method: 'GET',
+        headers: {
+          ...(apiKey ? { 'x-api-key': apiKey } : {}),
+        },
+      });
+
+      if (!response.ok) return [];
+      const data = await response.json() as { ok: boolean; messages: HubInboundMessage[] };
+      return data.messages || [];
+    } catch (err) {
+      console.warn('[Hub] Falha ao buscar inbox QR:', err);
+      return [];
+    }
+  }
+
   // ────────── WhatsApp Inbound (Webhook) ──────────
 
   async processInboundWebhook(payload: HubInboundWebhookPayload): Promise<HubInboundMessage> {
@@ -517,7 +540,7 @@ export class IntegrationHubService implements IntegrationServiceContract {
       provider: 'whatsapp',
       action: 'receive',
       status: 'success',
-      summary: `Mensagem ${messageId} marcada como lida pelo Taskzei`,
+      summary: `Mensagem ${messageId} marcada como lida pelo CRM Ziplia`,
     });
   }
 
