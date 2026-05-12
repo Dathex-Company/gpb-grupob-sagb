@@ -27,7 +27,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   ];
 
   return (
-    <div className="mb-4 rounded-xl border border-[#d9dee5] bg-[#ffffff] p-3">
+    <div className="mb-4 p-3" style={{ borderRadius: 'var(--sagb-radius-xl)', border: '1px solid var(--sagb-line)', backgroundColor: 'var(--sagb-surface)' }}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           {filters.map((filter) => {
@@ -37,17 +37,22 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               <button
                 key={filter.key}
                 onClick={() => onFilterChange(filter.key)}
-                className={`inline-flex h-8 items-center rounded-md border px-3 text-xs font-semibold transition-colors ${
-                  isActive
-                    ? 'border-[#d7ece8] bg-[#eaf7f5] text-[#414854]'
-                    : 'border-[#d9dee5] bg-[#ffffff] text-[#6f7887] hover:bg-[#f5f6f7]'
-                }`}
+                className="inline-flex h-8 items-center rounded-[var(--sagb-radius-sm)] border px-3 text-xs font-semibold transition-colors"
+                style={{
+                  borderColor: isActive ? 'var(--sagb-primary-soft)' : 'var(--sagb-line)',
+                  backgroundColor: isActive ? 'var(--sagb-primary-soft)' : 'var(--sagb-surface)',
+                  color: isActive ? 'var(--sagb-text)' : 'var(--sagb-muted)',
+                }}
+                onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)'; } }}
+                onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-surface)'; } }}
               >
                 {filter.label}
                 <span
-                  className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                    isActive ? 'bg-[#68c7be]/20 text-[#4ea79e]' : 'bg-[#f0f2f4] text-[#95a0b1]'
-                  }`}
+                  className="ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                  style={{
+                    backgroundColor: isActive ? 'color-mix(in srgb, var(--sagb-primary) 20%, transparent)' : 'var(--sagb-bg)',
+                    color: isActive ? 'var(--sagb-primary)' : 'var(--sagb-muted)',
+                  }}
                 >
                   {counts[filter.key]}
                 </span>
@@ -59,7 +64,8 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
         <div className="flex items-center gap-2">
           <div className="relative min-w-[220px] flex-1">
             <svg
-              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#95a0b1]"
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+              style={{ color: 'var(--sagb-muted)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -76,13 +82,17 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               value={searchTerm}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Buscar por título ou descrição"
-              className="h-8 w-full rounded-md border border-[#d9dee5] bg-[#fafbfc] pl-9 pr-3 text-xs text-[#414854] placeholder:text-[#95a0b1] focus:border-[#87a8cf] focus:outline-none focus:ring-2 focus:ring-[#87a8cf]/20"
+              className="h-8 w-full rounded-[var(--sagb-radius-sm)] pl-9 pr-3 text-xs"
+              style={{ border: '1px solid var(--sagb-line)', backgroundColor: 'var(--sagb-surface)', color: 'var(--sagb-text)' }}
             />
           </div>
 
           <button
             onClick={onClearFilters}
-            className="inline-flex h-8 items-center rounded-md border border-[#d9dee5] bg-[#ffffff] px-3 text-xs font-semibold text-[#6f7887] hover:bg-[#f5f6f7]"
+            className="inline-flex h-8 items-center rounded-[var(--sagb-radius-sm)] px-3 text-xs font-semibold transition-colors"
+            style={{ border: '1px solid var(--sagb-line)', backgroundColor: 'var(--sagb-surface)', color: 'var(--sagb-muted)' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-surface)'; }}
           >
             Limpar
           </button>

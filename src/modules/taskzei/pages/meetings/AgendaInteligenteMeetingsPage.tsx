@@ -10,11 +10,27 @@ const STATUS_LABELS: Record<string, string> = {
   cancelada: 'Cancelada',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  agendada: 'border-blue-200 bg-blue-50 text-blue-700',
-  em_andamento: 'border-green-200 bg-green-50 text-green-700',
-  concluida: 'border-gray-200 bg-gray-50 text-gray-600',
-  cancelada: 'border-red-200 bg-red-50 text-red-600',
+const STATUS_COLORS: Record<string, React.CSSProperties> = {
+  agendada: {
+    borderColor: 'var(--sagb-blue)',
+    backgroundColor: 'color-mix(in srgb, var(--sagb-blue) 8%, transparent)',
+    color: 'var(--sagb-blue)',
+  },
+  em_andamento: {
+    borderColor: 'var(--sagb-primary)',
+    backgroundColor: 'color-mix(in srgb, var(--sagb-primary) 8%, transparent)',
+    color: 'var(--sagb-primary)',
+  },
+  concluida: {
+    borderColor: 'var(--sagb-line)',
+    backgroundColor: 'var(--sagb-bg)',
+    color: 'var(--sagb-muted)',
+  },
+  cancelada: {
+    borderColor: 'var(--sagb-red)',
+    backgroundColor: 'color-mix(in srgb, var(--sagb-red) 8%, transparent)',
+    color: 'var(--sagb-red)',
+  },
 };
 
 export const AgendaInteligenteMeetingsPage: React.FC = () => {
@@ -70,26 +86,47 @@ export const AgendaInteligenteMeetingsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div
+      className="flex flex-col h-full overflow-hidden"
+      style={{
+        backgroundColor: 'var(--sagb-surface)',
+        borderRadius: 'var(--sagb-radius-xl)',
+        border: '1px solid var(--sagb-line)',
+        boxShadow: 'var(--sagb-shadow)',
+        fontFamily: "'Rubik', sans-serif",
+      }}
+    >
       {/* Header */}
-      <div className="border-b border-[#e8ecf1] px-6 py-4">
+      <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--sagb-line)' }}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-[#414854] tracking-tight">Reuniões</h1>
-            <p className="text-[12px] text-[#6f7887] mt-0.5">
+            <h1 className="text-lg font-bold tracking-tight" style={{ color: 'var(--sagb-text)' }}>
+              Reuniões
+            </h1>
+            <p className="text-[12px] mt-0.5" style={{ color: 'var(--sagb-muted)' }}>
               {meetings.length} reunião(ns) — {meetings.filter(m => m.status === 'agendada').length} pendente(s)
             </p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={loadMeetings}
-              className="rounded-lg border border-[#d9dee5] bg-white px-3 py-1.5 text-[12px] font-medium text-[#6f7887] hover:bg-[#f5f6f7] transition-colors"
+              className="rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors"
+              style={{
+                border: '1px solid var(--sagb-line)',
+                backgroundColor: 'var(--sagb-surface)',
+                color: 'var(--sagb-muted)',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--sagb-bg)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--sagb-surface)'; }}
             >
               ↻ Atualizar
             </button>
             <button
               onClick={() => setShowCreate(!showCreate)}
-              className="rounded-lg bg-[#68c7be] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[#5ab8af] transition-colors"
+              className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-white transition-colors"
+              style={{ backgroundColor: 'var(--sagb-primary)' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-primary) 80%, black)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--sagb-primary)'; }}
             >
               {showCreate ? 'Cancelar' : '+ Nova Reunião'}
             </button>
@@ -98,49 +135,108 @@ export const AgendaInteligenteMeetingsPage: React.FC = () => {
 
         {/* Create form inline */}
         {showCreate && (
-          <div className="mt-3 p-4 rounded-xl border border-[#d9dee5] bg-[#fcfcfd] space-y-3">
+          <div
+            className="mt-3 p-4 space-y-3"
+            style={{
+              borderRadius: 'var(--sagb-radius-xl)',
+              border: '1px solid var(--sagb-line)',
+              backgroundColor: 'var(--sagb-bg)',
+            }}
+          >
             <input
               type="text"
               value={formData.title}
               onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
               placeholder="Título da reunião *"
-              className="w-full rounded-lg border border-[#d9dee5] px-3 py-2 text-[13px] focus:outline-none focus:border-[#87a8cf]"
+              style={{
+                width: '100%',
+                borderRadius: 'var(--sagb-radius-lg)',
+                border: '1px solid var(--sagb-line)',
+                padding: '8px 12px',
+                fontSize: 13,
+                color: 'var(--sagb-text)',
+                outline: 'none',
+                backgroundColor: 'var(--sagb-surface)',
+              }}
             />
             <textarea
               value={formData.description}
               onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
               placeholder="Descrição (opcional)"
-              className="w-full rounded-lg border border-[#d9dee5] px-3 py-2 text-[13px] focus:outline-none focus:border-[#87a8cf] resize-none"
               rows={2}
+              style={{
+                width: '100%',
+                borderRadius: 'var(--sagb-radius-lg)',
+                border: '1px solid var(--sagb-line)',
+                padding: '8px 12px',
+                fontSize: 13,
+                color: 'var(--sagb-text)',
+                outline: 'none',
+                resize: 'none',
+                backgroundColor: 'var(--sagb-surface)',
+              }}
             />
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-[11px] font-medium text-[#6f7887] mb-1">Data</label>
+                <label className="block text-[11px] font-medium mb-1" style={{ color: 'var(--sagb-muted)' }}>
+                  Data
+                </label>
                 <input
                   type="date"
                   value={formData.meetingDate}
                   onChange={e => setFormData(p => ({ ...p, meetingDate: e.target.value }))}
-                  className="w-full rounded-lg border border-[#d9dee5] px-3 py-2 text-[13px] focus:outline-none focus:border-[#87a8cf]"
+                  style={{
+                    width: '100%',
+                    borderRadius: 'var(--sagb-radius-lg)',
+                    border: '1px solid var(--sagb-line)',
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    color: 'var(--sagb-text)',
+                    outline: 'none',
+                    backgroundColor: 'var(--sagb-surface)',
+                  }}
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-[11px] font-medium text-[#6f7887] mb-1">Horário</label>
+                <label className="block text-[11px] font-medium mb-1" style={{ color: 'var(--sagb-muted)' }}>
+                  Horário
+                </label>
                 <input
                   type="time"
                   value={formData.startTime}
                   onChange={e => setFormData(p => ({ ...p, startTime: e.target.value }))}
-                  className="w-full rounded-lg border border-[#d9dee5] px-3 py-2 text-[13px] focus:outline-none focus:border-[#87a8cf]"
+                  style={{
+                    width: '100%',
+                    borderRadius: 'var(--sagb-radius-lg)',
+                    border: '1px solid var(--sagb-line)',
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    color: 'var(--sagb-text)',
+                    outline: 'none',
+                    backgroundColor: 'var(--sagb-surface)',
+                  }}
                 />
               </div>
               <div className="w-24">
-                <label className="block text-[11px] font-medium text-[#6f7887] mb-1">Duração (min)</label>
+                <label className="block text-[11px] font-medium mb-1" style={{ color: 'var(--sagb-muted)' }}>
+                  Duração (min)
+                </label>
                 <input
                   type="number"
                   value={formData.durationMinutes}
                   onChange={e => setFormData(p => ({ ...p, durationMinutes: parseInt(e.target.value) || 60 }))}
-                  className="w-full rounded-lg border border-[#d9dee5] px-3 py-2 text-[13px] focus:outline-none focus:border-[#87a8cf]"
                   min={15}
                   step={15}
+                  style={{
+                    width: '100%',
+                    borderRadius: 'var(--sagb-radius-lg)',
+                    border: '1px solid var(--sagb-line)',
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    color: 'var(--sagb-text)',
+                    outline: 'none',
+                    backgroundColor: 'var(--sagb-surface)',
+                  }}
                 />
               </div>
             </div>
@@ -148,7 +244,15 @@ export const AgendaInteligenteMeetingsPage: React.FC = () => {
               <button
                 onClick={handleCreateMeeting}
                 disabled={!formData.title.trim()}
-                className="rounded-lg bg-[#68c7be] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#5ab8af] disabled:opacity-40 transition-colors"
+                className="rounded-lg px-4 py-2 text-[13px] font-medium text-white disabled:opacity-40 transition-colors"
+                style={{ backgroundColor: 'var(--sagb-primary)' }}
+                onMouseEnter={(e) => {
+                  if (!formData.title.trim()) return;
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-primary) 80%, black)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--sagb-primary)';
+                }}
               >
                 Criar Reunião
               </button>
@@ -160,38 +264,64 @@ export const AgendaInteligenteMeetingsPage: React.FC = () => {
       {/* Content */}
       <div className="flex-1 overflow-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-32 text-[13px] text-[#95a0b1]">Carregando...</div>
+          <div className="flex items-center justify-center h-32 text-[13px]" style={{ color: 'var(--sagb-muted)' }}>
+            Carregando...
+          </div>
         ) : meetings.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-[13px] text-[#95a0b1]">
+          <div className="flex items-center justify-center h-32 text-[13px]" style={{ color: 'var(--sagb-muted)' }}>
             Nenhuma reunião encontrada
           </div>
         ) : (
-          <div className="divide-y divide-[#e8ecf1]">
+          <div style={{ borderTop: '1px solid var(--sagb-line)' }}>
             {meetings.map(meeting => (
               <div
                 key={meeting.id}
                 onClick={() => handleMeetingClick(meeting)}
-                className={`px-6 py-3 hover:bg-[#fcfcfd] cursor-pointer transition-colors ${
-                  selectedMeeting?.id === meeting.id ? 'bg-[#eaf7f5]' : ''
-                }`}
+                className="px-6 py-3 cursor-pointer transition-colors"
+                style={{
+                  borderBottom: '1px solid var(--sagb-line)',
+                  backgroundColor: selectedMeeting?.id === meeting.id
+                    ? 'color-mix(in srgb, var(--sagb-primary) 6%, transparent)'
+                    : 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedMeeting?.id !== meeting.id) {
+                    (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--sagb-bg)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedMeeting?.id !== meeting.id) {
+                    (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent';
+                  }
+                }}
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-[13px] font-medium text-[#414854]">{meeting.title}</h3>
+                    <h3 className="text-[13px] font-medium" style={{ color: 'var(--sagb-text)' }}>
+                      {meeting.title}
+                    </h3>
                     {meeting.description && (
-                      <p className="text-[12px] text-[#6f7887] mt-0.5 line-clamp-1">{meeting.description}</p>
+                      <p className="text-[12px] mt-0.5 line-clamp-1" style={{ color: 'var(--sagb-muted)' }}>
+                        {meeting.description}
+                      </p>
                     )}
-                    <div className="flex items-center gap-2 mt-1.5 text-[11px] text-[#95a0b1]">
+                    <div className="flex items-center gap-2 mt-1.5 text-[11px]" style={{ color: 'var(--sagb-muted)' }}>
                       {meeting.meetingDate && <span>{meeting.meetingDate}</span>}
                       {meeting.startTime && <span>às {meeting.startTime}</span>}
                       {meeting.durationMinutes && <span>({meeting.durationMinutes}min)</span>}
                       <span>•</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${STATUS_COLORS[meeting.status] || ''}`}>
+                      <span
+                        className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                        style={{
+                          border: '1px solid',
+                          ...STATUS_COLORS[meeting.status],
+                        }}
+                      >
                         {STATUS_LABELS[meeting.status] || meeting.status}
                       </span>
                     </div>
                   </div>
-                  <div className="text-right text-[11px] text-[#95a0b1] shrink-0 ml-4">
+                  <div className="text-right text-[11px] shrink-0 ml-4" style={{ color: 'var(--sagb-muted)' }}>
                     {meeting.agendaItems?.length || 0} itens
                     <br />
                     {meeting.decisions?.length || 0} decisões
@@ -222,6 +352,29 @@ interface MeetingDetailModalProps {
   onClose: () => void;
   onRefresh: () => void;
 }
+
+const DECISION_STATUS_COLORS: Record<string, React.CSSProperties> = {
+  concluida: {
+    borderColor: 'var(--sagb-primary)',
+    backgroundColor: 'color-mix(in srgb, var(--sagb-primary) 8%, transparent)',
+    color: 'var(--sagb-primary)',
+  },
+  em_andamento: {
+    borderColor: 'var(--sagb-blue)',
+    backgroundColor: 'color-mix(in srgb, var(--sagb-blue) 8%, transparent)',
+    color: 'var(--sagb-blue)',
+  },
+  cancelada: {
+    borderColor: 'var(--sagb-line)',
+    backgroundColor: 'var(--sagb-bg)',
+    color: 'var(--sagb-muted)',
+  },
+  aberta: {
+    borderColor: 'var(--sagb-amber)',
+    backgroundColor: 'color-mix(in srgb, var(--sagb-amber) 8%, transparent)',
+    color: 'var(--sagb-amber)',
+  },
+};
 
 const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClose, onRefresh }) => {
   const [newAgendaTitle, setNewAgendaTitle] = useState('');
@@ -273,17 +426,29 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}
+      onClick={onClose}
+    >
       <div
-        className="bg-white rounded-2xl shadow-xl border border-[#d9dee5] w-full max-w-2xl max-h-[80vh] flex flex-col mx-4"
+        className="w-full max-w-2xl max-h-[80vh] flex flex-col mx-4"
+        style={{
+          backgroundColor: 'var(--sagb-surface)',
+          borderRadius: 'var(--sagb-radius-2xl)',
+          border: '1px solid var(--sagb-line)',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="border-b border-[#e8ecf1] px-6 py-4">
+        <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--sagb-line)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold text-[#414854]">{meeting.title}</h2>
-              <p className="text-[12px] text-[#6f7887] mt-0.5">
+              <h2 className="text-base font-bold" style={{ color: 'var(--sagb-text)' }}>
+                {meeting.title}
+              </h2>
+              <p className="text-[12px] mt-0.5" style={{ color: 'var(--sagb-muted)' }}>
                 {meeting.meetingDate && `${meeting.meetingDate} `}
                 {meeting.startTime && `às ${meeting.startTime}`}
                 {meeting.durationMinutes && ` • ${meeting.durationMinutes}min`}
@@ -294,13 +459,27 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                 value={meeting.status}
                 onChange={e => handleStatusChange(e.target.value as Meeting['status'])}
                 disabled={statusUpdating}
-                className="rounded-lg border border-[#d9dee5] px-2 py-1 text-[11px] font-medium focus:outline-none focus:border-[#87a8cf]"
+                style={{
+                  borderRadius: 'var(--sagb-radius-lg)',
+                  border: '1px solid var(--sagb-line)',
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: 'var(--sagb-text)',
+                  backgroundColor: 'var(--sagb-surface)',
+                  outline: 'none',
+                }}
               >
                 {Object.entries(STATUS_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
-              <button onClick={onClose} className="text-[#95a0b1] hover:text-[#6f7887]">
+              <button
+                onClick={onClose}
+                style={{ color: 'var(--sagb-muted)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--sagb-text)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--sagb-muted)'; }}
+              >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -308,7 +487,9 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
             </div>
           </div>
           {meeting.description && (
-            <p className="mt-2 text-[12px] text-[#6f7887]">{meeting.description}</p>
+            <p className="mt-2 text-[12px]" style={{ color: 'var(--sagb-muted)' }}>
+              {meeting.description}
+            </p>
           )}
         </div>
 
@@ -316,27 +497,43 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
         <div className="flex-1 overflow-auto px-6 py-4 space-y-6">
           {/* Agenda Items */}
           <div>
-            <h3 className="text-[13px] font-semibold text-[#414854] mb-2">Pauta</h3>
+            <h3 className="text-[13px] font-semibold mb-2" style={{ color: 'var(--sagb-text)' }}>
+              Pauta
+            </h3>
             {meeting.agendaItems && meeting.agendaItems.length > 0 ? (
               <ul className="space-y-1">
                 {meeting.agendaItems
                   .sort((a, b) => a.sortOrder - b.sortOrder)
                   .map(item => (
-                    <li key={item.id} className="flex items-center gap-2 text-[12px] text-[#6f7887]">
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        item.status === 'discutido' ? 'bg-[#68c7be]' : item.status === 'adiado' ? 'bg-yellow-400' : 'bg-[#d9dee5]'
-                      }`} />
-                      <span className={item.status === 'discutido' ? 'line-through text-[#95a0b1]' : ''}>
+                    <li key={item.id} className="flex items-center gap-2 text-[12px]" style={{ color: 'var(--sagb-muted)' }}>
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{
+                          backgroundColor: item.status === 'discutido'
+                            ? 'var(--sagb-primary)'
+                            : item.status === 'adiado'
+                              ? 'var(--sagb-amber)'
+                              : 'var(--sagb-line)',
+                        }}
+                      />
+                      <span
+                        style={{
+                          textDecoration: item.status === 'discutido' ? 'line-through' : 'none',
+                          color: item.status === 'discutido' ? 'var(--sagb-muted)' : 'var(--sagb-text)',
+                        }}
+                      >
                         {item.title}
                       </span>
-                      <span className="text-[10px] text-[#95a0b1]">
+                      <span className="text-[10px]" style={{ color: 'var(--sagb-muted)' }}>
                         ({item.status === 'pendente' ? 'Pendente' : item.status === 'discutido' ? 'Discutido' : 'Adiado'})
                       </span>
                     </li>
                   ))}
               </ul>
             ) : (
-              <p className="text-[12px] text-[#95a0b1] italic">Nenhum item de pauta</p>
+              <p className="text-[12px] italic" style={{ color: 'var(--sagb-muted)' }}>
+                Nenhum item de pauta
+              </p>
             )}
             <div className="mt-2 flex gap-2">
               <input
@@ -345,12 +542,29 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                 onChange={e => setNewAgendaTitle(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAddAgenda()}
                 placeholder="Adicionar item à pauta..."
-                className="flex-1 rounded-lg border border-[#d9dee5] px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#87a8cf]"
+                style={{
+                  flex: 1,
+                  borderRadius: 'var(--sagb-radius-lg)',
+                  border: '1px solid var(--sagb-line)',
+                  padding: '6px 12px',
+                  fontSize: 12,
+                  color: 'var(--sagb-text)',
+                  outline: 'none',
+                  backgroundColor: 'var(--sagb-surface)',
+                }}
               />
               <button
                 onClick={handleAddAgenda}
                 disabled={!newAgendaTitle.trim()}
-                className="rounded-lg bg-[#68c7be] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#5ab8af] disabled:opacity-40"
+                className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-white disabled:opacity-40"
+                style={{ backgroundColor: 'var(--sagb-primary)' }}
+                onMouseEnter={(e) => {
+                  if (!newAgendaTitle.trim()) return;
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-primary) 80%, black)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--sagb-primary)';
+                }}
               >
                 + Adicionar
               </button>
@@ -359,27 +573,43 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
 
           {/* Decisions */}
           <div>
-            <h3 className="text-[13px] font-semibold text-[#414854] mb-2">Decisões</h3>
+            <h3 className="text-[13px] font-semibold mb-2" style={{ color: 'var(--sagb-text)' }}>
+              Decisões
+            </h3>
             {meeting.decisions && meeting.decisions.length > 0 ? (
               <div className="space-y-2">
                 {meeting.decisions.map(decision => (
-                  <div key={decision.id} className="rounded-lg border border-[#e8ecf1] p-3">
+                  <div
+                    key={decision.id}
+                    className="p-3"
+                    style={{
+                      borderRadius: 'var(--sagb-radius-lg)',
+                      border: '1px solid var(--sagb-line)',
+                    }}
+                  >
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-[12px] font-medium text-[#414854]">{decision.title}</p>
+                        <p className="text-[12px] font-medium" style={{ color: 'var(--sagb-text)' }}>
+                          {decision.title}
+                        </p>
                         {decision.responsible && (
-                          <p className="text-[11px] text-[#6f7887] mt-0.5">Responsável: {decision.responsible}</p>
+                          <p className="text-[11px] mt-0.5" style={{ color: 'var(--sagb-muted)' }}>
+                            Responsável: {decision.responsible}
+                          </p>
                         )}
                         {decision.deadline && (
-                          <p className="text-[11px] text-[#6f7887]">Prazo: {decision.deadline}</p>
+                          <p className="text-[11px]" style={{ color: 'var(--sagb-muted)' }}>
+                            Prazo: {decision.deadline}
+                          </p>
                         )}
                       </div>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
-                        decision.status === 'concluida' ? 'bg-green-50 text-green-700 border-green-200' :
-                        decision.status === 'em_andamento' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                        decision.status === 'cancelada' ? 'bg-gray-50 text-gray-500 border-gray-200' :
-                        'bg-yellow-50 text-yellow-700 border-yellow-200'
-                      }`}>
+                      <span
+                        className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                        style={{
+                          border: '1px solid',
+                          ...(DECISION_STATUS_COLORS[decision.status] || DECISION_STATUS_COLORS.aberta),
+                        }}
+                      >
                         {decision.status === 'aberta' ? 'Aberta' :
                          decision.status === 'em_andamento' ? 'Em Andamento' :
                          decision.status === 'concluida' ? 'Concluída' : 'Cancelada'}
@@ -389,7 +619,9 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                 ))}
               </div>
             ) : (
-              <p className="text-[12px] text-[#95a0b1] italic">Nenhuma decisão registrada</p>
+              <p className="text-[12px] italic" style={{ color: 'var(--sagb-muted)' }}>
+                Nenhuma decisão registrada
+              </p>
             )}
             <div className="mt-2 space-y-2">
               <input
@@ -397,7 +629,16 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                 value={newDecisionData.title}
                 onChange={e => setNewDecisionData(p => ({ ...p, title: e.target.value }))}
                 placeholder="Nova decisão..."
-                className="w-full rounded-lg border border-[#d9dee5] px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#87a8cf]"
+                style={{
+                  width: '100%',
+                  borderRadius: 'var(--sagb-radius-lg)',
+                  border: '1px solid var(--sagb-line)',
+                  padding: '6px 12px',
+                  fontSize: 12,
+                  color: 'var(--sagb-text)',
+                  outline: 'none',
+                  backgroundColor: 'var(--sagb-surface)',
+                }}
               />
               <div className="flex gap-2">
                 <input
@@ -405,18 +646,44 @@ const MeetingDetailModal: React.FC<MeetingDetailModalProps> = ({ meeting, onClos
                   value={newDecisionData.responsible}
                   onChange={e => setNewDecisionData(p => ({ ...p, responsible: e.target.value }))}
                   placeholder="Responsável (opcional)"
-                  className="flex-1 rounded-lg border border-[#d9dee5] px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#87a8cf]"
+                  style={{
+                    flex: 1,
+                    borderRadius: 'var(--sagb-radius-lg)',
+                    border: '1px solid var(--sagb-line)',
+                    padding: '6px 12px',
+                    fontSize: 12,
+                    color: 'var(--sagb-text)',
+                    outline: 'none',
+                    backgroundColor: 'var(--sagb-surface)',
+                  }}
                 />
                 <input
                   type="date"
                   value={newDecisionData.deadline}
                   onChange={e => setNewDecisionData(p => ({ ...p, deadline: e.target.value }))}
-                  className="w-36 rounded-lg border border-[#d9dee5] px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#87a8cf]"
+                  style={{
+                    width: 144,
+                    borderRadius: 'var(--sagb-radius-lg)',
+                    border: '1px solid var(--sagb-line)',
+                    padding: '6px 12px',
+                    fontSize: 12,
+                    color: 'var(--sagb-text)',
+                    outline: 'none',
+                    backgroundColor: 'var(--sagb-surface)',
+                  }}
                 />
                 <button
                   onClick={handleAddDecision}
                   disabled={!newDecisionData.title.trim()}
-                  className="rounded-lg bg-[#a78cc6] px-3 py-1.5 text-[11px] font-medium text-white hover:bg-[#9678b8] disabled:opacity-40"
+                  className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-white disabled:opacity-40"
+                  style={{ backgroundColor: 'var(--sagb-blue)' }}
+                  onMouseEnter={(e) => {
+                    if (!newDecisionData.title.trim()) return;
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-blue) 80%, black)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--sagb-blue)';
+                  }}
                 >
                   + Decisão
                 </button>

@@ -1223,9 +1223,9 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
         <nav className="flex-1 overflow-auto p-3 space-y-0.5">
           {([
             { id: '/metodologias' as RotaInterna, label: 'Home', icone: '🏠' },
-            { id: '/metodologias/mesa' as RotaInterna, label: 'Mesa', icone: '🪟' },
+            { id: '/metodologias/mesa' as RotaInterna, label: 'Área de trabalho', icone: '🧭' },
             { id: '/metodologias/catalogo' as RotaInterna, label: 'Catálogo', icone: '📋' },
-            { id: '/metodologias/saude' as RotaInterna, label: 'Saúde', icone: '❤️' },
+            { id: '/metodologias/saude' as RotaInterna, label: 'Métricas', icone: '📈' },
           ] as const).map((item) => {
             const ativo =
               item.id === '/metodologias'
@@ -1270,15 +1270,15 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="shrink-0 px-8 py-4 bg-sagb-panel/80 backdrop-blur-sm border-b border-sagb-line flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sagb-bg-2 text-sagb-muted text-[9px] font-semibold uppercase tracking-[0.18em] border border-sagb-line">
+            <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sagb-bg-2 text-sagb-muted text-[10px] font-semibold border border-sagb-line">
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-              Módulo Oficial
+              SagB • Metodologias
             </span>
             <h1 className="text-xl font-black tracking-tight truncate text-sagb-text">
               {rotaInterna === '/metodologias' ? 'Núcleo de Metodologias'
-                : rotaInterna === '/metodologias/mesa' ? 'Mesa de Estruturação'
+                : rotaInterna === '/metodologias/mesa' ? 'Área de trabalho'
                 : rotaInterna === '/metodologias/catalogo' ? 'Catálogo'
-                : rotaInterna === '/metodologias/saude' ? 'Saúde do Núcleo'
+                : rotaInterna === '/metodologias/saude' ? 'Painel de métricas'
                 : rotaInterna.endsWith('/editar')
                   ? ativoCanonicoSelecionado ? 'Manutenção canônica' : 'Edição guiada'
                   : 'Detalhe do ativo'}
@@ -1300,8 +1300,8 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
             {rotaInterna === '/metodologias' && (
               <MetodologiasHomePage
                 titulo="Núcleo de Metodologias"
-                subtitulo="Centro vivo de construção e consolidação metodológica"
-                descricao="Home estratégica em formato cockpit para reduzir verticalização, separar contextos de uso e sustentar crescimento modular do núcleo."
+                subtitulo="Organize, evolua e publique metodologias com clareza"
+                descricao="Visão geral simples para acompanhar documentos recebidos, rascunhos em andamento e metodologias oficiais do núcleo."
                 totalAtivos={metodologiasCanonicas.length}
                 totalEntradasBrutas={entradasBrutasLocal.length}
                 totalAtivosOficiais={totalOficiais}
@@ -1357,7 +1357,7 @@ const MetodologiasHubPage: React.FC<MetodologiasHubPageProps> = ({ onBackToSagB 
 
             {rotaInterna === '/metodologias/mesa' && carregandoPersistencia && (
               <section className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 text-[12px] text-sagb-muted">
-                Carregando persistência real da mesa de estruturação...
+                Carregando dados da área de trabalho...
               </section>
             )}
 

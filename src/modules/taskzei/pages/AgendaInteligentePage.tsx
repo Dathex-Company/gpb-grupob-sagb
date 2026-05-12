@@ -91,42 +91,99 @@ export const AgendaInteligentePage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden m-4 p-6">
+    <div
+      className="flex-1 flex flex-col h-full overflow-hidden m-4 p-6"
+      style={{
+        backgroundColor: 'var(--sagb-surface)',
+        borderRadius: 'var(--sagb-radius-xl)',
+        border: '1px solid var(--sagb-line)',
+        boxShadow: 'var(--sagb-shadow)',
+        fontFamily: "'Rubik', sans-serif",
+      }}
+    >
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Agenda Inteligente (TaskZei)</h1>
-          <p className="text-gray-500 mt-1 font-medium">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--sagb-text)' }}>
+            Agenda Inteligente (TaskZei)
+          </h1>
+          <p className="mt-1 font-medium" style={{ color: 'var(--sagb-muted)' }}>
             Visualização {viewMode === 'kanban' ? 'em Kanban' : 'em Lista'} • {tasks.length} tarefas
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+          <div
+            className="flex items-center rounded-lg p-1"
+            style={{ backgroundColor: 'var(--sagb-bg)' }}
+          >
             <button
               onClick={() => setViewMode('kanban')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+              style={
                 viewMode === 'kanban'
-                  ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
+                  ? {
+                      backgroundColor: 'var(--sagb-surface)',
+                      color: 'var(--sagb-text)',
+                      border: '1px solid var(--sagb-line)',
+                      boxShadow: 'var(--sagb-shadow-sm)',
+                    }
+                  : {
+                      color: 'var(--sagb-muted)',
+                      backgroundColor: 'transparent',
+                      border: '1px solid transparent',
+                    }
+              }
+              onMouseEnter={(e) => {
+                if (viewMode !== 'kanban') {
+                  (e.currentTarget as HTMLElement).style.color = 'var(--sagb-text)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (viewMode !== 'kanban') {
+                  (e.currentTarget as HTMLElement).style.color = 'var(--sagb-muted)';
+                }
+              }}
             >
               Kanban
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+              style={
                 viewMode === 'list'
-                  ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
+                  ? {
+                      backgroundColor: 'var(--sagb-surface)',
+                      color: 'var(--sagb-text)',
+                      border: '1px solid var(--sagb-line)',
+                      boxShadow: 'var(--sagb-shadow-sm)',
+                    }
+                  : {
+                      color: 'var(--sagb-muted)',
+                      backgroundColor: 'transparent',
+                      border: '1px solid transparent',
+                    }
+              }
+              onMouseEnter={(e) => {
+                if (viewMode !== 'list') {
+                  (e.currentTarget as HTMLElement).style.color = 'var(--sagb-text)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (viewMode !== 'list') {
+                  (e.currentTarget as HTMLElement).style.color = 'var(--sagb-muted)';
+                }
+              }}
             >
               Lista
             </button>
           </div>
-          
+
           <button
             onClick={handleAddTask}
-            className="px-4 py-2 bg-cyan-600 text-white text-sm font-bold rounded-lg hover:bg-cyan-700 transition-colors flex items-center gap-2"
+            className="px-4 py-2 text-sm font-bold rounded-lg text-white transition-colors flex items-center gap-2"
+            style={{ backgroundColor: 'var(--sagb-primary)' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-primary) 80%, black)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-primary)'; }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
@@ -143,36 +200,48 @@ export const AgendaInteligentePage: React.FC = () => {
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-600 mb-2"></div>
-            <p className="text-gray-500">Carregando tarefas...</p>
+            <div
+              className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 mb-2"
+              style={{ borderColor: 'var(--sagb-primary)', borderRightColor: 'transparent' }}
+            />
+            <p style={{ color: 'var(--sagb-muted)' }}>Carregando tarefas...</p>
           </div>
         </div>
       ) : error ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
-              <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--sagb-red) 12%, transparent)' }}
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--sagb-red)' }}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-red-600 font-medium">Erro ao carregar tarefas</p>
-            <p className="text-gray-500 text-sm mt-1">{error}</p>
+            <p className="font-medium" style={{ color: 'var(--sagb-red)' }}>Erro ao carregar tarefas</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--sagb-muted)' }}>{error}</p>
           </div>
         </div>
       ) : tasks.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+            style={{ backgroundColor: 'var(--sagb-bg)' }}
+          >
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--sagb-muted)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2">Nenhuma tarefa ainda</h3>
-          <p className="text-gray-500 mb-6 max-w-md">
+          <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--sagb-text)' }}>Nenhuma tarefa ainda</h3>
+          <p className="mb-6 max-w-md" style={{ color: 'var(--sagb-muted)' }}>
             Comece criando sua primeira tarefa para organizar suas atividades.
           </p>
           <button
             onClick={handleAddTask}
-            className="px-4 py-2 bg-cyan-600 text-white font-bold rounded-lg hover:bg-cyan-700 transition-colors"
+            className="px-4 py-2 font-bold rounded-lg text-white transition-colors"
+            style={{ backgroundColor: 'var(--sagb-primary)' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-primary) 80%, black)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-primary)'; }}
           >
             Criar Primeira Tarefa
           </button>

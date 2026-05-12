@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { TaskzeiTask } from '../../types/task.types';
 import { TaskzeiTaskInlineInput } from '../../types/taskzei.contracts';
-import { useFocusStore } from '../../../foco_total/stores/focusStore';
+import { useFocusWidgetStore } from '../../store/focusWidgetStore';
 
 interface TaskListItemProps {
   task: TaskzeiTask;
@@ -12,8 +12,35 @@ interface TaskListItemProps {
   onDuplicate?: (id: string) => void;
   onArchive?: (id: string) => void;
   variant?: 'table' | 'card';
+  gridColumnsStyle?: string;
 }
 
+// ─── Helpers de cor semântica (Robust Clean) ──────────────────────────
+const STATUS_COLORS: Record<string, string> = {
+  aberta: 'var(--sagb-blue)',
+  em_andamento: 'var(--sagb-primary)',
+  concluida: 'var(--sagb-primary)',
+};
+
+const PRIORITY_COLORS: Record<string, string> = {
+  alta: 'var(--sagb-red)',
+  media: 'var(--sagb-amber)',
+  baixa: 'var(--sagb-blue)',
+};
+
+const PRIORITY_LABELS: Record<string, string> = {
+  alta: 'Alta',
+  media: 'Média',
+  baixa: 'Baixa',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  aberta: 'Aberta',
+  em_andamento: 'Em andamento',
+  concluida: 'Concluída',
+};
+
+// ─── Componente ─────────────────────────────────────────────────────
 export const TaskListItem: React.FC<TaskListItemProps> = ({
   task,
   onClick,
@@ -22,7 +49,8 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
   onUpdateTask,
   onDuplicate,
   onArchive,
-  variant = 'table'
+  variant = 'table',
+  gridColumnsStyle,
 }) => {
   const isCompleted = task.status === 'concluida';
   const [titleDraft, setTitleDraft] = useState(task.title);
@@ -43,8 +71,7 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
 
   const handleFocusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    useFocusStore.getState().setPendingTask(task.title);
-    window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: 'foco-total' }));
+    useFocusWidgetStore.getState().open(task.title);
   };
 
   const dueDateInput = useMemo(() => {
@@ -65,73 +92,64 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
     setDueDateDraft(dueDateInput);
   }, [task.title, task.assigneeName, dueDateInput]);
 
-  const getPriorityColor = () => {
-    switch (task.priority) {
-      case 'alta': return 'text-red-600 bg-red-50 border-red-200';
-      case 'media': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'baixa': return 'text-blue-600 bg-blue-50 border-blue-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
-
-  const getStatusLabel = () => {
-    switch (task.status) {
-      case 'aberta': return 'Aberta';
-      case 'em_andamento': return 'Em Andamento';
-      case 'concluida': return 'Concluída';
-      default: return task.status;
-    }
-  };
-
-  const getPriorityLabel = () => {
-    switch (task.priority) {
-      case 'alta':
-        return 'Alta';
-      case 'media':
-        return 'Média';
-      default:
-        return 'Baixa';
-    }
-  };
-
-  const getPriorityDotColor = () => {
-    switch (task.priority) {
-      case 'alta':
-        return 'bg-[#d78484]';
-      case 'media':
-        return 'bg-[#e6c06d]';
-      default:
-        return 'bg-[#87a8cf]';
-    }
-  };
-
+  // ─── Variante card (legado) ──────────────────────────
   if (variant === 'card') {
     return (
       <div
         onClick={() => onClick(task)}
-        className="group cursor-pointer rounded-lg border border-[#d9dee5] bg-white p-3 shadow-sm transition-colors hover:bg-[#fafbfc]"
+        className="group cursor-pointer rounded-[var(--sagb-radius-sm)] p-3 transition-colors"
+        style={{
+          border: '1px solid var(--sagb-line)',
+          backgroundColor: 'var(--sagb-surface)',
+          boxShadow: 'var(--sagb-shadow)',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-surface)';
+        }}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className={`truncate text-[12px] font-medium ${isCompleted ? 'text-[#95a0b1] line-through' : 'text-[#414854]'}`}>
+            <h3
+              className="truncate text-[12px] font-medium"
+              style={{
+                color: isCompleted ? 'var(--sagb-muted)' : 'var(--sagb-text)',
+                textDecoration: isCompleted ? 'line-through' : 'none',
+              }}
+            >
               {task.title}
             </h3>
-            {task.description && <p className="mt-1 truncate text-[11px] text-[#95a0b1]">{task.description}</p>}
+            {task.description && (
+              <p className="mt-1 truncate text-[12px]" style={{ color: 'var(--sagb-muted)' }}>
+                {task.description}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">
             <button
               onClick={handleFocusClick}
               title="Iniciar Foco Total"
-              className="flex h-5 w-5 items-center justify-center rounded border border-[#d9dee5] bg-white text-[12px] transition-colors hover:border-[#87a8cf] hover:bg-[#f0f2f4]"
+              className="flex h-5 w-5 items-center justify-center rounded text-[12px] transition-colors"
+              style={{
+                border: '1px solid var(--sagb-line)',
+                backgroundColor: 'var(--sagb-surface)',
+              }}
             >
               🎯
             </button>
             <button
               onClick={(e) => onComplete(task.id, e)}
-              className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
-                isCompleted ? 'border-[#68c7be] bg-[#68c7be] text-white' : 'border-[#d9dee5] hover:border-[#87a8cf]'
-              }`}
+              className="flex h-4 w-4 items-center justify-center rounded transition-colors"
+              style={{
+                border: isCompleted
+                  ? '1px solid var(--sagb-primary)'
+                  : '1px solid var(--sagb-line)',
+                backgroundColor: isCompleted ? 'var(--sagb-primary)' : 'transparent',
+                color: isCompleted ? '#fff' : 'transparent',
+              }}
             >
               {isCompleted && (
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -142,68 +160,138 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
           </div>
         </div>
 
-        <div className="mt-3 flex items-center justify-between text-[10px] text-[#6f7887]">
-          <span className={`rounded-md border px-1.5 py-0.5 ${getPriorityColor()}`}>{getPriorityLabel()}</span>
-          <span>{getStatusLabel()}</span>
+        <div className="mt-3 flex items-center justify-between text-[10px]" style={{ color: 'var(--sagb-muted)' }}>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-sm"
+              style={{ backgroundColor: PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.baixa }}
+            />
+            {PRIORITY_LABELS[task.priority] || 'Baixa'}
+          </span>
+          <span className="flex items-center gap-1">
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-sm"
+              style={{ backgroundColor: STATUS_COLORS[task.status] || STATUS_COLORS.aberta }}
+            />
+            {STATUS_LABELS[task.status] || task.status}
+          </span>
         </div>
       </div>
     );
   }
 
+  // ─── Variante table — Densidade Linear Absoluta (Single-Line) ──
+  const statusColor = STATUS_COLORS[task.status] || STATUS_COLORS.aberta;
+  const priorityColor = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.baixa;
+  const rowStyle: React.CSSProperties = {
+    gridTemplateColumns: gridColumnsStyle,
+    borderColor: 'var(--sagb-line)',
+    height: 32,
+  };
+
   return (
-    <div 
+    <div
       onClick={() => onClick(task)}
-      className="group grid cursor-pointer grid-cols-[minmax(230px,2.6fr)_minmax(90px,1fr)_minmax(120px,1.2fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(110px,1fr)] items-center gap-3 border-b border-[#e8ecf1] px-3 py-2.5 text-xs transition-colors hover:bg-[#fafbfc]"
+      className="group grid items-center gap-1 border-b px-2 text-[12px] transition-colors cursor-pointer"
+      style={rowStyle}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+      }}
     >
-      <div className="flex min-w-0 items-center gap-2">
-        <div className="flex-shrink-0 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+      {/* ── Col 1: Status Dot + Checkbox + Título + Descrição ── */}
+      <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
+        {/* Indicador de status (12x12px) — estilo ClickUp */}
+        <span
+          className="inline-block shrink-0 rounded-sm"
+          style={{
+            width: 12,
+            height: 12,
+            backgroundColor: statusColor,
+          }}
+        />
+
+        <div className="flex-shrink-0 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={handleFocusClick}
             title="Iniciar Foco Total"
-            className="flex h-5 w-5 items-center justify-center rounded border border-[#d9dee5] bg-white text-[12px] transition-colors hover:border-[#87a8cf] hover:bg-[#f0f2f4]"
+            className="flex h-4 w-4 items-center justify-center rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{
+              border: '1px solid var(--sagb-line)',
+              backgroundColor: 'var(--sagb-surface)',
+            }}
           >
             🎯
           </button>
-          <button 
+          <button
             onClick={(e) => onComplete(task.id, e)}
-            className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
-              isCompleted 
-                ? 'border-[#68c7be] bg-[#68c7be] text-white' 
-                : 'border-[#d9dee5] hover:border-[#87a8cf]'
-            }`}
+            className="flex h-3.5 w-3.5 items-center justify-center rounded transition-colors"
+            style={{
+              border: isCompleted
+                ? '1px solid var(--sagb-primary)'
+                : '1px solid var(--sagb-line)',
+              backgroundColor: isCompleted ? 'var(--sagb-primary)' : 'transparent',
+              color: isCompleted ? '#fff' : 'transparent',
+            }}
           >
             {isCompleted && (
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             )}
           </button>
         </div>
 
-        <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
-          <input
-            value={titleDraft}
-            onChange={(event) => setTitleDraft(event.target.value)}
-            onBlur={() => {
-              const normalized = titleDraft.trim();
-              if (!normalized || normalized === task.title) {
-                setTitleDraft(task.title);
-                return;
-              }
-              onUpdateTask?.(task.id, { title: normalized });
-            }}
-            className={`h-7 w-full rounded-md border border-transparent bg-transparent px-2 text-[12px] font-medium focus:border-[#d9dee5] focus:bg-white focus:outline-none ${isCompleted ? 'text-[#95a0b1] line-through' : 'text-[#414854]'}`}
-          />
-          {task.description && <p className="mt-0.5 truncate text-[11px] text-[#95a0b1]">{task.description}</p>}
-        </div>
+        {/* Título */}
+        <input
+          value={titleDraft}
+          onChange={(event) => setTitleDraft(event.target.value)}
+          onBlur={() => {
+            const normalized = titleDraft.trim();
+            if (!normalized || normalized === task.title) {
+              setTitleDraft(task.title);
+              return;
+            }
+            onUpdateTask?.(task.id, { title: normalized });
+          }}
+          className="h-6 min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 text-[12px] font-medium outline-none"
+          style={{
+            color: isCompleted ? 'var(--sagb-muted)' : 'var(--sagb-text)',
+            textDecoration: isCompleted ? 'line-through' : 'none',
+          }}
+        />
+
+        {/* Descrição — truncada ao lado do título, single-line */}
+        {task.description && (
+          <span
+            className="hidden truncate text-[12px] sm:inline"
+            style={{ color: 'var(--sagb-muted)' }}
+          >
+            {task.description}
+          </span>
+        )}
       </div>
 
-      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-        <span className={`h-2 w-2 rounded-sm ${getPriorityDotColor()}`} />
+      {/* ── Col 2: Prioridade (dot + select compacto) ─────── */}
+      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+        <span
+          className="inline-block shrink-0 rounded-sm"
+          style={{
+            width: 12,
+            height: 12,
+            backgroundColor: priorityColor,
+          }}
+        />
         <select
           value={task.priority}
           onChange={(event) => onUpdateTask?.(task.id, { priority: event.target.value as TaskzeiTask['priority'] })}
-          className={`h-7 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold focus:outline-none ${getPriorityColor()} ${isCompleted ? 'opacity-50' : ''}`}
+          className="h-6 min-w-0 flex-1 rounded border bg-transparent px-1 text-[10px] font-semibold outline-none cursor-pointer"
+          style={{
+            color: 'var(--sagb-muted)',
+            borderColor: 'var(--sagb-line)',
+          }}
         >
           <option value="alta">Alta</option>
           <option value="media">Média</option>
@@ -211,10 +299,21 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
         </select>
       </div>
 
-      <div className="text-[11px] text-[#6f7887]">TaskZei</div>
+      {/* ── Col 3: Cliente ────────────────────────────────── */}
+      <div className="truncate text-[12px]" style={{ color: 'var(--sagb-muted)' }}>
+        TaskZei
+      </div>
 
-      <div className="flex items-center gap-1.5 text-[11px] text-[#6f7887]" onClick={(e) => e.stopPropagation()}>
-        <div className="grid h-5 w-5 place-items-center rounded-full border border-[#d9dee5] bg-[#f0f2f4] text-[10px] font-semibold text-[#6f7887]">
+      {/* ── Col 4: Colaborador ────────────────────────────── */}
+      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[9px] font-bold"
+          style={{
+            border: '1px solid var(--sagb-line)',
+            backgroundColor: 'var(--sagb-bg)',
+            color: 'var(--sagb-muted)',
+          }}
+        >
           {assigneeDraft ? assigneeDraft.charAt(0).toUpperCase() : '—'}
         </div>
         <input
@@ -226,11 +325,13 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
             onUpdateTask?.(task.id, { assigneeName: normalized || undefined });
           }}
           placeholder="Responsável"
-          className="h-7 w-full rounded-md border border-transparent bg-transparent px-2 text-[11px] text-[#6f7887] focus:border-[#d9dee5] focus:bg-white focus:outline-none"
+          className="h-6 w-full rounded border border-transparent bg-transparent px-1 text-[12px] outline-none"
+          style={{ color: 'var(--sagb-muted)' }}
         />
       </div>
 
-      <div className={`text-[11px] ${isCompleted ? 'text-[#95a0b1]' : 'text-[#6f7887]'}`} onClick={(e) => e.stopPropagation()}>
+      {/* ── Col 5: Vencimento ─────────────────────────────── */}
+      <div onClick={(e) => e.stopPropagation()}>
         <input
           type="date"
           value={dueDateDraft}
@@ -239,11 +340,17 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
             if (dueDateDraft === dueDateInput) return;
             onUpdateTask?.(task.id, { dueDate: dueDateDraft || undefined });
           }}
-          className="h-7 w-full rounded-md border border-[#d9dee5] bg-[#fafbfc] px-2 text-[11px] text-[#6f7887] focus:border-[#87a8cf] focus:outline-none"
+          className="h-6 w-full rounded px-1 text-[12px] outline-none"
+          style={{
+            color: isCompleted ? 'var(--sagb-muted)' : 'var(--sagb-text)',
+            backgroundColor: 'var(--sagb-surface)',
+            border: '1px solid var(--sagb-line)',
+          }}
         />
       </div>
 
-      <div className="flex items-center justify-start" onClick={(e) => e.stopPropagation()}>
+      {/* ── Col 6: Status ─────────────────────────────────── */}
+      <div onClick={(e) => e.stopPropagation()}>
         {onUpdateTask || onChangeStatus ? (
           <select
             value={task.status}
@@ -255,47 +362,75 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
                 onChangeStatus?.(task.id, nextStatus);
               }
             }}
-            className="h-7 rounded-md border border-[#d9dee5] bg-[#fafbfc] px-2 text-[10px] font-semibold uppercase tracking-wide text-[#6f7887] focus:border-[#87a8cf] focus:outline-none"
+            className="h-6 w-full rounded px-1 text-[10px] font-semibold uppercase tracking-wide outline-none cursor-pointer"
+            style={{
+              color: 'var(--sagb-text)',
+              backgroundColor: 'var(--sagb-surface)',
+              border: '1px solid var(--sagb-line)',
+            }}
           >
             <option value="aberta">Aberta</option>
             <option value="em_andamento">Em andamento</option>
             <option value="concluida">Concluída</option>
           </select>
         ) : (
-          <span className="rounded-md border border-[#d9dee5] bg-[#f5f6f7] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#6f7887]">
-            {getStatusLabel()}
+          <span
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+            style={{
+              color: 'var(--sagb-muted)',
+              backgroundColor: 'var(--sagb-surface)',
+              border: '1px solid var(--sagb-line)',
+            }}
+          >
+            <span
+              className="inline-block rounded-sm"
+              style={{ width: 8, height: 8, backgroundColor: statusColor }}
+            />
+            {STATUS_LABELS[task.status] || task.status}
           </span>
         )}
       </div>
 
-      {/* ── Menu de contexto (⋯) ─────────────────────── */}
+      {/* ── Col 7: Ações (⋯ — visível apenas no hover) ──── */}
       <div className="relative flex items-center justify-center" onClick={(e) => e.stopPropagation()} ref={contextRef}>
         <button
           onClick={() => setShowContextMenu(prev => !prev)}
-          className="flex h-6 w-6 items-center justify-center rounded text-[#95a0b1] opacity-0 group-hover:opacity-100 hover:bg-[#f0f2f4] hover:text-[#414854] transition-all"
+          className="flex h-5 w-5 items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-all"
+          style={{
+            color: 'var(--sagb-muted)',
+          }}
           title="Mais ações"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" />
           </svg>
         </button>
 
         {showContextMenu && (
-          <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-lg border border-[#d9dee5] bg-white shadow-lg py-1">
+          <div
+            className="absolute right-0 top-full mt-1 z-50 w-40 rounded-lg py-1"
+            style={{
+              backgroundColor: 'var(--sagb-surface)',
+              border: '1px solid var(--sagb-line)',
+              boxShadow: 'var(--sagb-shadow)',
+            }}
+          >
             <button
               onClick={() => { onDuplicate?.(task.id); setShowContextMenu(false); }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-[11px] text-[#414854] hover:bg-[#f5f6f7] transition-colors"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] transition-colors"
+              style={{ color: 'var(--sagb-text)' }}
             >
-              <svg className="w-3.5 h-3.5 text-[#95a0b1]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--sagb-muted)' }}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
               Duplicar
             </button>
             <button
               onClick={() => { onArchive?.(task.id); setShowContextMenu(false); }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-[11px] text-[#414854] hover:bg-[#f5f6f7] transition-colors"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] transition-colors"
+              style={{ color: 'var(--sagb-text)' }}
             >
-              <svg className="w-3.5 h-3.5 text-[#95a0b1]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--sagb-muted)' }}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
               </svg>
               Arquivar

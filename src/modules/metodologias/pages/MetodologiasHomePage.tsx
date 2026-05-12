@@ -44,8 +44,8 @@ export const MetodologiasHomePage: React.FC<MetodologiasHomePageProps> = ({
       <header className="rounded-[28px] bg-gradient-to-br from-sagb-blue to-indigo-700 text-white overflow-hidden relative shadow-lg">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_50%),radial-gradient(circle_at_bottom_right,_rgba(255,255,255,0.08),_transparent_50%)]" />
         <div className="relative px-7 md:px-9 py-8 space-y-4">
-          <span className="inline-flex px-3 py-1 rounded-lg bg-white/10 text-white/80 text-[10px] font-black uppercase tracking-[0.22em] border border-white/20">
-            Cockpit do Núcleo
+          <span className="inline-flex px-3 py-1 rounded-lg bg-white/10 text-white/80 text-xs font-semibold border border-white/20">
+            Painel principal
           </span>
           <div>
             <h1 className="text-3xl md:text-4xl font-black tracking-tight">{titulo}</h1>
@@ -72,7 +72,7 @@ export const MetodologiasHomePage: React.FC<MetodologiasHomePageProps> = ({
               onClick={onIrSaude}
               className="px-3.5 py-2 rounded-lg bg-emerald-400/20 border border-emerald-300/25 text-emerald-200 text-[11px] font-black uppercase tracking-wide hover:bg-emerald-400/30 transition"
             >
-              Saúde do Núcleo
+              Ver métricas
             </button>
           </div>
         </div>
@@ -81,19 +81,19 @@ export const MetodologiasHomePage: React.FC<MetodologiasHomePageProps> = ({
       {/* Indicadores com badges semânticas canônicas */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <article className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-500">Ativos no núcleo</p>
+          <p className="text-xs font-semibold text-emerald-500">Metodologias no núcleo</p>
           <p className="text-2xl font-black text-emerald-500 mt-1">{totalAtivos}</p>
           <p className="text-[12px] text-emerald-500/70 mt-1">Base metodológica total disponível no módulo.</p>
         </article>
 
         <article className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-500">Entradas brutas</p>
+          <p className="text-xs font-semibold text-amber-500">Documentos recebidos</p>
           <p className="text-2xl font-black text-amber-500 mt-1">{totalEntradasBrutas}</p>
           <p className="text-[12px] text-amber-500/70 mt-1">Insumos em estado inicial para a mesa de estruturação.</p>
         </article>
 
         <article className="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 p-4">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-indigo-500">Ativos oficiais</p>
+          <p className="text-xs font-semibold text-indigo-500">Metodologias oficiais</p>
           <p className="text-2xl font-black text-indigo-500 mt-1">{totalAtivosOficiais}</p>
           <p className="text-[12px] text-indigo-500/70 mt-1">Ativos com status editorial oficial no catálogo canônico.</p>
         </article>

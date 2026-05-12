@@ -7,13 +7,15 @@ import { AgendaInteligenteMonitorPage } from '../pages/monitor/AgendaInteligente
 import { AgendaInteligenteProjectsPage } from '../pages/projects/AgendaInteligenteProjectsPage';
 import { AgendaInteligenteProcessesPage } from '../pages/processes/AgendaInteligenteProcessesPage';
 import { AgendaInteligenteSettingsPage } from '../pages/settings/AgendaInteligenteSettingsPage';
+import { AgendaInteligenteDocumentsPage } from '../pages/documents/AgendaInteligenteDocumentsPage';
 import { MockModeBanner } from '../components/MockModeBanner';
 import { hubIntegration } from '../services/taskzei.hub';
 import { taskzeiFacade } from '../services/taskzei.facade';
 import { monitorService } from '../services/taskzei.monitor';
+import { FocusWidget } from '../components/tasks/FocusWidget';
 
 // Sub-rotas internas do módulo TaskZei simuladas por estado (Shell isolado)
-type TaskZeiView = 'home' | 'tasks' | 'inbox' | 'meetings' | 'monitor' | 'projects' | 'processes' | 'settings';
+type TaskZeiView = 'home' | 'tasks' | 'inbox' | 'meetings' | 'monitor' | 'projects' | 'processes' | 'settings' | 'documents';
 
 export const AgendaInteligenteLayout: React.FC = () => {
   // A aba inicial com destaque é Tarefas
@@ -75,6 +77,11 @@ export const AgendaInteligenteLayout: React.FC = () => {
       icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
     },
     {
+      id: 'documents',
+      label: 'Documentos',
+      icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+    },
+    {
       id: 'monitor',
       label: 'Monitor',
       icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
@@ -102,6 +109,7 @@ export const AgendaInteligenteLayout: React.FC = () => {
       case 'inbox': return <AgendaInteligenteInboxPage />;
       case 'tasks': return <AgendaInteligenteTasksPage />;
       case 'meetings': return <AgendaInteligenteMeetingsPage />;
+      case 'documents': return <AgendaInteligenteDocumentsPage />;
       case 'monitor': return <AgendaInteligenteMonitorPage />;
       case 'projects': return <AgendaInteligenteProjectsPage />;
       case 'processes': return <AgendaInteligenteProcessesPage />;
@@ -111,37 +119,44 @@ export const AgendaInteligenteLayout: React.FC = () => {
   };
 
   return (
-    <div className="m-3 flex h-full overflow-hidden rounded-[1.4rem] border border-[#d9dee5] bg-[#f5f6f7] shadow-sm">
+    <div className="m-3 flex h-full overflow-hidden" style={{ borderRadius: 'var(--sagb-radius-xl)', border: '1px solid var(--sagb-line)', backgroundColor: 'var(--sagb-surface)', boxShadow: 'var(--sagb-shadow)' }}>
       {/* Shell Sidebar Módulo */}
-      <aside className="flex w-64 shrink-0 flex-col border-r border-[#d9dee5] bg-[#f0f2f4]">
-        <div className="h-16 shrink-0 border-b border-[#e1e6ec] px-5">
+      <aside className="flex w-64 shrink-0 flex-col" style={{ borderRight: '1px solid var(--sagb-line)', backgroundColor: 'var(--sagb-surface-soft)' }}>
+        <div className="h-16 shrink-0 px-5" style={{ borderBottom: '1px solid var(--sagb-line)' }}>
           <div className="flex h-full items-center gap-3">
-            <div className="grid h-8 w-8 place-items-center rounded-[10px] bg-gradient-to-br from-[#68c7be] to-[#87a8cf] text-[10px] font-semibold text-white">
+            <div className="grid h-8 w-8 place-items-center rounded-[10px] text-[10px] font-semibold text-white" style={{ background: 'linear-gradient(135deg, var(--sagb-primary), var(--sagb-blue))' }}>
               TZ
             </div>
             <div>
-              <h2 className="text-[14px] font-semibold tracking-tight text-[#414854]">TaskZei</h2>
-              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#95a0b1]">industrial pastel</p>
+              <h2 className="text-[14px] font-semibold tracking-tight" style={{ color: 'var(--sagb-text)' }}>TaskZei</h2>
+              <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ color: 'var(--sagb-muted)' }}>robust clean</p>
             </div>
           </div>
         </div>
         
         <nav className="flex-1 space-y-4 overflow-y-auto p-3">
           <div>
-            <p className="mb-2 pl-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#95a0b1]">Main</p>
+            <p className="mb-2 pl-2 text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: 'var(--sagb-muted)' }}>Main</p>
           {navigationItems.map(item => {
             const isActive = currentView === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setCurrentView(item.id)}
-                  className={`mb-1 flex h-9 w-full items-center gap-3 rounded-[10px] border px-3 text-[13px] font-medium transition-colors ${
-                  isActive 
-                      ? 'border-[#d7ece8] bg-[#eaf7f5] text-[#414854]'
-                      : 'border-transparent text-[#6f7887] hover:bg-[#fafbfc] hover:text-[#414854]'
+                  className={`mb-1 flex h-9 w-full items-center gap-3 rounded-[var(--sagb-radius-sm)] border px-3 text-[13px] font-medium transition-colors ${
+                  isActive
+                      ? 'text-sagb-text'
+                      : 'hover:text-sagb-text'
                 }`}
+                style={{
+                  borderColor: isActive ? 'var(--sagb-primary-soft)' : 'transparent',
+                  backgroundColor: isActive ? 'var(--sagb-primary-soft)' : 'transparent',
+                  color: isActive ? 'var(--sagb-text)' : 'var(--sagb-muted)',
+                }}
+                onMouseEnter={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-surface)'; (e.currentTarget as HTMLElement).style.color = 'var(--sagb-text)'; } }}
+                onMouseLeave={(e) => { if (!isActive) { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--sagb-muted)'; } }}
               >
-                  <div className={`${isActive ? 'text-[#68c7be]' : 'text-[#95a0b1]'}`}>
+                  <div style={{ color: isActive ? 'var(--sagb-primary)' : 'var(--sagb-muted)' }}>
                   {item.icon}
                 </div>
                 {item.label}
@@ -150,19 +165,22 @@ export const AgendaInteligenteLayout: React.FC = () => {
           })}
           </div>
 
-          <div className="rounded-[10px] border border-[#d9dee5] bg-white/80 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#95a0b1]">Workspace</p>
-            <p className="mt-1 text-[12px] font-medium text-[#414854]">Demanda Geral</p>
-            <p className="text-[11px] text-[#6f7887]">Operação • 28 tarefas</p>
+          <div className="p-3" style={{ borderRadius: 'var(--sagb-radius-sm)', border: '1px solid var(--sagb-line)', backgroundColor: 'color-mix(in srgb, var(--sagb-surface) 80%, transparent)' }}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: 'var(--sagb-muted)' }}>Workspace</p>
+            <p className="mt-1 text-[12px] font-medium" style={{ color: 'var(--sagb-text)' }}>Demanda Geral</p>
+            <p className="text-[11px]" style={{ color: 'var(--sagb-muted)' }}>Operação • 28 tarefas</p>
           </div>
         </nav>
 
         {/* Rodapé da sidebar — Voltar ao SagB */}
-        <div className="shrink-0 border-t border-[#e1e6ec] p-3">
+        <div className="shrink-0 p-3" style={{ borderTop: '1px solid var(--sagb-line)' }}>
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: 'ecosystem' }))}
-            className="flex h-9 w-full items-center gap-3 rounded-[10px] border border-transparent px-3 text-[13px] font-medium text-[#6f7887] transition-colors hover:bg-[#fafbfc] hover:text-[#414854]"
+            className="flex h-9 w-full items-center gap-3 rounded-[var(--sagb-radius-sm)] border border-transparent px-3 text-[13px] font-medium transition-colors"
+            style={{ color: 'var(--sagb-muted)' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-surface)'; (e.currentTarget as HTMLElement).style.color = 'var(--sagb-text)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--sagb-muted)'; }}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -173,9 +191,11 @@ export const AgendaInteligenteLayout: React.FC = () => {
       </aside>
 
       {/* Conteúdo Principal do Módulo */}
-      <main className="relative flex flex-1 flex-col overflow-hidden bg-[#f5f6f7]">
+      <main className="relative flex flex-1 flex-col overflow-hidden" style={{ backgroundColor: 'var(--sagb-bg)' }}>
         <MockModeBanner />
         {renderCurrentView()}
+        {/* Focus Widget — sobrepõe todo o conteúdo, inclusive o mock banner */}
+        <FocusWidget />
       </main>
     </div>
   );

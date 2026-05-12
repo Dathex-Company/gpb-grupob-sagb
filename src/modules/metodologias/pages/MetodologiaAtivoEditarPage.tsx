@@ -104,22 +104,22 @@ export const MetodologiaAtivoEditarPage: React.FC<MetodologiaAtivoEditarPageProp
       <header className="rounded-3xl border border-sagb-line bg-sagb-panel p-5 md:p-6 space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Edição guiada</p>
-            <h2 className="text-2xl font-black text-sagb-text tracking-tight mt-1">Ativo em estruturação</h2>
-            <p className="text-[12px] text-sagb-muted mt-1">Etapa intermediária para lapidação antes de consolidação canônica.</p>
+            <p className="text-[11px] font-semibold text-sagb-muted">Edição guiada</p>
+            <h2 className="text-2xl font-black text-sagb-text tracking-tight mt-1">Rascunho da metodologia</h2>
+            <p className="text-[12px] text-sagb-muted mt-1">Refine o conteúdo antes de publicar como metodologia oficial.</p>
           </div>
           <button
             type="button"
             onClick={onVoltarMesa}
             className="px-3 py-2 rounded-lg border border-sagb-line text-[11px] font-black uppercase tracking-wide text-sagb-muted hover:bg-sagb-bg-2"
           >
-            Voltar para mesa
+            Voltar para área de trabalho
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <article className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-3">
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-500">Leitura visual</p>
+            <p className="text-[11px] font-semibold text-cyan-500">Status rápido</p>
             <p className="text-[12px] font-bold text-sagb-text mt-1">
               {getLeituraVisualEstruturacaoLabel(diagnostico.leitura_visual)}
             </p>
@@ -133,9 +133,9 @@ export const MetodologiaAtivoEditarPage: React.FC<MetodologiaAtivoEditarPageProp
           </article>
 
           <article className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-amber-500">Base mínima</p>
+            <p className="text-[11px] font-semibold text-amber-500">Campos obrigatórios</p>
             <p className="text-[12px] font-bold text-sagb-text mt-1">
-              {diagnostico.base_minima_preenchida ? 'Preenchida' : 'Incompleta'}
+               {diagnostico.base_minima_preenchida ? 'Preenchidos' : 'Incompletos'}
             </p>
           </article>
         </div>

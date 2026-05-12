@@ -815,3 +815,71 @@ Em [`CrmZipliaNativePage.tsx:130-148`](src/modules/crm_ziplia/pages/CrmZipliaNat
 
 ### 🔵 LEVE #10 — Playbook exibido mesmo sem lead vinculado
 Em [`CrmZipliaNativePage.tsx:410-417`](src/modules/crm_ziplia/pages/CrmZipliaNativePage.tsx:410), o playbook só aparece dentro do bloco `{linkedLead ? ...}` — correto. Mas o botão "Atualizar Follow-up" também está dentro desse bloco. OK, sem problema.
+
+---
+
+## 06/05/2026 — Deploy realizado: push para origin/main
+
+**Commits enviados ao GitHub:**
+1. [`9ce1620`](../9ce1620) — `feat: correcoes e melhorias no WhatsApp QR + webhook + CRM`
+2. [`27202a0`](../27202a0) — `feat: email sync background functions + agent logs update`
+
+**Push:** `9d7869e..27202a0  main -> main` — bem-sucedido.
+
+**Mudanças enviadas:**
+- [`netlify/functions/whatsapp-qr.mjs`](netlify/functions/whatsapp-qr.mjs) — +117 lines refactor Baileys session management
+- [`netlify/functions/whatsapp-webhook.mjs`](netlify/functions/whatsapp-webhook.mjs) — +38 lines fix import statement
+- [`netlify/functions/email-sync-background.ts`](netlify/functions/email-sync-background.ts) — **novo** arquivo
+- [`netlify/functions/email-titan-driver.ts`](netlify/functions/email-titan-driver.ts) — **novo** arquivo
+- [`src/modules/crm_ziplia/pages/CrmZipliaNativePage.tsx`](src/modules/crm_ziplia/pages/CrmZipliaNativePage.tsx) — WhatsApp inbox + QR status integration
+- [`src/modules/hub-integracao/services/integrationService.ts`](src/modules/hub-integracao/services/integrationService.ts) — QR status methods
+- [`src/modules/hub-integracao/services/emailService.ts`](src/modules/hub-integracao/services/emailService.ts) — OAuth2 refresh
+- [`netlify.toml`](netlify.toml) — config adjustments
+
+**Status:** Netlify deve detectar o push e iniciar build/deploy automaticamente (~2-3 min).
+
+---
+
+## 06/05/2026 00:21 — Continuidade da arquitetura PN v2 (Bloco 10)
+
+**usuário (literal):**
+```text
+## Conversation Summary
+<analysis>
+I need summarize chronologically from first actionable user interactions in this thread.
+</analysis>
+```
+
+**cassio_mendes:** Verificação concluída dos 6 artefatos do Bloco 10 (A-32 e A-33) em `.agents`, `.prompts` e `.specs`, confirmando presença e conteúdo base alinhado ao padrão operacional da v2.
+
+
+## 06/05/2026 00:27 — Validação operacional dos agentes PN
+
+**usuário:** "ja posso utilizar? fazer um teste?"
+
+**cassio_mendes:** Liberação para teste operacional inicial do fluxo em camadas (AE -> A -> GB -> AP -> AS -> César) com scripts base criados.
+
+
+## 06/05/2026 00:37 — Direcionamento para produto simples
+
+**usuário:** "acho melhor criar um sistema com isso... simples. mas um sistema"
+
+**cassio_mendes:** Usuário direcionou evolução dos artefatos para um sistema simples, com operacionalização prática do fluxo multiagente.
+
+## 06/05/2026 08:45
+
+**usuário:** "Leia o documento Z:\empresas_b\3forb\_agentes\zara_bittencourt_ceo\prompt_ativacao_cline.md. Em seguida, analise o documento Z:\empresas_b\3forb\governance\documentos_oficiais\Sobre-a-3forB.txt. Preciso fazer um documento definitivo para a 3forB. Traga uma sugestao."
+
+**zara_bittencourt:** Leu `prompt_ativacao_cline.md`, confirmou regras de resposta em diagnóstico → recomendação → próximos passos e auto-log duplo. Leu `persona.md` para ativação de Zara Bittencourt. Analisou `Sobre-a-3forB.txt`, identificando que o arquivo é um modelo-mãe com base conceitual forte, mas ainda amplo demais para ser documento definitivo. Recomendou transformar a base em um Manifesto Institucional e Estratégico definitivo da 3forB, com versão executiva, doutrinária e operacional.
+
+## 2026-05-06 08:59
+**usuario:** olha o erro
+
+**cassio:** Diagn�stico visual do erro no chat: upload de anexo falhou com retorno 404 Bucket not found ao enviar arquivo no componente de anexo do N�cleo Conversacional. Causa prov�vel identificada: bucket 'sagb_chat_attachments' inexistente no Supabase Storage do ambiente atual. Pr�ximo passo: criar bucket ou alinhar nome do bucket com configura��o de infraestrutura.
+
+
+## 2026-05-06 09:04
+**usuario:** nao entendi
+
+**cassio:** Explicado de forma simples que faltou autentica��o do Supabase CLI (senha do banco n�o definida), por isso a migration n�o p�de ser aplicada automaticamente.
+

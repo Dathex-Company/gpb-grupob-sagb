@@ -67,47 +67,130 @@ export const AgendaInteligenteHomePage: React.FC = () => {
   const maxTrend = Math.max(1, ...trend7d.map((d) => Math.max(d.created, d.done)));
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto rounded-xl border border-[#d9dee5] bg-[#f5f6f7] p-4">
+    <div
+      className="flex h-full flex-col overflow-y-auto p-4"
+      style={{
+        backgroundColor: 'var(--sagb-bg)',
+        fontFamily: "'Rubik', sans-serif",
+      }}
+    >
       <div className="mx-auto w-full max-w-6xl">
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-[20px] font-semibold tracking-tight text-[#414854]">Visão Geral</h1>
-            <p className="mt-1 text-sm text-[#6f7887]">Resumo operacional compacto da execução diária.</p>
+            <h1
+              className="text-[20px] font-semibold tracking-tight"
+              style={{ color: 'var(--sagb-text)' }}
+            >
+              Visão Geral
+            </h1>
+            <p className="mt-1 text-sm" style={{ color: 'var(--sagb-muted)' }}>
+              Resumo operacional compacto da execução diária.
+            </p>
           </div>
-          <span className="inline-flex h-7 items-center rounded-full border border-[#d9dee5] bg-white px-3 text-[11px] font-semibold text-[#6f7887]">
+          <span
+            className="inline-flex h-7 items-center rounded-full px-3 text-[11px] font-semibold"
+            style={{
+              border: '1px solid var(--sagb-line)',
+              backgroundColor: 'var(--sagb-surface)',
+              color: 'var(--sagb-muted)',
+            }}
+          >
             Atualizado agora
           </span>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {kpis.map((kpi) => (
-            <article key={kpi.label} className="rounded-xl border border-[#d9dee5] bg-white p-4 shadow-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.09em] text-[#95a0b1]">{kpi.label}</p>
-              <p className="mt-2 text-2xl font-semibold text-[#414854]">{kpi.value}</p>
-              <p className="mt-1 text-[11px] text-[#6f7887]">{kpi.hint}</p>
+            <article
+              key={kpi.label}
+              className="p-4"
+              style={{
+                borderRadius: 'var(--sagb-radius-xl)',
+                border: '1px solid var(--sagb-line)',
+                backgroundColor: 'var(--sagb-surface)',
+                boxShadow: 'var(--sagb-shadow)',
+              }}
+            >
+              <p
+                className="text-[10px] font-semibold uppercase tracking-[0.09em]"
+                style={{ color: 'var(--sagb-muted)' }}
+              >
+                {kpi.label}
+              </p>
+              <p
+                className="mt-2 text-2xl font-semibold"
+                style={{ color: 'var(--sagb-text)' }}
+              >
+                {kpi.value}
+              </p>
+              <p className="mt-1 text-[11px]" style={{ color: 'var(--sagb-muted)' }}>
+                {kpi.hint}
+              </p>
             </article>
           ))}
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-[1.4fr_1fr]">
-          <section className="rounded-xl border border-[#d9dee5] bg-white p-4 shadow-sm">
+          <section
+            className="p-4"
+            style={{
+              borderRadius: 'var(--sagb-radius-xl)',
+              border: '1px solid var(--sagb-line)',
+              backgroundColor: 'var(--sagb-surface)',
+              boxShadow: 'var(--sagb-shadow)',
+            }}
+          >
             <header className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-[#414854]">Tendência (7 dias)</h2>
-              <span className="text-xs font-semibold text-[#87a8cf]">Criadas x Concluídas</span>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--sagb-text)' }}>
+                Tendência (7 dias)
+              </h2>
+              <span className="text-xs font-semibold" style={{ color: 'var(--sagb-blue)' }}>
+                Criadas x Concluídas
+              </span>
             </header>
             <div className="space-y-2">
               {trend7d.map((d) => (
-                <div key={d.label} className="rounded-lg border border-[#e8ecf1] bg-[#fafbfc] px-3 py-2.5">
-                  <div className="mb-1.5 flex items-center justify-between text-[11px] text-[#6f7887]">
+                <div
+                  key={d.label}
+                  className="px-3 py-2.5"
+                  style={{
+                    borderRadius: 'var(--sagb-radius-lg)',
+                    border: '1px solid var(--sagb-line)',
+                    backgroundColor: 'var(--sagb-bg)',
+                  }}
+                >
+                  <div className="mb-1.5 flex items-center justify-between text-[11px]" style={{ color: 'var(--sagb-muted)' }}>
                     <span>{d.label}</span>
                     <span>Criadas {d.created} • Concluídas {d.done}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="h-2 rounded bg-[#dfeaf6]">
-                      <div className="h-2 rounded bg-[#87a8cf]" style={{ width: `${(d.created / maxTrend) * 100}%` }} />
+                    <div
+                      className="h-2 rounded"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--sagb-blue) 15%, transparent)',
+                      }}
+                    >
+                      <div
+                        className="h-2 rounded"
+                        style={{
+                          width: `${(d.created / maxTrend) * 100}%`,
+                          backgroundColor: 'var(--sagb-blue)',
+                        }}
+                      />
                     </div>
-                    <div className="h-2 rounded bg-[#dcf3ef]">
-                      <div className="h-2 rounded bg-[#68c7be]" style={{ width: `${(d.done / maxTrend) * 100}%` }} />
+                    <div
+                      className="h-2 rounded"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--sagb-primary) 15%, transparent)',
+                      }}
+                    >
+                      <div
+                        className="h-2 rounded"
+                        style={{
+                          width: `${(d.done / maxTrend) * 100}%`,
+                          backgroundColor: 'var(--sagb-primary)',
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -115,10 +198,22 @@ export const AgendaInteligenteHomePage: React.FC = () => {
             </div>
           </section>
 
-          <section className="rounded-xl border border-[#d9dee5] bg-white p-4 shadow-sm">
+          <section
+            className="p-4"
+            style={{
+              borderRadius: 'var(--sagb-radius-xl)',
+              border: '1px solid var(--sagb-line)',
+              backgroundColor: 'var(--sagb-surface)',
+              boxShadow: 'var(--sagb-shadow)',
+            }}
+          >
             <header className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-[#414854]">Resumo operacional</h2>
-              <span className="text-xs font-semibold text-[#87a8cf]">Dados reais</span>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--sagb-text)' }}>
+                Resumo operacional
+              </h2>
+              <span className="text-xs font-semibold" style={{ color: 'var(--sagb-blue)' }}>
+                Dados reais
+              </span>
             </header>
 
             <div className="space-y-2">
@@ -127,7 +222,16 @@ export const AgendaInteligenteHomePage: React.FC = () => {
                 `Itens no inbox pendentes: ${metrics.inbox.byStatus['pending'] || 0}`,
                 `Checklist em tarefas: ${metrics.tasks.withChecklist}`
               ].map((item) => (
-                <div key={item} className="rounded-lg border border-[#e8ecf1] bg-[#fafbfc] px-3 py-2 text-[12px] text-[#6f7887]">
+                <div
+                  key={item}
+                  className="px-3 py-2 text-[12px]"
+                  style={{
+                    borderRadius: 'var(--sagb-radius-lg)',
+                    border: '1px solid var(--sagb-line)',
+                    backgroundColor: 'var(--sagb-bg)',
+                    color: 'var(--sagb-muted)',
+                  }}
+                >
                   {item}
                 </div>
               ))}

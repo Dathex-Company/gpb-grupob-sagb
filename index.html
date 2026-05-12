@@ -19,7 +19,7 @@
 
     <!-- 🟢 [3] FONTE GLOBAL BAIXADA DO GOOGLE FONTS -->
     <!-- 🟢 Aqui você troca a família (ex.: Inter, Rubik, Poppins...) e os pesos disponíveis -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
       // 🟢 [4] CONFIGURAÇÃO GLOBAL DO TAILWIND (INLINE)
       // 🟢 Tudo aqui impacta o sistema inteiro
@@ -28,60 +28,38 @@
         theme: {
           extend: {
             fontFamily: {
-              // 🟢 [4.1] FONTE PADRÃO UTILIZADA QUANDO UMA TELA USA "font-sans"
-              sans: ['Inter', 'sans-serif'],
-              // 🟢 [4.2] Alias "font-nunito" também apontando para Inter
-              // 🟢 Se quiser separar no futuro, altere só esta linha
-              nunito: ['Inter', 'sans-serif'],
+              // 🟢 [4.1] FONTE PADRÃO — RUBIK (Robust Clean)
+              sans: ['Rubik', 'sans-serif'],
+              // 🟢 [4.2] Aliases mantidos apontando para Rubik
+              rubik: ['Rubik', 'sans-serif'],
             },
             colors: {
-              // 🟢 [4.3] PALETA DE CORES CUSTOMIZADA DO SISTEMA
-              bitrix: {
-                nav: '#111827',
-                accent: '#7C3AED',
-                text: '#1F2937',
-                secondary: '#6B7280',
-                border: '#E5E7EB',
-                surface: '#FFFFFF'
-              },
               // [4.4] SAGB OFFICIAL TOKENS (CSS VARIABLES)
               sagb: {
                 bg: 'var(--sagb-bg)',
-                'bg-2': 'var(--sagb-bg-2)',
-                panel: 'var(--sagb-panel)',
-                'panel-2': 'var(--sagb-panel-2)',
+                surface: 'var(--sagb-surface)',
                 line: 'var(--sagb-line)',
                 text: 'var(--sagb-text)',
                 muted: 'var(--sagb-muted)',
+                primary: 'var(--sagb-primary)',
                 blue: 'var(--sagb-blue)',
-                'blue-2': 'var(--sagb-blue-2)',
-                green: 'var(--sagb-green)',
-                amber: 'var(--sagb-amber)',
                 red: 'var(--sagb-red)',
+                amber: 'var(--sagb-amber)',
               }
             },
-            backgroundImage: {
-              'gradient-panels': 'var(--sagb-gradient-panels)',
-              'gradient-brand': 'var(--sagb-gradient-brand)',
-              'gradient-menu-active': 'var(--sagb-gradient-menu-active)',
-              'gradient-search': 'linear-gradient(180deg, #20242b, #1f2329)',
-              'gradient-button': 'linear-gradient(180deg, #262a31, #23272e)',
-              'gradient-tag': 'linear-gradient(180deg, #20242a, #1e2228)',
-              'gradient-switch-off': 'linear-gradient(180deg, #23262d, #1f2329)',
-              'gradient-switch-on': 'linear-gradient(180deg, #0d67c5, #0a84ff)',
-              'gradient-switch-handle': 'linear-gradient(180deg, #fbfcff, #d8dfeb)',
-            },
             boxShadow: {
-              sm: '0 1px 2px rgba(0, 0, 0, 0.01)',
-              DEFAULT: '0 1px 3px rgba(0, 0, 0, 0.02)',
-              md: '0 4px 6px -1px rgba(0, 0, 0, 0.02)',
-              lg: '0 10px 15px -3px rgba(0, 0, 0, 0.02)',
-              xl: '0 20px 25px -5px rgba(0, 0, 0, 0.03)',
-              '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.03)',
-              inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.01)',
-              'soft': '0 2px 10px rgba(0, 0, 0, 0.01)',
-              'hover': '0 20px 40px rgba(0, 0, 0, 0.02)',
+              soft: '0 12px 30px rgba(48,56,66,.07)',
+              DEFAULT: '0 4px 12px rgba(48,56,66,.05)',
+              md: '0 8px 20px rgba(48,56,66,.06)',
+              lg: '0 12px 30px rgba(48,56,66,.07)',
+              xl: '0 20px 40px rgba(48,56,66,.08)',
               none: 'none',
+            },
+            borderRadius: {
+              sm: '10px',
+              md: '14px',
+              lg: '18px',
+              xl: '22px',
             }
           },
         },
@@ -89,61 +67,73 @@
     </script>
     <style>
       :root {
-        /* Light Mode Defaults */
-        --sagb-bg: #FFFFFF;
-        --sagb-bg-2: #F9FAFB;
-        --sagb-panel: #FFFFFF;
-        --sagb-panel-2: #F9FAFB;
-        --sagb-line: rgba(0,0,0,.05);
-        --sagb-text: #1F2937;
-        --sagb-muted: #6B7280;
-        --sagb-blue: #3B82F6;
-        --sagb-blue-2: #2563EB;
-        --sagb-green: #10B981;
-        --sagb-amber: #F59E0B;
-        --sagb-red: #EF4444;
-
-        --sagb-gradient-panels: linear-gradient(180deg, #FFFFFF, #F9FAFB);
-        --sagb-gradient-brand: linear-gradient(135deg, #3B82F6, #2563EB);
-        --sagb-gradient-menu-active: linear-gradient(180deg, #EFF6FF, #DBEAFE);
+        /* 🟢 Robust Clean Palette — Light Mode */
+        --sagb-bg: #F2F4F6;
+        --sagb-surface: #FFFFFF;
+        --sagb-surface-soft: #FAFBFC;
+        --sagb-line: rgba(48,56,66,.08);
+        --sagb-text: #303842;
+        --sagb-muted: #8892A0;
+        --sagb-primary: #2FA99C;
+        --sagb-primary-soft: rgba(47,169,156,.10);
+        --sagb-primary-hover: #269286;
+        --sagb-blue: #5D86BC;
+        --sagb-blue-soft: rgba(93,134,188,.10);
+        --sagb-red: #C85E62;
+        --sagb-red-soft: rgba(200,94,98,.10);
+        --sagb-amber: #D4953A;
+        --sagb-amber-soft: rgba(212,149,58,.10);
+        --sagb-shadow: 0 12px 30px rgba(48,56,66,.07);
+        --sagb-radius-sm: 10px;
+        --sagb-radius-md: 14px;
+        --sagb-radius-xl: 22px;
       }
 
       .dark {
-        /* Desativado Dark visual - força cores claras (Light/Cora) */
-        --sagb-bg: #FFFFFF;
-        --sagb-bg-2: #F9FAFB;
-        --sagb-panel: #FFFFFF;
-        --sagb-panel-2: #F9FAFB;
-        --sagb-line: rgba(0,0,0,.05);
-        --sagb-text: #1F2937;
-        --sagb-muted: #6B7280;
-        --sagb-blue: #3B82F6;
-        --sagb-blue-2: #2563EB;
-        --sagb-green: #10B981;
-        --sagb-amber: #F59E0B;
-        --sagb-red: #EF4444;
-
-        --sagb-gradient-panels: linear-gradient(180deg, #FFFFFF, #F9FAFB);
-        --sagb-gradient-brand: linear-gradient(135deg, #3B82F6, #2563EB);
-        --sagb-gradient-menu-active: linear-gradient(180deg, #EFF6FF, #DBEAFE);
+        /* 🟢 Robust Clean Palette — Dark Mode (mesma paleta com bg escuro) */
+        --sagb-bg: #1A1D23;
+        --sagb-surface: #23272E;
+        --sagb-surface-soft: #1E2128;
+        --sagb-line: rgba(255,255,255,.06);
+        --sagb-text: #E8EDF5;
+        --sagb-muted: #8892A0;
+        --sagb-primary: #2FA99C;
+        --sagb-primary-soft: rgba(47,169,156,.15);
+        --sagb-primary-hover: #33BDB0;
+        --sagb-blue: #5D86BC;
+        --sagb-blue-soft: rgba(93,134,188,.15);
+        --sagb-red: #C85E62;
+        --sagb-red-soft: rgba(200,94,98,.15);
+        --sagb-amber: #D4953A;
+        --sagb-amber-soft: rgba(212,149,58,.15);
+        --sagb-shadow: 0 12px 30px rgba(0,0,0,.25);
+        --sagb-radius-sm: 10px;
+        --sagb-radius-md: 14px;
+        --sagb-radius-xl: 22px;
       }
 
       /* 🟢 [5] ESTILO GLOBAL DA BARRA DE SCROLL */
       ::-webkit-scrollbar { width: 6px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-      ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+      ::-webkit-scrollbar-thumb { background: rgba(48,56,66,0.15); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(48,56,66,0.25); }
       
       /* 🟢 [6] ESTILOS GLOBAIS DO BODY (APLICA NA APP INTEIRA) */
-      body { 
-        font-family: 'Inter', sans-serif;
-        -webkit-font-smoothing: antialiased; 
+      body {
+        font-family: 'Rubik', sans-serif;
+        -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         background-color: var(--sagb-bg);
         color: var(--sagb-text);
       }
 
-      /* 🟢 [7] ANIMAÇÃO PADRÃO DE ENTRADA DE MENSAGENS/CARDS */
+      /* 🟢 [7] SELEÇÃO DE TEXTO — primary tone */
+      ::selection {
+        background-color: var(--sagb-primary-soft);
+        color: var(--sagb-text);
+      }
+
+      /* 🟢 [8] ANIMAÇÃO PADRÃO DE ENTRADA DE MENSAGENS/CARDS */
       @keyframes slideUp {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -157,14 +147,15 @@
         max-width: none;
       }
       .prose p { margin-bottom: 0.75rem; line-height: 1.7; }
-      .prose strong { color: #111827; font-weight: 600; }
+      .prose strong { color: var(--sagb-text); font-weight: 600; }
       
       /* 🟢 [9] SUAVIZAÇÃO DE INPUTS E FOCO GLOBAL */
       input, textarea, select {
         transition: all 0.2s ease;
       }
       input:focus, textarea:focus, select:focus {
-        box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+        box-shadow: 0 0 0 2px var(--sagb-primary-soft);
+        border-color: var(--sagb-primary);
       }
 
       /* 🟢 [10] ESTILOS DE FALLBACK PARA O COMPONENTE AUTH */
@@ -261,7 +252,7 @@
 </head>
   <!-- 🟢 [10] CLASSES BASE DO BODY VIA TAILWIND -->
   <!-- 🟢 h-screen/overflow-hidden/bg/text controlam o layout base da aplicação -->
-  <body class="h-screen overflow-hidden bg-gray-50 text-gray-900 dark:bg-[#0B0F19] dark:text-white transition-colors duration-300">
+  <body class="h-screen overflow-hidden transition-colors duration-300" style="background-color: var(--sagb-bg); color: var(--sagb-text);">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
   <script>

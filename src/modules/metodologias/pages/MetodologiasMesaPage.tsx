@@ -137,12 +137,12 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
     <section className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2">
         <div>
-          <h2 className="text-2xl font-black text-sagb-text tracking-tight">Mesa de Estruturação Assistida</h2>
+          <h2 className="text-2xl font-black text-sagb-text tracking-tight">Área de trabalho das metodologias</h2>
           <p className="text-sagb-muted text-[12px]">
-            Bancada operacional para triagem, priorização e ação sobre entradas e ativos em estruturação.
+            Organize documentos recebidos, acompanhe rascunhos e avance para publicação com mais clareza.
           </p>
         </div>
-        <span className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Frente dedicada</span>
+        <span className="text-[11px] font-semibold text-sagb-muted">Fluxo guiado</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -167,8 +167,8 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
 
       <section className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 md:p-5 space-y-4">
         <header>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Leitura operacional da mesa</p>
-          <h3 className="text-lg font-black text-sagb-text tracking-tight mt-1">Visão executiva de gargalos e prontidão</h3>
+          <p className="text-[11px] font-semibold text-sagb-muted">Resumo da área de trabalho</p>
+          <h3 className="text-lg font-black text-sagb-text tracking-tight mt-1">Onde precisamos agir agora</h3>
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2.5">
@@ -348,7 +348,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Lacuna crítica</span>
+            <span className="text-[10px] uppercase tracking-wide text-sagb-muted">Ponto crítico</span>
             <select
               className={FILTER_BASE_CLASS}
               value={filtrosOperacionais.lacuna_critica}
@@ -360,8 +360,8 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
               }
             >
               <option value="todos">Todos</option>
-              <option value="com_lacuna_critica">Com lacuna crítica</option>
-              <option value="sem_lacuna_critica">Sem lacuna crítica</option>
+                <option value="com_lacuna_critica">Com ponto crítico</option>
+                <option value="sem_lacuna_critica">Sem ponto crítico</option>
             </select>
           </label>
 
@@ -450,7 +450,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
                           </span>
                           {item.lacuna_critica && (
                             <span className="px-2 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-[10px] font-black uppercase tracking-wide text-rose-500">
-                              Lacuna crítica
+                              Ponto crítico
                             </span>
                           )}
                           {item.parado && (
@@ -505,8 +505,8 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
 
       <form onSubmit={onRegistrarEntradaBruta} className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 md:p-5 space-y-3">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Entrada bruta</p>
-          <h3 className="text-lg font-black text-sagb-text tracking-tight mt-1">Registrar novo insumo</h3>
+          <p className="text-[11px] font-semibold text-sagb-muted">Novo documento</p>
+          <h3 className="text-lg font-black text-sagb-text tracking-tight mt-1">Adicionar conteúdo para leitura inicial</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -577,7 +577,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
             type="submit"
             className="px-3.5 py-2 rounded-lg bg-sagb-blue text-white text-[11px] font-black uppercase tracking-wide hover:brightness-110 transition"
           >
-            Registrar entrada bruta
+            Salvar documento
           </button>
         </div>
       </form>
@@ -585,7 +585,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-5">
         <article className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 md:p-5 space-y-3">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Fila de estruturação</p>
+            <p className="text-[11px] font-semibold text-sagb-muted">Fila de trabalho</p>
             <h3 className="text-lg font-black text-sagb-text tracking-tight mt-1">Entradas recebidas</h3>
           </div>
 
@@ -659,7 +659,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
               <article className="rounded-xl border border-violet-500/20 bg-violet-500/10 p-3 md:p-4 space-y-4">
                 <header className="space-y-2">
                   <p className="text-[11px] font-black uppercase tracking-[0.18em] text-violet-500">Conversão assistida</p>
-                  <h4 className="text-base font-black text-sagb-text tracking-tight">Entrada bruta → ativo em estruturação</h4>
+                  <h4 className="text-base font-black text-sagb-text tracking-tight">Documento recebido → rascunho da metodologia</h4>
                 </header>
 
                 <div className="flex flex-wrap gap-2">
@@ -690,7 +690,7 @@ export const MetodologiasMesaPage: React.FC<MetodologiasMesaPageProps> = ({
                   <p className="text-[12px] text-sagb-text"><strong>Status:</strong> {getStatusConversaoAssistidaLabel(conversaoAssistida.status_resultado)}</p>
                   {ativoEmEstruturacaoLocal && (
                     <p className="text-[12px] text-sagb-text">
-                      <strong>Leitura visual:</strong>{' '}
+                      <strong>Status rápido:</strong>{' '}
                       {getLeituraVisualEstruturacaoLabel(
                         ativoEmEstruturacaoLocal.governanca.estado === ('em_revisao' as AtivoMetodologicoEstadoGovernanca)
                           ? 'pronto_para_revisao_manual'

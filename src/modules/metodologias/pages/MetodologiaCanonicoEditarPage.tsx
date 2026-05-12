@@ -152,10 +152,10 @@ export const MetodologiaCanonicoEditarPage: React.FC<MetodologiaCanonicoEditarPa
       <header className="rounded-3xl border border-sagb-line bg-sagb-panel p-5 md:p-6 space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Manutenção canônica inicial</p>
-            <h2 className="text-2xl font-black text-sagb-text tracking-tight mt-1">Ativo canônico no catálogo</h2>
+            <p className="text-[11px] font-semibold text-sagb-muted">Manutenção da metodologia oficial</p>
+            <h2 className="text-2xl font-black text-sagb-text tracking-tight mt-1">Metodologia oficial no catálogo</h2>
             <p className="text-[12px] text-sagb-muted mt-1">
-              Ajuste controlado do canônico já promovido, sem reabrir estruturação e sem versionamento profundo.
+              Ajuste controlado da metodologia já publicada, sem reabrir o rascunho.
             </p>
           </div>
           <button
@@ -169,10 +169,10 @@ export const MetodologiaCanonicoEditarPage: React.FC<MetodologiaCanonicoEditarPa
 
         <div className="rounded-xl border border-sagb-line bg-sagb-bg-2 p-3 text-[12px] text-sagb-text space-y-1">
           <p>
-            <strong>Rastreabilidade preservada:</strong> entrada {ativo.origem_entrada_bruta_id}
+            <strong>Origem registrada:</strong> entrada {ativo.origem_entrada_bruta_id}
           </p>
           <p>
-            <strong>Estruturação de origem:</strong> {ativo.origem_ativo_em_estruturacao_id}
+            <strong>Rascunho de origem:</strong> {ativo.origem_ativo_em_estruturacao_id}
           </p>
         </div>
       </header>

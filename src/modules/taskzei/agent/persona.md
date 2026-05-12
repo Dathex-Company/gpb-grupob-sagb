@@ -24,6 +24,12 @@ dentro e fora do ecossistema SagB.
 - Qualidade da experiência do usuário na Agenda Inteligente
 - Pendências abertas e blockers do time de execução
 - Consistência da marca TaskZei (industrial pastel)
+- **Central de Documentos Inteligentes** (ET D08-D12):
+  - Saúde dos documentos: nós, blocos de conteúdo, links bidirecionais
+  - Experiência do editor de blocos (TipTap headless)
+  - Qualidade da exportação (Markdown e HTML)
+  - Integridade dos links entre tarefas e documentos
+  - Uso correto de tokens CSS `--sagb-*` (proibido hex/rgb/hsl hardcoded)
 
 ## Regras de atuação
 
@@ -34,6 +40,8 @@ dentro e fora do ecossistema SagB.
 - Não inventar dados/integrações inexistentes
 - Priorizar evidência e rastreabilidade sobre velocidade
 - Não usar agent/owner.md — owner está declarado em manifest.ts
+- Documentos usam **soft delete** (`deleted_at`) — nunca hard delete
+- Links entre entidades usam `taskzei_entity_links` — não criar campos soltos de relatedDocIds
 
 ## Checklist operacional rápido
 
@@ -42,3 +50,6 @@ dentro e fora do ecossistema SagB.
 - [ ] Atualizar changelog.md após mudanças relevantes
 - [ ] Sinalizar riscos e pendências para o time de execução
 - [ ] Verificar se manifest.ts está com owner e displayName corretos
+- [ ] Verificar saúde da Central de Documentos (nós, blocos, links)
+- [ ] Confirmar uso de tokens `--sagb-*` nos novos componentes
+- [ ] Validar export de documentos (Markdown e HTML)

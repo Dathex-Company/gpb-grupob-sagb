@@ -4,6 +4,20 @@ Registro de mudanças técnicas, decisões de arquitetura e evolução do módul
 
 ---
 
+## [v1.5.0-ux-radical-pass] - 2026-05-06
+
+### Melhorado
+- Humanização de linguagem no domínio em [`metodologiasCatalog.ts`](src/modules/metodologias/services/metodologiasCatalog.ts:68), reduzindo jargões como "bruto", "canônico" e "snapshot" em labels de UI.
+- Atualização de navegação e nomenclatura no hub em [`MetodologiasHubPage.tsx`](src/modules/metodologias/pages/MetodologiasHubPage.tsx:1225), com foco em entendimento rápido ("Área de trabalho", "Métricas").
+- Revisão de microcopy e tom da home em [`MetodologiasHomePage.tsx`](src/modules/metodologias/pages/MetodologiasHomePage.tsx:47), substituindo linguagem técnica por mensagens orientadas ao uso.
+- Simplificação textual da área operacional em [`MetodologiasMesaPage.tsx`](src/modules/metodologias/pages/MetodologiasMesaPage.tsx:140), incluindo renomeação de rótulos críticos (ex.: "Lacuna crítica" → "Ponto crítico").
+- Catálogo com comunicação mais direta em [`MetodologiasCatalogoPage.tsx`](src/modules/metodologias/pages/MetodologiasCatalogoPage.tsx:86), mantendo filtros avançados porém com termos de negócio mais claros.
+- Painel de métricas com comunicação executiva em [`MetodologiasSaudePage.tsx`](src/modules/metodologias/pages/MetodologiasSaudePage.tsx:33), reduzindo termos internos de implementação.
+- Ajustes de clareza em detalhe/edição de metodologia em [`MetodologiaAtivoPage.tsx`](src/modules/metodologias/pages/MetodologiaAtivoPage.tsx:65), [`MetodologiaAtivoEditarPage.tsx`](src/modules/metodologias/pages/MetodologiaAtivoEditarPage.tsx:107) e [`MetodologiaCanonicoEditarPage.tsx`](src/modules/metodologias/pages/MetodologiaCanonicoEditarPage.tsx:155).
+
+### Observações de Validação
+- Validação de tipos global via [`npx tsc --noEmit`](package.json:6) permanece falhando por erros pré-existentes fora do escopo de metodologias (arquivos `module-doc.ts` em outros módulos).
+
 ## [v1.4.0-mega-blaster-refactor] - 2026-05-05
 
 ### Corrigido

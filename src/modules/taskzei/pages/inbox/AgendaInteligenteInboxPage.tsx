@@ -12,11 +12,39 @@ const SOURCE_LABELS: Record<InboxSource, string> = {
   sagb_chat: 'Chat SagB',
 };
 
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  pending: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  classified: { label: 'Classificado', className: 'bg-blue-100 text-blue-700 border-blue-200' },
-  converted: { label: 'Convertido', className: 'bg-green-100 text-green-700 border-green-200' },
-  dismissed: { label: 'Descartado', className: 'bg-gray-100 text-gray-500 border-gray-200' },
+const STATUS_CONFIG: Record<string, { label: string; style: React.CSSProperties }> = {
+  pending: {
+    label: 'Pendente',
+    style: {
+      borderColor: 'var(--sagb-amber)',
+      backgroundColor: 'color-mix(in srgb, var(--sagb-amber) 8%, transparent)',
+      color: 'var(--sagb-amber)',
+    },
+  },
+  classified: {
+    label: 'Classificado',
+    style: {
+      borderColor: 'var(--sagb-blue)',
+      backgroundColor: 'color-mix(in srgb, var(--sagb-blue) 8%, transparent)',
+      color: 'var(--sagb-blue)',
+    },
+  },
+  converted: {
+    label: 'Convertido',
+    style: {
+      borderColor: 'var(--sagb-primary)',
+      backgroundColor: 'color-mix(in srgb, var(--sagb-primary) 8%, transparent)',
+      color: 'var(--sagb-primary)',
+    },
+  },
+  dismissed: {
+    label: 'Descartado',
+    style: {
+      borderColor: 'var(--sagb-line)',
+      backgroundColor: 'var(--sagb-bg)',
+      color: 'var(--sagb-muted)',
+    },
+  },
 };
 
 export const AgendaInteligenteInboxPage: React.FC = () => {
@@ -33,7 +61,6 @@ export const AgendaInteligenteInboxPage: React.FC = () => {
 
   useEffect(() => {
     const handleInbound = () => {
-      // refresh incremental ao chegar mensagem do Hub
       loadItems();
     };
     window.addEventListener('hub:inbound-message', handleInbound);
@@ -90,7 +117,6 @@ export const AgendaInteligenteInboxPage: React.FC = () => {
   const handleConvertToTask = async (item: InboxItem) => {
     if (item.status === 'converted') return;
     try {
-      // Classifica como task se ainda não classificado
       if (item.status === 'pending') {
         await handleClassify(item.id, 'task', 0.7);
       }
@@ -113,13 +139,24 @@ export const AgendaInteligenteInboxPage: React.FC = () => {
   const inboundPendingCount = inboxItems.filter(i => (i.source === 'whatsapp' || i.source === 'email') && i.status === 'pending').length;
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div
+      className="flex flex-col h-full overflow-hidden"
+      style={{
+        backgroundColor: 'var(--sagb-surface)',
+        borderRadius: 'var(--sagb-radius-xl)',
+        border: '1px solid var(--sagb-line)',
+        boxShadow: 'var(--sagb-shadow)',
+        fontFamily: "'Rubik', sans-serif",
+      }}
+    >
       {/* Header */}
-      <div className="border-b border-[#e8ecf1] px-6 py-4">
+      <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--sagb-line)' }}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-[#414854] tracking-tight">Inbox</h1>
-            <p className="text-[12px] text-[#6f7887] mt-0.5">
+            <h1 className="text-lg font-bold tracking-tight" style={{ color: 'var(--sagb-text)' }}>
+              Inbox
+            </h1>
+            <p className="text-[12px] mt-0.5" style={{ color: 'var(--sagb-muted)' }}>
               {pendingCount > 0
                 ? `${pendingCount} item(ns) pendente(s) de classificação`
                 : 'Tudo processado'}
@@ -127,7 +164,14 @@ export const AgendaInteligenteInboxPage: React.FC = () => {
           </div>
           <button
             onClick={loadItems}
-            className="rounded-lg border border-[#d9dee5] bg-white px-3 py-1.5 text-[12px] font-medium text-[#6f7887] hover:bg-[#f5f6f7] transition-colors"
+            className="rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors"
+            style={{
+              border: '1px solid var(--sagb-line)',
+              backgroundColor: 'var(--sagb-surface)',
+              color: 'var(--sagb-muted)',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-surface)'; }}
           >
             ↻ Atualizar
           </button>
@@ -141,28 +185,64 @@ export const AgendaInteligenteInboxPage: React.FC = () => {
             onChange={e => setNewContent(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAddItem()}
             placeholder="Adicionar item rapidamente... (Enter para enviar)"
-            className="flex-1 rounded-lg border border-[#d9dee5] px-3 py-2 text-[13px] placeholder:text-[#95a0b1] focus:outline-none focus:border-[#87a8cf] focus:ring-1 focus:ring-[#87a8cf]/20"
+            style={{
+              flex: 1,
+              borderRadius: 'var(--sagb-radius-lg)',
+              border: '1px solid var(--sagb-line)',
+              padding: '8px 12px',
+              fontSize: 13,
+              color: 'var(--sagb-text)',
+              outline: 'none',
+              backgroundColor: 'var(--sagb-surface)',
+            }}
           />
           <button
             onClick={handleAddItem}
             disabled={!newContent.trim()}
-            className="rounded-lg bg-[#68c7be] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#5ab8af] disabled:opacity-40 transition-colors"
+            className="rounded-lg px-4 py-2 text-[13px] font-medium text-white disabled:opacity-40 transition-colors"
+            style={{ backgroundColor: 'var(--sagb-primary)' }}
+            onMouseEnter={(e) => {
+              if (!newContent.trim()) return;
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-primary) 80%, black)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-primary)';
+            }}
           >
             + Adicionar
           </button>
         </div>
 
         {/* Filter tabs */}
-        <div className="mt-3 flex gap-1">
+        <div className="mt-3 flex gap-1 flex-wrap">
           {(['all', 'pending', 'classified', 'converted', 'dismissed'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`rounded-lg px-3 py-1 text-[11px] font-medium transition-colors ${
+              className="rounded-lg px-3 py-1 text-[11px] font-medium transition-colors"
+              style={
                 filter === f
-                  ? 'bg-[#eaf7f5] text-[#414854] border border-[#d7ece8]'
-                  : 'text-[#6f7887] hover:bg-[#f5f6f7]'
-              }`}
+                  ? {
+                      backgroundColor: 'color-mix(in srgb, var(--sagb-primary) 8%, transparent)',
+                      color: 'var(--sagb-text)',
+                      border: '1px solid var(--sagb-line)',
+                    }
+                  : {
+                      color: 'var(--sagb-muted)',
+                      backgroundColor: 'transparent',
+                      border: '1px solid transparent',
+                    }
+              }
+              onMouseEnter={(e) => {
+                if (filter !== f) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (filter !== f) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                }
+              }}
             >
               {f === 'all' ? 'Todas' : STATUS_CONFIG[f].label}
               {f !== 'all' && ` (${inboxItems.filter(i => i.status === f).length})`}
@@ -170,11 +250,30 @@ export const AgendaInteligenteInboxPage: React.FC = () => {
           ))}
           <button
             onClick={() => setShowInboundOnly(v => !v)}
-            className={`rounded-lg px-3 py-1 text-[11px] font-medium transition-colors border ${
+            className="rounded-lg px-3 py-1 text-[11px] font-medium transition-colors"
+            style={
               showInboundOnly
-                ? 'bg-[#fff4e8] text-[#9a5b00] border-[#ffd8a8]'
-                : 'text-[#6f7887] hover:bg-[#f5f6f7] border-transparent'
-            }`}
+                ? {
+                    backgroundColor: 'color-mix(in srgb, var(--sagb-amber) 8%, transparent)',
+                    color: 'var(--sagb-amber)',
+                    border: '1px solid color-mix(in srgb, var(--sagb-amber) 30%, transparent)',
+                  }
+                : {
+                    color: 'var(--sagb-muted)',
+                    border: '1px solid transparent',
+                    backgroundColor: 'transparent',
+                  }
+            }
+            onMouseEnter={(e) => {
+              if (!showInboundOnly) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!showInboundOnly) {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+              }
+            }}
           >
             Inbound Hub {inboundPendingCount > 0 ? `(${inboundPendingCount})` : ''}
           </button>
@@ -184,15 +283,15 @@ export const AgendaInteligenteInboxPage: React.FC = () => {
       {/* Content */}
       <div className="flex-1 overflow-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-32 text-[13px] text-[#95a0b1]">
+          <div className="flex items-center justify-center h-32 text-[13px]" style={{ color: 'var(--sagb-muted)' }}>
             Carregando...
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-[13px] text-[#95a0b1]">
+          <div className="flex items-center justify-center h-32 text-[13px]" style={{ color: 'var(--sagb-muted)' }}>
             Nenhum item encontrado
           </div>
         ) : (
-          <div className="divide-y divide-[#e8ecf1]">
+          <div>
             {filteredItems.map(item => (
               <InboxRow
                 key={item.id}
@@ -237,16 +336,27 @@ const InboxRow: React.FC<InboxRowProps> = ({
   const isClassifying = classifyingId === item.id;
 
   return (
-    <div className="px-6 py-3 hover:bg-[#fcfcfd] transition-colors group">
+    <div
+      className="px-6 py-3 transition-colors group"
+      style={{ borderBottom: '1px solid var(--sagb-line)' }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)'; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-medium text-[#414854] leading-relaxed">
+          <p className="text-[13px] font-medium leading-relaxed" style={{ color: 'var(--sagb-text)' }}>
             {item.content}
           </p>
-          <div className="mt-1.5 flex items-center gap-2 text-[11px] text-[#95a0b1]">
+          <div className="mt-1.5 flex items-center gap-2 text-[11px]" style={{ color: 'var(--sagb-muted)' }}>
             <span>{SOURCE_LABELS[item.source] || item.source}</span>
             <span>•</span>
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${config.className}`}>
+            <span
+              className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+              style={{
+                border: '1px solid',
+                ...config.style,
+              }}
+            >
               {config.label}
             </span>
             {item.suggestedType && (
@@ -269,7 +379,16 @@ const InboxRow: React.FC<InboxRowProps> = ({
           {item.status === 'pending' && !isClassifying && (
             <button
               onClick={onStartClassify}
-              className="rounded-md px-2.5 py-1 text-[11px] font-medium text-[#6f7887] hover:bg-[#eaf7f5] hover:text-[#68c7be] transition-colors"
+              className="rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors"
+              style={{ color: 'var(--sagb-muted)' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-primary) 8%, transparent)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--sagb-primary)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                (e.currentTarget as HTMLElement).style.color = 'var(--sagb-muted)';
+              }}
             >
               Classificar
             </button>
@@ -278,7 +397,16 @@ const InboxRow: React.FC<InboxRowProps> = ({
           {item.status === 'pending' && (
             <button
               onClick={onConvertToTask}
-              className="rounded-md px-2.5 py-1 text-[11px] font-medium text-[#6f7887] hover:bg-blue-50 hover:text-blue-600 transition-colors"
+              className="rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors"
+              style={{ color: 'var(--sagb-muted)' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-blue) 8%, transparent)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--sagb-blue)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                (e.currentTarget as HTMLElement).style.color = 'var(--sagb-muted)';
+              }}
             >
               Converter
             </button>
@@ -287,7 +415,16 @@ const InboxRow: React.FC<InboxRowProps> = ({
           {item.status !== 'dismissed' && item.status !== 'converted' && (
             <button
               onClick={onDismiss}
-              className="rounded-md px-2.5 py-1 text-[11px] font-medium text-[#6f7887] hover:bg-red-50 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+              className="rounded-md px-2.5 py-1 text-[11px] font-medium opacity-0 group-hover:opacity-100 transition-colors"
+              style={{ color: 'var(--sagb-muted)' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-red) 8%, transparent)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--sagb-red)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                (e.currentTarget as HTMLElement).style.color = 'var(--sagb-muted)';
+              }}
             >
               Descartar
             </button>
@@ -298,19 +435,35 @@ const InboxRow: React.FC<InboxRowProps> = ({
       {/* Classify inline form */}
       {isClassifying && (
         <div className="mt-2 flex items-center gap-2 pl-0">
-          <span className="text-[11px] text-[#6f7887]">Tipo:</span>
+          <span className="text-[11px]" style={{ color: 'var(--sagb-muted)' }}>Tipo:</span>
           {(['task', 'meeting', 'decision', 'note'] as SuggestedEntityType[]).map(type => (
             <button
               key={type}
               onClick={() => onClassify(type, type === 'task' ? 0.8 : type === 'meeting' ? 0.7 : 0.5)}
-              className="rounded-md border border-[#d9dee5] px-2.5 py-1 text-[11px] font-medium text-[#6f7887] hover:bg-[#eaf7f5] hover:border-[#68c7be] transition-colors"
+              className="rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors"
+              style={{
+                border: '1px solid var(--sagb-line)',
+                color: 'var(--sagb-muted)',
+                backgroundColor: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-primary) 8%, transparent)';
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--sagb-primary)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--sagb-line)';
+              }}
             >
               {type === 'task' ? '📋 Tarefa' : type === 'meeting' ? '📅 Reunião' : type === 'decision' ? '⚖️ Decisão' : '📝 Nota'}
             </button>
           ))}
           <button
             onClick={onCancelClassify}
-            className="text-[11px] text-[#95a0b1] hover:text-[#6f7887] ml-2"
+            className="text-[11px] ml-2 transition-colors"
+            style={{ color: 'var(--sagb-muted)' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--sagb-text)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--sagb-muted)'; }}
           >
             Cancelar
           </button>

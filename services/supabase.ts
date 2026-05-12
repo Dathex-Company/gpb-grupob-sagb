@@ -2825,6 +2825,16 @@ export const getDocs = async (queryRef: CollectionRef | QueryRef) => {
   return buildCollectionSnapshot(data || [], queryRef.table);
 };
 
+export const getDoc = async (docRef: DocRef) => {
+  const params = new URLSearchParams();
+  params.set('id', `eq.${docRef.id}`);
+  params.set('limit', '1');
+
+  const data = await restFetch(docRef.table, { query: params });
+  const row = Array.isArray(data) ? (data[0] ?? null) : null;
+  return buildDocSnapshot(row, docRef.table);
+};
+
 // Compat Firebase Auth helpers (mantidos para o Auth.tsx)
 export const signInWithEmailAndPassword = async (_auth: typeof auth, email: string, password: string) => {
   const { data, error } = await auth.signInWithPassword({ email, password });

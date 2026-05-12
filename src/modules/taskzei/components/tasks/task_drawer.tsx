@@ -1,6 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { TaskzeiTask } from '../../types/task.types';
 import { taskzeiFacade } from '../../services/taskzei.facade';
+import { docService } from '../../services/doc_service';
+import { EntityLink, DocNode } from '../../types/doc_types';
+import { docAiService } from '../../services/doc_ai_service';
 
 interface TaskDrawerProps {
   task: TaskzeiTask | null;
@@ -13,10 +16,10 @@ interface TaskDrawerProps {
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const priorityColors: Record<string, string> = {
-  baixa: 'bg-[#87a8cf]',
-  media: 'bg-[#e6c06d]',
-  alta: 'bg-[#d78484]',
-  urgente: 'bg-[#c0392b]',
+  baixa: 'var(--sagb-blue)',
+  media: 'var(--sagb-amber)',
+  alta: 'var(--sagb-red)',
+  urgente: '#C85E62',
 };
 
 const priorityLabels: Record<string, string> = {
@@ -60,26 +63,29 @@ const SaveIndicator: React.FC<{ status: SaveStatus }> = ({ status }) => {
     <span className="inline-flex items-center gap-1 text-[10px] font-semibold">
       {status === 'saving' && (
         <>
-          <svg className="h-3 w-3 animate-pulse text-[#e6c06d]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="h-3 w-3 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            style={{ color: 'var(--sagb-amber)' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span className="text-[#e6c06d]">Salvando...</span>
+          <span style={{ color: 'var(--sagb-amber)' }}>Salvando...</span>
         </>
       )}
       {status === 'saved' && (
         <>
-          <svg className="h-3 w-3 text-[#68c7be]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+            style={{ color: 'var(--sagb-primary)' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
-          <span className="text-[#68c7be]">Salvo</span>
+          <span style={{ color: 'var(--sagb-primary)' }}>Salvo</span>
         </>
       )}
       {status === 'error' && (
         <>
-          <svg className="h-3 w-3 text-[#d78484]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            style={{ color: 'var(--sagb-red)' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
           </svg>
-          <span className="text-[#d78484]">Erro ao salvar</span>
+          <span style={{ color: 'var(--sagb-red)' }}>Erro ao salvar</span>
         </>
       )}
     </span>
@@ -98,6 +104,24 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   const [newCommentText, setNewCommentText] = useState('');
   const [isAddingComment, setIsAddingComment] = useState(false);
 
+  // ─── Documentos de Apoio ──────────────────────────────
+  const [linkedDocs, setLinkedDocs] = useState<DocNode[]>([]);
+  const [allDocs, setAllDocs] = useState<DocNode[]>([]);
+  const [docSearchQuery, setDocSearchQuery] = useState('');
+  const [isDocSearchOpen, setIsDocSearchOpen] = useState(false);
+  const [isLoadingLinks, setIsLoadingLinks] = useState(false);
+
+  // ─── Hover states para Documentos de Apoio (--sagb-*) ─
+  const [hoveredLinkedDocId, setHoveredLinkedDocId] = useState<string | null>(null);
+  const [hoveredSearchItemId, setHoveredSearchItemId] = useState<string | null>(null);
+  const [isCancelBtnHovered, setIsCancelBtnHovered] = useState(false);
+  const [isLinkBtnHovered, setIsLinkBtnHovered] = useState(false);
+  const [isDocInputFocused, setIsDocInputFocused] = useState(false);
+
+  // ─── IA para Documentos ────────────────────────────────
+  const [aiProcessing, setAiProcessing] = useState<'idle' | 'extracting' | 'summarizing' | 'error'>('idle');
+  const [aiResultMessage, setAiResultMessage] = useState<string | null>(null);
+
   const titleStatus = useAutoSave();
   const descStatus = useAutoSave();
   const assigneeStatus = useAutoSave();
@@ -106,6 +130,138 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   useEffect(() => {
     setLocalTask(task);
   }, [task]);
+
+  // Carrega documentos vinculados quando a task muda
+  useEffect(() => {
+    if (!task?.id) return;
+    let cancelled = false;
+    setIsLoadingLinks(true);
+    (async () => {
+      try {
+        // Carrega todos os nós de documentos
+        const allNodes = await docService.loadNodes();
+        if (cancelled) return;
+        setAllDocs(allNodes);
+
+        // Busca links onde esta task é source
+        const links = await docService.getLinksForEntity('task', task.id);
+        if (cancelled) return;
+        const docs = links
+          .filter((l) => l.targetType === 'document')
+          .map((l) => allNodes.find((n) => n.id === l.targetId))
+          .filter((n): n is DocNode => n !== undefined);
+        setLinkedDocs(docs);
+      } catch (err) {
+        console.error('[TaskDrawer] Erro ao carregar documentos vinculados:', err);
+      } finally {
+        if (!cancelled) setIsLoadingLinks(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [task?.id]);
+
+  // Busca documentos para vincular
+  const availableDocsToLink = allDocs.filter(
+    (doc) =>
+      doc.type === 'document' &&
+      !linkedDocs.some((l) => l.id === doc.id) &&
+      !doc.deletedAt &&
+      (doc.title.toLowerCase().includes(docSearchQuery.toLowerCase()) ||
+        docSearchQuery === '')
+  );
+
+  const handleLinkDoc = async (docId: string) => {
+    if (!task?.id) return;
+    try {
+      const metadata = {
+        intent: 'execution_support',
+        linked_from: 'task_drawer',
+        timestamp: new Date().toISOString(),
+      };
+      await docService.createLink({
+        sourceType: 'task',
+        sourceId: task.id,
+        targetType: 'document',
+        targetId: docId,
+        relationship: 'related',
+        metadata,
+      });
+      const doc = allDocs.find((n) => n.id === docId);
+      if (doc) setLinkedDocs((prev) => [...prev, doc]);
+    } catch (err) {
+      console.error('[TaskDrawer] Erro ao vincular documento:', err);
+    }
+  };
+
+  const handleUnlinkDoc = async (docId: string) => {
+    if (!task?.id) return;
+    try {
+      const links = await docService.getLinksForEntity('task', task.id);
+      const linkToRemove = links.find(
+        (l) => l.targetType === 'document' && l.targetId === docId
+      );
+      if (linkToRemove) {
+        await docService.deleteLink(linkToRemove.id);
+        setLinkedDocs((prev) => prev.filter((d) => d.id !== docId));
+      }
+    } catch (err) {
+      console.error('[TaskDrawer] Erro ao desvincular documento:', err);
+    }
+  };
+
+  // ─── Handlers de IA para Documentos ────────────────────
+  const handleExtractActionsFromDocs = useCallback(async () => {
+    if (!localTask?.id || aiProcessing !== 'idle' || linkedDocs.length === 0) return;
+    setAiProcessing('extracting');
+    setAiResultMessage(null);
+    let hasError = false;
+    try {
+      const result = await docAiService.extractActionsFromLinkedDocs('task', localTask.id);
+      setAiResultMessage(result.message);
+      if (result.success) {
+        setAiProcessing('idle');
+      } else {
+        setAiProcessing('error');
+        hasError = true;
+      }
+    } catch {
+      setAiResultMessage('Erro ao extrair ações dos documentos. Tente novamente.');
+      setAiProcessing('error');
+      hasError = true;
+    }
+    setTimeout(() => {
+      setAiResultMessage(null);
+      if (hasError) setAiProcessing('idle');
+    }, hasError ? 8000 : 4000);
+  }, [localTask?.id, aiProcessing, linkedDocs.length]);
+
+  const handleSummarizeFromDocs = useCallback(async () => {
+    if (!localTask?.id || aiProcessing !== 'idle' || linkedDocs.length === 0) return;
+    setAiProcessing('summarizing');
+    setAiResultMessage(null);
+    let hasError = false;
+    try {
+      const docIds = linkedDocs.map(d => d.id);
+      const summaries: string[] = [];
+      for (const nodeId of docIds) {
+        const result = await docAiService.summarizeDoc(nodeId);
+        if (result.success && result.data) {
+          const data = result.data as { summary: string; keywords: string[] };
+          summaries.push(data.summary);
+        }
+      }
+      setAiResultMessage(`✅ Resumo de ${summaries.length} documento(s) gerado com sucesso.`);
+      setAiProcessing('idle');
+    } catch {
+      setAiResultMessage('Erro ao gerar resumo dos documentos. Tente novamente.');
+      setAiProcessing('error');
+      hasError = true;
+    }
+    setTimeout(() => {
+      setAiResultMessage(null);
+      if (hasError) setAiProcessing('idle');
+    }, hasError ? 8000 : 4000);
+  }, [localTask?.id, aiProcessing, linkedDocs]);
 
   if (!isOpen || !localTask) return null;
 
@@ -209,17 +365,30 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
     <>
       <div className="fixed inset-0 z-40 bg-black/20 transition-opacity" onClick={onClose} />
 
-      <div className="fixed right-0 top-0 h-full w-[500px] bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-in-out border-l border-[#d9dee5]">
+      <div
+        className="fixed right-0 top-0 h-full w-[500px] z-50 flex flex-col transform transition-transform duration-300 ease-in-out shadow-2xl"
+        style={{ backgroundColor: 'var(--sagb-surface)', borderLeft: '1px solid var(--sagb-line)' }}
+      >
         {/* ── Header ─────────────────────────────────── */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8ecf1]">
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid var(--sagb-line)' }}>
           <div className="flex items-center gap-2">
             <button
               onClick={() => onComplete(localTask.id)}
               className={`px-3 py-1.5 text-[12px] font-bold rounded-md flex items-center gap-1.5 transition-colors ${
                 isCompleted
-                  ? 'bg-[#eaf7f5] text-[#4ea79e] hover:bg-[#d7ece8]'
-                  : 'bg-[#f0f2f4] text-[#6f7887] hover:bg-[#e8ecf1]'
+                  ? 'text-[var(--sagb-primary)]'
+                  : ''
               }`}
+              style={{
+                backgroundColor: isCompleted ? 'var(--sagb-primary-soft)' : 'var(--sagb-bg)',
+                color: isCompleted ? 'var(--sagb-primary)' : 'var(--sagb-muted)',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = isCompleted ? 'color-mix(in srgb, var(--sagb-primary) 20%, transparent)' : 'color-mix(in srgb, var(--sagb-text) 8%, transparent)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = isCompleted ? 'var(--sagb-primary-soft)' : 'var(--sagb-bg)';
+              }}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -229,7 +398,14 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
             <select
               value={localTask.status}
               onChange={(e) => onChangeStatus(localTask.id, e.target.value as TaskzeiTask['status'])}
-              className="text-[12px] font-bold bg-white border border-[#d9dee5] rounded-md px-3 py-1.5 text-[#414854] hover:bg-[#f5f6f7] outline-none focus:ring-2 focus:ring-[#87a8cf]/20 focus:border-[#87a8cf]"
+              className="text-[12px] font-bold rounded-md px-3 py-1.5 outline-none"
+              style={{
+                backgroundColor: 'var(--sagb-surface)',
+                border: '1px solid var(--sagb-line)',
+                color: 'var(--sagb-text)',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-surface)'; }}
             >
               <option value="aberta">Aberta</option>
               <option value="em_andamento">Em Andamento</option>
@@ -240,7 +416,16 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
             <SaveIndicator status={titleStatus.status} />
             <button
               onClick={onClose}
-              className="p-2 text-[#95a0b1] hover:bg-[#f0f2f4] hover:text-[#414854] rounded-lg transition-colors"
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--sagb-muted)' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--sagb-text)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                (e.currentTarget as HTMLElement).style.color = 'var(--sagb-muted)';
+              }}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -259,7 +444,8 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                 value={localTask.title}
                 onChange={(e) => updateField('title', e.target.value)}
                 onBlur={handleTitleBlur}
-                className="w-full text-2xl font-black text-[#414854] bg-transparent border-none outline-none placeholder:text-[#95a0b1]"
+                className="w-full text-2xl font-black bg-transparent border-none outline-none"
+                style={{ color: 'var(--sagb-text)' }}
                 placeholder="Título da tarefa"
               />
             </div>
@@ -268,9 +454,12 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
             <div className="grid grid-cols-2 gap-y-4 gap-x-8">
               {/* Responsável */}
               <div>
-                <span className="block text-[10px] font-black uppercase tracking-widest text-[#95a0b1] mb-1">Responsável</span>
+                <span className="block text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: 'var(--sagb-muted)' }}>Responsável</span>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-[#f0f2f4] flex items-center justify-center text-[10px] font-bold text-[#6f7887]">
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                    style={{ backgroundColor: 'var(--sagb-bg)', color: 'var(--sagb-muted)' }}
+                  >
                     {localTask.assigneeName?.charAt(0) || '?'}
                   </div>
                   <input
@@ -278,7 +467,8 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                     value={localTask.assigneeName || ''}
                     onChange={(e) => updateField('assigneeName', e.target.value || undefined)}
                     onBlur={handleAssigneeBlur}
-                    className="flex-1 text-[12px] font-medium text-[#414854] bg-transparent border-b border-transparent focus:border-[#87a8cf] outline-none placeholder:text-[#95a0b1]"
+                    className="flex-1 text-[12px] font-medium bg-transparent border-b border-transparent outline-none"
+                    style={{ color: 'var(--sagb-text)' }}
                     placeholder="Não atribuído"
                   />
                   <SaveIndicator status={assigneeStatus.status} />
@@ -287,13 +477,18 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
               {/* Prazo */}
               <div>
-                <span className="block text-[10px] font-black uppercase tracking-widest text-[#95a0b1] mb-1">Prazo</span>
+                <span className="block text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: 'var(--sagb-muted)' }}>Prazo</span>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={localTask.dueDate || ''}
                     onChange={(e) => handleDueDateChange(e.target.value)}
-                    className="text-[12px] font-medium text-[#414854] bg-transparent border border-[#d9dee5] rounded-md px-2 py-1 outline-none focus:border-[#87a8cf]"
+                    className="text-[12px] font-medium rounded-md px-2 py-1 outline-none"
+                    style={{
+                      color: 'var(--sagb-text)',
+                      backgroundColor: 'transparent',
+                      border: '1px solid var(--sagb-line)',
+                    }}
                   />
                   <SaveIndicator status={dueDateStatus.status} />
                 </div>
@@ -301,7 +496,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
               {/* Prioridade */}
               <div>
-                <span className="block text-[10px] font-black uppercase tracking-widest text-[#95a0b1] mb-1">Prioridade</span>
+                <span className="block text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: 'var(--sagb-muted)' }}>Prioridade</span>
                 <select
                   value={localTask.priority}
                   onChange={(e) => {
@@ -309,7 +504,12 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                     updateField('priority', newPriority);
                     taskzeiFacade.updateTask(localTask.id, { priority: newPriority } as any).catch(console.error);
                   }}
-                  className="text-[12px] font-medium bg-white border border-[#d9dee5] rounded-md px-2 py-1 text-[#414854] outline-none focus:border-[#87a8cf]"
+                  className="text-[12px] font-medium rounded-md px-2 py-1 outline-none"
+                  style={{
+                    backgroundColor: 'var(--sagb-surface)',
+                    border: '1px solid var(--sagb-line)',
+                    color: 'var(--sagb-text)',
+                  }}
                 >
                   <option value="baixa">Baixa</option>
                   <option value="media">Média</option>
@@ -320,8 +520,11 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
               {/* Status (readonly aqui, muda pelo header) */}
               <div>
-                <span className="block text-[10px] font-black uppercase tracking-widest text-[#95a0b1] mb-1">Status</span>
-                <span className="inline-block text-[12px] font-semibold text-[#414854] bg-[#f0f2f4] px-2 py-1 rounded-md">
+                <span className="block text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: 'var(--sagb-muted)' }}>Status</span>
+                <span
+                  className="inline-block text-[12px] font-semibold px-2 py-1 rounded-md"
+                  style={{ color: 'var(--sagb-text)', backgroundColor: 'var(--sagb-bg)' }}
+                >
                   {statusLabels[localTask.status]}
                 </span>
               </div>
@@ -329,13 +532,18 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
             {/* Descrição */}
             <div>
-              <span className="block text-[10px] font-black uppercase tracking-widest text-[#95a0b1] mb-2">Descrição</span>
+              <span className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--sagb-muted)' }}>Descrição</span>
               <div className="flex items-start gap-2">
                 <textarea
                   value={localTask.description || ''}
                   onChange={(e) => updateField('description', e.target.value || undefined)}
                   onBlur={handleDescriptionBlur}
-                  className="w-full min-h-[80px] max-h-[300px] text-[12px] text-[#414854] bg-[#fafbfc] border border-[#d9dee5] rounded-lg p-3 outline-none resize-y focus:border-[#87a8cf] focus:ring-1 focus:ring-[#87a8cf]/20 placeholder:text-[#95a0b1]"
+                  className="w-full min-h-[80px] max-h-[300px] text-[12px] rounded-lg p-3 outline-none resize-y"
+                  style={{
+                    color: 'var(--sagb-text)',
+                    backgroundColor: 'var(--sagb-bg)',
+                    border: '1px solid var(--sagb-line)',
+                  }}
                   placeholder="Adicione uma descrição..."
                 />
                 <SaveIndicator status={descStatus.status} />
@@ -344,10 +552,13 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
             {/* ── Checklist ───────────────────────────── */}
             <div>
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-[#95a0b1] mb-3 flex items-center gap-2">
+              <h3 className="text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-2" style={{ color: 'var(--sagb-muted)' }}>
                 Checklist
                 {checklistCount > 0 && (
-                  <span className="text-[10px] font-semibold text-[#6f7887] bg-[#f0f2f4] px-2 py-0.5 rounded-full">
+                  <span
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                    style={{ color: 'var(--sagb-muted)', backgroundColor: 'var(--sagb-bg)' }}
+                  >
                     {checklistCompleted}/{checklistCount}
                   </span>
                 )}
@@ -355,23 +566,39 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
               <div className="space-y-1">
                 {(localTask.checklist || []).map((item) => (
-                  <div key={item.id} className="group flex items-center gap-2 px-1 py-0.5 rounded hover:bg-[#f5f6f7]">
+                  <div
+                    key={item.id}
+                    className="group flex items-center gap-2 px-1 py-0.5 rounded transition-colors"
+                    style={{ backgroundColor: 'transparent' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-bg)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                  >
                     <input
                       type="checkbox"
                       checked={item.completed}
                       onChange={() => handleToggleChecklist(item.id)}
-                      className="w-4 h-4 rounded border-[#d9dee5] text-[#68c7be] focus:ring-[#68c7be] cursor-pointer"
+                      className="w-4 h-4 rounded cursor-pointer"
+                      style={{
+                        borderColor: 'var(--sagb-line)',
+                        accentColor: 'var(--sagb-primary)',
+                      }}
                     />
                     <span
                       className={`flex-1 text-[12px] ${
-                        item.completed ? 'text-[#95a0b1] line-through' : 'text-[#414854]'
+                        item.completed ? 'line-through' : ''
                       }`}
+                      style={{
+                        color: item.completed ? 'var(--sagb-muted)' : 'var(--sagb-text)',
+                      }}
                     >
                       {item.title}
                     </span>
                     <button
                       onClick={() => handleRemoveChecklistItem(item.id)}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 text-[#95a0b1] hover:text-[#d78484] transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-0.5 transition-all"
+                      style={{ color: 'var(--sagb-muted)' }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--sagb-red)'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--sagb-muted)'; }}
                       title="Remover item"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -390,12 +617,25 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                   onChange={(e) => setNewChecklistTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleAddChecklistItem(); }}
                   placeholder="Adicionar item..."
-                  className="flex-1 text-[12px] text-[#414854] bg-transparent border-b border-[#d9dee5] outline-none focus:border-[#87a8cf] placeholder:text-[#95a0b1] py-1"
+                  className="flex-1 text-[12px] bg-transparent outline-none py-1"
+                  style={{
+                    color: 'var(--sagb-text)',
+                    borderBottom: '1px solid var(--sagb-line)',
+                  }}
                 />
                 <button
                   onClick={handleAddChecklistItem}
                   disabled={!newChecklistTitle.trim()}
-                  className="text-[10px] font-bold text-white bg-[#68c7be] rounded-md px-2 py-1 disabled:opacity-40 hover:bg-[#4ea79e] transition-colors"
+                  className="text-[10px] font-bold text-white rounded-md px-2 py-1 transition-colors disabled:opacity-40"
+                  style={{ backgroundColor: 'var(--sagb-primary)' }}
+                  onMouseEnter={(e) => {
+                    if (newChecklistTitle.trim()) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-primary) 80%, black)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-primary)';
+                  }}
                 >
                   + Add
                 </button>
@@ -403,11 +643,11 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
             </div>
 
             {/* ── Comentários ──────────────────────────── */}
-            <div className="border-t border-[#e8ecf1] pt-6">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-[#95a0b1] mb-4">
+            <div className="pt-6" style={{ borderTop: '1px solid var(--sagb-line)' }}>
+              <h3 className="text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: 'var(--sagb-muted)' }}>
                 Comentários
                 {(localTask.comments?.length || 0) > 0 && (
-                  <span className="ml-2 text-[10px] font-semibold text-[#68c7be]">
+                  <span className="ml-2 text-[10px] font-semibold" style={{ color: 'var(--sagb-primary)' }}>
                     ({localTask.comments?.length})
                   </span>
                 )}
@@ -415,22 +655,41 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
               {/* Add comment */}
               <div className="flex gap-3 mb-6">
-                <div className="w-8 h-8 rounded-full bg-[#eaf7f5] flex items-center justify-center text-[#68c7be] font-bold shrink-0 text-[12px]">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0 text-[12px]"
+                  style={{ backgroundColor: 'var(--sagb-primary-soft)', color: 'var(--sagb-primary)' }}
+                >
                   V
                 </div>
                 <div className="flex-1">
-                  <div className="border border-[#d9dee5] rounded-lg focus-within:border-[#87a8cf] focus-within:ring-1 focus-within:ring-[#87a8cf]/20 overflow-hidden">
+                  <div
+                    className="rounded-lg overflow-hidden"
+                    style={{ border: '1px solid var(--sagb-line)' }}
+                  >
                     <textarea
                       value={newCommentText}
                       onChange={(e) => setNewCommentText(e.target.value)}
-                      className="w-full p-3 text-[12px] outline-none resize-none bg-transparent min-h-[60px] text-[#414854] placeholder:text-[#95a0b1]"
+                      className="w-full p-3 text-[12px] outline-none resize-none bg-transparent min-h-[60px]"
+                      style={{ color: 'var(--sagb-text)' }}
                       placeholder="Adicione um comentário..."
                     />
-                    <div className="bg-[#fafbfc] px-3 py-2 flex justify-end border-t border-[#e8ecf1]">
+                    <div
+                      className="px-3 py-2 flex justify-end"
+                      style={{ backgroundColor: 'var(--sagb-bg)', borderTop: '1px solid var(--sagb-line)' }}
+                    >
                       <button
                         onClick={handleAddComment}
                         disabled={!newCommentText.trim() || isAddingComment}
-                        className="px-3 py-1.5 bg-[#68c7be] text-white text-[10px] font-bold rounded hover:bg-[#4ea79e] transition-colors disabled:opacity-40"
+                        className="px-3 py-1.5 text-white text-[10px] font-bold rounded transition-colors disabled:opacity-40"
+                        style={{ backgroundColor: 'var(--sagb-primary)' }}
+                        onMouseEnter={(e) => {
+                          if (newCommentText.trim()) {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = 'color-mix(in srgb, var(--sagb-primary) 80%, black)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-primary)';
+                        }}
                       >
                         {isAddingComment ? 'Enviando...' : 'Comentar'}
                       </button>
@@ -444,18 +703,28 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                 <div className="space-y-4">
                   {localTask.comments.map((comment) => (
                     <div key={comment.id} className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#f0f2f4] flex items-center justify-center text-[#6f7887] text-[10px] font-bold shrink-0">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                        style={{ backgroundColor: 'var(--sagb-bg)', color: 'var(--sagb-muted)' }}
+                      >
                         {comment.authorName.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-[12px] text-[#414854]">{comment.authorName}</span>
-                          <span className="text-[10px] text-[#95a0b1]">
+                          <span className="font-bold text-[12px]" style={{ color: 'var(--sagb-text)' }}>{comment.authorName}</span>
+                          <span className="text-[10px]" style={{ color: 'var(--sagb-muted)' }}>
                             {new Date(comment.createdAt).toLocaleDateString('pt-BR')} às{' '}
                             {new Date(comment.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        <div className="text-[12px] text-[#6f7887] bg-[#fafbfc] p-3 rounded-lg rounded-tl-none border border-[#e8ecf1]">
+                        <div
+                          className="text-[12px] p-3 rounded-lg rounded-tl-none"
+                          style={{
+                            color: 'var(--sagb-text)',
+                            backgroundColor: 'var(--sagb-bg)',
+                            border: '1px solid var(--sagb-line)',
+                          }}
+                        >
                           {comment.content}
                         </div>
                       </div>
@@ -463,7 +732,185 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                   ))}
                 </div>
               ) : (
-                <p className="text-[12px] text-[#95a0b1] text-center py-4">Nenhum comentário ainda.</p>
+                <p className="text-[12px] text-center py-4" style={{ color: 'var(--sagb-muted)' }}>Nenhum comentário ainda.</p>
+              )}
+            </div>
+
+            {/* ── Documentos de Apoio ────────────────────── */}
+            <div className="pt-6" style={{ borderTop: '1px solid var(--sagb-line)' }}>
+              <h3 className="text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: 'var(--sagb-muted)' }}>
+                Documentos de Apoio
+                {linkedDocs.length > 0 && (
+                  <span
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                    style={{ color: 'var(--sagb-primary)', backgroundColor: 'var(--sagb-primary-soft)' }}
+                  >
+                    {linkedDocs.length}
+                  </span>
+                )}
+              </h3>
+
+              {isLoadingLinks ? (
+                <p className="text-[12px] text-center py-4" style={{ color: 'var(--sagb-muted)' }}>Carregando...</p>
+              ) : (
+                <>
+                  {/* Lista de documentos vinculados */}
+                  {linkedDocs.length > 0 && (
+                    <div className="space-y-1 mb-4">
+                      {linkedDocs.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded transition-colors"
+                          onMouseEnter={() => setHoveredLinkedDocId(doc.id)}
+                          onMouseLeave={() => setHoveredLinkedDocId(null)}
+                          style={{ backgroundColor: hoveredLinkedDocId === doc.id ? 'var(--sagb-bg)' : 'transparent' }}
+                        >
+                          <span style={{ fontSize: 14 }}>{doc.icon || '📄'}</span>
+                          <span className="flex-1 text-[12px] font-medium truncate" style={{ color: 'var(--sagb-text)' }}>
+                            {doc.title}
+                          </span>
+                          <button
+                            onClick={() => handleUnlinkDoc(doc.id)}
+                            className="p-0.5 transition-all"
+                            style={{
+                              opacity: hoveredLinkedDocId === doc.id ? 1 : 0,
+                              color: hoveredLinkedDocId === doc.id ? 'var(--sagb-red)' : 'var(--sagb-muted)',
+                            }}
+                            title="Desvincular"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Ações de IA para Documentos */}
+                  {linkedDocs.length > 0 && aiProcessing === 'idle' && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <button
+                        onClick={handleExtractActionsFromDocs}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors"
+                        style={{ color: 'var(--sagb-primary)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-primary-soft)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                        title="Extrair ações de todos os documentos vinculados"
+                      >
+                        ✨ Extrair Ações
+                      </button>
+                      <button
+                        onClick={handleSummarizeFromDocs}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-colors"
+                        style={{ color: 'var(--sagb-primary)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-primary-soft)'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+                        title="Gerar resumo de todos os documentos vinculados"
+                      >
+                        ✨ Gerar Resumo
+                      </button>
+                    </div>
+                  )}
+                  {aiProcessing !== 'idle' && (
+                    <div className="flex items-center gap-1.5 mb-3 text-[11px] font-semibold" style={{ color: 'var(--sagb-primary)' }}>
+                      <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      {aiProcessing === 'extracting' ? 'Extraindo ações...' : 'Gerando resumo...'}
+                    </div>
+                  )}
+                  {aiResultMessage && aiProcessing === 'idle' && (
+                    <div className="mb-3 text-[11px] p-2 rounded" style={{
+                      color: 'var(--sagb-text)',
+                      backgroundColor: 'var(--sagb-primary-soft)',
+                      border: '1px solid var(--sagb-primary)',
+                    }}>
+                      {aiResultMessage}
+                    </div>
+                  )}
+
+                  {/* Seção de busca/vincular */}
+                  <div>
+                    {isDocSearchOpen ? (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={docSearchQuery}
+                          onChange={(e) => setDocSearchQuery(e.target.value)}
+                          placeholder="Buscar documentos para vincular..."
+                          className="w-full text-[12px] rounded-lg p-2 outline-none"
+                          style={{
+                            color: 'var(--sagb-text)',
+                            backgroundColor: 'var(--sagb-bg)',
+                            border: isDocInputFocused ? '1px solid var(--sagb-blue)' : '1px solid var(--sagb-line)',
+                          }}
+                          onFocus={() => setIsDocInputFocused(true)}
+                          onBlur={() => setIsDocInputFocused(false)}
+                          autoFocus
+                        />
+                        {docSearchQuery && availableDocsToLink.length > 0 && (
+                          <div
+                            className="absolute top-full left-0 right-0 mt-1 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
+                            style={{
+                              backgroundColor: 'var(--sagb-surface)',
+                              border: '1px solid var(--sagb-line)',
+                            }}
+                          >
+                            {availableDocsToLink.slice(0, 10).map((doc) => (
+                              <button
+                                key={doc.id}
+                                onClick={() => {
+                                  handleLinkDoc(doc.id);
+                                  setDocSearchQuery('');
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors"
+                                onMouseEnter={() => setHoveredSearchItemId(doc.id)}
+                                onMouseLeave={() => setHoveredSearchItemId(null)}
+                                style={{ backgroundColor: hoveredSearchItemId === doc.id ? 'var(--sagb-bg)' : 'transparent' }}
+                              >
+                                <span style={{ fontSize: 14 }}>{doc.icon || '📄'}</span>
+                                <span className="text-[12px] truncate" style={{ color: 'var(--sagb-text)' }}>{doc.title}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {docSearchQuery && availableDocsToLink.length === 0 && (
+                          <p className="text-[12px] mt-1 px-1" style={{ color: 'var(--sagb-muted)' }}>
+                            Nenhum documento encontrado.
+                          </p>
+                        )}
+                        <button
+                          onClick={() => { setIsDocSearchOpen(false); setDocSearchQuery(''); }}
+                          className="mt-1 text-[10px] font-semibold"
+                          style={{
+                            color: isCancelBtnHovered ? 'var(--sagb-muted)' : 'var(--sagb-muted)',
+                          }}
+                          onMouseEnter={() => setIsCancelBtnHovered(true)}
+                          onMouseLeave={() => setIsCancelBtnHovered(false)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setIsDocSearchOpen(true)}
+                        className="flex items-center gap-1.5 text-[12px] font-semibold transition-colors"
+                        style={{
+                          color: isLinkBtnHovered ? 'var(--sagb-primary)' : 'var(--sagb-primary)',
+                        }}
+                        onMouseEnter={() => setIsLinkBtnHovered(true)}
+                        onMouseLeave={() => setIsLinkBtnHovered(false)}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Vincular documento
+                      </button>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>

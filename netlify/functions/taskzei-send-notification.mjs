@@ -12,6 +12,10 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL = process.env.TASKZEI_FROM_EMAIL || 'notificacoes@taskzei.3forb.com';
 const FROM_NAME = process.env.TASKZEI_FROM_NAME || 'TaskZei | 3forB';
 
+// Configuração de Push (OneSignal) — opcional, push é oportunista
+const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
+const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
+
 // Templates padrão por tipo de evento
 const DEFAULT_TEMPLATES = {
   task_created: {
@@ -290,6 +294,59 @@ const sendViaSendGrid = async (toEmail, subject, html, text) => {
   return { messageId: headers['x‑message‑id'], provider: 'sendgrid', raw: { headers } };
 };
 
+// Envio via OneSignal Push (oportunista — não falha se não configurado)
+const sendViaOneSignal = async (supabaseAdmin, toUserId, subject, body, data = {}) => {
+  if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
+    return { skipped: true, reason: 'onesignal_not_configured' };
+  }
+
+  // Buscar device tokens do usuário
+  const { data: devices, error } = await supabaseAdmin
+    .from('taskzei_push_devices')
+    .select('device_token, platform')
+    .eq('user_id', toUserId);
+
+  if (error) {
+    console.error('[taskzei-send-notification] Error fetching push devices:', error);
+    return { skipped: true, reason: 'device_query_error' };
+  }
+
+  if (!devices || devices.length === 0) {
+    return { skipped: true, reason: 'no_device_tokens' };
+  }
+
+  const playerIds = devices.map((d) => d.device_token);
+
+  const payload = {
+    app_id: ONESIGNAL_APP_ID,
+    include_player_ids: playerIds,
+    headings: { en: subject },
+    contents: { en: body },
+    subtitle: { en: '' },
+    data,
+    ios_badgeType: 'Increase',
+    ios_badgeCount: 1,
+    priority: 10
+  };
+
+  const res = await fetch('https://onesignal.com/api/v1/notifications', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const result = await res.json();
+  if (!res.ok) {
+    console.error('[taskzei-send-notification] OneSignal error:', result);
+    return { skipped: true, reason: `onesignal_error:${result.errors?.[0] || res.statusText}`, raw: result };
+  }
+
+  return { sent: true, onesignalId: result.id, recipients: result.recipients, raw: result };
+};
+
 // Atualização do registro de notificação no Supabase
 const updateNotificationRecord = async (supabaseAdmin, notificationId, updates) => {
   const { error } = await supabaseAdmin
@@ -339,14 +396,26 @@ const processNotification = async (supabaseAdmin, notification) => {
   }
 
   // 2. Resolver e-mail do responsável
-  const assignee = await resolveAssigneeEmail(supabaseAdmin, assignee_id);
-  if (!assignee.email) {
+  // Se overrideEmail foi fornecido (ex: test mode), usar diretamente
+  const overrideEmail = notification.overrideEmail || null;
+  let assigneeEmail = null;
+  let assigneeReason = null;
+
+  if (overrideEmail) {
+    assigneeEmail = normalizeEmail(overrideEmail);
+  } else {
+    const resolved = await resolveAssigneeEmail(supabaseAdmin, assignee_id);
+    assigneeEmail = resolved.email;
+    assigneeReason = resolved.reason;
+  }
+
+  if (!assigneeEmail) {
     await updateNotificationRecord(supabaseAdmin, id, {
       notification_status: 'failed',
-      failure_reason: `assignee_email_unresolved:${assignee.reason || 'unknown'}`,
+      failure_reason: `assignee_email_unresolved:${assigneeReason || 'unknown'}`,
       processed_at: new Date().toISOString()
     });
-    return { skipped: true, reason: `assignee_email_unresolved:${assignee.reason || 'unknown'}` };
+    return { skipped: true, reason: `assignee_email_unresolved:${assigneeReason || 'unknown'}` };
   }
 
   // 3. Preparar template
@@ -368,20 +437,49 @@ const processNotification = async (supabaseAdmin, notification) => {
   });
 
   const sendResult = EMAIL_PROVIDER === 'sendgrid'
-    ? await sendViaSendGrid(assignee.email, subject, html, text)
-    : await sendViaResend(assignee.email, subject, html, text);
+    ? await sendViaSendGrid(assigneeEmail, subject, html, text)
+    : await sendViaResend(assigneeEmail, subject, html, text);
 
   // 5. Salvar sucesso
   await updateNotificationRecord(supabaseAdmin, id, {
     notification_status: 'sent',
     provider: sendResult.provider,
     provider_message_id: sendResult.messageId || null,
-    delivered_to: assignee.email,
+    delivered_to: assigneeEmail,
     processed_at: new Date().toISOString(),
     failure_reason: null
   });
 
-  return { sent: true, provider: sendResult.provider, messageId: sendResult.messageId || null };
+  // 6. Enviar push notification (oportunista — não falha se não configurado)
+  let pushResult = null;
+  try {
+    pushResult = await sendViaOneSignal(supabaseAdmin, assignee_id, subject, text, {
+      task_id,
+      event_type,
+      url: templateVars.task_url || ''
+    });
+  } catch (pushErr) {
+    console.error('[taskzei-send-notification] Push error (non-fatal):', pushErr);
+    pushResult = { skipped: true, reason: 'push_exception' };
+  }
+
+  // Se push foi enviado, atualizar provider_response com metadados do push
+  if (pushResult?.sent) {
+    try {
+      await updateNotificationRecord(supabaseAdmin, id, {
+        provider_response: { push: { sent: true, onesignalId: pushResult.onesignalId, recipients: pushResult.recipients } }
+      });
+    } catch (updateErr) {
+      console.error('[taskzei-send-notification] Failed to persist push metadata (non-fatal):', updateErr);
+    }
+  }
+
+  return {
+    sent: true,
+    provider: sendResult.provider,
+    messageId: sendResult.messageId || null,
+    push: pushResult
+  };
 };
 
 const fetchPendingNotifications = async (supabaseAdmin, batchSize = 25) => {
@@ -416,6 +514,74 @@ export const handler = async (event) => {
     });
 
     const payload = event.body ? JSON.parse(event.body) : {};
+
+    // Modo de criação de notificação (chamado pelo frontend)
+    // Se o payload contém eventType, cria uma notificação no banco e processa
+    if (payload.eventType) {
+      const now = new Date().toISOString();
+      const testMode = !payload.taskId || payload.taskId.startsWith('test-');
+
+      const notificationId = crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+      const { data: inserted, error: insertError } = await supabaseAdmin
+        .from('taskzei_notifications')
+        .insert({
+          id: notificationId,
+          workspace_id: payload.workspaceId || 'default',
+          task_id: payload.taskId || `synthetic-${Date.now()}`,
+          assignee_id: payload.assigneeId || null,
+          assignee_email: payload.overrideEmail || null,
+          event_type: payload.eventType,
+          template_key: payload.templateKey || payload.eventType,
+          notification_status: 'pending',
+          variables: payload.variables || {},
+          scheduled_for: payload.scheduledFor || now,
+          deduplication_hash: testMode
+            ? `test-${Date.now()}`
+            : hashDeduplication(payload.taskId, payload.eventType, payload.deduplicationWindow || 'default')
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('[taskzei-send-notification] Failed to insert notification:', insertError);
+        return jsonResponse(500, { success: false, error: 'Failed to create notification record' });
+      }
+
+      // Se há override de email, processa com email personalizado
+      try {
+        const result = await processNotification(supabaseAdmin, {
+          ...inserted,
+          overrideEmail: payload.overrideEmail || null
+        });
+        return jsonResponse(200, {
+          success: result?.sent || false,
+          testMode,
+          notificationId: inserted.id,
+          eventType: payload.eventType,
+          result
+        });
+      } catch (procErr) {
+        console.error('[taskzei-send-notification] Processing error:', procErr);
+        try {
+          await updateNotificationRecord(supabaseAdmin, notificationId, {
+            notification_status: 'failed',
+            failure_reason: String(procErr?.message || procErr || 'processing_error'),
+            processed_at: new Date().toISOString()
+          });
+        } catch (_) { /* ignore */ }
+        return jsonResponse(200, {
+          success: false,
+          testMode,
+          notificationId: inserted.id,
+          error: String(procErr?.message || procErr || 'processing_error')
+        });
+      }
+    }
+
+    // Modo batch padrão: processa notificações pendentes
     const batchSize = Number(payload.batchSize || 25);
 
     const pending = await fetchPendingNotifications(supabaseAdmin, batchSize);

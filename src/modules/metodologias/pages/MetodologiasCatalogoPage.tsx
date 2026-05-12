@@ -83,12 +83,12 @@ export const MetodologiasCatalogoPage: React.FC<MetodologiasCatalogoPageProps> =
     <section className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2">
         <div>
-          <h2 className="text-2xl font-black text-sagb-text tracking-tight">Catálogo canônico de ativos</h2>
+          <h2 className="text-2xl font-black text-sagb-text tracking-tight">Catálogo de metodologias oficiais</h2>
           <p className="text-sagb-muted text-[12px]">
-            Busca e leitura rápida por filtros sem acoplar detalhe completo na mesma página.
+            Encontre metodologias com filtros simples e abra os detalhes quando precisar.
           </p>
         </div>
-        <span className="text-[11px] font-black uppercase tracking-[0.18em] text-sagb-muted">Frente separada</span>
+        <span className="text-[11px] font-semibold text-sagb-muted">Exploração rápida</span>
       </div>
 
       <div className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 space-y-3">
@@ -116,7 +116,7 @@ export const MetodologiasCatalogoPage: React.FC<MetodologiasCatalogoPageProps> =
             onChange={(event) => atualizarFiltro('status_editorial', event.target.value as CatalogoFiltrosAvancados['status_editorial'])}
             className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text"
           >
-            <option value="todos">Status: todos</option>
+            <option value="todos">Publicação: todas</option>
             {facetas.status.map((item) => (
               <option key={item} value={item}>{getStatusEditorialLabel(item)}</option>
             ))}
@@ -147,9 +147,9 @@ export const MetodologiasCatalogoPage: React.FC<MetodologiasCatalogoPageProps> =
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-2">
           <select value={filtros.possui_blocos_canonicos} onChange={(event) => atualizarFiltro('possui_blocos_canonicos', event.target.value as CatalogoFiltrosAvancados['possui_blocos_canonicos'])} className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text">
-            <option value="todos">Blocos canônicos: todos</option>
-            <option value="sim">Com blocos canônicos</option>
-            <option value="nao">Sem blocos canônicos</option>
+            <option value="todos">Conteúdo oficial: todos</option>
+            <option value="sim">Com conteúdo oficial</option>
+            <option value="nao">Sem conteúdo oficial</option>
           </select>
 
           <select value={filtros.possui_versao_vigente} onChange={(event) => atualizarFiltro('possui_versao_vigente', event.target.value as CatalogoFiltrosAvancados['possui_versao_vigente'])} className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text">
@@ -159,27 +159,27 @@ export const MetodologiasCatalogoPage: React.FC<MetodologiasCatalogoPageProps> =
           </select>
 
           <select value={filtros.snapshot_equivalencia} onChange={(event) => atualizarFiltro('snapshot_equivalencia', event.target.value as CatalogoFiltrosAvancados['snapshot_equivalencia'])} className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text">
-            <option value="todos">Integridade canônica: todos</option>
-            <option value="integro_minimo">Snapshot equivalente íntegro mínimo</option>
-            <option value="pendente">Snapshot equivalente pendente</option>
+            <option value="todos">Cópia de segurança: todas</option>
+            <option value="integro_minimo">Cópia validada</option>
+            <option value="pendente">Cópia pendente</option>
           </select>
 
           <select value={filtros.vindo_de_promocao} onChange={(event) => atualizarFiltro('vindo_de_promocao', event.target.value as CatalogoFiltrosAvancados['vindo_de_promocao'])} className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text">
-            <option value="todos">Vindo de promoção: todos</option>
-            <option value="sim">Somente promovidos</option>
-            <option value="nao">Somente não promovidos</option>
+            <option value="todos">Origem: todas</option>
+            <option value="sim">Somente publicadas do fluxo guiado</option>
+            <option value="nao">Somente criadas fora do fluxo guiado</option>
           </select>
 
           <select value={filtros.origem_rastreavel} onChange={(event) => atualizarFiltro('origem_rastreavel', event.target.value as CatalogoFiltrosAvancados['origem_rastreavel'])} className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text">
-            <option value="todos">Origem rastreável: todos</option>
-            <option value="sim">Com origem rastreável</option>
-            <option value="nao">Sem origem rastreável</option>
+            <option value="todos">Origem rastreada: todos</option>
+            <option value="sim">Com origem rastreada</option>
+            <option value="nao">Sem origem rastreada</option>
           </select>
 
           <select value={filtros.manutencao_recente} onChange={(event) => atualizarFiltro('manutencao_recente', event.target.value as CatalogoFiltrosAvancados['manutencao_recente'])} className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text">
-            <option value="todos">Manutenção recente: todos</option>
-            <option value="sim">Com manutenção recente</option>
-            <option value="nao">Sem manutenção recente</option>
+            <option value="todos">Atualização recente: todas</option>
+            <option value="sim">Com atualização recente</option>
+            <option value="nao">Sem atualização recente</option>
           </select>
         </div>
 
@@ -196,12 +196,12 @@ export const MetodologiasCatalogoPage: React.FC<MetodologiasCatalogoPageProps> =
           <select value={agrupamento} onChange={(event) => setAgrupamento(event.target.value as CatalogoAgrupamento)} className="rounded-lg border border-sagb-line bg-sagb-panel px-3 py-2 text-[12px] text-sagb-text">
             <option value="nenhum">Agrupar: sem agrupamento</option>
             <option value="tipo_de_ativo">Agrupar por tipo de ativo</option>
-            <option value="status_editorial">Agrupar por status editorial</option>
+            <option value="status_editorial">Agrupar por publicação</option>
             <option value="maturidade_pratica">Agrupar por maturidade</option>
           </select>
 
           <div className="xl:col-span-2 rounded-lg border border-sagb-line bg-sagb-bg-2 px-3 py-2 text-[12px] text-sagb-muted flex items-center">
-            {exploracao.resumo.total_resultados} de {exploracao.resumo.total_ativos_base} ativos no recorte atual.
+            {exploracao.resumo.total_resultados} de {exploracao.resumo.total_ativos_base} metodologias no recorte atual.
           </div>
 
           <button
@@ -227,12 +227,12 @@ export const MetodologiasCatalogoPage: React.FC<MetodologiasCatalogoPageProps> =
       <section className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 md:p-5 space-y-4">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-sagb-muted">Mapa de conexões</p>
-            <h3 className="text-xl font-black text-sagb-text tracking-tight mt-1">Leitura arquitetural leve do ecossistema</h3>
-            <p className="text-[12px] text-sagb-muted mt-1">Visão resumida de conexões entre ativos canônicos no recorte atual do catálogo.</p>
+             <p className="text-[11px] font-semibold text-sagb-muted">Mapa de conexões</p>
+             <h3 className="text-xl font-black text-sagb-text tracking-tight mt-1">Como as metodologias se conectam</h3>
+             <p className="text-[12px] text-sagb-muted mt-1">Visão resumida de relações entre metodologias oficiais neste recorte.</p>
           </div>
           <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wide">
-            <span className="px-2.5 py-1 rounded-md bg-sagb-bg-2 text-sagb-text">{mapaConexoes.total_ativos} ativos</span>
+            <span className="px-2.5 py-1 rounded-md bg-sagb-bg-2 text-sagb-text">{mapaConexoes.total_ativos} metodologias</span>
             <span className="px-2.5 py-1 rounded-md bg-cyan-500/10 text-cyan-500">{mapaConexoes.total_arestas} conexões</span>
             <span className="px-2.5 py-1 rounded-md bg-violet-500/10 text-violet-500">{mapaConexoes.total_ativos_conectados} conectados</span>
           </div>
@@ -311,9 +311,9 @@ export const MetodologiasCatalogoPage: React.FC<MetodologiasCatalogoPageProps> =
         <div className="space-y-4">
           {ativosFiltrados.length === 0 ? (
             <section className="rounded-2xl border border-sagb-line bg-sagb-panel p-6 text-center">
-              <h3 className="text-lg font-black text-sagb-text">Nenhum ativo encontrado</h3>
+              <h3 className="text-lg font-black text-sagb-text">Nenhuma metodologia encontrada</h3>
               <p className="text-[12px] text-sagb-muted mt-2 leading-relaxed">
-                Ajuste os filtros ou limpe o recorte para explorar novamente o catálogo canônico.
+                Ajuste os filtros ou limpe o recorte para explorar novamente o catálogo.
               </p>
               <button
                 type="button"
@@ -348,7 +348,7 @@ export const MetodologiasCatalogoPage: React.FC<MetodologiasCatalogoPageProps> =
         </div>
 
         <aside className="rounded-2xl border border-sagb-line bg-sagb-panel p-4 h-fit sticky top-4 space-y-3">
-          <h3 className="text-[12px] font-black uppercase tracking-wide text-sagb-text">Preview rápido</h3>
+           <h3 className="text-[12px] font-semibold text-sagb-text">Preview rápido</h3>
           {!ativoPreview ? (
             <p className="text-[12px] text-sagb-muted">Sem ativo disponível para preview.</p>
           ) : (
@@ -357,9 +357,9 @@ export const MetodologiasCatalogoPage: React.FC<MetodologiasCatalogoPageProps> =
               <p className="text-[12px] text-sagb-muted leading-relaxed">{ativoPreview.resumo}</p>
               <div className="space-y-1.5 text-[12px] text-sagb-text">
                 <p><strong>Tipo:</strong> {getTipoDeAtivoLabel(ativoPreview.tipo_de_ativo)}</p>
-                <p><strong>Status:</strong> {getStatusEditorialLabel(ativoPreview.status_editorial)}</p>
+                <p><strong>Publicação:</strong> {getStatusEditorialLabel(ativoPreview.status_editorial)}</p>
                 <p><strong>Maturidade:</strong> {getMaturidadePraticaLabel(ativoPreview.maturidade_pratica)}</p>
-                <p><strong>Governança:</strong> {getEstadoGovernancaLabel(ativoPreview.governanca.estado_ciclo_vida)}</p>
+                <p><strong>Ciclo de governança:</strong> {getEstadoGovernancaLabel(ativoPreview.governanca.estado_ciclo_vida)}</p>
                 <p><strong>Versão:</strong> {ativoPreview.versao_atual}</p>
               </div>
               <button

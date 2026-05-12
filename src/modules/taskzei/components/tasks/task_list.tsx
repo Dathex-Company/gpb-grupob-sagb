@@ -1,8 +1,134 @@
-import React from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { TaskzeiTask } from '../../types/task.types';
 import { TaskzeiTaskInlineInput } from '../../types/taskzei.contracts';
 import { TaskListItem } from './task_list_item';
 
+// ─── Configuração de colunas redimensionáveis ─────────────────────────
+export type ColumnKey =
+  | 'title_desc'
+  | 'priority'
+  | 'client'
+  | 'collaborator'
+  | 'due_date'
+  | 'status'
+  | 'actions';
+
+export const COLUMN_LABELS: Record<ColumnKey, string> = {
+  title_desc: 'Nome / Descrição',
+  priority: 'Prioridade',
+  client: 'Cliente',
+  collaborator: 'Colaborador',
+  due_date: 'Vencimento',
+  status: 'Status',
+  actions: '',
+};
+
+export const COLUMN_DEFAULTS: Record<ColumnKey, number> = {
+  title_desc: 280,
+  priority: 70,
+  client: 90,
+  collaborator: 120,
+  due_date: 110,
+  status: 100,
+  actions: 28,
+};
+
+export const COLUMN_ORDER: ColumnKey[] = [
+  'title_desc',
+  'priority',
+  'client',
+  'collaborator',
+  'due_date',
+  'status',
+  'actions',
+];
+
+// ─── Min width por coluna (impede colapso) ────────────────────────────
+export const COLUMN_MIN_WIDTHS: Record<ColumnKey, number> = {
+  title_desc: 120,
+  priority: 50,
+  client: 50,
+  collaborator: 60,
+  due_date: 80,
+  status: 80,
+  actions: 28,
+};
+
+const COLUMN_KEYS = COLUMN_ORDER as readonly ColumnKey[];
+
+// ─── Hook: gerenciamento de arrasto de colunas ────────────────────────
+function useColumnResize(
+  initial: Record<ColumnKey, number>,
+): {
+  widths: Record<ColumnKey, number>;
+  getGridTemplate: () => string;
+  startResize: (col: ColumnKey, e: React.MouseEvent) => void;
+  isResizing: boolean;
+} {
+  const [widths, setWidths] = useState<Record<ColumnKey, number>>(initial);
+  const activeCol = useRef<ColumnKey | null>(null);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+  const isResizingRef = useRef(false);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResize = useCallback((col: ColumnKey, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    activeCol.current = col;
+    startX.current = e.clientX;
+    startWidth.current = initial[col];
+    isResizingRef.current = true;
+    setIsResizing(true);
+  }, [initial]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizingRef.current || !activeCol.current) return;
+      const col = activeCol.current;
+      const minW = COLUMN_MIN_WIDTHS[col];
+      const diff = e.clientX - startX.current;
+      const next = Math.max(minW, startWidth.current + diff);
+      setWidths((prev) => ({ ...prev, [col]: next }));
+    };
+
+    const handleMouseUp = () => {
+      if (!isResizingRef.current) return;
+      isResizingRef.current = false;
+      activeCol.current = null;
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const getGridTemplate = useCallback(() => {
+    return COLUMN_ORDER.map((col) => `${widths[col]}px`).join(' ');
+  }, [widths]);
+
+  return { widths, getGridTemplate, startResize, isResizing };
+}
+
+// ─── Componente: Drag Handle ──────────────────────────────────────────
+const DragHandle: React.FC<{
+  column: ColumnKey;
+  onMouseDown: (col: ColumnKey, e: React.MouseEvent) => void;
+}> = ({ column, onMouseDown }) => (
+  <div
+    onMouseDown={(e) => onMouseDown(column, e)}
+    className="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize"
+    style={{ opacity: 0.5, backgroundColor: 'transparent' }}
+    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--sagb-primary)'; }}
+    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
+  />
+);
+
+// ─── Colunas fixas para alinhamento tabular (ClickUp-style) ─────────────
 interface TaskListProps {
   tasks: TaskzeiTask[];
   onTaskClick: (task: TaskzeiTask) => void;
@@ -19,7 +145,8 @@ interface TaskListProps {
 const TaskCreateRow: React.FC<{
   onCreateTask: (input: TaskzeiTaskInlineInput) => Promise<void> | void;
   onCancelCreate: () => void;
-}> = ({ onCreateTask, onCancelCreate }) => {
+  gridTemplate: string;
+}> = ({ onCreateTask, onCancelCreate, gridTemplate }) => {
   const [title, setTitle] = React.useState('');
   const [priority, setPriority] = React.useState<TaskzeiTaskInlineInput['priority']>('media');
   const [status, setStatus] = React.useState<TaskzeiTaskInlineInput['status']>('aberta');
@@ -30,7 +157,6 @@ const TaskCreateRow: React.FC<{
   const handleSave = async () => {
     const normalizedTitle = title.trim();
     if (!normalizedTitle) return;
-
     setIsSaving(true);
     await onCreateTask({
       title: normalizedTitle,
@@ -43,45 +169,88 @@ const TaskCreateRow: React.FC<{
   };
 
   return (
-    <div className="grid grid-cols-[minmax(230px,2.6fr)_minmax(90px,1fr)_minmax(120px,1.2fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(110px,1fr)] items-center gap-3 border-b border-[#e8ecf1] bg-[#fcfcfd] px-3 py-2.5 text-xs">
-      <input
-        value={title}
-        onChange={(event) => setTitle(event.target.value)}
-        placeholder="Título da tarefa"
-        className="h-8 w-full rounded-md border border-[#d9dee5] bg-white px-2 text-[12px] text-[#414854] focus:border-[#87a8cf] focus:outline-none"
-      />
+    <div
+      className="grid items-center gap-1 border-b px-2 text-[12px]"
+      style={{
+        gridTemplateColumns: gridTemplate,
+        borderColor: 'var(--sagb-line)',
+        backgroundColor: 'var(--sagb-bg)',
+        height: 32,
+      }}
+    >
+      {/* ── Col 1: Title + Description ───────────── */}
+      <div className="flex min-w-0 items-center gap-1.5">
+        <input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Título da tarefa"
+          className="h-6 w-full rounded border px-2 text-[12px] outline-none"
+          style={{
+            color: 'var(--sagb-muted)',
+            backgroundColor: 'var(--sagb-surface)',
+            border: '1px solid var(--sagb-line)',
+          }}
+        />
+      </div>
 
+      {/* ── Col 2: Prioridade ────────────────────── */}
       <select
         value={priority}
         onChange={(event) => setPriority(event.target.value as TaskzeiTaskInlineInput['priority'])}
-        className="h-8 rounded-md border border-[#d9dee5] bg-white px-2 text-[11px] text-[#6f7887] focus:border-[#87a8cf] focus:outline-none"
+        className="h-6 rounded border px-1.5 text-[10px] font-semibold outline-none"
+        style={{
+          color: 'var(--sagb-muted)',
+          backgroundColor: 'var(--sagb-surface)',
+          borderColor: 'var(--sagb-line)',
+        }}
       >
         <option value="alta">Alta</option>
         <option value="media">Média</option>
         <option value="baixa">Baixa</option>
       </select>
 
-      <span className="text-[11px] text-[#6f7887]">TaskZei</span>
+      {/* ── Col 3: Cliente ───────────────────────── */}
+      <span className="truncate text-[12px]" style={{ color: 'var(--sagb-muted)' }}>
+        TaskZei
+      </span>
 
+      {/* ── Col 4: Colaborador ───────────────────── */}
       <input
         value={assigneeName}
         onChange={(event) => setAssigneeName(event.target.value)}
         placeholder="Responsável"
-        className="h-8 w-full rounded-md border border-[#d9dee5] bg-white px-2 text-[11px] text-[#6f7887] focus:border-[#87a8cf] focus:outline-none"
+        className="h-6 w-full rounded border px-2 text-[12px] outline-none"
+        style={{
+          color: 'var(--sagb-muted)',
+          backgroundColor: 'var(--sagb-surface)',
+          border: '1px solid var(--sagb-line)',
+        }}
       />
 
+      {/* ── Col 5: Vencimento ────────────────────── */}
       <input
         type="date"
         value={dueDate}
         onChange={(event) => setDueDate(event.target.value)}
-        className="h-8 w-full rounded-md border border-[#d9dee5] bg-white px-2 text-[11px] text-[#6f7887] focus:border-[#87a8cf] focus:outline-none"
+        className="h-6 w-full rounded border px-2 text-[12px] outline-none"
+        style={{
+          color: 'var(--sagb-muted)',
+          backgroundColor: 'var(--sagb-surface)',
+          border: '1px solid var(--sagb-line)',
+        }}
       />
 
+      {/* ── Col 6: Status + ações ────────────────── */}
       <div className="flex items-center gap-1">
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value as TaskzeiTaskInlineInput['status'])}
-          className="h-8 min-w-[90px] rounded-md border border-[#d9dee5] bg-white px-2 text-[10px] font-semibold uppercase tracking-wide text-[#6f7887] focus:border-[#87a8cf] focus:outline-none"
+          className="h-6 min-w-[70px] rounded border px-1.5 text-[10px] font-semibold uppercase tracking-wide outline-none"
+          style={{
+            color: 'var(--sagb-muted)',
+            backgroundColor: 'var(--sagb-surface)',
+            borderColor: 'var(--sagb-line)',
+          }}
         >
           <option value="aberta">Aberta</option>
           <option value="em_andamento">Em andamento</option>
@@ -90,13 +259,22 @@ const TaskCreateRow: React.FC<{
         <button
           onClick={handleSave}
           disabled={isSaving || !title.trim()}
-          className="h-8 rounded-md bg-[#68c7be] px-2 text-[10px] font-semibold text-white disabled:opacity-50"
+          className="h-6 rounded px-2 text-[10px] font-semibold disabled:opacity-50"
+          style={{
+            color: '#fff',
+            backgroundColor: 'var(--sagb-primary)',
+          }}
         >
           Salvar
         </button>
         <button
           onClick={onCancelCreate}
-          className="h-8 rounded-md border border-[#d9dee5] bg-white px-2 text-[10px] font-semibold text-[#6f7887]"
+          className="h-6 rounded border px-2 text-[10px] font-semibold"
+          style={{
+            color: 'var(--sagb-muted)',
+            backgroundColor: 'var(--sagb-surface)',
+            border: '1px solid var(--sagb-line)',
+          }}
         >
           Cancelar
         </button>
@@ -117,36 +295,65 @@ export const TaskList: React.FC<TaskListProps> = ({
   onCreateTask,
   onCancelCreate,
 }) => {
+  const { widths, getGridTemplate, startResize, isResizing } = useColumnResize(COLUMN_DEFAULTS);
+  const gridTemplate = getGridTemplate();
+
   if (tasks.length === 0 && !isCreatingRow) return null;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#d9dee5] bg-[#ffffff]">
-      <div className="grid grid-cols-[minmax(230px,2.6fr)_minmax(90px,1fr)_minmax(120px,1.2fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(110px,1fr)] items-center gap-3 border-b border-[#e8ecf1] bg-[#fafbfc] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#95a0b1]">
-        <span>Nome</span>
-        <span>Prioridade</span>
-        <span>Cliente</span>
-        <span>Colaborador</span>
-        <span>Vencimento</span>
-        <span>Status</span>
+    <div style={{ fontFamily: "'Rubik', sans-serif" }}>
+      {/* ── Cabeçalho tabular com divisórias arrastáveis ── */}
+      <div
+        className="grid items-center gap-1 border-b px-2 text-[10px] font-black uppercase tracking-widest select-none"
+        style={{
+          gridTemplateColumns: gridTemplate,
+          borderColor: 'var(--sagb-line)',
+          backgroundColor: 'var(--sagb-bg)',
+          color: 'var(--sagb-muted)',
+          height: 28,
+        }}
+      >
+        {COLUMN_ORDER.map((col) => (
+          <div key={col} className="relative flex items-center truncate">
+            <span>{COLUMN_LABELS[col]}</span>
+            {col !== 'actions' && (
+              <DragHandle column={col} onMouseDown={startResize} />
+            )}
+          </div>
+        ))}
       </div>
 
-      <div className="flex flex-col">
-      {isCreatingRow && onCreateTask && onCancelCreate ? (
-        <TaskCreateRow onCreateTask={onCreateTask} onCancelCreate={onCancelCreate} />
-      ) : null}
-
-      {tasks.map(task => (
-        <TaskListItem
-          key={task.id}
-          task={task}
-          onClick={onTaskClick}
-          onComplete={onCompleteTask}
-          onChangeStatus={onChangeStatus}
-          onUpdateTask={onUpdateTask}
-          onDuplicate={onDuplicate}
-          onArchive={onArchive}
+      {/* ── Overlay de cursor durante resize ──────────── */}
+      {isResizing && (
+        <div
+          className="fixed inset-0 z-[9999] cursor-col-resize"
+          style={{ backgroundColor: 'transparent' }}
         />
-      ))}
+      )}
+
+      {/* ── Linhas ─────────────────────────────────────── */}
+      <div className="flex flex-col">
+        {isCreatingRow && onCreateTask && onCancelCreate ? (
+          <TaskCreateRow
+            onCreateTask={onCreateTask}
+            onCancelCreate={onCancelCreate}
+            gridTemplate={gridTemplate}
+          />
+        ) : null}
+
+        {tasks.map(task => (
+          <TaskListItem
+            key={task.id}
+            task={task}
+            onClick={onTaskClick}
+            onComplete={onCompleteTask}
+            onChangeStatus={onChangeStatus}
+            onUpdateTask={onUpdateTask}
+            onDuplicate={onDuplicate}
+            onArchive={onArchive}
+            gridColumnsStyle={gridTemplate}
+          />
+        ))}
       </div>
     </div>
   );

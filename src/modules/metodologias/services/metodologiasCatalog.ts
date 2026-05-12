@@ -67,23 +67,23 @@ const TAXONOMIA_OFICIAL_ATIVOS: AtivoMetodologicoTaxonomiaItem[] = [
 
 const STATUS_EDITORIAL_LABEL: Record<MetodologiaStatusEditorial, string> = {
   rascunho: 'Rascunho',
-  em_estruturacao: 'Em Estruturação',
+  em_estruturacao: 'Em elaboração',
   em_revisao: 'Em Revisão',
   aprovada: 'Aprovada',
-  oficial: 'Oficial',
+  oficial: 'Oficial publicada',
   arquivada: 'Arquivada'
 };
 
 const MATURIDADE_PRATICA_LABEL: Record<MetodologiaMaturidadePratica, string> = {
   conceitual: 'Conceitual',
-  modelada: 'Modelada',
-  testada: 'Testada',
-  validada: 'Validada',
-  escalavel: 'Escalável'
+  modelada: 'Estruturada',
+  testada: 'Testada na prática',
+  validada: 'Validada pela equipe',
+  escalavel: 'Pronta para escalar'
 };
 
 const ESTADO_GOVERNANCA_LABEL: Record<AtivoMetodologicoEstadoGovernanca, string> = {
-  em_desenvolvimento: 'Em Desenvolvimento',
+  em_desenvolvimento: 'Em desenvolvimento',
   em_revisao: 'Em Revisão',
   oficial: 'Oficial',
   arquivado: 'Arquivado',
@@ -151,32 +151,32 @@ const HISTORICO_EVENTO_TIPO_LABEL: Record<AtivoMetodologicoHistoricoEventoTipo, 
 };
 
 const TIPO_ENTRADA_BRUTA_LABEL: Record<EntradaMetodologicaTipoDeEntrada, string> = {
-  ideia_crua: 'Ideia crua',
+  ideia_crua: 'Ideia inicial',
   rascunho: 'Rascunho',
   texto_livre: 'Texto livre',
-  bloco_doutrinario: 'Bloco doutrinário',
+  bloco_doutrinario: 'Bloco de referência',
   resumo_pdf: 'Resumo de PDF',
   framework_parcial: 'Framework parcial',
-  processo_difuso: 'Processo difuso'
+  processo_difuso: 'Processo ainda difuso'
 };
 
 const STATUS_ESTRUTURACAO_LABEL: Record<EntradaMetodologicaStatusEstruturacao, string> = {
-  bruto: 'Bruto',
+  bruto: 'Recebido',
   em_analise: 'Em análise',
-  estruturado_parcialmente: 'Estruturado parcialmente',
-  convertido_em_ativo: 'Convertido em ativo'
+  estruturado_parcialmente: 'Em construção',
+  convertido_em_ativo: 'Virou metodologia'
 };
 
 const CONVERSAO_ASSISTIDA_STATUS_LABEL: Record<ConversaoAssistidaStatusResultado, string> = {
-  ativo_em_estruturacao: 'Ativo em estruturação',
-  ativo_base_gerado: 'Ativo-base gerado',
-  pronto_para_revisao_manual: 'Pronto para revisão manual'
+  ativo_em_estruturacao: 'Rascunho da metodologia',
+  ativo_base_gerado: 'Base criada',
+  pronto_para_revisao_manual: 'Pronto para revisão'
 };
 
 const LEITURA_VISUAL_ESTRUTURACAO_LABEL: Record<LeituraVisualEstruturacao, string> = {
-  base_minima_preenchida: 'Base mínima preenchida',
-  ainda_faltam_definicoes: 'Ainda faltam definições',
-  pronto_para_revisao_manual: 'Pronto para revisão manual'
+  base_minima_preenchida: 'Campos obrigatórios preenchidos',
+  ainda_faltam_definicoes: 'Ainda faltam informações',
+  pronto_para_revisao_manual: 'Pronto para revisão'
 };
 
 const isTextoPreenchido = (valor?: string | null): boolean => {

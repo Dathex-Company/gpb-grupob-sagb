@@ -19,6 +19,7 @@ export interface TaskzeiNotificationRequest {
   templateKey?: string;
   variables?: Record<string, any>;
   scheduledFor?: string; // ISO string para envio agendado
+  overrideEmail?: string; // override de e-mail para testes (testMode)
 }
 
 export interface TaskzeiNotificationResponse {
@@ -164,6 +165,49 @@ export class TaskzeiNotificationService {
     return this.callServerFunction(request);
   }
 
+  // Disparo de notificação de teste (para UI NotificationTestPanel)
+  static async sendTestNotification(
+    eventType: TaskzeiNotificationEvent,
+    overrideEmail?: string
+  ): Promise<TaskzeiNotificationResponse> {
+    const now = new Date().toISOString();
+    const testTaskId = `test-${Date.now()}`;
+
+    const request: TaskzeiNotificationRequest = {
+      taskId: testTaskId,
+      workspaceId: 'default',
+      assigneeId: null,
+      eventType,
+      templateKey: eventType,
+      variables: {
+        task_title: '[TESTE] Notificação TaskZei',
+        priority_label: 'Média',
+        priority_color: '#f59e0b',
+        status_label: 'Em andamento',
+        due_date_formatted: new Date(Date.now() + 86400000).toLocaleDateString('pt-BR'),
+        task_url: `${window.location.origin}/taskzei/tasks/${testTaskId}`,
+        ...(eventType === 'status_changed' ? {
+          previous_status: 'Pendente',
+          new_status: 'Em andamento',
+          new_status_color: '#f59e0b',
+          updated_by: 'Painel de Testes'
+        } : {}),
+        ...(eventType === 'due_reminder' ? {
+          due_in_days: '2 dias'
+        } : {})
+      },
+      scheduledFor: now,
+      deduplicationWindow: 'test',
+    };
+
+    // Envia para a função server-side que tratará o testMode
+    return this.callServerFunction({
+      ...request,
+      taskId: testTaskId,
+      overrideEmail: overrideEmail || undefined,
+    } as TaskzeiNotificationRequest);
+  }
+
   // Utilitários de mapeamento
   private static mapPriorityLabel(priority: string): string {
     switch (priority) {
@@ -176,10 +220,10 @@ export class TaskzeiNotificationService {
 
   private static mapPriorityColor(priority: string): string {
     switch (priority) {
-      case 'alta': return '#dc2626';
-      case 'media': return '#f59e0b';
-      case 'baixa': return '#10b981';
-      default: return '#6b7280';
+      case 'alta': return '#C85E62';   // sagb-red
+      case 'media': return '#D4953A';  // sagb-amber
+      case 'baixa': return '#2FA99C';  // sagb-primary
+      default: return '#8892A0';       // sagb-muted
     }
   }
 
@@ -196,12 +240,12 @@ export class TaskzeiNotificationService {
 
   private static mapStatusColor(status: string): string {
     switch (status) {
-      case 'aberta': return '#3b82f6';
-      case 'em_andamento': return '#f59e0b';
-      case 'pendente': return '#6b7280';
-      case 'concluida': return '#10b981';
-      case 'cancelada': return '#dc2626';
-      default: return '#6b7280';
+      case 'aberta': return '#5D86BC';   // sagb-blue
+      case 'em_andamento': return '#D4953A';  // sagb-amber
+      case 'pendente': return '#8892A0';      // sagb-muted
+      case 'concluida': return '#2FA99C';     // sagb-primary
+      case 'cancelada': return '#C85E62';     // sagb-red
+      default: return '#8892A0';              // sagb-muted
     }
   }
 }

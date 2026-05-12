@@ -1,12 +1,14 @@
 import { nlParser, type NlParseResult } from './nlParser.service';
 import { taskzeiFacade } from './taskzei.facade';
 import { monitorService } from './taskzei.monitor';
+import { docAiService } from './doc_ai_service';
+import { compileLinkedDocs } from './doc_nlp_adapter';
 
 /**
  * Resultado do processamento de uma mensagem conversacional.
  */
 export interface ConversationalResult {
-  intent: NlParseResult['type'];
+  intent: NlParseResult['type'] | 'doc_ai';
   message: string;
   created?: {
     type: string;
@@ -74,6 +76,183 @@ export class ConversationalHandler {
     }
   }
 
+  /**
+   * Processa uma mensagem com contexto documental.
+   *
+   * Usado quando há documentos vinculados a uma tarefa ou contexto ativo.
+   * O conteúdo dos documentos é compilado e injetado no prompt da IA (Gemini)
+   * para gerar ações, resumos ou responder perguntas.
+   *
+   * @param text - Comando do usuário (ex: "Extrair ações", "Resumir pendências")
+   * @param linkedDocIds - IDs dos documentos vinculados para contexto
+   * @param context - Contexto adicional (source, userId)
+   */
+  async processMessageWithDocs(
+    text: string,
+    linkedDocIds: string[],
+    context?: { source?: string; userId?: string }
+  ): Promise<ConversationalResult> {
+    const source = context?.source || 'taskzei_drawer';
+    const userId = context?.userId || 'unknown';
+
+    try {
+      // Detecta intenção do comando
+      const commandType = this.detectDocCommand(text);
+
+      switch (commandType) {
+        case 'extract_actions': {
+          // Se há um único documento, extrai dele
+          if (linkedDocIds.length === 1) {
+            const result = await docAiService.extractActionsFromDoc(linkedDocIds[0]);
+            if (!result.success) {
+              return { intent: 'doc_ai', message: result.message };
+            }
+            return {
+              intent: 'doc_ai',
+              message: result.message,
+              suggestions: [
+                'Ver tarefas criadas',
+                'Gerar resumo do documento',
+                'Adicionar mais documentos',
+              ],
+            };
+          }
+
+          // Múltiplos documentos — trata como linked docs (task context)
+          const entityContext = await this.resolveEntityContext(linkedDocIds);
+          if (entityContext) {
+            const result = await docAiService.extractActionsFromLinkedDocs(
+              entityContext.entityType,
+              entityContext.entityId
+            );
+            return {
+              intent: 'doc_ai',
+              message: result.success ? result.message : `⚠️ ${result.message}`,
+              suggestions: result.success
+                ? ['Ver tarefas criadas', 'Gerar resumo', 'Adicionar mais documentos']
+                : ['Vincular documentos à tarefa', 'Tentar novamente'],
+            };
+          }
+
+          // Fallback: compila todos os docs e chama IA
+          const result = await docAiService.extractActionsFromDoc(linkedDocIds[0]);
+          return {
+            intent: 'doc_ai',
+            message: result.success ? result.message : `⚠️ ${result.message}`,
+            suggestions: ['Gerar resumo', 'Tentar novamente'],
+          };
+        }
+
+        case 'summarize': {
+          if (linkedDocIds.length === 0) {
+            return {
+              intent: 'doc_ai',
+              message: 'Nenhum documento vinculado encontrado para resumir.',
+            };
+          }
+
+          // Resumo do primeiro documento (ou do conjunto)
+          const summaryResult = await docAiService.summarizeDoc(linkedDocIds[0]);
+          return {
+            intent: 'doc_ai',
+            message: summaryResult.success ? summaryResult.message : `⚠️ ${summaryResult.message}`,
+            suggestions: summaryResult.success
+              ? ['Extrair ações', 'Perguntar sobre o documento', 'Ver documentos']
+              : ['Tentar novamente'],
+          };
+        }
+
+        case 'custom_command': {
+          if (linkedDocIds.length === 0) {
+            return {
+              intent: 'doc_ai',
+              message: 'Nenhum documento disponível para processar seu comando.',
+            };
+          }
+
+          // Comando customizado: passa textos docs + comando para a IA
+          const linkedContext = await compileLinkedDocs('task', linkedDocIds[0]);
+          const aiResult = await docAiService.generateTasksFromCommand(text, linkedContext);
+          return {
+            intent: 'doc_ai',
+            message: aiResult.success ? aiResult.message : `⚠️ ${aiResult.message}`,
+            suggestions: aiResult.success
+              ? ['Ver tarefas criadas', 'Fazer outra pergunta', 'Gerenciar documentos']
+              : ['Tentar novamente'],
+          };
+        }
+
+        default: {
+          // Fallback: interpreta como texto livre com contexto documental
+          return await this.processMessage(text, context);
+        }
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      monitorService.recordEvent(
+        'conversational_doc_ai_error',
+        `Erro ao processar mensagem com documentos: ${errorMessage}`,
+        'error',
+        'taskzei-conversational',
+        { text, linkedDocIds, source, userId }
+      );
+      return {
+        intent: 'doc_ai',
+        message: `Erro ao processar comando com documentos: ${errorMessage}`,
+      };
+    }
+  }
+
+  /**
+   * Detecta o tipo de comando relacionado a documentos.
+   */
+  private detectDocCommand(text: string): 'extract_actions' | 'summarize' | 'custom_command' {
+    const lower = text.toLowerCase().trim();
+
+    // Padrões para extração de ações
+    const extractPatterns = [
+      /extrair\s+a[cçõo]es/i,
+      /criar\s+(sub)?tarefas?/i,
+      /extrair\s+(pendências|tarefas|itens)/i,
+      /gerar\s+(ações|tarefas)/i,
+      /o\s+que\s+precisa\s+ser\s+feito/i,
+      /extrair/i,
+    ];
+
+    // Padrões para resumo
+    const summarizePatterns = [
+      /resumi?r?\s+(o\s+)?documento/i,
+      /gerar\s+resumo/i,
+      /sumarizar/i,
+      /resumo\s+executivo/i,
+      /do\s+que\s+se\s+trata/i,
+      /resumir/i,
+    ];
+
+    for (const pattern of extractPatterns) {
+      if (pattern.test(lower)) return 'extract_actions';
+    }
+
+    for (const pattern of summarizePatterns) {
+      if (pattern.test(lower)) return 'summarize';
+    }
+
+    return 'custom_command';
+  }
+
+  /**
+   * Tenta resolver um contexto de entidade a partir de IDs de documentos vinculados.
+   * Útil quando múltiplos docs estão vinculados a uma mesma tarefa.
+   */
+  private async resolveEntityContext(
+    docIds: string[]
+  ): Promise<{ entityType: 'task' | 'meeting'; entityId: string } | null> {
+    // Esta função pode ser expandida no futuro para buscar a entidade
+    // que possui os links para estes documentos.
+    // Por enquanto, retorna null e o handler usa fallbacks.
+    return null;
+  }
+
   // ─── Handlers específicos ──────────────────────────────────────────
 
   private async handleTaskIntent(
@@ -89,8 +268,8 @@ export class ConversationalHandler {
       description: description || '',
       status: 'aberta',
       priority: priority || 'media',
-      assignee: assignee || null,
-      dueDate: dueDate || null,
+      assigneeName: assignee || undefined,
+      dueDate: dueDate || undefined,
       origin: {
         system: 'sagb',
         ref: userId,

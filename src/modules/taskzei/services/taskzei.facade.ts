@@ -9,7 +9,7 @@ import { useTaskzeiStore } from '../store/taskzei.store';
 import { useMeetingStore } from '../store/meeting.store';
 import { useInboxStore } from '../store/inbox.store';
 import { integrationHub } from '../../hub-integracao/services/integrationService';
-import { taskzeiNotificationService } from './taskzei_notification.service';
+import { TaskzeiNotificationService, taskzeiNotificationService } from './taskzei_notification.service';
 
 export class TaskzeiFacade implements ITaskzeiService {
   private provider = TaskzeiAdapter.getProvider();
@@ -152,6 +152,8 @@ export class TaskzeiFacade implements ITaskzeiService {
       const previousTask = store.tasks.find(t => t.id === id);
       const previousStatus = previousTask?.status;
       const statusChanged = updates.status !== undefined && updates.status !== previousStatus;
+      const assigneeChanged = updates.assigneeName !== undefined
+        && updates.assigneeName !== previousTask?.assigneeName;
 
       const updatedTask = await this.provider.updateTask(id, {
         ...(updates.title !== undefined ? { title: updates.title } : {}),
@@ -175,6 +177,15 @@ export class TaskzeiFacade implements ITaskzeiService {
           updates.status!,
           previousTask?.assigneeId,
           'Sistema'
+        );
+      }
+
+      if (assigneeChanged && updates.assigneeName) {
+        this.triggerAssigneeChangedNotification(
+          updatedTask,
+          previousTask?.assigneeName || 'Ninguém',
+          updates.assigneeName,
+          updates.assigneeId
         );
       }
 
@@ -207,6 +218,27 @@ export class TaskzeiFacade implements ITaskzeiService {
         });
     } catch (err) {
       console.error('[TaskzeiFacade] Failed to trigger status notification:', err);
+    }
+  }
+
+  private async triggerAssigneeChangedNotification(
+    task: TaskzeiTask,
+    previousAssignee: string,
+    newAssignee: string,
+    assigneeId?: string | null
+  ) {
+    try {
+      TaskzeiNotificationService.notifyTaskCreated(task, assigneeId, 'default')
+        .then((response: { success: boolean; error?: string }) => {
+          if (!response.success) {
+            console.warn('[TaskzeiFacade] Assignee change notification failed:', response.error);
+          }
+        })
+        .catch((err: unknown) => {
+          console.error('[TaskzeiFacade] Unhandled error in assignee notification:', err);
+        });
+    } catch (err) {
+      console.error('[TaskzeiFacade] Failed to trigger assignee notification:', err);
     }
   }
 

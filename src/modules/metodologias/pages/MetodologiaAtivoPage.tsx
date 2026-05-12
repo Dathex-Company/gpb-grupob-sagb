@@ -62,7 +62,7 @@ export const MetodologiaAtivoPage: React.FC<MetodologiaAtivoPageProps> = ({
       <header className="rounded-3xl border border-sagb-line bg-sagb-panel p-6 md:p-7 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-sagb-muted">Ativo metodológico</p>
+            <p className="text-[11px] font-semibold text-sagb-muted">Metodologia oficial</p>
             <h2 className="text-2xl md:text-3xl font-black text-sagb-text tracking-tight mt-1">{metodologia.nome}</h2>
             <p className="text-[12px] text-sagb-muted mt-1">{metodologia.slug}</p>
           </div>
@@ -112,7 +112,7 @@ export const MetodologiaAtivoPage: React.FC<MetodologiaAtivoPageProps> = ({
             <p className="text-[12px] text-sagb-text mt-1 leading-relaxed">{metodologia.objetivo}</p>
           </article>
           <article className="rounded-xl border border-sagb-line bg-sagb-bg-2 p-3">
-            <p className="text-[11px] font-black uppercase tracking-[0.14em] text-sagb-muted">Camadas</p>
+            <p className="text-[11px] font-semibold text-sagb-muted">Camadas</p>
             <p className="text-[12px] text-sagb-text mt-1 leading-relaxed">
               Essência, Estrutura, Aplicação, Governança, Evidências e Evolução.
             </p>
@@ -123,8 +123,8 @@ export const MetodologiaAtivoPage: React.FC<MetodologiaAtivoPageProps> = ({
       <section className="rounded-3xl border border-sagb-line bg-sagb-panel p-5 md:p-6 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-sagb-muted">Relações visuais</p>
-            <h3 className="text-lg md:text-xl font-black text-sagb-text tracking-tight mt-1">Conexões canônicas do ativo</h3>
+            <p className="text-[11px] font-semibold text-sagb-muted">Relações</p>
+            <h3 className="text-lg md:text-xl font-black text-sagb-text tracking-tight mt-1">Como esta metodologia se conecta</h3>
           </div>
           <span className="px-2.5 py-1 rounded-md bg-cyan-500/10 text-cyan-500 text-[10px] font-black uppercase tracking-wide">
             {relacoes.total_relacoes} conexão(ões)
@@ -132,7 +132,7 @@ export const MetodologiaAtivoPage: React.FC<MetodologiaAtivoPageProps> = ({
         </div>
 
         {relacoes.total_relacoes === 0 ? (
-          <p className="text-[12px] text-sagb-muted">Este ativo ainda não possui relações registradas no mapa canônico.</p>
+          <p className="text-[12px] text-sagb-muted">Esta metodologia ainda não possui relações registradas no mapa.</p>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {gruposRelacao.map((grupo) => (
