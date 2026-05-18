@@ -8,6 +8,7 @@ import React, { useState, useCallback } from 'react';
 import { DocumentTree } from '../../components/docs/DocumentTree';
 import { EditorCanvas } from '../../components/docs/EditorCanvas';
 import { ExportActions } from '../../components/docs/ExportActions';
+import { DocumentErrorBoundary } from '../../components/docs/DocumentErrorBoundary';
 
 export const AgendaInteligenteDocumentsPage: React.FC = () => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -61,7 +62,9 @@ export const AgendaInteligenteDocumentsPage: React.FC = () => {
 
       {/* ─── Painel direito: editor ───────────────────────────────── */}
       <main className="flex flex-1 flex-col overflow-hidden">
-        <EditorCanvas nodeId={selectedNodeId} />
+        <DocumentErrorBoundary>
+          <EditorCanvas nodeId={selectedNodeId} />
+        </DocumentErrorBoundary>
       </main>
     </div>
   );

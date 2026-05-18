@@ -59,6 +59,18 @@ type DocContentRow = {
   updated_at: string;
 };
 
+const VALID_BLOCK_TYPES = new Set([
+  'paragraph',
+  'heading',
+  'bulletList',
+  'orderedList',
+  'checkList',
+  'blockquote',
+  'codeBlock',
+  'divider',
+  'image',
+]);
+
 type EntityLinkRow = {
   id: string;
   source_type: string;
@@ -106,12 +118,22 @@ function mapDocNodeToRow(node: DocNodeInput & { id?: string }): Record<string, u
 }
 
 function mapRowToDocContent(row: DocContentRow): DocContent {
+  const safeBlockType = VALID_BLOCK_TYPES.has(row.block_type)
+    ? row.block_type
+    : 'paragraph';
+
+  const safeAttrs = row.attrs && typeof row.attrs === 'object' ? row.attrs : {};
+
+  const safeContent = Array.isArray(row.content)
+    ? row.content.filter((item) => item && typeof item === 'object')
+    : [];
+
   return {
     id: row.id,
     nodeId: row.node_id,
-    blockType: row.block_type as DocContent['blockType'],
-    attrs: row.attrs || {},
-    content: (row.content || []) as DocContent['content'],
+    blockType: safeBlockType as DocContent['blockType'],
+    attrs: safeAttrs,
+    content: safeContent as DocContent['content'],
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
