@@ -1,10 +1,11 @@
 import React from 'react';
 import { NotificationTestPanel } from '../../components/notifications/NotificationTestPanel';
+import { CustomFieldManager } from '../../components/settings/CustomFieldManager';
 
 export const AgendaInteligenteSettingsPage: React.FC = () => {
   return (
     <div
-      className="flex flex-col h-full overflow-hidden p-8"
+      className="flex flex-col h-full overflow-y-auto p-8"
       style={{
         backgroundColor: 'var(--sagb-surface)',
         borderRadius: 'var(--sagb-radius-xl)',
@@ -22,6 +23,11 @@ export const AgendaInteligenteSettingsPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Seção: Campos Personalizados */}
+        <section>
+          <CustomFieldManager />
+        </section>
+
         {/* Seção: Teste de Notificações */}
         <section>
           <div className="mb-4">
@@ -34,18 +40,6 @@ export const AgendaInteligenteSettingsPage: React.FC = () => {
           </div>
           <NotificationTestPanel />
         </section>
-
-        {/* Placeholder para futuras configurações */}
-        <div
-          className="rounded-xl p-6 flex items-center justify-center h-32 border-dashed"
-          style={{
-            border: '1px dashed var(--sagb-line)',
-            backgroundColor: 'var(--sagb-bg)',
-            color: 'var(--sagb-muted)',
-          }}
-        >
-          <p className="font-medium text-[13px]">[ Mais configurações em breve ]</p>
-        </div>
       </div>
     </div>
   );

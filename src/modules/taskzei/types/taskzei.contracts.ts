@@ -2,12 +2,30 @@ import { TaskzeiTask, TaskChecklistItem, TaskComment } from './task.types';
 import { Meeting, MeetingAgendaItem, Decision } from './meeting.types';
 import { InboxItem } from './inbox.types';
 import { TaskOrigin } from './origin.types';
+import {
+  CustomFieldDefinition,
+  CustomFieldDefinitionInput,
+  CustomFieldValue,
+} from './customField.types';
+
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  storageKey: string;
+  createdBy?: string;
+  createdAt: string;
+}
 
 export interface TaskzeiTaskInlineInput {
   title: string;
   priority: TaskzeiTask['priority'];
   status: TaskzeiTask['status'];
   assigneeName?: string;
+  assigneeId?: string;
+  internalDescription?: string;
   dueDate?: string;
 }
 
@@ -64,6 +82,20 @@ export interface ITaskzeiRepository {
     entityType: NonNullable<InboxItem['convertedToType']>,
     entityId: string
   ): Promise<InboxItem>;
+
+  // === Custom Fields (ET D21) ===
+  getCustomFieldDefinitions(): Promise<CustomFieldDefinition[]>;
+  createCustomFieldDefinition(input: CustomFieldDefinitionInput): Promise<CustomFieldDefinition>;
+  updateCustomFieldDefinition(id: string, updates: Partial<CustomFieldDefinitionInput>): Promise<CustomFieldDefinition>;
+  deleteCustomFieldDefinition(id: string): Promise<boolean>;
+
+  getTaskCustomValues(taskId: string): Promise<CustomFieldValue[]>;
+  setTaskCustomValue(taskId: string, fieldId: string, value: string | number | null): Promise<CustomFieldValue>;
+  deleteTaskCustomValue(taskId: string, fieldId: string): Promise<boolean>;
+
+  // === Attachments (ET D21) ===
+  getTaskAttachments(taskId: string): Promise<TaskAttachment[]>;
+  addTaskAttachment(taskId: string, file: File): Promise<TaskAttachment>;
 
   // === Audit (F10) ===
   auditLog(
@@ -124,6 +156,18 @@ export interface ITaskzeiService {
   addToInbox(data: Omit<InboxItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<InboxItem>;
   classifyInboxItem(id: string, suggestedType: InboxItem['suggestedType'], confidence: number): Promise<InboxItem>;
   dismissInboxItem(id: string): Promise<InboxItem>;
+
+  // === Custom Fields (ET D21) ===
+  loadCustomFieldDefinitions(): Promise<CustomFieldDefinition[]>;
+  createCustomFieldDefinition(input: CustomFieldDefinitionInput): Promise<CustomFieldDefinition>;
+  updateCustomFieldDefinition(id: string, updates: Partial<CustomFieldDefinitionInput>): Promise<CustomFieldDefinition>;
+  deleteCustomFieldDefinition(id: string): Promise<boolean>;
+
+  loadTaskCustomValues(taskId: string): Promise<CustomFieldValue[]>;
+  setTaskCustomValue(taskId: string, fieldId: string, value: string | number | null): Promise<void>;
+
+  // === Attachments (ET D21) ===
+  loadTaskAttachments(taskId: string): Promise<TaskAttachment[]>;
 
   // === Audit (F10) ===
   auditLog(

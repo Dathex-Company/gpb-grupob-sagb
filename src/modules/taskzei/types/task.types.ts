@@ -23,6 +23,9 @@ export interface TaskzeiTask {
   status: TaskStatus;
   priority: TaskPriority;
   assigneeName?: string;
+  assigneeId?: string;
+  internalDescription?: string;
+  completedAt?: string;
   dueDate?: string;
   checklist?: TaskChecklistItem[];
   comments?: TaskComment[];

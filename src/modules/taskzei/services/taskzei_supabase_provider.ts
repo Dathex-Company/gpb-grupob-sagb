@@ -7,14 +7,24 @@ import {
   getDocs,
   orderBy,
   query,
+  setDoc,
   updateDoc,
   where,
 } from '../../../../services/supabase';
-import { ITaskzeiRepository } from '../types/taskzei.contracts';
+import { uploadBlobToSupabaseStorage } from '../../../../services/storage';
+import { ITaskzeiRepository, TaskAttachment } from '../types/taskzei.contracts';
 import { TaskComment, TaskChecklistItem, TaskzeiTask } from '../types/task.types';
 import { TaskOrigin } from '../types/origin.types';
 import { Meeting, MeetingAgendaItem, Decision } from '../types/meeting.types';
 import { InboxItem } from '../types/inbox.types';
+import {
+  CustomFieldDefinition,
+  CustomFieldDefinitionInput,
+  CustomFieldValue,
+  CustomFieldType,
+  DropdownOption,
+  extractCustomValue,
+} from '../types/customField.types';
 
 // ─── Row Types ──────────────────────────────────────────────
 
@@ -25,6 +35,9 @@ type TaskzeiTaskRow = {
   status: TaskzeiTask['status'];
   priority: TaskzeiTask['priority'];
   assignee_name?: string | null;
+  assignee_id?: string | null;
+  internal_description?: string | null;
+  completed_at?: string | null;
   due_date?: string | null;
   origin_system?: string | null;
   origin_ref?: string | null;
@@ -102,6 +115,37 @@ type InboxRow = {
   updated_at: string;
 };
 
+type CustomFieldDefinitionRow = {
+  id: string;
+  workspace_id: string;
+  name: string;
+  type: string;
+  config: any;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type TaskCustomValueRow = {
+  task_id: string;
+  field_id: string;
+  value: any;
+  created_at: string;
+  updated_at: string;
+};
+
+type TaskAttachmentRow = {
+  id: string;
+  task_id: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  storage_key: string;
+  created_by?: string | null;
+  created_at: string;
+};
+
 // ─── Helpers ────────────────────────────────────────────────
 
 const to_iso_string = (value?: unknown): string | undefined => {
@@ -126,6 +170,9 @@ const map_task_row = (
   status: row.status,
   priority: row.priority,
   assigneeName: row.assignee_name || undefined,
+  assigneeId: row.assignee_id || undefined,
+  internalDescription: row.internal_description || undefined,
+  completedAt: to_iso_string(row.completed_at),
   dueDate: to_iso_string(row.due_date),
   checklist,
   comments,
@@ -163,6 +210,18 @@ const map_decision_row = (row: DecisionRow): Decision => ({
   deadline: to_iso_string(row.deadline),
   status: row.status as Decision['status'],
   relatedTaskId: row.related_task_id || undefined,
+  createdAt: to_iso_string(row.created_at) || new Date().toISOString(),
+  updatedAt: to_iso_string(row.updated_at) || new Date().toISOString(),
+});
+
+const map_cf_definition_row = (row: CustomFieldDefinitionRow): CustomFieldDefinition => ({
+  id: row.id,
+  workspaceId: row.workspace_id,
+  name: row.name,
+  type: row.type as CustomFieldType,
+  config: (Array.isArray(row.config) ? row.config : []) as DropdownOption[],
+  sortOrder: row.sort_order,
+  isActive: row.is_active,
   createdAt: to_iso_string(row.created_at) || new Date().toISOString(),
   updatedAt: to_iso_string(row.updated_at) || new Date().toISOString(),
 });
@@ -235,6 +294,9 @@ export class SupabaseTaskzeiProvider implements ITaskzeiRepository {
       status: task.status,
       priority: task.priority,
       assignee_name: task.assigneeName || null,
+      assignee_id: task.assigneeId || null,
+      internal_description: task.internalDescription || null,
+      completed_at: task.completedAt || null,
       due_date: task.dueDate || null,
     });
 
@@ -270,6 +332,9 @@ export class SupabaseTaskzeiProvider implements ITaskzeiRepository {
     if (updates.status !== undefined) firestoreData.status = updates.status;
     if (updates.priority !== undefined) firestoreData.priority = updates.priority;
     if (updates.assigneeName !== undefined) firestoreData.assignee_name = updates.assigneeName || null;
+    if (updates.assigneeId !== undefined) firestoreData.assignee_id = updates.assigneeId || null;
+    if (updates.internalDescription !== undefined) firestoreData.internal_description = updates.internalDescription || null;
+    if (updates.completedAt !== undefined) firestoreData.completed_at = updates.completedAt || null;
     if (updates.dueDate !== undefined) firestoreData.due_date = updates.dueDate || null;
     if (updates.archived !== undefined) firestoreData.archived = updates.archived;
     if (updates.origin !== undefined) {
@@ -704,6 +769,147 @@ export class SupabaseTaskzeiProvider implements ITaskzeiRepository {
       createdAt: to_iso_string(row.created_at) || new Date().toISOString(),
       updatedAt: to_iso_string(row.updated_at) || new Date().toISOString(),
     } as InboxItem;
+  }
+
+  // ============ CUSTOM FIELDS (ET D21) ============
+
+  async getCustomFieldDefinitions(): Promise<CustomFieldDefinition[]> {
+    const snap = await getDocs(query(collection(db, 'taskzei_custom_field_definitions'), orderBy('sort_order', 'asc')));
+    return snap.docs.map((d) => map_cf_definition_row(d.data() as CustomFieldDefinitionRow));
+  }
+
+  async createCustomFieldDefinition(input: CustomFieldDefinitionInput): Promise<CustomFieldDefinition> {
+    const ref = await addDoc(collection(db, 'taskzei_custom_field_definitions'), {
+      workspace_id: 'default',
+      name: input.name,
+      type: input.type,
+      config: input.config || [],
+      sort_order: input.sortOrder ?? 0,
+      is_active: true,
+    });
+    const snap = await getDocs(query(collection(db, 'taskzei_custom_field_definitions'), where('id', '==', ref.id)));
+    const row = snap.docs[0]?.data() as CustomFieldDefinitionRow | undefined;
+    if (!row) throw new Error('Custom field definition not found after creation');
+    return map_cf_definition_row(row);
+  }
+
+  async updateCustomFieldDefinition(
+    id: string,
+    updates: Partial<CustomFieldDefinitionInput>
+  ): Promise<CustomFieldDefinition> {
+    const firestoreData: Record<string, unknown> = {};
+    if (updates.name !== undefined) firestoreData.name = updates.name;
+    if (updates.type !== undefined) firestoreData.type = updates.type;
+    if (updates.config !== undefined) firestoreData.config = updates.config;
+    if (updates.sortOrder !== undefined) firestoreData.sort_order = updates.sortOrder;
+
+    await updateDoc(doc(db, 'taskzei_custom_field_definitions', id), firestoreData);
+    const snap = await getDocs(query(collection(db, 'taskzei_custom_field_definitions'), where('id', '==', id)));
+    const row = snap.docs[0]?.data() as CustomFieldDefinitionRow | undefined;
+    if (!row) throw new Error('Custom field definition not found after update');
+    return map_cf_definition_row(row);
+  }
+
+  async deleteCustomFieldDefinition(id: string): Promise<boolean> {
+    await deleteDoc(doc(db, 'taskzei_custom_field_definitions', id));
+    return true;
+  }
+
+  // ─── Custom Values (EAV) ────────────────────────────────────
+
+  async getTaskCustomValues(taskId: string): Promise<CustomFieldValue[]> {
+    const snap = await getDocs(
+      query(collection(db, 'taskzei_task_custom_values'), where('task_id', '==', taskId))
+    );
+    return snap.docs.map((d) => {
+      const row = d.data() as TaskCustomValueRow;
+      return {
+        taskId: row.task_id,
+        fieldId: row.field_id,
+        value: extractCustomValue(row.value),
+        updatedAt: to_iso_string(row.updated_at) || new Date().toISOString(),
+      };
+    });
+  }
+
+  async setTaskCustomValue(taskId: string, fieldId: string, value: string | number | null): Promise<CustomFieldValue> {
+    const compositeId = `${taskId}_${fieldId}`;
+    await setDoc(doc(db, 'taskzei_task_custom_values', compositeId), {
+      task_id: taskId,
+      field_id: fieldId,
+      value: value ?? null,
+    });
+    return {
+      taskId,
+      fieldId,
+      value,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  async deleteTaskCustomValue(taskId: string, fieldId: string): Promise<boolean> {
+    const compositeId = `${taskId}_${fieldId}`;
+    await deleteDoc(doc(db, 'taskzei_task_custom_values', compositeId));
+    return true;
+  }
+
+  // ============ ATTACHMENTS (ET D21) ============
+
+  async getTaskAttachments(taskId: string): Promise<TaskAttachment[]> {
+    const snap = await getDocs(
+      query(collection(db, 'taskzei_task_attachments'), where('task_id', '==', taskId), orderBy('created_at', 'asc'))
+    );
+    return snap.docs.map((d) => {
+      const row = d.data() as TaskAttachmentRow;
+      return {
+        id: row.id,
+        taskId: row.task_id,
+        fileName: row.file_name,
+        fileSize: row.file_size,
+        mimeType: row.mime_type,
+        storageKey: row.storage_key,
+        createdBy: row.created_by || undefined,
+        createdAt: to_iso_string(row.created_at) || new Date().toISOString(),
+      };
+    });
+  }
+
+  async addTaskAttachment(taskId: string, file: File): Promise<TaskAttachment> {
+    // 1. Gera path de storage no bucket cid-assets (mesmo padrão do CID)
+    const safeName = file.name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9._-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase();
+    const storagePath = `taskzei/task-attachments/${taskId}/${Date.now()}-${safeName}`;
+
+    // 2. Upload físico para o bucket cid-assets
+    await uploadBlobToSupabaseStorage({
+      bucket: 'cid-assets',
+      path: storagePath,
+      blob: file,
+      mimeType: file.type || 'application/octet-stream',
+    });
+
+    // 3. Cria o registro em taskzei_task_attachments
+    const ref = await addDoc(collection(db, 'taskzei_task_attachments'), {
+      task_id: taskId,
+      file_name: file.name,
+      file_size: file.size,
+      mime_type: file.type || 'application/octet-stream',
+      storage_key: storagePath,
+    });
+    return {
+      id: ref.id,
+      taskId,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type || 'application/octet-stream',
+      storageKey: storagePath,
+      createdAt: new Date().toISOString(),
+    };
   }
 
   // ============ AUDIT (F10) ============

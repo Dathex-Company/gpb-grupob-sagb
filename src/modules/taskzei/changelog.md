@@ -4,6 +4,39 @@ Registro de mudanças técnicas, decisões de arquitetura e evolução do módul
 
 ---
 
+## [1.17.0] — 2026-05-15
+
+### Adicionado
+- **ET D21 — Motor de Campos Personalizados (EAV) & Modal Central de Tarefa V1**
+- `customField.types.ts`: tipos `CustomFieldType`, `DropdownOption`, `CustomFieldConfig`, `CustomFieldDefinition`, `CustomFieldValue`, `CustomFieldDefinitionInput`, helpers `findCompletedStateOption` e `extractCustomValue`
+- `task.types.ts`: campos `assigneeId: string`, `internalDescription: string`, `completedAt: string` em `TaskzeiTask`
+- `taskzei.contracts.ts`: tipo `TaskAttachment`, campos `assigneeId`, `internalDescription` em `TaskzeiTaskInlineInput`; métodos `getCustomFieldDefinitions`, `createCustomFieldDefinition`, `updateCustomFieldDefinition`, `deleteCustomFieldDefinition`, `getTaskCustomValues`, `setTaskCustomValue`, `deleteTaskCustomValue`, `getTaskAttachments`, `addTaskAttachment` em `ITaskzeiRepository` e `ITaskzeiService`
+- `taskzei_supabase_provider.ts`: implementação completa dos 9 métodos de custom fields/attachments com padrão EAV (Composite PK via setDoc) e upload real para bucket `cid-assets` via `uploadBlobToSupabaseStorage`; row types `CustomFieldDefinitionRow`, `TaskCustomValueRow`, `TaskAttachmentRow`; helper `map_cf_definition_row`; mapeamento de `assigneeId`, `internalDescription`, `completedAt` em `map_task_row`, `createTask` e `updateTask`
+- `customFieldStore.ts`: Zustand store gerenciando definições, valores por tarefa (`valuesByTask`) e anexos por tarefa (`attachmentsByTask`) com otimismo parcial
+- `taskzei.facade.ts`: métodos delegados `loadCustomFieldDefinitions`, `createCustomFieldDefinition`, `updateCustomFieldDefinition`, `deleteCustomFieldDefinition`, `loadTaskCustomValues`, `setTaskCustomValue` (com lógica de completed_at), `loadTaskAttachments`; propagação de `assigneeId`, `internalDescription` em `createTask` e `updateTask`
+- **FASE 9 — Lógica de completed_at via is_completed_state**: No facade, ao selecionar dropdown option com `is_completed_state=true`, auto-seta `status='concluida'` e `completedAt=now()`; ao selecionar opção não-conclusiva ou limpar valor, remove `completedAt`
+- `CustomFieldManager.tsx`: Tela de gestão de campos personalizados no Settings com CRUD completo, gerenciamento de dropdown options (label, cor, is_completed_state), confirmação de exclusão
+- `TaskModal.tsx`: Modal central de tarefa V1 com 3 abas (Detalhes, Campos Personalizados, Anexos), modos create/edit, atalho Escape para fechar, backdrop click-to-close, integração com `CustomFieldRenderer`
+- `CustomFieldRenderer.tsx`: Renderizador dinâmico por tipo de campo (TEXT → input, NUMBER → input number, DATE → input date, DROPDOWN → select com indicador de cor), modo read-only
+- `AgendaInteligenteTasksPage.tsx`: Substituição da criação inline por `TaskModal`, gerenciamento de estado `showCreateModal`/`saving`, handlers em `useCallback`
+- `AgendaInteligenteSettingsPage.tsx`: integração de `<CustomFieldManager />`, `overflow-y-auto` no container
+- `module-doc.ts`: atualizado para v1.17.0 com novas tabelas (`taskzei_custom_field_definitions`, `taskzei_task_custom_values`, `taskzei_task_attachments`, `taskzei_audit_log`), bucket `cid-assets`, boundaries de EAV e completed_at
+
+### Modificado
+- `taskzei_supabase_provider.ts`: `addTaskAttachment` agora faz upload real para bucket `cid-assets` antes de criar registro em `taskzei_task_attachments`
+- `taskzei.facade.ts`: `setTaskCustomValue` agora verifica se o campo é DROPDOWN com `is_completed_state` para auto-gerenciar `status` e `completedAt`
+- `AgendaInteligenteTasksPage.tsx`: `isCreatingRow` substituído por `showCreateModal`; TaskList perde props `isCreatingRow`/`onCreateTask`/`onCancelCreate` (agora opcionais)
+
+### Migration SQL
+- `ALTER TABLE taskzei_tasks ADD COLUMN assignee_id UUID REFERENCES auth.users(id), ADD COLUMN internal_description TEXT, ADD COLUMN completed_at TIMESTAMPTZ`
+- `CREATE TABLE taskzei_custom_field_definitions` (catálogo EAV com config JSONB)
+- `CREATE TABLE taskzei_task_custom_values` (valores EAV com PK composta task_id + field_id)
+- `CREATE TABLE taskzei_task_attachments` (anexos com storage_key)
+- `CREATE TABLE taskzei_audit_log` (log de auditoria)
+- Índices, updated_at triggers e RLS policies para todas as novas tabelas
+
+---
+
 ## [1.16.0] — 2026-05-12
 
 ### Adicionado

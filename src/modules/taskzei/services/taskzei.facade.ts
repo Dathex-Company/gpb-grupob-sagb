@@ -1,4 +1,4 @@
-import { ITaskzeiService } from '../types/taskzei.contracts';
+import { ITaskzeiService, TaskAttachment } from '../types/taskzei.contracts';
 import { TaskzeiTask, TaskChecklistItem, TaskComment } from '../types/task.types';
 import { TaskzeiTaskInlineInput } from '../types/taskzei.contracts';
 import { Meeting, MeetingAgendaItem, Decision } from '../types/meeting.types';
@@ -6,6 +6,11 @@ import { InboxItem } from '../types/inbox.types';
 import { TaskOrigin } from '../types/origin.types';
 import { TaskzeiAdapter } from './taskzei.adapters';
 import { useTaskzeiStore } from '../store/taskzei.store';
+import {
+  CustomFieldDefinition,
+  CustomFieldDefinitionInput,
+  CustomFieldValue,
+} from '../types/customField.types';
 import { useMeetingStore } from '../store/meeting.store';
 import { useInboxStore } from '../store/inbox.store';
 import { integrationHub } from '../../hub-integracao/services/integrationService';
@@ -116,6 +121,8 @@ export class TaskzeiFacade implements ITaskzeiService {
         status: input.status,
         priority: input.priority,
         assigneeName: input.assigneeName || undefined,
+        assigneeId: input.assigneeId || undefined,
+        internalDescription: input.internalDescription || undefined,
         dueDate: input.dueDate || undefined,
         checklist: [],
         comments: []
@@ -160,6 +167,8 @@ export class TaskzeiFacade implements ITaskzeiService {
         ...(updates.priority !== undefined ? { priority: updates.priority } : {}),
         ...(updates.status !== undefined ? { status: updates.status } : {}),
         ...(updates.assigneeName !== undefined ? { assigneeName: updates.assigneeName || undefined } : {}),
+        ...(updates.assigneeId !== undefined ? { assigneeId: updates.assigneeId || undefined } : {}),
+        ...(updates.internalDescription !== undefined ? { internalDescription: updates.internalDescription || undefined } : {}),
         ...(updates.dueDate !== undefined ? { dueDate: updates.dueDate || undefined } : {}),
       });
       store.updateTask(id, {
@@ -167,6 +176,8 @@ export class TaskzeiFacade implements ITaskzeiService {
         ...(updates.priority !== undefined ? { priority: updates.priority } : {}),
         ...(updates.status !== undefined ? { status: updates.status } : {}),
         ...(updates.assigneeName !== undefined ? { assigneeName: updates.assigneeName || undefined } : {}),
+        ...(updates.assigneeId !== undefined ? { assigneeId: updates.assigneeId || undefined } : {}),
+        ...(updates.internalDescription !== undefined ? { internalDescription: updates.internalDescription || undefined } : {}),
         ...(updates.dueDate !== undefined ? { dueDate: updates.dueDate || undefined } : {}),
       });
 
@@ -598,6 +609,122 @@ export class TaskzeiFacade implements ITaskzeiService {
     } catch (error) {
       store.setError(error instanceof Error ? error.message : 'Error dismissing inbox item');
       throw error;
+    }
+  }
+
+  // ====================================================================
+  // CUSTOM FIELDS (ET D21)
+  // ====================================================================
+
+  async loadCustomFieldDefinitions(): Promise<CustomFieldDefinition[]> {
+    try {
+      return await this.provider.getCustomFieldDefinitions();
+    } catch (error) {
+      console.error('[TaskzeiFacade] Error loading custom field definitions:', error);
+      return [];
+    }
+  }
+
+  async createCustomFieldDefinition(input: CustomFieldDefinitionInput): Promise<CustomFieldDefinition> {
+    try {
+      const definition = await this.provider.createCustomFieldDefinition(input);
+      this.autoAudit('create_custom_field', 'custom_field', definition.id, { name: input.name, type: input.type });
+      return definition;
+    } catch (error) {
+      console.error('[TaskzeiFacade] Error creating custom field definition:', error);
+      throw error;
+    }
+  }
+
+  async updateCustomFieldDefinition(
+    id: string,
+    updates: Partial<CustomFieldDefinitionInput>
+  ): Promise<CustomFieldDefinition> {
+    try {
+      const definition = await this.provider.updateCustomFieldDefinition(id, updates);
+      this.autoAudit('update_custom_field', 'custom_field', id, { updates: Object.keys(updates) });
+      return definition;
+    } catch (error) {
+      console.error('[TaskzeiFacade] Error updating custom field definition:', error);
+      throw error;
+    }
+  }
+
+  async deleteCustomFieldDefinition(id: string): Promise<boolean> {
+    try {
+      const result = await this.provider.deleteCustomFieldDefinition(id);
+      this.autoAudit('delete_custom_field', 'custom_field', id);
+      return result;
+    } catch (error) {
+      console.error('[TaskzeiFacade] Error deleting custom field definition:', error);
+      throw error;
+    }
+  }
+
+  // ─── Values ─────────────────────────────────────────────────
+
+  async loadTaskCustomValues(taskId: string): Promise<CustomFieldValue[]> {
+    try {
+      return await this.provider.getTaskCustomValues(taskId);
+    } catch (error) {
+      console.error('[TaskzeiFacade] Error loading custom values:', error);
+      return [];
+    }
+  }
+
+  async setTaskCustomValue(taskId: string, fieldId: string, value: string | number | null): Promise<void> {
+    try {
+      await this.provider.setTaskCustomValue(taskId, fieldId, value);
+
+      // ── FASE 9: completed_at via is_completed_state ──────────────────
+      // Quando um dropdown option com is_completed_state=true é selecionado,
+      // auto-seta status='concluida' e completedAt=now().
+      const definitions = await this.provider.getCustomFieldDefinitions();
+      const field = definitions.find(d => d.id === fieldId);
+
+      if (field?.type === 'DROPDOWN') {
+        const store = useTaskzeiStore.getState();
+
+        if (value !== null) {
+          const selectedOption = field.config.find(o => o.id === value);
+          if (selectedOption?.is_completed_state) {
+            // Opção de conclusão selecionada → completa a tarefa
+            const now = new Date().toISOString();
+            await this.provider.updateTask(taskId, {
+              status: 'concluida' as TaskzeiTask['status'],
+              completedAt: now,
+            });
+            store.updateTask(taskId, {
+              status: 'concluida' as TaskzeiTask['status'],
+              completedAt: now,
+            });
+          } else if (selectedOption) {
+            // Opção não-conclusiva selecionada → limpa completedAt
+            await this.provider.updateTask(taskId, { completedAt: null as unknown as string | undefined });
+            store.updateTask(taskId, { completedAt: undefined });
+          }
+        } else {
+          // Valor removido → limpa completedAt
+          await this.provider.updateTask(taskId, { completedAt: null as unknown as string | undefined });
+          store.updateTask(taskId, { completedAt: undefined });
+        }
+      }
+
+      this.autoAudit('set_custom_value', 'task', taskId, { fieldId, value });
+    } catch (error) {
+      console.error('[TaskzeiFacade] Error setting custom value:', error);
+      throw error;
+    }
+  }
+
+  // ─── Attachments ────────────────────────────────────────────
+
+  async loadTaskAttachments(taskId: string): Promise<TaskAttachment[]> {
+    try {
+      return await this.provider.getTaskAttachments(taskId);
+    } catch (error) {
+      console.error('[TaskzeiFacade] Error loading attachments:', error);
+      return [];
     }
   }
 

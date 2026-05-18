@@ -1,46 +1,57 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTaskzeiStore } from '../../store/taskzei.store';
 import { taskzeiFacade } from '../../services/taskzei.facade';
 import { TaskzeiTask } from '../../types/task.types';
 import { TaskzeiTaskInlineInput } from '../../types/taskzei.contracts';
 import { TaskList } from '../../components/tasks/task_list';
 import { TaskFilters, TaskStatusFilter } from '../../components/tasks/task_filters';
+import { TaskModal } from '../../components/tasks/TaskModal';
 
 export const AgendaInteligenteTasksPage: React.FC = () => {
   const { tasks, isLoading } = useTaskzeiStore();
   const [activeFilter, setActiveFilter] = useState<TaskStatusFilter>('todas');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isCreatingRow, setIsCreatingRow] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     taskzeiFacade.loadTasks();
   }, []);
 
-  const handleAddTask = async () => {
-    setIsCreatingRow(true);
-  };
+  const handleOpenCreate = useCallback(() => {
+    setShowCreateModal(true);
+  }, []);
 
-  const handleCreateTask = async (input: TaskzeiTaskInlineInput) => {
-    await taskzeiFacade.createTask(input);
-    setIsCreatingRow(false);
-  };
+  const handleCloseCreate = useCallback(() => {
+    if (!saving) setShowCreateModal(false);
+  }, [saving]);
 
-  const handleCompleteTask = async (id: string, e?: React.MouseEvent) => {
+  const handleCreateTask = useCallback(async (input: TaskzeiTaskInlineInput) => {
+    setSaving(true);
+    try {
+      await taskzeiFacade.createTask(input);
+      setShowCreateModal(false);
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  const handleCompleteTask = useCallback(async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     await taskzeiFacade.completeTask(id);
-  };
+  }, []);
 
-  const handleChangeStatus = async (id: string, status: TaskzeiTask['status']) => {
+  const handleChangeStatus = useCallback(async (id: string, status: TaskzeiTask['status']) => {
     await taskzeiFacade.updateTaskStatus(id, status);
-  };
+  }, []);
 
-  const handleUpdateTask = async (id: string, updates: Partial<TaskzeiTaskInlineInput>) => {
+  const handleUpdateTask = useCallback(async (id: string, updates: Partial<TaskzeiTaskInlineInput>) => {
     await taskzeiFacade.updateTask(id, updates);
-  };
+  }, []);
 
-  const handleTaskClick = (_task: TaskzeiTask) => {
-    // Interação via linha inline; popup desativado por solicitação.
-  };
+  const handleTaskClick = useCallback((_task: TaskzeiTask) => {
+    // Interação via linha inline; modal de edição futuro.
+  }, []);
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
 
@@ -74,10 +85,10 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
   const hasNoTasks = tasks.length === 0;
   const hasNoFilterResults = !isLoading && !hasNoTasks && filteredTasks.length === 0;
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setActiveFilter('todas');
     setSearchTerm('');
-  };
+  }, []);
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden" style={{ borderRadius: 'var(--sagb-radius-xl)', border: '1px solid var(--sagb-line)', backgroundColor: 'var(--sagb-surface)', boxShadow: 'var(--sagb-shadow)' }}>
@@ -124,7 +135,7 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
           </div>
 
           <button
-            onClick={handleAddTask}
+            onClick={handleOpenCreate}
             className="inline-flex h-8 items-center gap-1.5 rounded-[var(--sagb-radius-sm)] border border-transparent px-3 text-xs font-semibold text-white transition-colors"
             style={{ backgroundColor: 'var(--sagb-primary)' }}
           >
@@ -148,7 +159,7 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
 
         {isLoading ? (
           <div className="flex flex-1 items-center justify-center text-sm font-medium" style={{ color: 'var(--sagb-muted)' }}>Carregando tarefas...</div>
-        ) : hasNoTasks && !isCreatingRow ? (
+        ) : hasNoTasks ? (
           <div className="mx-auto mt-12 flex max-w-md flex-col items-center text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center" style={{ borderRadius: 'var(--sagb-radius-xl)', border: '1px solid var(--sagb-primary-soft)', backgroundColor: 'var(--sagb-primary-soft)' }}>
               <svg className="h-8 w-8" style={{ color: 'var(--sagb-primary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,7 +171,7 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
               O TaskZei é o seu centro de execução. Crie sua primeira tarefa para organizar seu fluxo de trabalho e ter clareza sobre seus próximos passos.
             </p>
             <button
-              onClick={handleAddTask}
+              onClick={handleOpenCreate}
               className="rounded-[var(--sagb-radius-sm)] px-5 py-2.5 text-sm font-semibold text-white transition-colors"
               style={{ backgroundColor: 'var(--sagb-primary)' }}
             >
@@ -189,12 +200,19 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
             onCompleteTask={handleCompleteTask}
             onChangeStatus={handleChangeStatus}
             onUpdateTask={handleUpdateTask}
-            isCreatingRow={isCreatingRow}
-            onCreateTask={handleCreateTask}
-            onCancelCreate={() => setIsCreatingRow(false)}
           />
         )}
       </div>
+
+      {/* Modal de criação */}
+      {showCreateModal && (
+        <TaskModal
+          mode="create"
+          onSave={handleCreateTask}
+          onClose={handleCloseCreate}
+          saving={saving}
+        />
+      )}
     </div>
   );
 };
