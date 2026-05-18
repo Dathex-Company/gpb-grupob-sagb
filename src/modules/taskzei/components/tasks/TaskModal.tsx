@@ -9,6 +9,7 @@ import { TaskzeiTaskInlineInput } from '../../types/taskzei.contracts';
 import { TaskzeiTask } from '../../types/task.types';
 import { CustomFieldRenderer } from './CustomFieldRenderer';
 import { useCustomFieldStore } from '../../store/customFieldStore';
+import { TaskzeiUserOption } from '../../services/taskzei_users.service';
 
 // ─── Tipos ───────────────────────────────────────────────────
 
@@ -24,6 +25,8 @@ interface TaskModalProps {
   onClose: () => void;
   /** Loading state */
   saving?: boolean;
+  /** Usuários globais SagB */
+  users?: TaskzeiUserOption[];
 }
 
 type TabKey = 'details' | 'customFields' | 'attachments';
@@ -42,6 +45,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   onSave,
   onClose,
   saving = false,
+  users = [],
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('details');
   const [title, setTitle] = useState(task?.title || '');
@@ -271,18 +275,25 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--sagb-muted)' }}>
                     Responsável
                   </label>
-                  <input
-                    type="text"
-                    value={assigneeName}
-                    onChange={(e) => setAssigneeName(e.target.value)}
-                    placeholder="Nome do responsável"
+                  <select
+                    value={assigneeId}
+                    onChange={(e) => {
+                      const selected = users.find((u) => u.id === e.target.value);
+                      setAssigneeId(selected?.id || '');
+                      setAssigneeName(selected?.name || '');
+                    }}
                     className="w-full rounded-md px-3 py-2 text-[13px] outline-none transition-colors"
                     style={{
                       backgroundColor: 'var(--sagb-bg)',
                       border: '1px solid var(--sagb-line)',
                       color: 'var(--sagb-text)',
                     }}
-                  />
+                  >
+                    <option value="">Sem responsável</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>{user.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Descrição Interna */}

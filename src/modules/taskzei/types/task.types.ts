@@ -18,6 +18,7 @@ export interface TaskComment {
 
 export interface TaskzeiTask {
   id: string;
+  parentTaskId?: string | null;
   title: string;
   description?: string;
   status: TaskStatus;
@@ -32,6 +33,8 @@ export interface TaskzeiTask {
   archived?: boolean;
   origin?: TaskOrigin;
   relatedDocIds?: string[];
+  depth?: number;
+  hasChildren?: boolean;
   createdAt: string;
   updatedAt: string;
 }

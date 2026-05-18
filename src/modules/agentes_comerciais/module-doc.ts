@@ -1,10 +1,6 @@
-﻿export const moduleDoc = {
-  name: '
-agentes_comerciais
-',
-  title: '
-agentes_comerciais
-',
+export const moduleDoc = {
+  name: 'agentes_comerciais',
+  title: 'agentes_comerciais',
   status: 'active',
   purpose: 'Módulo oficial do SagB alinhado ao padrão canônico de governança.',
   requiredAgentFiles: [
@@ -15,4 +11,3 @@ agentes_comerciais
   ],
   canonicalGovernance: 'docs/governanca_sagb/padrao_unificado_governanca.md'
 };
-

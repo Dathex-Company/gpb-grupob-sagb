@@ -1,10 +1,6 @@
-﻿export const moduleDoc = {
-  name: '
-missoes
-',
-  title: '
-missoes
-',
+export const moduleDoc = {
+  name: 'missoes',
+  title: 'missoes',
   status: 'active',
   purpose: 'Módulo oficial do SagB alinhado ao padrão canônico de governança.',
   requiredAgentFiles: [
@@ -15,4 +11,3 @@ missoes
   ],
   canonicalGovernance: 'docs/governanca_sagb/padrao_unificado_governanca.md'
 };
-

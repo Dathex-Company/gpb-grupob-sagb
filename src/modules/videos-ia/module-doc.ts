@@ -1,10 +1,6 @@
-﻿export const moduleDoc = {
-  name: '
-videos-ia
-',
-  title: '
-videos-ia
-',
+export const moduleDoc = {
+  name: 'videos-ia',
+  title: 'videos-ia',
   status: 'active',
   purpose: 'Módulo oficial do SagB alinhado ao padrão canônico de governança.',
   requiredAgentFiles: [
@@ -15,4 +11,3 @@ videos-ia
   ],
   canonicalGovernance: 'docs/governanca_sagb/padrao_unificado_governanca.md'
 };
-

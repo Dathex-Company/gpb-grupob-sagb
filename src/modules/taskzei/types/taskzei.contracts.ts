@@ -23,6 +23,7 @@ export interface TaskzeiTaskInlineInput {
   title: string;
   priority: TaskzeiTask['priority'];
   status: TaskzeiTask['status'];
+  parentTaskId?: string | null;
   assigneeName?: string;
   assigneeId?: string;
   internalDescription?: string;

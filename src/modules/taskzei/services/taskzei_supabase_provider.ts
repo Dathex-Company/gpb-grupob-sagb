@@ -30,6 +30,7 @@ import {
 
 type TaskzeiTaskRow = {
   id: string;
+  parent_task_id?: string | null;
   title: string;
   description?: string | null;
   status: TaskzeiTask['status'];
@@ -165,6 +166,7 @@ const map_task_row = (
   comments: TaskComment[]
 ): TaskzeiTask => ({
   id: row.id,
+  parentTaskId: row.parent_task_id || null,
   title: row.title,
   description: row.description || undefined,
   status: row.status,
@@ -290,6 +292,7 @@ export class SupabaseTaskzeiProvider implements ITaskzeiRepository {
   async createTask(task: Omit<TaskzeiTask, 'id' | 'createdAt' | 'updatedAt'>): Promise<TaskzeiTask> {
     const task_ref = await addDoc(collection(db, 'taskzei_tasks'), {
       title: task.title,
+      parent_task_id: task.parentTaskId || null,
       description: task.description || null,
       status: task.status,
       priority: task.priority,
@@ -328,6 +331,7 @@ export class SupabaseTaskzeiProvider implements ITaskzeiRepository {
   async updateTask(id: string, updates: Partial<TaskzeiTask>): Promise<TaskzeiTask> {
     const firestoreData: Record<string, unknown> = {};
     if (updates.title !== undefined) firestoreData.title = updates.title;
+    if (updates.parentTaskId !== undefined) firestoreData.parent_task_id = updates.parentTaskId || null;
     if (updates.description !== undefined) firestoreData.description = updates.description || null;
     if (updates.status !== undefined) firestoreData.status = updates.status;
     if (updates.priority !== undefined) firestoreData.priority = updates.priority;

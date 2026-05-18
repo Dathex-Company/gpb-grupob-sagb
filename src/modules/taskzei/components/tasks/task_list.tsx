@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { TaskzeiTask } from '../../types/task.types';
 import { TaskzeiTaskInlineInput } from '../../types/taskzei.contracts';
 import { TaskListItem } from './task_list_item';
+import { TaskzeiUserOption } from '../../services/taskzei_users.service';
 
 // ─── Configuração de colunas redimensionáveis ─────────────────────────
 export type ColumnKey =
@@ -137,6 +138,10 @@ interface TaskListProps {
   onUpdateTask?: (id: string, updates: Partial<TaskzeiTaskInlineInput>) => void;
   onDuplicate?: (id: string) => void;
   onArchive?: (id: string) => void;
+  onCreateSubtask?: (parentTaskId: string) => void;
+  users?: TaskzeiUserOption[];
+  expandedIds?: Set<string>;
+  onToggleExpand?: (id: string) => void;
   isCreatingRow?: boolean;
   onCreateTask?: (input: TaskzeiTaskInlineInput) => Promise<void> | void;
   onCancelCreate?: () => void;
@@ -291,6 +296,10 @@ export const TaskList: React.FC<TaskListProps> = ({
   onUpdateTask,
   onDuplicate,
   onArchive,
+  onCreateSubtask,
+  users,
+  expandedIds,
+  onToggleExpand,
   isCreatingRow,
   onCreateTask,
   onCancelCreate,
@@ -351,6 +360,10 @@ export const TaskList: React.FC<TaskListProps> = ({
             onUpdateTask={onUpdateTask}
             onDuplicate={onDuplicate}
             onArchive={onArchive}
+            onCreateSubtask={onCreateSubtask}
+            users={users}
+            isExpanded={!!expandedIds?.has(task.id)}
+            onToggleExpand={onToggleExpand}
             gridColumnsStyle={gridTemplate}
           />
         ))}

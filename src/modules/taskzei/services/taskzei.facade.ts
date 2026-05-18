@@ -70,7 +70,6 @@ export class TaskzeiFacade implements ITaskzeiService {
       title,
       priority: 'media',
       status: 'aberta',
-      assigneeName: 'Você',
       dueDate: undefined,
     });
   }
@@ -115,10 +114,11 @@ export class TaskzeiFacade implements ITaskzeiService {
         return hubTask;
       }
 
-      const newTask = await this.provider.createTask({
-        title: input.title,
-        description: undefined,
-        status: input.status,
+        const newTask = await this.provider.createTask({
+          title: input.title,
+          parentTaskId: input.parentTaskId || null,
+          description: undefined,
+          status: input.status,
         priority: input.priority,
         assigneeName: input.assigneeName || undefined,
         assigneeId: input.assigneeId || undefined,

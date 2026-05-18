@@ -1,10 +1,6 @@
-﻿export const moduleDoc = {
-  name: '
-cadastro-empresas
-',
-  title: '
-cadastro-empresas
-',
+export const moduleDoc = {
+  name: 'cadastro-empresas',
+  title: 'cadastro-empresas',
   status: 'active',
   purpose: 'Módulo oficial do SagB alinhado ao padrão canônico de governança.',
   requiredAgentFiles: [
@@ -15,4 +11,3 @@ cadastro-empresas
   ],
   canonicalGovernance: 'docs/governanca_sagb/padrao_unificado_governanca.md'
 };
-

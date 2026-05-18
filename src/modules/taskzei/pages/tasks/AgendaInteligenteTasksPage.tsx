@@ -6,6 +6,7 @@ import { TaskzeiTaskInlineInput } from '../../types/taskzei.contracts';
 import { TaskList } from '../../components/tasks/task_list';
 import { TaskFilters, TaskStatusFilter } from '../../components/tasks/task_filters';
 import { TaskModal } from '../../components/tasks/TaskModal';
+import { taskzeiUsersService, TaskzeiUserOption } from '../../services/taskzei_users.service';
 
 export const AgendaInteligenteTasksPage: React.FC = () => {
   const { tasks, isLoading } = useTaskzeiStore();
@@ -13,12 +14,17 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [users, setUsers] = useState<TaskzeiUserOption[]>([]);
+  const [createParentTaskId, setCreateParentTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     taskzeiFacade.loadTasks();
+    taskzeiUsersService.loadUsers().then(setUsers).catch(() => setUsers([]));
   }, []);
 
   const handleOpenCreate = useCallback(() => {
+    setCreateParentTaskId(null);
     setShowCreateModal(true);
   }, []);
 
@@ -31,6 +37,7 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
     try {
       await taskzeiFacade.createTask(input);
       setShowCreateModal(false);
+      setCreateParentTaskId(null);
     } finally {
       setSaving(false);
     }
@@ -55,21 +62,45 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
 
+  const isDemoTask = useCallback((task: TaskzeiTask) => {
+    const title = (task.title || '').toLowerCase();
+    const description = (task.description || '').toLowerCase();
+    return title.includes('demonstra') || description.includes('demonstra');
+  }, []);
+
+  const visibleTasks = useMemo(() => {
+    return tasks.filter((task) => !isDemoTask(task));
+  }, [tasks, isDemoTask]);
+
+  const handleOpenCreateSubtask = useCallback((parentTaskId: string) => {
+    const byId = new Map(visibleTasks.map((t) => [t.id, t] as const));
+    let depth = 0;
+    let cursor = byId.get(parentTaskId);
+    while (cursor?.parentTaskId) {
+      depth += 1;
+      cursor = byId.get(cursor.parentTaskId);
+      if (depth > 10) break;
+    }
+    if (depth >= 4) return; // raiz=0 ... nível 5 permitido (depth 4 para o pai)
+    setCreateParentTaskId(parentTaskId);
+    setShowCreateModal(true);
+  }, [visibleTasks]);
+
   const taskCounts = useMemo(() => {
-    const aberta = tasks.filter((task) => task.status === 'aberta').length;
-    const em_andamento = tasks.filter((task) => task.status === 'em_andamento').length;
-    const concluida = tasks.filter((task) => task.status === 'concluida').length;
+    const aberta = visibleTasks.filter((task) => task.status === 'aberta').length;
+    const em_andamento = visibleTasks.filter((task) => task.status === 'em_andamento').length;
+    const concluida = visibleTasks.filter((task) => task.status === 'concluida').length;
 
     return {
-      todas: tasks.length,
+      todas: visibleTasks.length,
       aberta,
       em_andamento,
       concluida
     };
-  }, [tasks]);
+  }, [visibleTasks]);
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
+    return visibleTasks.filter((task) => {
       const matchesStatus = activeFilter === 'todas' ? true : task.status === activeFilter;
 
       const matchesSearch =
@@ -80,9 +111,47 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
 
       return matchesStatus && matchesSearch;
     });
-  }, [tasks, activeFilter, normalizedSearch]);
+  }, [visibleTasks, activeFilter, normalizedSearch]);
 
-  const hasNoTasks = tasks.length === 0;
+  const visibleTreeRows = useMemo(() => {
+    const byParent = new Map<string | null, TaskzeiTask[]>();
+    for (const task of filteredTasks) {
+      const key = task.parentTaskId || null;
+      const bucket = byParent.get(key) || [];
+      bucket.push(task);
+      byParent.set(key, bucket);
+    }
+
+    for (const bucket of byParent.values()) {
+      bucket.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    }
+
+    const rows: TaskzeiTask[] = [];
+    const walk = (parentId: string | null, depth: number) => {
+      const children = byParent.get(parentId) || [];
+      for (const item of children) {
+        const hasChildren = (byParent.get(item.id) || []).length > 0;
+        rows.push({ ...item, depth, hasChildren });
+        if (hasChildren && expandedIds.has(item.id)) {
+          walk(item.id, depth + 1);
+        }
+      }
+    };
+
+    walk(null, 0);
+    return rows;
+  }, [filteredTasks, expandedIds]);
+
+  const toggleExpanded = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const hasNoTasks = visibleTasks.length === 0;
   const hasNoFilterResults = !isLoading && !hasNoTasks && filteredTasks.length === 0;
 
   const clearFilters = useCallback(() => {
@@ -194,12 +263,16 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <TaskList
-            tasks={filteredTasks}
+        <TaskList
+            tasks={visibleTreeRows}
             onTaskClick={handleTaskClick}
             onCompleteTask={handleCompleteTask}
             onChangeStatus={handleChangeStatus}
             onUpdateTask={handleUpdateTask}
+            onCreateSubtask={handleOpenCreateSubtask}
+            users={users}
+            expandedIds={expandedIds}
+            onToggleExpand={toggleExpanded}
           />
         )}
       </div>
@@ -208,9 +281,10 @@ export const AgendaInteligenteTasksPage: React.FC = () => {
       {showCreateModal && (
         <TaskModal
           mode="create"
-          onSave={handleCreateTask}
+          onSave={(input) => handleCreateTask({ ...input, parentTaskId: createParentTaskId })}
           onClose={handleCloseCreate}
           saving={saving}
+          users={users}
         />
       )}
     </div>

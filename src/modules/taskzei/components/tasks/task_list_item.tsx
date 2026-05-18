@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { TaskzeiTask } from '../../types/task.types';
 import { TaskzeiTaskInlineInput } from '../../types/taskzei.contracts';
 import { useFocusWidgetStore } from '../../store/focusWidgetStore';
+import { TaskzeiUserOption } from '../../services/taskzei_users.service';
 
 interface TaskListItemProps {
   task: TaskzeiTask;
@@ -11,8 +12,12 @@ interface TaskListItemProps {
   onUpdateTask?: (id: string, updates: Partial<TaskzeiTaskInlineInput>) => void;
   onDuplicate?: (id: string) => void;
   onArchive?: (id: string) => void;
+  onCreateSubtask?: (parentTaskId: string) => void;
+  users?: TaskzeiUserOption[];
   variant?: 'table' | 'card';
   gridColumnsStyle?: string;
+  isExpanded?: boolean;
+  onToggleExpand?: (id: string) => void;
 }
 
 // ─── Helpers de cor semântica (Robust Clean) ──────────────────────────
@@ -49,10 +54,15 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
   onUpdateTask,
   onDuplicate,
   onArchive,
+  onCreateSubtask,
+  users = [],
   variant = 'table',
   gridColumnsStyle,
+  isExpanded = false,
+  onToggleExpand,
 }) => {
   const isCompleted = task.status === 'concluida';
+  const isOpen = task.status === 'aberta';
   const [titleDraft, setTitleDraft] = useState(task.title);
   const [assigneeDraft, setAssigneeDraft] = useState(task.assigneeName ?? '');
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -245,6 +255,32 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
         </div>
 
         {/* Título */}
+        {task.hasChildren ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleExpand?.(task.id);
+            }}
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded"
+            style={{ color: 'var(--sagb-muted)' }}
+            title={isExpanded ? 'Recolher subtarefas' : 'Expandir subtarefas'}
+          >
+            <svg
+              className="h-3 w-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        ) : (
+          <span className="inline-block h-4 w-4 shrink-0" />
+        )}
+
         <input
           value={titleDraft}
           onChange={(event) => setTitleDraft(event.target.value)}
@@ -258,7 +294,12 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
           }}
           className="h-6 min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 text-[12px] font-medium outline-none"
           style={{
-            color: isCompleted ? 'var(--sagb-muted)' : 'var(--sagb-text)',
+            paddingLeft: `${Math.min(task.depth || 0, 5) * 12 + 4}px`,
+            color: isCompleted
+              ? 'var(--sagb-muted)'
+              : isOpen
+                ? 'var(--sagb-text)'
+                : 'var(--sagb-muted)',
             textDecoration: isCompleted ? 'line-through' : 'none',
           }}
         />
@@ -316,18 +357,23 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
         >
           {assigneeDraft ? assigneeDraft.charAt(0).toUpperCase() : '—'}
         </div>
-        <input
-          value={assigneeDraft}
-          onChange={(event) => setAssigneeDraft(event.target.value)}
-          onBlur={() => {
-            const normalized = assigneeDraft.trim();
-            if (normalized === (task.assigneeName ?? '')) return;
-            onUpdateTask?.(task.id, { assigneeName: normalized || undefined });
+        <select
+          value={task.assigneeId || ''}
+          onChange={(event) => {
+            const user = users.find((u) => u.id === event.target.value);
+            onUpdateTask?.(task.id, {
+              assigneeId: user?.id || undefined,
+              assigneeName: user?.name || undefined,
+            });
           }}
-          placeholder="Responsável"
           className="h-6 w-full rounded border border-transparent bg-transparent px-1 text-[12px] outline-none"
           style={{ color: 'var(--sagb-muted)' }}
-        />
+        >
+          <option value="">Sem responsável</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>{user.name}</option>
+          ))}
+        </select>
       </div>
 
       {/* ── Col 5: Vencimento ─────────────────────────────── */}
@@ -415,6 +461,17 @@ export const TaskListItem: React.FC<TaskListItemProps> = ({
               boxShadow: 'var(--sagb-shadow)',
             }}
           >
+            <button
+              onClick={() => { onCreateSubtask?.(task.id); setShowContextMenu(false); }}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] transition-colors"
+              style={{ color: 'var(--sagb-text)' }}
+              disabled={(task.depth || 0) >= 5}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--sagb-muted)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Criar subtarefa
+            </button>
             <button
               onClick={() => { onDuplicate?.(task.id); setShowContextMenu(false); }}
               className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] transition-colors"

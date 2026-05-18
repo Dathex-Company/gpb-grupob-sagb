@@ -79,6 +79,7 @@ const BLOCK_TYPES: { type: DocBlockType; label: string; icon: string }[] = [
 
 export const EditorCanvas: React.FC<EditorCanvasProps> = ({ nodeId }) => {
   const { nodes, contents, setContents } = useDocStore();
+  console.log('[DEBUG-EDITOR] EditorCanvas render', { nodeId, nodesCount: nodes.length });
   const [localBlocks, setLocalBlocks] = useState<DocContentInput[]>([]);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [uploadingFiles, setUploadingFiles] = useState<{

@@ -46,6 +46,7 @@ export const DocumentTree: React.FC<DocumentTreeProps> = ({
   }, [selectNode, onSelectNode]);
 
   const handleCreate = useCallback(async (parentId: string | null, type: 'folder' | 'document') => {
+    console.log('[DEBUG-DOC] handleCreate called', { parentId, type });
     const input: DocNodeInput = {
       parentId,
       type,
@@ -55,6 +56,7 @@ export const DocumentTree: React.FC<DocumentTreeProps> = ({
     };
     try {
       const node = await docService.createNode(input);
+      console.log('[DEBUG-DOC] node created', { id: node.id, title: node.title });
       // Auto-expand o pai se criar dentro de uma pasta
       if (parentId) {
         const expanded = useDocStore.getState().expandedNodeIds;
@@ -62,9 +64,11 @@ export const DocumentTree: React.FC<DocumentTreeProps> = ({
           toggleExpanded(parentId);
         }
       }
+      console.log('[DEBUG-DOC] calling handleSelect', { nodeId: node.id });
       handleSelect(node.id);
+      console.log('[DEBUG-DOC] handleSelect completed');
     } catch (err) {
-      console.error('[DocumentTree] Erro ao criar nó:', err);
+      console.error('[DEBUG-DOC] Erro ao criar nó:', err);
     }
   }, [workspaceId, handleSelect, toggleExpanded]);
 
