@@ -2916,10 +2916,10 @@ interface SearchResult {
 | `central_padroes_agent_runs` | SELECT para todos; INSERT/UPDATE apenas agente ou admin |
 
 **Checklist de seguranÃ§a:**
-- [ ] RLS policies implementadas para TODAS as tabelas
-- [ ] Teste de policies (SELECT sem auth falha)
-- [ ] Checklist de seguranÃ§a documentado
-- [ ] Auditoria de acessos
+- [x] RLS policies implementadas para TODAS as tabelas
+- [x] Teste de policies (SELECT sem auth falha)
+- [x] Checklist de seguranÃ§a documentado
+- [x] Auditoria de acessos
 
 ### F.2 CA-15: Code Review
 
@@ -2933,10 +2933,10 @@ interface SearchResult {
 - ConsistÃªncia com padrÃµes do projeto
 
 **Checklist do agente:**
-- [ ] Code review de todos os arquivos novos
-- [ ] DÃ­vida tÃ©cnica identificada e documentada
-- [ ] RecomendaÃ§Ãµes de melhoria registradas
-- [ ] Nenhum blocker identificado (ou registrado)
+- [x] Code review de todos os arquivos novos
+- [x] DÃ­vida tÃ©cnica identificada e documentada
+- [x] RecomendaÃ§Ãµes de melhoria registradas
+- [x] Nenhum blocker identificado (ou registrado)
 
 ### F.3 CA-10: QA e Testes
 
@@ -2955,10 +2955,10 @@ interface SearchResult {
 | SeguranÃ§a | RLS bloqueia nÃ£o-autenticados? |
 
 **Checklist do agente:**
-- [ ] Todos os fluxos testados manualmente
-- [ ] Checklist QA preenchido
-- [ ] Bugs encontrados registrados
-- [ ] Build validado novamente
+- [x] Todos os fluxos testados manualmente
+- [x] Checklist QA preenchido
+- [x] Bugs encontrados registrados
+- [x] Build validado novamente
 
 ### F.4 CA-11: Observabilidade
 
@@ -2971,10 +2971,10 @@ interface SearchResult {
 - Rastreio de erros no front-end
 
 **Checklist do agente:**
-- [ ] Logging implementado nos services
-- [ ] MÃ©tricas de uso disponÃ­veis
-- [ ] Documento de observabilidade atualizado
-- [ ] Dashboard operacional
+- [x] Logging implementado nos services
+- [x] MÃ©tricas de uso disponÃ­veis
+- [x] Documento de observabilidade atualizado
+- [x] Dashboard operacional
 
 ---
 

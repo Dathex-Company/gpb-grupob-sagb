@@ -5,6 +5,5 @@
 - [x] RLS habilitado nas novas tabelas.
 - [x] Políticas iniciais limitadas a `authenticated`.
 - [x] Publicador legado preservado.
-- [ ] Refinar papéis granulares em fase posterior.
+- [x] Refinar papéis granulares em fase posterior.
 - [ ] Criar buckets privados para evidências somente quando fluxo estiver aprovado.
-

@@ -37,3 +37,11 @@
 - Migration pgvector/embeddings criada.
 - Search service criado com busca híbrida e fallback textual.
 - SearchPage aprimorada com debounce, abas, score e trechos.
+
+## Bloco F — ET-07 Segurança, QA e Observabilidade
+
+- Build: `npm run build` OK.
+- Migration de RLS refinada criada para tabelas da Central.
+- Code review registrado em `.logs/revisao-codigo-central-padroes.md`.
+- QA registrado em `.logs/revisao-qa-central-padroes.md`.
+- Observabilidade documentada em `docs/observabilidade-central-padroes.md`.
