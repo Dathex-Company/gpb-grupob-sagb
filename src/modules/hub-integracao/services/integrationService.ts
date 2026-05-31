@@ -13,12 +13,21 @@ import {
   ConnectionConfig,
   Integration,
   IntegrationServiceContract,
+  HubChannel,
+  ChannelMethodKey,
+  ChannelRuntimeStatus,
+  ChannelConfig,
+  ConnectionMethod,
+  ModuleBinding,
+  HubChannelView,
+  HubObservabilityEvent,
 } from '../types/integration.types';
 import { clickUpDriver } from './clickupService';
 import { credentialManager } from './credentialManager';
 import { whatsAppDriver } from './whatsappService';
 import { emailService } from './emailService';
 import { loggerService } from './loggerService';
+import { restFetch } from '../../../../services/supabase';
 
 const INBOX_STORAGE_KEY = 'sagb_hub_inbox_messages_v1';
 
@@ -26,6 +35,360 @@ export class IntegrationHubService implements IntegrationServiceContract {
   private readonly clickUpIntegrationId = 'int_clickup_01';
   private readonly whatsAppIntegrationId = 'int_waba_01';
   private readonly workspaceId = 'default';
+
+  private emitObservability(event: HubObservabilityEvent): void {
+    const summary = `${event.eventName} [${event.channel}/${event.method || 'n/a'}] ${event.status || ''}`.trim();
+    void loggerService.log({
+      integrationId: `obs_${event.channel}`,
+      integrationName: `Observability ${event.channel}`,
+      provider: event.channel,
+      action: 'health',
+      status: event.errorCode ? 'failure' : 'success',
+      summary,
+      details: JSON.stringify(event),
+    });
+  }
+
+  private async getDefaultMethods(workspaceId = this.workspaceId): Promise<ConnectionMethod[]> {
+    return [
+      {
+        id: crypto.randomUUID(),
+        workspaceId,
+        channel: 'whatsapp',
+        method: 'whatsapp_qr',
+        enabled: true,
+        isDefault: true,
+        displayName: 'QR Code',
+        providerInternal: 'baileys',
+      },
+      {
+        id: crypto.randomUUID(),
+        workspaceId,
+        channel: 'whatsapp',
+        method: 'whatsapp_business_api',
+        enabled: true,
+        isDefault: false,
+        displayName: 'Business API',
+        providerInternal: 'meta_cloud_api',
+      },
+      {
+        id: crypto.randomUUID(),
+        workspaceId,
+        channel: 'email',
+        method: 'email_gmail',
+        enabled: true,
+        isDefault: true,
+        displayName: 'Gmail / Google',
+        providerInternal: 'gmail',
+      },
+      {
+        id: crypto.randomUUID(),
+        workspaceId,
+        channel: 'email',
+        method: 'email_titan',
+        enabled: true,
+        isDefault: false,
+        displayName: 'Outro e-mail corporativo',
+        providerInternal: 'titan',
+      },
+    ];
+  }
+
+  private async getMethodRows(workspaceId = this.workspaceId): Promise<ConnectionMethod[]> {
+    try {
+      const query = new URLSearchParams({ select: '*', workspace_id: `eq.${workspaceId}` });
+      const rows = await restFetch('hub_channel_methods', { query }) as any[];
+      if (!rows?.length) return this.getDefaultMethods(workspaceId);
+      return rows.map((row) => ({
+        id: String(row.id || crypto.randomUUID()),
+        workspaceId: String(row.workspace_id || workspaceId),
+        channel: row.channel as HubChannel,
+        method: row.method as ChannelMethodKey,
+        enabled: Boolean(row.enabled),
+        isDefault: Boolean(row.is_default),
+        displayName: String(row.display_name || row.method),
+        providerInternal: String(row.provider_internal || row.method),
+        metadata: row.metadata || undefined,
+      }));
+    } catch {
+      return this.getDefaultMethods(workspaceId);
+    }
+  }
+
+  private async getChannelConfigRows(workspaceId = this.workspaceId): Promise<ChannelConfig[]> {
+    try {
+      const query = new URLSearchParams({ select: '*', workspace_id: `eq.${workspaceId}` });
+      const rows = await restFetch('hub_channel_configs', { query }) as any[];
+      if (!rows?.length) {
+        return [
+          {
+            id: crypto.randomUUID(),
+            workspaceId,
+            channel: 'whatsapp',
+            displayName: 'WhatsApp',
+            preferredMethod: 'whatsapp_qr',
+            enabled: true,
+          },
+          {
+            id: crypto.randomUUID(),
+            workspaceId,
+            channel: 'email',
+            displayName: 'E-mail',
+            preferredMethod: 'email_gmail',
+            enabled: true,
+          },
+        ];
+      }
+      return rows.map((row) => ({
+        id: String(row.id || crypto.randomUUID()),
+        workspaceId: String(row.workspace_id || workspaceId),
+        channel: row.channel as HubChannel,
+        displayName: String(row.display_name || row.channel),
+        preferredMethod: row.preferred_method as ChannelMethodKey,
+        enabled: Boolean(row.enabled),
+        metadata: row.metadata || undefined,
+      }));
+    } catch {
+      return [
+        {
+          id: crypto.randomUUID(),
+          workspaceId,
+          channel: 'whatsapp',
+          displayName: 'WhatsApp',
+          preferredMethod: 'whatsapp_qr',
+          enabled: true,
+        },
+        {
+          id: crypto.randomUUID(),
+          workspaceId,
+          channel: 'email',
+          displayName: 'E-mail',
+          preferredMethod: 'email_gmail',
+          enabled: true,
+        },
+      ];
+    }
+  }
+
+  private async getModuleBindingRows(workspaceId = this.workspaceId): Promise<ModuleBinding[]> {
+    try {
+      const query = new URLSearchParams({ select: '*', workspace_id: `eq.${workspaceId}` });
+      const rows = await restFetch('hub_module_bindings', { query }) as any[];
+      return (rows || []).map((row) => ({
+        id: String(row.id || crypto.randomUUID()),
+        workspaceId: String(row.workspace_id || workspaceId),
+        module: String(row.module),
+        channel: row.channel as HubChannel,
+        method: row.method as ChannelMethodKey,
+        enabled: Boolean(row.enabled),
+        metadata: row.metadata || undefined,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  private async legacyIntegrationsToChannels(workspaceId = this.workspaceId): Promise<HubChannelView[]> {
+    const configs = await this.getChannelConfigRows(workspaceId);
+    const methods = await this.getMethodRows(workspaceId);
+    const bindings = await this.getModuleBindingRows(workspaceId);
+
+    const views: HubChannelView[] = [];
+    for (const cfg of configs) {
+      const channelMethods = methods.filter((m) => m.channel === cfg.channel);
+      const runtime = await this.getChannelStatus(cfg.channel, workspaceId);
+      const channelBindings = bindings.filter((b) => b.channel === cfg.channel);
+      views.push({ config: cfg, methods: channelMethods, runtime, bindings: channelBindings });
+    }
+    return views;
+  }
+
+  async getChannels(workspaceId = this.workspaceId): Promise<HubChannelView[]> {
+    return this.legacyIntegrationsToChannels(workspaceId);
+  }
+
+  async getChannelStatus(channel: HubChannel, workspaceId = this.workspaceId): Promise<ChannelRuntimeStatus> {
+    if (channel === 'whatsapp') {
+      try {
+        const status = await this.getWhatsAppQrStatus('default');
+        const mapped: ChannelRuntimeStatus = {
+          workspaceId,
+          channel,
+          status: status.status === 'connected' ? 'active' : status.status === 'disconnected' || status.status === 'logged_out' ? 'error' : 'inactive',
+          currentMethod: 'whatsapp_qr',
+          sessionId: status.sessionId,
+          sessionStatus: status.status,
+          connectedAccount: status.connectedAccount || undefined,
+          lastError: status.lastError || null,
+          updatedAt: status.updatedAt || new Date().toISOString(),
+          metadata: {
+            semanticState:
+              status.status === 'connected'
+                ? 'channel_active'
+                : status.status === 'qr_ready'
+                ? 'awaiting_scan'
+                : status.status === 'logged_out'
+                ? 'session_expired'
+                : status.status === 'disconnected'
+                ? 'error'
+                : 'method_selected',
+          },
+        };
+        this.emitObservability({
+          eventName: status.status === 'connected' ? 'session_ready' : 'session_connecting',
+          timestamp: new Date().toISOString(),
+          workspaceId,
+          channel,
+          method: 'whatsapp_qr',
+          sessionId: status.sessionId,
+          status: status.status,
+        });
+        return mapped;
+      } catch (err) {
+        this.emitObservability({
+          eventName: 'status_refresh_failed',
+          timestamp: new Date().toISOString(),
+          workspaceId,
+          channel,
+          method: 'whatsapp_qr',
+          status: 'error',
+          errorCode: 'qr_status_failed',
+          errorMessage: err instanceof Error ? err.message : 'unknown',
+        });
+        return {
+          workspaceId,
+          channel,
+          status: 'error',
+          currentMethod: 'whatsapp_qr',
+          updatedAt: new Date().toISOString(),
+          lastError: err instanceof Error ? err.message : 'unknown',
+        };
+      }
+    }
+
+    const gmail = await this.getConnectionStatus('int_gmail_01');
+    const titan = await this.getConnectionStatus('int_titan_01');
+    const gmailCreds = await credentialManager.getCredential('gmail', 'int_gmail_01', workspaceId, 'hub-channel-status');
+    const titanCreds = await credentialManager.getCredential('titan', 'int_titan_01', workspaceId, 'hub-channel-status');
+    const gmailConfigured = Boolean(gmailCreds?.refreshToken);
+    const titanConfigured = Boolean((titanCreds?.password || titanCreds?.apiKey) && titanCreds?.accountEmail);
+    const anyConfigured = gmailConfigured || titanConfigured;
+    const tested = gmail === 'active' || titan === 'active';
+    const currentMethod: ChannelMethodKey = gmail === 'active' ? 'email_gmail' : 'email_titan';
+    return {
+      workspaceId,
+      channel,
+      status: gmail === 'active' || titan === 'active' ? 'active' : gmail === 'error' || titan === 'error' ? 'error' : 'inactive',
+      currentMethod,
+      updatedAt: new Date().toISOString(),
+      metadata: {
+        semanticState: tested
+          ? 'channel_active'
+          : anyConfigured
+          ? 'method_configured'
+          : 'no_method_configured',
+        methodSelected: anyConfigured,
+        methodConfigured: anyConfigured,
+        connectionTested: tested,
+      },
+    };
+  }
+
+  async setPreferredMethod(channel: HubChannel, method: ChannelMethodKey, workspaceId = this.workspaceId, module?: string): Promise<void> {
+    if (module) {
+      await this.setModuleBinding(module, channel, method, workspaceId);
+      return;
+    }
+
+    const query = new URLSearchParams({
+      workspace_id: `eq.${workspaceId}`,
+      channel: `eq.${channel}`,
+    });
+
+    try {
+      await restFetch('hub_channel_configs', {
+        method: 'PATCH',
+        query,
+        body: { preferred_method: method },
+      });
+    } catch {
+      await restFetch('hub_channel_configs', {
+        method: 'POST',
+        body: {
+          workspace_id: workspaceId,
+          channel,
+          display_name: channel === 'whatsapp' ? 'WhatsApp' : 'E-mail',
+          preferred_method: method,
+          enabled: true,
+        },
+      });
+    }
+  }
+
+  async setModuleBinding(module: string, channel: HubChannel, method: ChannelMethodKey, workspaceId = this.workspaceId): Promise<void> {
+    const query = new URLSearchParams({
+      workspace_id: `eq.${workspaceId}`,
+      module: `eq.${module}`,
+      channel: `eq.${channel}`,
+    });
+
+    try {
+      await restFetch('hub_module_bindings', {
+        method: 'PATCH',
+        query,
+        body: { method, enabled: true },
+      });
+    } catch {
+      await restFetch('hub_module_bindings', {
+        method: 'POST',
+        body: {
+          workspace_id: workspaceId,
+          module,
+          channel,
+          method,
+          enabled: true,
+        },
+      });
+    }
+  }
+
+  private mapInboxRowToMessage(row: any): HubInboundMessage {
+    return {
+      id: String(row.id || crypto.randomUUID()),
+      source: (row.source || 'webhook') as HubInboundMessage['source'],
+      from: String(row.from || ''),
+      fromName: row.from_name || undefined,
+      content: String(row.content || ''),
+      mediaUrl: row.media_url || undefined,
+      externalId: String(row.external_id || row.id || `local-${Date.now()}`),
+      conversationId: row.conversation_id || undefined,
+      integrationId: String(row.integration_id || ''),
+      workspaceId: String(row.workspace_id || this.workspaceId),
+      receivedAt: String(row.received_at || new Date().toISOString()),
+      status: (row.status || 'pending') as HubInboundMessage['status'],
+      consumedBy: row.consumed_by || undefined,
+      metadata: row.metadata || undefined,
+    };
+  }
+
+  private mapMessageToInboxRow(message: HubInboundMessage) {
+    return {
+      id: message.id,
+      source: message.source,
+      from: message.from,
+      from_name: message.fromName || null,
+      content: message.content,
+      media_url: message.mediaUrl || null,
+      external_id: message.externalId,
+      conversation_id: message.conversationId || null,
+      integration_id: message.integrationId,
+      workspace_id: message.workspaceId,
+      received_at: message.receivedAt,
+      status: message.status,
+      consumed_by: message.consumedBy || null,
+      metadata: message.metadata || {},
+    };
+  }
 
   // ────────── Credential Bootstrap (DEV) ──────────
 
@@ -106,6 +469,21 @@ export class IntegrationHubService implements IntegrationServiceContract {
         if (!credentials?.refreshToken) throw new Error('Gmail não configurado (refresh token ausente)');
         success = await emailService.health('gmail');
         summary = success ? 'Gmail conectado' : 'Gmail inacessível';
+      } else if (integrationId === 'int_titan_01') {
+        integrationName = 'Titan Email';
+        provider = 'titan';
+        const credentials = await credentialManager.getCredential('titan', 'int_titan_01', this.workspaceId, 'integration-hub');
+        if ((!credentials?.password && !credentials?.apiKey) || !credentials?.accountEmail) {
+          throw new Error('Titan não configurado (accountEmail/senha ausentes)');
+        }
+        success = await emailService.health('titan');
+        summary = success ? 'Titan conectado' : 'Titan inacessível';
+      } else if (integrationId === 'int_crm_ziplia_whatsapp') {
+        integrationName = 'WhatsApp CRM Ziplia';
+        provider = 'whatsapp';
+        const qr = await this.getWhatsAppQrStatus('default');
+        success = qr.status === 'connected';
+        summary = success ? 'Sessão QR conectada' : `Sessão QR não conectada (${qr.status})`;
       } else {
         summary = 'Integração desconhecida';
       }
@@ -129,9 +507,10 @@ export class IntegrationHubService implements IntegrationServiceContract {
   // ────────── List Integrations ──────────
 
   async listIntegrations(): Promise<Integration[]> {
-    const [whatsAppStatus, clickUpStatus] = await Promise.all([
+    const [whatsAppStatus, clickUpStatus, qrStatus] = await Promise.all([
       this.getConnectionStatus(this.whatsAppIntegrationId),
       this.getConnectionStatus(this.clickUpIntegrationId),
+      this.getConnectionStatus('int_crm_ziplia_whatsapp'),
     ]);
 
     return [
@@ -147,9 +526,7 @@ export class IntegrationHubService implements IntegrationServiceContract {
         id: 'int_crm_ziplia_whatsapp',
         name: 'WhatsApp CRM Ziplia',
         provider: 'whatsapp',
-        // Simulado como ativo para testes — representa o número
-        // dedicado do CRM Ziplia conectado via Hub
-        status: 'active',
+        status: qrStatus,
         configuredAt: new Date(),
         usedBy: ['crm_ziplia'],
         scopes: ['inbound_messages', 'outbound_messages'],
@@ -204,8 +581,19 @@ export class IntegrationHubService implements IntegrationServiceContract {
 
     if (integrationId === 'int_titan_01') {
       const credentials = await credentialManager.getCredential('titan', 'int_titan_01', this.workspaceId, 'integration-hub');
-      if (!credentials?.apiKey) return 'inactive';
+      if ((!credentials?.apiKey && !credentials?.password) || !credentials?.accountEmail) return 'inactive';
       return 'active';
+    }
+
+    if (integrationId === 'int_crm_ziplia_whatsapp') {
+      try {
+        const status = await this.getWhatsAppQrStatus('default');
+        if (status.status === 'connected') return 'active';
+        if (status.status === 'disconnected' || status.status === 'logged_out') return 'error';
+        return 'inactive';
+      } catch {
+        return 'error';
+      }
     }
 
     return 'inactive';
@@ -400,13 +788,15 @@ export class IntegrationHubService implements IntegrationServiceContract {
       throw new Error(`Falha ao consultar status WhatsApp QR (${response.status}): ${err}`);
     }
 
-    const data = await response.json() as { sessionId: string; status: HubWhatsAppQrStatus['status']; qrDataUrl?: string | null; lastError?: string | null };
+    const data = await response.json() as { sessionId: string; status: HubWhatsAppQrStatus['status']; qrDataUrl?: string | null; lastError?: string | null; connectedAccount?: string | null; updatedAt?: string };
 
     return {
       sessionId: data.sessionId || sessionId,
       status: data.status,
       qrDataUrl: data.qrDataUrl ?? null,
       lastError: data.lastError ?? null,
+      connectedAccount: data.connectedAccount ?? null,
+      updatedAt: data.updatedAt,
     };
   }
 
@@ -516,11 +906,26 @@ export class IntegrationHubService implements IntegrationServiceContract {
   }
 
   async getInboxMessages(integrationId?: string, limit = 50): Promise<HubInboundMessage[]> {
-    const all = this.getInboxStorage();
-    const filtered = integrationId
-      ? all.filter((m) => m.integrationId === integrationId)
-      : all;
-    return filtered.slice(0, limit);
+    try {
+      const query = new URLSearchParams();
+      query.set('select', '*');
+      query.set('order', 'received_at.desc');
+      query.set('limit', String(limit));
+      if (integrationId) {
+        query.set('integration_id', `eq.${integrationId}`);
+      }
+
+      const rows = await restFetch('hub_inbox_messages', { query }) as any[];
+      return (rows || []).map((row) => this.mapInboxRowToMessage(row));
+    } catch (err) {
+      // fallback explícito para desenvolvimento/offline
+      console.warn('[Hub] Supabase inbox indisponível, usando fallback localStorage:', err);
+      const all = this.getInboxStorage();
+      const filtered = integrationId
+        ? all.filter((m) => m.integrationId === integrationId)
+        : all;
+      return filtered.slice(0, limit);
+    }
   }
 
   // ────────── Taskzei Contract: Marcar como lida ─────────────────
@@ -533,6 +938,19 @@ export class IntegrationHubService implements IntegrationServiceContract {
     messages[index].status = 'processed';
     messages[index].consumedBy = messages[index].consumedBy || 'crm_ziplia';
     localStorage.setItem(INBOX_STORAGE_KEY, JSON.stringify(messages));
+
+    try {
+      await restFetch('hub_inbox_messages', {
+        method: 'PATCH',
+        query: new URLSearchParams({ id: `eq.${messageId}` }),
+        body: {
+          status: 'processed',
+          consumed_by: messages[index].consumedBy,
+        },
+      });
+    } catch (err) {
+      console.warn('[Hub] Falha ao atualizar status no Supabase, mantendo localStorage:', err);
+    }
 
     await loggerService.log({
       integrationId: messages[index].integrationId,
@@ -548,6 +966,44 @@ export class IntegrationHubService implements IntegrationServiceContract {
 
   async sendEmail(input: HubMailSendInput): Promise<HubMailSendResult> {
     return emailService.send(input);
+  }
+
+  async sendChannelMessage(params: {
+    channel: HubChannel;
+    to: string;
+    message: string;
+    module?: string;
+    workspaceId?: string;
+    emailSubject?: string;
+    emailProvider?: 'gmail' | 'titan';
+  }): Promise<HubSendWhatsAppMessageResult | HubMailSendResult> {
+    const workspaceId = params.workspaceId || this.workspaceId;
+    const channels = await this.getChannels(workspaceId);
+    const channel = channels.find((c) => c.config.channel === params.channel);
+    if (!channel) throw new Error(`Canal ${params.channel} não encontrado`);
+
+    const binding = params.module
+      ? channel.bindings.find((b) => b.module === params.module && b.enabled)
+      : undefined;
+
+    // module override > channel default
+    const resolvedMethod = binding?.method || channel.config.preferredMethod;
+
+    if (params.channel === 'whatsapp') {
+      if (resolvedMethod === 'whatsapp_business_api') {
+        return this.sendWhatsAppMessage({ to: params.to, message: params.message });
+      }
+      return this.sendWhatsAppQrMessage({ to: params.to, message: params.message, sessionId: 'default' });
+    }
+
+    const provider = params.emailProvider || (resolvedMethod === 'email_titan' ? 'titan' : 'gmail');
+    return this.sendEmail({
+      provider,
+      from: 'me',
+      to: [params.to],
+      subject: params.emailSubject || 'Mensagem via Hub',
+      textBody: params.message,
+    });
   }
 
   // ────────── Activity Log ──────────
@@ -611,6 +1067,17 @@ export class IntegrationHubService implements IntegrationServiceContract {
       messages.length = 500;
     }
     localStorage.setItem(INBOX_STORAGE_KEY, JSON.stringify(messages));
+
+    void (async () => {
+      try {
+        await restFetch('hub_inbox_messages', {
+          method: 'POST',
+          body: this.mapMessageToInboxRow(message),
+        });
+      } catch (err) {
+        console.warn('[Hub] Falha ao persistir inbox no Supabase, mantendo fallback localStorage:', err);
+      }
+    })();
   }
 
   private getInboxStorage(): HubInboundMessage[] {

@@ -1,19 +1,75 @@
-# Standards GrupoB
+# Central de Padrões | Loze Docs (embrião oficial)
 
-Padroes corporativos que devem ser reutilizados em todos os novos sistemas conectados ao SagB.
+Este diretório é a **base documental canônica** da Loze dentro do SagB by Loze.
 
-## Conteudo
+## O que é esta Central
 
-- `design-system.md` -> fontes, cores, tokens visuais e diretrizes de interface.
-- `stack-e-infra.md` -> padrao tecnico (frontend, backend, banco, deploy e CI/CD).
-- `deploy-ambientes-e-esteira.md` -> padrao oficial de ambientes (local/preview/producao), fluxo de publicacao, variaveis por ambiente, checklist pos-deploy e rollback.
-- `historico-e-auditoria.md` -> padrao de versionamento, dev log e rastreabilidade de mudanças (Golden Seal).
+- **Definido:** Central de Padrões é o cérebro documental oficial do ecossistema técnico.
+- **Definido:** Loze Docs é a camada de organização desses padrões e documentos canônicos.
+- **Em validação:** nome final de branding público entre "Central de Padrões" e "Loze Docs".
 
-## Como usar
+## Relação entre tipos de documento
 
-1. Ler estes padroes antes de iniciar qualquer novo projeto.
-2. Copiar as secoes aplicaveis para o repositorio do novo sistema.
-3. Registrar desvios explicitamente com justificativa tecnica.
+- **Padrão canônico:** regra estrutural de tecnologia e organização (fica centralizado aqui).
+- **Documentação de módulo:** contexto, limites e evidências de um módulo específico (fica no próprio módulo e referenciado aqui).
+- **Inventário técnico:** mapeamento de ativos (tabelas, functions, integrações etc.).
+- **ADR:** decisão estrutural registrada com contexto e impacto.
+- **Validação:** revisão crítica de etapa antes de avançar.
+
+## Frase-guia (obrigatória)
+
+**Padrão fica centralizado.  
+Execução fica no módulo.  
+Evidência fica no módulo.  
+Decisão estrutural vira ADR.**
+
+## Navegação por pastas
+
+```text
+docs/
+├── _readme.md
+├── 00_indice/
+├── 01_padroes_loze/
+├── 02_sagb_canonico/
+├── 03_inventarios_tecnicos/
+├── 04_quarentena_e_riscos/
+├── 05_decisoes_adr/
+├── 06_templates/
+└── 07_validacoes/
+```
+
+## Documentos já existentes (legado + canônico inicial)
+
+- `design-system.md` (legado útil)
+- `stack-e-infra.md` (legado útil)
+- `deploy-ambientes-e-esteira.md` (legado útil)
+- `loze-docs-indice-canonico-sagb.md` (canônico inicial ET-02)
+- `matriz-canonica-modulos-sagb.md` (canônico inicial ET-02)
+- `matriz-rotas-tabs-sagb.md` (canônico inicial ET-02)
+- `inventario-supabase-sagb.md` (inventário inicial ET-02)
+- `inventario-netlify-functions-sagb.md` (inventário inicial ET-02)
+- `arquitetura-modulos-plugaveis-sagb.md` (canônico LOZE-DEV inicial)
+- `modelo-module-doc-loze-das.md` (template LOZE-DAS inicial)
+- `QUARENTENA_TECNICA.md` (controle de risco ET-02)
+- `decisoes-para-adr-et-02.md` (backlog ADR ET-02)
+- `validacao-et-02.md` (validação crítica ET-02)
+
+## Status documental
+
+- **Definido:** base ET-02 está registrada e validada para avanço com complementos.
+- **Em validação:** granularidade de inventários técnicos (Supabase/Functions).
+- **Sugestão:** consolidar toda navegação a partir de `00_indice/`.
+- **Dúvida:** nomenclatura pública final e política completa de precedência.
+- **Legado:** documentos antigos continuam válidos como histórico técnico.
+- **Pendente de decisão:** regra final de oficialização de templates e ADR workflow.
+
+## Regras de não duplicação e precedência
+
+1. Não duplicar padrão em múltiplos arquivos com conteúdos conflitantes.
+2. Quando houver conflito, prevalece:
+   - ADR aprovado > padrão canônico > validação > documento legado.
+3. Se a regra ainda não estiver aprovada em ADR, marcar como **em validação**.
+4. Sem remoção de legado nesta etapa; apenas organizar e referenciar.
 
 ---
 

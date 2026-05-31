@@ -9,6 +9,91 @@ export interface Integration {
   scopes?: string[];
 }
 
+// ────────── Channel-Oriented Public Model (v2) ──────────
+
+export type HubChannel = 'whatsapp' | 'email';
+export type HubModuleConsumer = 'crm_ziplia' | 'taskzei' | string;
+
+export type ChannelMethodKey =
+  | 'whatsapp_qr'
+  | 'whatsapp_business_api'
+  | 'email_gmail'
+  | 'email_titan';
+
+export interface ConnectionMethod {
+  id: string;
+  workspaceId: string;
+  channel: HubChannel;
+  method: ChannelMethodKey;
+  enabled: boolean;
+  isDefault: boolean;
+  displayName: string;
+  providerInternal: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ChannelConfig {
+  id: string;
+  workspaceId: string;
+  channel: HubChannel;
+  displayName: string;
+  preferredMethod: ChannelMethodKey;
+  enabled: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ModuleBinding {
+  id: string;
+  workspaceId: string;
+  module: HubModuleConsumer;
+  channel: HubChannel;
+  method: ChannelMethodKey;
+  enabled: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ChannelRuntimeStatus {
+  workspaceId: string;
+  channel: HubChannel;
+  status: 'active' | 'inactive' | 'error';
+  currentMethod: ChannelMethodKey;
+  sessionId?: string;
+  sessionStatus?: string;
+  connectedAccount?: string;
+  lastError?: string | null;
+  updatedAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface HubChannelView {
+  config: ChannelConfig;
+  methods: ConnectionMethod[];
+  runtime: ChannelRuntimeStatus;
+  bindings: ModuleBinding[];
+}
+
+export interface HubObservabilityEvent {
+  eventName:
+    | 'qr_generated'
+    | 'qr_scanned'
+    | 'session_connecting'
+    | 'session_ready'
+    | 'session_lost'
+    | 'status_refresh_failed'
+    | 'message_send_failed'
+    | 'provider_fallback_used';
+  timestamp: string;
+  workspaceId: string;
+  channel: HubChannel;
+  method?: string;
+  sessionId?: string;
+  module?: string;
+  correlationId?: string;
+  status?: string;
+  errorCode?: string;
+  errorMessage?: string;
+}
+
 export interface HubCreateTaskInput {
   title: string;
   description?: string;
@@ -49,6 +134,8 @@ export interface HubWhatsAppQrStatus {
   status: 'not_initialized' | 'initializing' | 'qr_ready' | 'connected' | 'disconnected' | 'logged_out';
   qrDataUrl?: string | null;
   lastError?: string | null;
+  connectedAccount?: string | null;
+  updatedAt?: string;
 }
 
 // Sprint 2 — Contrato provider-agnostic de e-mail (Gmail + Titan)
@@ -182,6 +269,10 @@ export interface IntegrationServiceContract {
   createTaskViaClickUp(input: HubCreateTaskInput): Promise<HubCreateTaskResult>;
   sendWhatsAppMessage(input: HubSendWhatsAppMessageInput): Promise<HubSendWhatsAppMessageResult>;
   sendWhatsAppQrMessage(input: HubSendWhatsAppQrMessageInput): Promise<HubSendWhatsAppMessageResult>;
+  getChannels(workspaceId?: string): Promise<HubChannelView[]>;
+  getChannelStatus(channel: HubChannel, workspaceId?: string): Promise<ChannelRuntimeStatus>;
+  setPreferredMethod(channel: HubChannel, method: ChannelMethodKey, workspaceId?: string, module?: string): Promise<void>;
+  setModuleBinding(module: string, channel: HubChannel, method: ChannelMethodKey, workspaceId?: string): Promise<void>;
   connectWhatsAppQr(sessionId?: string): Promise<HubWhatsAppQrStatus>;
   getWhatsAppQrStatus(sessionId?: string): Promise<HubWhatsAppQrStatus>;
   logoutWhatsAppQr(sessionId?: string): Promise<void>;

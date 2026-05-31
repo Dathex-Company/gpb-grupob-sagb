@@ -8,7 +8,7 @@
   directory = "netlify/functions"
 
 [dev]
-  targetPort = 8000
+  targetPort = 7013
   autoLaunch = false
 
 [build.environment]

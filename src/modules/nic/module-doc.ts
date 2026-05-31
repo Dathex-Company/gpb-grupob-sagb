@@ -1,31 +1,32 @@
 export const moduleDoc = {
   nomeOficial: 'Núcleo de Inteligência Conectiva (NIC)',
   objetivo:
-    'Cruzar materiais internos preparados pelo CID e por outras fontes internas do SagB para identificar conexões, padrões, tensões, riscos e oportunidades que alimentam a governança estratégica.',
-  responsavelTecnico: 'A DEFINIR',
-  status: 'Em teste',
+    'Central de curadoria de nomes do ecossistema. Cataloga, classifica, aprova e acompanha todos os nomes oficiais do GrupoB, suas empresas, produtos, métodos e módulos.',
+  responsavelTecnico: 'Time de Curadoria',
+  status: 'Ativo — Curadoria de Nomes',
   tipo: 'Módulo Oficial',
 
   tabelasSupabase: [
-    'A DEFINIR (sem schema transacional próprio claramente exposto no frontend atual)'
+    'nic_naming_items (catálogo de nomes)',
+    'nic_naming_decisions (histórico de decisões)',
+    'nic_naming_conflicts (conflitos de nome)',
+    'nic_naming_scan (varredura de candidatos)'
   ],
 
-  bucketsStorage: [
-    'Não é storage primário; consome materiais preparados por camadas como CID e memória operacional'
-  ],
+  bucketsStorage: [],
 
   integracoes: [
-    'CID (fonte documental principal)',
-    'NAGI (destino de governança e priorização)',
-    'Memória Contínua (fonte complementar)',
-    'Fluxo de Inteligência (saídas estratégicas futuras)'
+    'Catálogo de Governança (fonte de nomes canônicos)',
+    'NAGI (destino de decisões de governança)',
+    'Varredura de Diretórios (candidatos a novo nome)'
   ],
 
   estruturasExclusivas: [
     'src/modules/nic/pages/NICPage.tsx',
     'src/modules/nic/data/nicBlueprint.ts',
-    'src/modules/nic/agent/owner.md',
-    'src/modules/nic/agent/persona.md',
+    'src/modules/nic/naming/namingSchema.ts',
+    'src/modules/nic/naming/namingData.ts',
+    'src/modules/nic/services/nicNamingService.ts',
     'src/modules/nic/changelog.md'
   ],
 
@@ -35,17 +36,18 @@ export const moduleDoc = {
   ],
 
   fluxosPrincipais: [
-    '1. Seleção de fontes: o NIC recebe ou referencia documentos internos preparados por módulos como o CID.',
-    '2. Aplicação de lentes: o usuário escolhe uma lente de leitura (risco, oportunidade, sinergia, contradição, metodologia ou padrão recorrente).',
-    '3. Interpretação: o módulo cruza materiais e gera leitura estratégica com evidências, hipóteses e recomendações.',
-    '4. Encaminhamento: as saídas estratégicas devem alimentar governança, priorização e próximos passos no NAGI.'
+    '1. Catálogo: visualizar todos os nomes registrados, com status, categoria e aliases.',
+    '2. Busca e Filtro: encontrar nomes por termo ou status (aprovado, pendente, em ajuste).',
+    '3. Aprovação: revisar nomes pendentes, aprovar ou pedir ajuste com observação.',
+    '4. Conflitos: detectar e resolver nomes duplicados ou com grafias divergentes.',
+    '5. Varredura: encontrar novos nomes candidatos em pastas do ecossistema.',
+    '6. Histórico: registrar e consultar todas as decisões de curadoria.'
   ],
 
   pendenciasPrincipais: [
-    'Substituir documentos mockados por seleção real de materiais do CID.',
-    'Implementar motor real de cruzamento e interpretação, hoje representado principalmente por blueprint e interface.',
-    'Definir schema persistente para histórico de leituras e saídas estratégicas.',
-    'Conectar saídas do NIC ao NAGI com fluxo vivo de priorização.',
-    'Definir owner principal e backup com nomeação formal.'
+    'Persistir dados em Supabase (hoje usa dados mockados).',
+    'Implementar varredura real de diretórios (hoje simulado).',
+    'Conectar saída de decisões ao NAGI.',
+    'Upload e integração com fontes externas de nomes (planilhas, documentos).'
   ]
 };

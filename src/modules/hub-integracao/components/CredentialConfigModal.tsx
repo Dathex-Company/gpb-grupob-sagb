@@ -4,6 +4,7 @@ import { Integration, ConnectionConfig } from '../types/integration.types';
 interface CredentialConfigModalProps {
   integration: Integration;
   onSave: (config: ConnectionConfig) => Promise<void>;
+  onRunTest: (integrationId: string) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -33,9 +34,13 @@ const CREDENTIAL_FIELDS: Record<string, { key: string; label: string; type: stri
   ],
 };
 
-export function CredentialConfigModal({ integration, onSave, onClose }: CredentialConfigModalProps) {
+export function CredentialConfigModal({ integration, onSave, onRunTest, onClose }: CredentialConfigModalProps) {
   const [credentials, setCredentials] = useState<Record<string, string>>({});
+  const [advanced, setAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [resultMessage, setResultMessage] = useState<string | null>(null);
+  const [resultType, setResultType] = useState<'success' | 'error' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fields = CREDENTIAL_FIELDS[integration.provider] || [];
@@ -43,20 +48,64 @@ export function CredentialConfigModal({ integration, onSave, onClose }: Credenti
   const handleSave = async () => {
     setSaving(true);
     setError(null);
+    setResultMessage(null);
+    setResultType(null);
     try {
+      const provider = integration.provider;
+      let payload = { ...credentials };
+
+      // UX simplificado (Outlook-like): e-mail + senha como modo rápido
+      // Mantém compatibilidade com contratos existentes do Hub.
+      if (provider === 'gmail') {
+        payload = {
+          ...payload,
+          accountEmail: payload.accountEmail || payload.email || '',
+          password: payload.password || '',
+          // compatibilidade com pipeline antigo
+          clientId: payload.clientId || '',
+          clientSecret: payload.clientSecret || '',
+          refreshToken: payload.refreshToken || '',
+        };
+      }
+
+      if (provider === 'titan') {
+        payload = {
+          ...payload,
+          accountEmail: payload.accountEmail || payload.email || '',
+          password: payload.password || payload.apiKey || '',
+          apiKey: payload.apiKey || payload.password || '',
+        };
+      }
+
       await onSave({
         integrationId: integration.id,
-        credentials,
+        credentials: payload,
       });
-      onClose();
+
+      setTesting(true);
+      const connected = await onRunTest(integration.id);
+
+      if (connected) {
+        setResultType('success');
+        setResultMessage('Conectado com sucesso.');
+        onClose();
+      } else {
+        setResultType('error');
+        setResultMessage('Credenciais salvas, mas a conexão falhou no teste. Revise os dados e tente novamente.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar credenciais');
     } finally {
+      setTesting(false);
       setSaving(false);
     }
   };
 
-  const isComplete = fields.every((f) => credentials[f.key]?.trim());
+  const isEmailProvider = integration.provider === 'gmail' || integration.provider === 'titan';
+
+  const isComplete = isEmailProvider
+    ? Boolean((credentials.accountEmail || credentials.email || '').trim() && (credentials.password || '').trim())
+    : fields.every((f) => credentials[f.key]?.trim());
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -73,32 +122,108 @@ export function CredentialConfigModal({ integration, onSave, onClose }: Credenti
           </button>
         </div>
 
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Provedor: <span className="font-mono text-xs">{integration.provider}</span>
-        </p>
+        {!isEmailProvider && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Provedor: <span className="font-mono text-xs">{integration.provider}</span>
+          </p>
+        )}
 
-        <div className="space-y-3">
-          {fields.map((field) => (
-            <div key={field.key}>
+        {isEmailProvider ? (
+          <div className="space-y-3">
+            <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {field.label}
+                E-mail da conta
               </label>
               <input
-                type={field.type}
-                value={credentials[field.key] || ''}
+                type="email"
+                value={credentials.accountEmail || credentials.email || ''}
                 onChange={(e) =>
-                  setCredentials((prev) => ({ ...prev, [field.key]: e.target.value }))
+                  setCredentials((prev) => ({ ...prev, accountEmail: e.target.value, email: e.target.value }))
                 }
-                placeholder={`Insira ${field.label.toLowerCase()}`}
+                placeholder="seuemail@empresa.com"
                 className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-          ))}
-        </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Senha
+              </label>
+              <input
+                type="password"
+                value={credentials.password || ''}
+                onChange={(e) => setCredentials((prev) => ({ ...prev, password: e.target.value }))}
+                placeholder="Digite sua senha"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setAdvanced((v) => !v)}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              {advanced ? 'Ocultar configuração avançada' : 'Configuração avançada (IMAP/SMTP)'}
+            </button>
+
+            {advanced && (
+              <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                {[
+                  { key: 'imapHost', label: 'IMAP Host', type: 'text' },
+                  { key: 'imapPort', label: 'IMAP Porta', type: 'text' },
+                  { key: 'smtpHost', label: 'SMTP Host', type: 'text' },
+                  { key: 'smtpPort', label: 'SMTP Porta', type: 'text' },
+                ].map((field) => (
+                  <div key={field.key}>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      {field.label}
+                    </label>
+                    <input
+                      type={field.type}
+                      value={credentials[field.key] || ''}
+                      onChange={(e) => setCredentials((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                      placeholder={`Insira ${field.label.toLowerCase()}`}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {fields.map((field) => (
+              <div key={field.key}>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {field.label}
+                </label>
+                <input
+                  type={field.type}
+                  value={credentials[field.key] || ''}
+                  onChange={(e) =>
+                    setCredentials((prev) => ({ ...prev, [field.key]: e.target.value }))
+                  }
+                  placeholder={`Insira ${field.label.toLowerCase()}`}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {error && (
           <p className="mt-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-md">
             {error}
+          </p>
+        )}
+
+        {resultMessage && (
+          <p className={`mt-3 text-sm px-3 py-2 rounded-md ${
+            resultType === 'success'
+              ? 'text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20'
+              : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+          }`}>
+            {resultMessage}
           </p>
         )}
 
@@ -111,10 +236,10 @@ export function CredentialConfigModal({ integration, onSave, onClose }: Credenti
           </button>
           <button
             onClick={handleSave}
-            disabled={!isComplete || saving}
+            disabled={!isComplete || saving || testing}
             className="flex-1 px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {saving ? 'Salvando...' : 'Salvar Credenciais'}
+            {saving ? 'Salvando...' : testing ? 'Testando conexão...' : 'Salvar e Testar Conexão'}
           </button>
         </div>
       </div>

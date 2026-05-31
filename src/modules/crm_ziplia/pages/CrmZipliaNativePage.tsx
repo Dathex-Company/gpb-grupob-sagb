@@ -270,10 +270,12 @@ export const CrmZipliaNativePage: React.FC = () => {
           textBody: message,
         });
       } else {
-        await integrationHub.sendWhatsAppQrMessage({
+        await integrationHub.sendChannelMessage({
+          channel: 'whatsapp',
           to: selectedConversationId,
           message,
-          sessionId: 'default',
+          module: 'crm_ziplia',
+          workspaceId: 'default',
         });
       }
       setComposer('');

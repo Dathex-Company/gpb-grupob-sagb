@@ -27,6 +27,17 @@ const log = (scope, data = {}) => {
   }
 };
 
+const emitObs = (eventName, payload = {}) => {
+  log('obs', {
+    eventName,
+    timestamp: new Date().toISOString(),
+    workspaceId: 'default',
+    channel: 'whatsapp',
+    method: 'whatsapp_qr',
+    ...payload,
+  });
+};
+
 async function ensureSession(sessionId = 'default') {
   log('ensureSession:start', {
     sessionId,
@@ -52,6 +63,8 @@ async function ensureSession(sessionId = 'default') {
     qrDataUrl: null,
     lastError: null,
     socket: null,
+    connectedAccount: null,
+    updatedAt: new Date().toISOString(),
     inboundMessages: [],
   };
 
@@ -76,6 +89,12 @@ async function ensureSession(sessionId = 'default') {
       session.qr = qr;
       session.qrDataUrl = await qrcode.toDataURL(qr);
       session.status = 'qr_ready';
+      session.updatedAt = new Date().toISOString();
+
+      emitObs('qr_generated', {
+        sessionId,
+        status: 'awaiting_scan',
+      });
 
       log('connection.qr_ready', {
         sessionId,
@@ -87,6 +106,17 @@ async function ensureSession(sessionId = 'default') {
       session.status = 'connected';
       session.qr = null;
       session.qrDataUrl = null;
+      session.connectedAccount = sock?.user?.id || null;
+      session.updatedAt = new Date().toISOString();
+
+      emitObs('qr_scanned', {
+        sessionId,
+        status: 'connected',
+      });
+      emitObs('session_ready', {
+        sessionId,
+        status: 'connected',
+      });
 
       log('connection.open', {
         sessionId,
@@ -104,6 +134,14 @@ async function ensureSession(sessionId = 'default') {
         reasonCode: code ?? null,
         error: String(lastDisconnect?.error || 'closed'),
         at: new Date().toISOString(),
+      });
+      session.updatedAt = new Date().toISOString();
+
+      emitObs('session_lost', {
+        sessionId,
+        status: session.status,
+        errorCode: String(code ?? 'unknown'),
+        errorMessage: String(lastDisconnect?.error || 'closed'),
       });
 
       log('connection.close', {
@@ -243,6 +281,10 @@ export async function handler(event) {
     }
 
     const session = await ensureSession(sessionId);
+    emitObs('session_connecting', {
+      sessionId,
+      status: session.status,
+    });
     log('route.connect', {
       sessionId,
       status: session.status,
@@ -253,6 +295,8 @@ export async function handler(event) {
       sessionId,
       status: session.status,
       qrDataUrl: session.qrDataUrl,
+      connectedAccount: session.connectedAccount || null,
+      updatedAt: session.updatedAt,
     });
   }
 
@@ -272,6 +316,8 @@ export async function handler(event) {
       status: session.status,
       qrDataUrl: session.qrDataUrl,
       lastError: session.lastError,
+      connectedAccount: session.connectedAccount || null,
+      updatedAt: session.updatedAt,
     });
   }
 
@@ -283,6 +329,12 @@ export async function handler(event) {
       status: session?.status || null,
     });
     if (!session?.socket || session.status !== 'connected') {
+      emitObs('provider_fallback_used', {
+        sessionId,
+        status: session?.status || 'not_initialized',
+        errorCode: 'session_not_connected',
+        errorMessage: 'Tentativa de envio sem sessão conectada',
+      });
       log('route.send:blocked', {
         sessionId,
         reason: 'session_not_connected',
@@ -296,7 +348,18 @@ export async function handler(event) {
     if (!to || !message) return json(400, { ok: false, error: 'to_and_message_required' });
 
     const jid = to.includes('@s.whatsapp.net') ? to : `${to.replace(/\D/g, '')}@s.whatsapp.net`;
-    const result = await session.socket.sendMessage(jid, { text: message });
+    let result;
+    try {
+      result = await session.socket.sendMessage(jid, { text: message });
+    } catch (err) {
+      emitObs('message_send_failed', {
+        sessionId,
+        status: 'failure',
+        errorCode: 'send_failed',
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
     log('route.send:success', {
       sessionId,
       jid,

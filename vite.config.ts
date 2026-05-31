@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ mode }) => {
   // Carrega somente variáveis VITE_ do .env conforme o modo
   const env = loadEnv(mode, process.cwd(), 'VITE_')
+  const envPortRaw = process.env.PORT || env.VITE_DEV_SERVER_PORT
+  const resolvedPort = Number(envPortRaw || 7000)
 
   // Base padrão para deploy no domínio raiz
   // Se você quiser subpasta, defina VITE_BASE_PATH="/sua-subpasta/"
@@ -20,7 +22,7 @@ export default defineConfig(({ mode }) => {
       entries: ['index.html']
     },
     server: {
-      port: 7000,
+      port: Number.isFinite(resolvedPort) ? resolvedPort : 7000,
       strictPort: true,
       host: true,
       watch: {

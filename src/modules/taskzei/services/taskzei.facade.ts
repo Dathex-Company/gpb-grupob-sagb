@@ -16,6 +16,13 @@ import { useInboxStore } from '../store/inbox.store';
 import { integrationHub } from '../../hub-integracao/services/integrationService';
 import { TaskzeiNotificationService, taskzeiNotificationService } from './taskzei_notification.service';
 
+class TaskzeiValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TaskzeiValidationError';
+  }
+}
+
 export class TaskzeiFacade implements ITaskzeiService {
   private provider = TaskzeiAdapter.getProvider();
   private readonly useHubForClickUp = this.resolveHubClickUpToggle();
@@ -29,6 +36,46 @@ export class TaskzeiFacade implements ITaskzeiService {
 
   isHubClickUpEnabled(): boolean {
     return this.useHubForClickUp;
+  }
+
+  private validateCreateInput(input: TaskzeiTaskInlineInput): void {
+    const title = String(input.title || '').trim();
+    if (!title) {
+      throw new TaskzeiValidationError('O título da tarefa é obrigatório.');
+    }
+    if (title.length > 160) {
+      throw new TaskzeiValidationError('O título da tarefa deve ter no máximo 160 caracteres.');
+    }
+
+    if (input.internalDescription && input.internalDescription.length > 5000) {
+      throw new TaskzeiValidationError('A descrição interna deve ter no máximo 5000 caracteres.');
+    }
+
+    if (input.parentTaskId) {
+      const tasks = useTaskzeiStore.getState().tasks;
+      const byId = new Map(tasks.map((t) => [t.id, t] as const));
+
+      if (!byId.has(input.parentTaskId)) {
+        throw new TaskzeiValidationError('Não foi possível criar a subtarefa: tarefa pai não encontrada.');
+      }
+
+      let depth = 0;
+      let cursor = byId.get(input.parentTaskId);
+      const guard = new Set<string>();
+      while (cursor?.parentTaskId) {
+        if (guard.has(cursor.id)) {
+          throw new TaskzeiValidationError('Hierarquia inválida detectada (ciclo).');
+        }
+        guard.add(cursor.id);
+        depth += 1;
+        cursor = byId.get(cursor.parentTaskId);
+        if (depth > 32) break;
+      }
+
+      if (depth >= 4) {
+        throw new TaskzeiValidationError('Limite de profundidade atingido: máximo de 5 níveis de subtarefas.');
+      }
+    }
   }
 
   // ─── Utility: auto audit ──────────────────────────────────
@@ -77,9 +124,11 @@ export class TaskzeiFacade implements ITaskzeiService {
   async createTask(input: TaskzeiTaskInlineInput): Promise<TaskzeiTask> {
     const store = useTaskzeiStore.getState();
     try {
+      this.validateCreateInput(input);
+
       if (this.useHubForClickUp) {
         const clickUpResult = await integrationHub.createTaskViaClickUp({
-          title: input.title,
+          title: input.title.trim(),
           priority: input.priority,
           status: input.status,
           assigneeName: input.assigneeName,
@@ -89,7 +138,7 @@ export class TaskzeiFacade implements ITaskzeiService {
         const nowIso = new Date().toISOString();
         const hubTask: TaskzeiTask = {
           id: clickUpResult.externalId,
-          title: input.title,
+          title: input.title.trim(),
           description: `Criada via Hub de Integrações (ClickUp).`,
           status: input.status,
           priority: input.priority,
@@ -115,7 +164,7 @@ export class TaskzeiFacade implements ITaskzeiService {
       }
 
         const newTask = await this.provider.createTask({
-          title: input.title,
+          title: input.title.trim(),
           parentTaskId: input.parentTaskId || null,
           description: undefined,
           status: input.status,

@@ -50,6 +50,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [activeTab, setActiveTab] = useState<TabKey>('details');
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [priority, setPriority] = useState<TaskzeiTask['priority']>(task?.priority || 'media');
   const [status, setStatus] = useState<TaskzeiTask['status']>(task?.status || 'aberta');
   const [assigneeName, setAssigneeName] = useState(task?.assigneeName || '');
@@ -87,16 +88,22 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (!title.trim()) return;
+      setSubmitError(null);
 
-      await onSave({
-        title: title.trim(),
-        priority,
-        status,
-        assigneeName: assigneeName || undefined,
-        assigneeId: assigneeId || undefined,
-        internalDescription: internalDescription || undefined,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-      });
+      try {
+        await onSave({
+          title: title.trim(),
+          priority,
+          status,
+          assigneeName: assigneeName || undefined,
+          assigneeId: assigneeId || undefined,
+          internalDescription: internalDescription || undefined,
+          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Não foi possível criar a tarefa. Tente novamente.';
+        setSubmitError(message);
+      }
     },
     [title, priority, status, assigneeName, assigneeId, internalDescription, dueDate, onSave]
   );
@@ -166,6 +173,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
         {/* ── Body ────────────────────────────────────────── */}
         <form onSubmit={handleSubmit}>
+          {submitError && (
+            <div
+              className="mx-6 mt-4 rounded-md px-3 py-2 text-[12px] font-medium"
+              style={{
+                border: '1px solid var(--sagb-red)',
+                backgroundColor: 'var(--sagb-primary-soft)',
+                color: 'var(--sagb-red)',
+              }}
+            >
+              {submitError}
+            </div>
+          )}
           <div className="max-h-[60vh] overflow-y-auto px-6 py-5 space-y-4">
             {/* ── Aba: Detalhes ───────────────────────────── */}
             {activeTab === 'details' && (
