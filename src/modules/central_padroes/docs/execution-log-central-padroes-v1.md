@@ -8,3 +8,10 @@
 - UI de CRUD implementada para padrões, documentos, decisões e checklists.
 - Checklist D preenchido com a execução anterior.
 
+## Bloco B — ET-03 Approval Workflow
+
+- Build: `npm run build` OK.
+- Migration de approval com trigger de publicação criada.
+- Service de approval criado com request, approve, reject, publish e history.
+- ApprovalsPage implementada com modal de decisão.
+- Dashboard recebeu contagem de aprovações pendentes.

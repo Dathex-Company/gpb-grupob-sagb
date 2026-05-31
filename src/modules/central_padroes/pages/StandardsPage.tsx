@@ -7,6 +7,7 @@ import { SectionPanel } from '../components/SectionPanel';
 import { StandardTable } from '../components/StandardTable';
 import { Toast } from '../components/Toast';
 import { useCentralPadroes } from '../hooks/useCentralPadroes';
+import { centralPadroesApprovalService } from '../services/centralPadroesApprovalService';
 import { CentralNormativeType } from '../types';
 
 const StandardsPage: React.FC = () => {
@@ -58,6 +59,15 @@ const StandardsPage: React.FC = () => {
     }
   };
 
+  const requestApproval = async (id: string) => {
+    try {
+      await centralPadroesApprovalService.requestApproval(id);
+      setToast({ message: 'Aprovação solicitada.', type: 'success' });
+    } catch (err) {
+      setToast({ message: String((err as Error)?.message || err), type: 'error' });
+    }
+  };
+
   return (
     <CentralPageShell title="Biblioteca de Padrões" subtitle="Padrões, regras, políticas, protocolos e contratos que formam o sistema nervoso normativo do SagB.">
       {loading && <p className="text-[12px] text-sagb-muted">Carregando padrões...</p>}
@@ -67,7 +77,7 @@ const StandardsPage: React.FC = () => {
           <div className="mb-4 flex flex-wrap gap-2">
             <button onClick={openCreate} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Novo Padrão</button>
           </div>
-          <StandardTable standards={snapshot.standards} onEdit={openEdit} onDelete={setDeleteId} />
+          <StandardTable standards={snapshot.standards} onEdit={openEdit} onDelete={setDeleteId} onRequestApproval={requestApproval} />
         </SectionPanel>
       )}
       <CrudModal title={editingId ? 'Editar Padrão' : 'Novo Padrão'} open={modalOpen} onClose={() => setModalOpen(false)} footer={<button onClick={submit} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Salvar</button>}>

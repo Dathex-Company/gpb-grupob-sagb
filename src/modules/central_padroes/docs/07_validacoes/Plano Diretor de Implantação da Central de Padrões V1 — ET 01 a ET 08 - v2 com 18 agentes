@@ -2618,9 +2618,9 @@ $$ LANGUAGE plpgsql;
 ```
 
 **Checklist do agente:**
-- [ ] Campos de approval adicionados
-- [ ] Trigger de validaÃ§Ã£o criado
-- [ ] Rollback script
+- [x] Campos de approval adicionados
+- [x] Trigger de validaÃ§Ã£o criado
+- [x] Rollback script
 
 ### B.2 CA-05: Approval Service
 
@@ -2656,11 +2656,11 @@ standard[draft] â†’ requestApproval() â†’ standard[review] â†’ ap
 - `publicado` â†’ `substituido` (se replacementId definido)
 
 **Checklist do agente:**
-- [ ] Approval Service criado
-- [ ] TransiÃ§Ãµes de status validadas
-- [ ] HistÃ³rico de aprovaÃ§Ãµes registrado
-- [ ] NotificaÃ§Ãµes (log) para revisor
-- [ ] ValidaÃ§Ã£o de permissÃµes
+- [x] Approval Service criado
+- [x] TransiÃ§Ãµes de status validadas
+- [x] HistÃ³rico de aprovaÃ§Ãµes registrado
+- [x] NotificaÃ§Ãµes (log) para revisor
+- [x] ValidaÃ§Ã£o de permissÃµes
 
 ### B.3 CA-04: Approval UI
 
@@ -2692,12 +2692,12 @@ ApprovalsPage (visÃ£o do revisor)
 ```
 
 **Checklist do agente:**
-- [ ] ApprovalsPage funcional com listagem
-- [ ] Modal de aprovaÃ§Ã£o/rejeiÃ§Ã£o
-- [ ] BotÃ£o "Solicitar AprovaÃ§Ã£o" em Standards
-- [ ] Badge de status visÃ­vel
-- [ ] Dashboard com contagem de pendentes
-- [ ] Feedback visual imediato (otimista)
+- [x] ApprovalsPage funcional com listagem
+- [x] Modal de aprovaÃ§Ã£o/rejeiÃ§Ã£o
+- [x] BotÃ£o "Solicitar AprovaÃ§Ã£o" em Standards
+- [x] Badge de status visÃ­vel
+- [x] Dashboard com contagem de pendentes
+- [x] Feedback visual imediato (otimista)
 
 ---
 
