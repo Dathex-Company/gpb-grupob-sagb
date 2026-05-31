@@ -1,119 +1,182 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import DashboardPage from '../pages/DashboardPage';
+import StandardsPage from '../pages/StandardsPage';
+import DocumentsPage from '../pages/DocumentsPage';
+import AreasPage from '../pages/AreasPage';
+import ModulesPage from '../pages/ModulesPage';
+import BaseModulesPage from '../pages/BaseModulesPage';
+import ChecklistsPage from '../pages/ChecklistsPage';
+import AuditsPage from '../pages/AuditsPage';
+import DecisionsPage from '../pages/DecisionsPage';
+import InternalDocsPage from '../pages/InternalDocsPage';
+import ExternalDocsPage from '../pages/ExternalDocsPage';
+import ArchivePage from '../pages/ArchivePage';
+import DevModePage from '../pages/DevModePage';
+import AgentsPage from '../pages/AgentsPage';
+import SearchPage from '../pages/SearchPage';
+import RelationshipsPage from '../pages/RelationshipsPage';
+import ApprovalsPage from '../pages/ApprovalsPage';
+import SettingsPage from '../pages/SettingsPage';
 import CentralPadroesPage from '../pages/CentralPadroesPage';
 
-type CentralPadroesView = 'overview';
+type CentralPadroesView =
+  | 'dashboard'
+  | 'architecture'
+  | 'areas'
+  | 'standards'
+  | 'documents'
+  | 'registry'
+  | 'base-modules'
+  | 'modules'
+  | 'checklists'
+  | 'audits'
+  | 'decisions'
+  | 'internal-docs'
+  | 'external-docs'
+  | 'archive'
+  | 'dev-mode'
+  | 'agent-mode'
+  | 'search'
+  | 'relationships'
+  | 'approvals'
+  | 'settings'
+  | 'publisher';
+
+const navigationItems: Array<{ id: CentralPadroesView; label: string; group: string }> = [
+  { id: 'dashboard', label: 'Visão Geral', group: 'Portal' },
+  { id: 'architecture', label: 'Arquitetura Mestra', group: 'Portal' },
+  { id: 'areas', label: 'Responsáveis e Áreas', group: 'Portal' },
+  { id: 'standards', label: 'Biblioteca de Padrões', group: 'Bibliotecas' },
+  { id: 'documents', label: 'Biblioteca de Documentos', group: 'Bibliotecas' },
+  { id: 'registry', label: 'Registro Mestre', group: 'Bibliotecas' },
+  { id: 'base-modules', label: 'Módulos Base', group: 'Módulos' },
+  { id: 'modules', label: 'Módulos Plugáveis', group: 'Módulos' },
+  { id: 'checklists', label: 'Matrizes e Checklists', group: 'Governança' },
+  { id: 'audits', label: 'Auditorias e Evidências', group: 'Governança' },
+  { id: 'decisions', label: 'Decisões e Exceções', group: 'Governança' },
+  { id: 'internal-docs', label: 'Documentação Interna', group: 'Documentação' },
+  { id: 'external-docs', label: 'Documentação Externa', group: 'Documentação' },
+  { id: 'archive', label: 'Arquivo Morto / Legado', group: 'Documentação' },
+  { id: 'dev-mode', label: 'Modo Dev', group: 'Modos' },
+  { id: 'agent-mode', label: 'Modo Agente', group: 'Modos' },
+  { id: 'search', label: 'Busca Inteligente', group: 'Inteligência' },
+  { id: 'relationships', label: 'Relacionamentos / Grafo', group: 'Inteligência' },
+  { id: 'approvals', label: 'Aprovações e Revisões', group: 'Operação' },
+  { id: 'settings', label: 'Configurações', group: 'Operação' },
+  { id: 'publisher', label: 'Publicador legado', group: 'Operação' }
+];
 
 export const CentralPadroesLayout: React.FC = () => {
-  const [currentView, setCurrentView] = useState<CentralPadroesView>('overview');
+  const [currentView, setCurrentView] = useState<CentralPadroesView>('dashboard');
 
-  const navigationItems: { id: CentralPadroesView; label: string; icon: React.ReactNode }[] = [
-    {
-      id: 'overview',
-      label: 'Visão Geral',
-      icon: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-          />
-        </svg>
-      )
-    }
-  ];
+  const groupedItems = useMemo(() => {
+    return navigationItems.reduce<Record<string, typeof navigationItems>>((acc, item) => {
+      acc[item.group] = acc[item.group] || [];
+      acc[item.group].push(item);
+      return acc;
+    }, {});
+  }, []);
 
   const renderCurrentView = () => {
     switch (currentView) {
-      case 'overview':
-      default:
+      case 'dashboard':
+        return <DashboardPage />;
+      case 'architecture':
+        return <StandardsPage />;
+      case 'areas':
+        return <AreasPage />;
+      case 'standards':
+        return <StandardsPage />;
+      case 'documents':
+        return <DocumentsPage />;
+      case 'registry':
+        return <RelationshipsPage />;
+      case 'base-modules':
+        return <BaseModulesPage />;
+      case 'modules':
+        return <ModulesPage />;
+      case 'checklists':
+        return <ChecklistsPage />;
+      case 'audits':
+        return <AuditsPage />;
+      case 'decisions':
+        return <DecisionsPage />;
+      case 'internal-docs':
+        return <InternalDocsPage />;
+      case 'external-docs':
+        return <ExternalDocsPage />;
+      case 'archive':
+        return <ArchivePage />;
+      case 'dev-mode':
+        return <DevModePage />;
+      case 'agent-mode':
+        return <AgentsPage />;
+      case 'search':
+        return <SearchPage />;
+      case 'relationships':
+        return <RelationshipsPage />;
+      case 'approvals':
+        return <ApprovalsPage />;
+      case 'settings':
+        return <SettingsPage />;
+      case 'publisher':
         return <CentralPadroesPage />;
+      default:
+        return <DashboardPage />;
     }
   };
 
   return (
-    <div
-      className="m-3 flex h-full overflow-hidden"
-      style={{
-        borderRadius: 'var(--sagb-radius-xl)',
-        border: '1px solid var(--sagb-line)',
-        backgroundColor: 'var(--sagb-surface)',
-        boxShadow: 'var(--sagb-shadow)'
-      }}
-    >
-      <aside
-        className="flex w-64 shrink-0 flex-col"
-        style={{ borderRight: '1px solid var(--sagb-line)', backgroundColor: 'var(--sagb-surface-soft)' }}
-      >
-        <div className="h-16 shrink-0 px-5" style={{ borderBottom: '1px solid var(--sagb-line)' }}>
-          <div className="flex h-full items-center gap-3">
-            <div
-              className="grid h-8 w-8 place-items-center rounded-[10px] text-[10px] font-semibold text-white"
-              style={{ background: 'linear-gradient(135deg, var(--sagb-primary), var(--sagb-blue))' }}
-            >
-              CP
-            </div>
+    <div className="m-3 flex h-full overflow-hidden rounded-[var(--sagb-radius-xl)] border border-sagb-line bg-sagb-surface shadow-[var(--sagb-shadow)]">
+      <aside className="flex w-72 shrink-0 flex-col border-r border-sagb-line bg-sagb-surface-soft">
+        <div className="shrink-0 border-b border-sagb-line px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-blue-600 text-[11px] font-black text-white">CP</div>
             <div>
-              <h2 className="text-[14px] font-semibold tracking-tight" style={{ color: 'var(--sagb-text)' }}>
-                Central de Padrões
-              </h2>
-              <p
-                className="text-[10px] font-medium uppercase tracking-[0.08em]"
-                style={{ color: 'var(--sagb-muted)' }}
-              >
-                robust clean
-              </p>
+              <h2 className="text-[14px] font-black tracking-tight text-sagb-text">Central de Padrões</h2>
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-sagb-muted">V1 · 18 agentes</p>
             </div>
           </div>
         </div>
 
         <nav className="flex-1 space-y-4 overflow-y-auto p-3">
-          <div>
-            <p
-              className="mb-2 pl-2 text-[10px] font-semibold uppercase tracking-[0.1em]"
-              style={{ color: 'var(--sagb-muted)' }}
-            >
-              Main
-            </p>
-            {navigationItems.map((item) => {
-              const isActive = currentView === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setCurrentView(item.id)}
-                  className="mb-1 flex h-9 w-full items-center gap-3 rounded-[var(--sagb-radius-sm)] border px-3 text-[13px] font-medium transition-colors"
-                  style={{
-                    borderColor: isActive ? 'var(--sagb-primary-soft)' : 'transparent',
-                    backgroundColor: isActive ? 'var(--sagb-primary-soft)' : 'transparent',
-                    color: isActive ? 'var(--sagb-text)' : 'var(--sagb-muted)'
-                  }}
-                >
-                  <div style={{ color: isActive ? 'var(--sagb-primary)' : 'var(--sagb-muted)' }}>{item.icon}</div>
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
+          {Object.entries(groupedItems).map(([group, items]) => (
+            <div key={group}>
+              <p className="mb-2 pl-2 text-[10px] font-black uppercase tracking-[0.12em] text-sagb-muted">{group}</p>
+              <div className="space-y-1">
+                {items.map((item) => {
+                  const isActive = currentView === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setCurrentView(item.id)}
+                      className={`flex min-h-9 w-full items-center rounded-xl border px-3 py-2 text-left text-[12px] font-bold transition-colors ${
+                        isActive
+                          ? 'border-blue-500/30 bg-blue-500/10 text-sagb-text'
+                          : 'border-transparent text-sagb-muted hover:bg-sagb-bg hover:text-sagb-text'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
-        <div className="shrink-0 p-3" style={{ borderTop: '1px solid var(--sagb-line)' }}>
+        <div className="shrink-0 border-t border-sagb-line p-3">
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: 'ecosystem' }))}
-            className="flex h-9 w-full items-center gap-3 rounded-[var(--sagb-radius-sm)] border border-transparent px-3 text-[13px] font-medium transition-colors"
-            style={{ color: 'var(--sagb-muted)' }}
+            className="flex h-10 w-full items-center rounded-xl px-3 text-[13px] font-bold text-sagb-muted hover:bg-sagb-bg hover:text-sagb-text"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
             Voltar ao SagB
           </button>
         </div>
       </aside>
 
-      <main className="relative flex flex-1 flex-col overflow-hidden" style={{ backgroundColor: 'var(--sagb-bg)' }}>
-        {renderCurrentView()}
-      </main>
+      <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-sagb-bg">{renderCurrentView()}</main>
     </div>
   );
 };

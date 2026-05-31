@@ -26,3 +26,10 @@ Todas as mudanças relevantes no módulo Central de Padrões serão registradas 
 - Atualizado [`App.tsx`](00_sagb/App.tsx) para ocultar sidebar global do SagB quando `activeTab === 'central_padroes'`.
 - Adicionado botão "Voltar ao SagB" no rodapé da sidebar do módulo usando evento `sagb:navigate`.
 - Padrão alinhado ao Alice UI Standard v1.0 (Module Full Screen) com referência técnica no taskzei.
+# 1.1.0 — Central de Padrões V1 (ET 01 a ET 08)
+
+- Implantado portal V1 com sidebar própria e áreas de governança.
+- Adicionadas páginas para dashboard, padrões, documentos, responsáveis, módulos, checklists, auditorias, decisões, modo dev, modo agente, busca, relacionamentos, aprovações e configurações.
+- Adicionado repository compatível com `governance_rules` e fallback local.
+- Adicionada migration `central_padroes_v1` com schema expandido `central_padroes_*`.
+- Preservados `governanceRulesService.ts`, `governance_rules` e `governance-sync-doc.mjs`.

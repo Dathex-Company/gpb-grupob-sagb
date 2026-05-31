@@ -1,0 +1,2667 @@
+SagB | Central de Padrões | ET 01/08 | Implantação Completa do Portal Vivo de Governança
+
+Cássio, tudo bem? Aqui é o Pietro Carboni.
+
+Estou aqui em conversa com o Rodrigues.
+
+A auditoria arquitetural da Central de Padrões foi analisada e agora você está autorizado a executar a implantação da ET 01.
+
+A direção é clara:
+
+Transformar a Central de Padrões em um Portal Vivo de Governança do SagB
+
+Não é para criar uma tela simples de documentos.
+
+A Central de Padrões deve virar a fonte de verdade do SagB para padrões, documentos, decisões, módulos, agentes, checklists, auditorias, evidências, versões, responsáveis, dependências e governança.
+
+1. Base confirmada pela auditoria
+
+A auditoria identificou que o módulo atual já possui:
+
+módulo central_padroes existente;
+CRUD funcional baseado em governance_rules;
+migration governance_rules_phase1.sql;
+service governanceRulesService.ts;
+função serverless governance-sync-doc.mjs;
+12 documentos de domínio já auditados;
+ADRs 001–008 como trilha decisória;
+agente Zico Padron em agent/;
+estrutura inicial funcional, mas ainda insuficiente para a Central de Padrões final.
+
+Também foram identificadas lacunas críticas:
+
+taxonomia normativa inexistente no runtime;
+fluxo de aprovação inexistente;
+ausência de owner por área;
+ausência de dependências entre padrões;
+ausência de relação módulo ↔ padrão ↔ agente;
+classificação documental ainda fraca;
+permissões granulares insuficientes;
+busca/filtros insuficientes;
+histórico/versionamento visual insuficiente;
+ausência de bucket/estrutura clara de evidências.
+
+A ET 01 deve atacar essa fundação.
+
+2. Regra principal
+
+Você está autorizado a criar:
+
+migrations;
+tabelas Supabase;
+seeds;
+services;
+types;
+páginas;
+componentes;
+hooks;
+fallbacks;
+registros;
+documentação;
+logs de decisão;
+commit;
+push;
+deploy/redeploy, se o fluxo do projeto permitir.
+
+Mas deve preservar o que já existe.
+
+Não apagar governance_rules.
+
+Não quebrar governanceRulesService.ts.
+
+Não quebrar a função governance-sync-doc.mjs.
+
+Não remover ADRs, DECISIONS.md, CHANGELOG.md, PLANNED.md, README.md ou agent/.
+
+A lógica é:
+
+governance_rules = embrião/legado funcional
+central_padroes_* = base V1 estruturada da nova Central
+3. Objetivo da ET 01
+
+Implantar a estrutura oficial V1 da Central de Padrões como portal vivo de governança, contendo:
+
+layout full screen preservado;
+sidebar própria da Central;
+dashboard inicial;
+páginas principais;
+estrutura Supabase base;
+seeds iniciais;
+types fortes;
+services/repositories;
+fallback local;
+componentes reutilizáveis;
+vínculos entre padrões, documentos, módulos, agentes e decisões;
+documentação técnica;
+registro de decisões;
+validação visual;
+build;
+commit;
+push;
+deploy/redeploy, quando aplicável.
+4. Estrutura de navegação obrigatória
+
+A sidebar própria da Central deve conter:
+
+Central de Padrões
+├── Visão Geral
+├── Arquitetura Mestra
+├── Responsáveis
+├── Padrões
+├── Documentos
+├── Registro Mestre
+├── Módulos
+├── Agentes
+├── Decisões
+├── Checklists
+├── Auditorias
+├── Triagem
+├── Modo Dev
+├── Modo Agente
+└── Configurações
+
+Rodapé obrigatório:
+
+Voltar ao SagB
+
+A sidebar global do SagB não deve aparecer dentro do módulo.
+
+5. Páginas obrigatórias
+
+Criar ou ajustar as páginas:
+
+pages/
+├── CentralPadroesDashboardPage.tsx
+├── ArchitecturePage.tsx
+├── ResponsiblesPage.tsx
+├── StandardsPage.tsx
+├── StandardDetailPage.tsx
+├── DocumentsPage.tsx
+├── DocumentDetailPage.tsx
+├── EcosystemRegistryPage.tsx
+├── ModulesPage.tsx
+├── BaseModulesPage.tsx
+├── AgentsPage.tsx
+├── DecisionsPage.tsx
+├── ChecklistsPage.tsx
+├── AuditsPage.tsx
+├── TriagePage.tsx
+├── DevModePage.tsx
+├── AgentModePage.tsx
+└── SettingsPage.tsx
+
+Se algum nome precisar se adaptar ao padrão atual do projeto, adapte, mas registre a decisão.
+
+6. Função de cada página
+6.1. Visão Geral
+
+Dashboard principal da Central.
+
+Deve mostrar:
+
+padrões ativos;
+documentos organizados;
+documentos em revisão;
+pendências críticas;
+módulos vinculados;
+agentes orientados;
+saúde da Central;
+fila de revisão;
+atividade recente;
+cobertura por área;
+bloco “Antes de criar”.
+
+O bloco Antes de criar é obrigatório.
+
+Texto sugerido:
+
+Antes de criar algo novo, veja se já existe padrão, módulo ou decisão sobre isso.
+
+Ações:
+
+Criar sistema;
+Criar módulo;
+Criar tabela;
+Criar API;
+Criar agente;
+Publicar documento.
+6.2. Arquitetura Mestra
+
+Página para mostrar:
+
+papel da Central de Padrões;
+estrutura macro;
+blocos principais;
+relação entre SagB, Loze e GrupoB;
+ciclo de vida de padrão;
+ciclo de vida de documento;
+tipos normativos;
+relação com módulos executores.
+6.3. Responsáveis
+
+Página dos 12 responsáveis:
+
+01_pietro_carboni
+02_savio_codare
+03_alice_montini
+04_pedro_gazan
+05_pierre_zanulli
+06_klaus_wagen
+07_yuri_sague
+08_noah_verdili
+09_dante_montoya
+10_nilo_barret
+11_julio_mosqueira
+12_cesar_tulli
+
+Cada responsável deve ter:
+
+nome;
+slug;
+área;
+escopo;
+o que define;
+o que não define;
+dependências;
+documentos vinculados;
+padrões vinculados;
+status.
+6.4. Padrões
+
+Listar e gerenciar padrões oficiais.
+
+Filtros mínimos:
+
+tipo normativo;
+status;
+área;
+responsável;
+sensibilidade;
+risco;
+canônico;
+versão.
+
+Tipos normativos:
+
+principle;
+policy;
+rule;
+standard;
+protocol;
+process;
+procedure;
+checklist;
+matrix;
+record;
+decision;
+template;
+guide;
+manual.
+
+Status:
+
+draft;
+review;
+curation;
+approved;
+published;
+canonical;
+deprecated;
+replaced;
+archived.
+6.5. Documentos
+
+Biblioteca documental viva.
+
+Status documentais:
+
+raw;
+treated;
+consolidated;
+review;
+approved;
+canonical;
+legacy;
+replaced;
+archived.
+
+A página deve permitir visualizar:
+
+documentos internos;
+documentos externos;
+documentos atuais;
+documentos canônicos;
+documentos em revisão;
+documentos legados;
+fontes brutas.
+6.6. Registro Mestre
+
+Página para classificar itens do ecossistema:
+
+empresas;
+ventures;
+produtos;
+sistemas;
+apps;
+plataformas;
+metodologias;
+frameworks;
+mentorias;
+cursos;
+programas;
+campanhas;
+agentes;
+nomes oficiais;
+nomes legados;
+nomes em validação.
+
+Regra importante:
+
+Loze não é gaveta de produtos.
+StartyB não é gaveta de marcas.
+Venture não é pasta.
+Cada item deve ter campos de classificação.
+6.7. Módulos
+
+Deve listar:
+
+módulos do SagB;
+módulos plugáveis;
+módulos de produto;
+módulos base reutilizáveis;
+services;
+helpers;
+componentes relevantes.
+
+A página deve mostrar:
+
+módulo;
+tipo;
+status;
+padrões vinculados;
+documentos vinculados;
+sistemas que usam;
+risco;
+cobertura.
+6.8. Biblioteca de Módulos Base
+
+Pode ser página própria ou subaba dentro de Módulos.
+
+Deve diferenciar:
+
+módulo base = capacidade fundamental reutilizável
+módulo plugável = bloco pronto para encaixar em sistemas
+módulo de produto = funcionalidade específica de produto
+service/helper/component = peça menor que não merece virar módulo
+
+Exemplos:
+
+auth_core
+users_core
+permissions_core
+settings_core
+notifications_core
+files_storage_core
+logs_audit_core
+integrations_core
+ai_core
+billing_core
+dashboard_core
+reports_core
+forms_core
+calendar_core
+search_core
+workflow_core
+onboarding_core
+support_core
+backup_core
+multiempresa_core
+internal_messages_core
+
+Obrigatório incluir a Matriz de Reaproveitamento Técnico no Modo Dev e/ou em Módulos.
+
+6.9. Agentes
+
+Mostrar:
+
+agentes;
+domínio;
+área;
+padrões que podem consumir;
+documentos canônicos vinculados;
+riscos;
+limites;
+lacunas.
+6.10. Decisões
+
+Registrar:
+
+decisões;
+motivo;
+impacto;
+responsável;
+padrão impactado;
+documento impactado;
+módulo impactado;
+status;
+data;
+histórico.
+6.11. Checklists
+
+Checklists obrigatórios iniciais:
+
+antes de criar sistema;
+antes de criar módulo;
+antes de criar tabela;
+antes de criar API;
+antes de deploy;
+antes de publicar documento externo;
+antes de liberar agente;
+antes de aprovar padrão;
+antes de transformar conversa em documento;
+antes de mover documento para canônico.
+6.12. Auditorias
+
+Deve listar:
+
+auditorias;
+achados;
+evidências;
+severidade;
+responsável;
+status;
+próximos passos.
+6.13. Triagem
+
+Página para representar o fluxo:
+
+99_triagem/
+├── arquivo_morto/
+├── 01_compilado_bruto_existente.md
+├── 02_novas_informacoes.md
+└── 03_documento_base_consolidado_para_aprovacao.md
+
+Essa página deve registrar:
+
+fonte bruta;
+destino sugerido;
+status da triagem;
+se já foi tratado;
+se virou documento consolidado;
+se foi para canvas/lousa;
+se virou canônico.
+6.14. Modo Dev
+
+Página prática para programadores.
+
+Pergunta central:
+
+O que você quer criar?
+
+Cards:
+
+Sistema novo;
+Módulo novo;
+Tabela Supabase;
+API;
+Integração;
+Deploy;
+Refatorar legado;
+Reaproveitar módulo.
+
+Cada card deve apontar:
+
+padrões necessários;
+checklist aplicável;
+documentos úteis;
+responsável;
+riscos;
+matriz de reaproveitamento.
+6.15. Modo Agente
+
+Página para agentes consultarem padrões.
+
+Deve conter:
+
+regras obrigatórias;
+o que não fazer;
+documentos canônicos;
+padrões por domínio;
+prompts oficiais;
+quando pedir validação humana;
+limites de uso.
+6.16. Configurações
+
+Mostrar:
+
+versão do módulo;
+padrão visual usado;
+paleta;
+status disponíveis;
+tipos normativos;
+informações técnicas;
+links para README, DECISIONS, CHANGELOG e PLANNED.
+7. Estrutura de arquivos esperada
+
+Organizar o módulo em:
+
+src/modules/central_padroes/
+├── index.ts
+├── manifest.ts
+├── routes.tsx
+├── module-doc.ts
+├── README.md
+├── DECISIONS.md
+├── CHANGELOG.md
+├── PLANNED.md
+│
+├── layout/
+│   ├── CentralPadroesLayout.tsx
+│   ├── CentralPadroesSidebar.tsx
+│   ├── CentralPadroesTopbar.tsx
+│   └── CentralPadroesMobileNav.tsx
+│
+├── pages/
+├── components/
+├── hooks/
+├── services/
+├── repositories/
+├── store/
+├── types/
+├── constants/
+├── docs/
+└── agent/
+
+Criar os arquivos que faltarem.
+
+Reaproveitar os equivalentes existentes quando houver.
+
+Registrar qualquer decisão de renomeação ou reaproveitamento.
+
+8. Migration Supabase obrigatória
+
+Criar uma migration nova.
+
+Nome sugerido:
+
+supabase/migrations/20260531210000_central_padroes_core_v1.sql
+
+Se o padrão de timestamp do projeto exigir outro horário, siga o padrão existente.
+
+Todas as novas tabelas devem usar prefixo:
+
+central_padroes_
+9. Tabelas obrigatórias
+
+Criar as tabelas abaixo.
+
+central_padroes_areas
+central_padroes_responsibles
+central_padroes_standards
+central_padroes_standard_versions
+central_padroes_documents
+central_padroes_document_versions
+central_padroes_decisions
+central_padroes_checklists
+central_padroes_checklist_items
+central_padroes_modules
+central_padroes_base_modules
+central_padroes_agents
+central_padroes_audits
+central_padroes_evidence
+central_padroes_relationships
+central_padroes_activity_log
+central_padroes_ingestion_sources
+central_padroes_ingestion_items
+central_padroes_exceptions
+
+Se por compatibilidade técnica for melhor separar alguma tabela ou adicionar catálogos auxiliares, pode fazer, mas registre.
+
+10. Campos mínimos por tabela
+10.1. central_padroes_areas
+id uuid primary key
+slug text unique not null
+name text not null
+description text
+owner_name text
+owner_role text
+color text
+status text default 'active'
+created_at timestamptz default now()
+updated_at timestamptz default now()
+
+Seeds:
+
+governanca
+tecnica
+ui_ux
+seguranca
+agentes
+modelos_ia
+processos
+naming
+ideias_labs
+metodologias
+acadb
+ventures
+10.2. central_padroes_responsibles
+id uuid primary key
+slug text unique not null
+name text not null
+role text
+area_slug text
+folder_path text
+scope_summary text
+defines text
+does_not_define text
+status text default 'active'
+metadata jsonb default '{}'::jsonb
+created_at timestamptz default now()
+updated_at timestamptz default now()
+
+Seeds dos 12 responsáveis obrigatórios.
+
+10.3. central_padroes_standards
+id uuid primary key
+title text not null
+slug text unique not null
+summary text
+content text
+normative_type text not null
+status text not null default 'draft'
+maturity_status text default 'draft'
+area_id uuid references central_padroes_areas(id)
+responsible_id uuid references central_padroes_responsibles(id)
+owner_name text
+owner_role text
+version text default 'v1.0'
+visibility text default 'internal'
+sensitivity_level text default 'internal'
+risk_level text default 'medium'
+scope_in text
+scope_out text
+canonical boolean default false
+source_path text
+approved_by text
+approved_at timestamptz
+review_due_at date
+replaced_by uuid references central_padroes_standards(id)
+metadata jsonb default '{}'::jsonb
+created_at timestamptz default now()
+updated_at timestamptz default now()
+10.4. central_padroes_standard_versions
+id uuid primary key
+standard_id uuid references central_padroes_standards(id) on delete cascade
+version text not null
+content_snapshot text
+change_summary text
+change_type text
+created_by text
+approved_by text
+approved_at timestamptz
+created_at timestamptz default now()
+10.5. central_padroes_documents
+id uuid primary key
+title text not null
+slug text unique not null
+summary text
+content text
+document_type text not null
+status text default 'raw'
+maturity_status text default 'raw'
+area_id uuid references central_padroes_areas(id)
+responsible_id uuid references central_padroes_responsibles(id)
+owner_name text
+version text default 'v1.0'
+visibility text default 'internal'
+sensitivity_level text default 'internal'
+canonical boolean default false
+source_type text
+source_path text
+storage_bucket text
+storage_path text
+external_url text
+metadata jsonb default '{}'::jsonb
+created_at timestamptz default now()
+updated_at timestamptz default now()
+10.6. central_padroes_document_versions
+id uuid primary key
+document_id uuid references central_padroes_documents(id) on delete cascade
+version text not null
+content_snapshot text
+change_summary text
+created_by text
+created_at timestamptz default now()
+10.7. central_padroes_decisions
+id uuid primary key
+title text not null
+slug text unique not null
+decision_text text
+reason text
+impact_level text default 'medium'
+status text default 'active'
+area_id uuid references central_padroes_areas(id)
+responsible_id uuid references central_padroes_responsibles(id)
+responsible_name text
+decided_by text
+decided_at timestamptz
+metadata jsonb default '{}'::jsonb
+created_at timestamptz default now()
+updated_at timestamptz default now()
+10.8. central_padroes_checklists
+id uuid primary key
+title text not null
+slug text unique not null
+description text
+checklist_type text
+area_id uuid references central_padroes_areas(id)
+status text default 'active'
+visibility text default 'internal'
+created_at timestamptz default now()
+updated_at timestamptz default now()
+10.9. central_padroes_checklist_items
+id uuid primary key
+checklist_id uuid references central_padroes_checklists(id) on delete cascade
+position int not null default 0
+title text not null
+description text
+required boolean default true
+created_at timestamptz default now()
+10.10. central_padroes_modules
+id uuid primary key
+name text not null
+slug text unique not null
+module_type text not null
+status text default 'active'
+purpose text
+route_path text
+repository_path text
+manifest_path text
+owner_name text
+reusable boolean default false
+detachable boolean default false
+metadata jsonb default '{}'::jsonb
+created_at timestamptz default now()
+updated_at timestamptz default now()
+10.11. central_padroes_base_modules
+id uuid primary key
+name text not null
+slug text unique not null
+base_module_type text not null
+status text default 'idea'
+purpose text
+reusability_reason text
+when_to_use text
+when_not_to_use text
+owner_name text
+validation_status text default 'pending'
+metadata jsonb default '{}'::jsonb
+created_at timestamptz default now()
+updated_at timestamptz default now()
+10.12. central_padroes_agents
+id uuid primary key
+name text not null
+slug text unique not null
+role text
+domain text
+area_id uuid references central_padroes_areas(id)
+responsible_id uuid references central_padroes_responsibles(id)
+status text default 'active'
+can_consume_standards boolean default true
+metadata jsonb default '{}'::jsonb
+created_at timestamptz default now()
+updated_at timestamptz default now()
+10.13. central_padroes_audits
+id uuid primary key
+title text not null
+slug text unique not null
+audit_type text
+status text default 'open'
+severity text default 'medium'
+summary text
+responsible_name text
+created_at timestamptz default now()
+updated_at timestamptz default now()
+10.14. central_padroes_evidence
+id uuid primary key
+title text not null
+evidence_type text
+description text
+source_path text
+storage_bucket text
+storage_path text
+audit_id uuid references central_padroes_audits(id) on delete set null
+created_at timestamptz default now()
+10.15. central_padroes_relationships
+id uuid primary key
+source_type text not null
+source_id uuid not null
+target_type text not null
+target_id uuid not null
+relationship_type text not null
+description text
+strength text default 'normal'
+created_at timestamptz default now()
+
+relationship_type exemplos:
+
+derives_from
+replaces
+depends_on
+applies_to
+used_by
+governs
+documents
+approves
+blocks
+references
+impacts
+10.16. central_padroes_activity_log
+id uuid primary key
+event_type text not null
+entity_type text
+entity_id uuid
+title text
+description text
+actor_name text
+metadata jsonb default '{}'::jsonb
+created_at timestamptz default now()
+10.17. central_padroes_ingestion_sources
+id uuid primary key
+title text not null
+source_type text
+source_path text
+origin text
+description text
+status text default 'registered'
+created_at timestamptz default now()
+updated_at timestamptz default now()
+10.18. central_padroes_ingestion_items
+id uuid primary key
+source_id uuid references central_padroes_ingestion_sources(id) on delete cascade
+title text not null
+destination_area_id uuid references central_padroes_areas(id)
+destination_path text
+triage_status text default 'raw'
+related_document_id uuid references central_padroes_documents(id)
+processed_at timestamptz
+metadata jsonb default '{}'::jsonb
+created_at timestamptz default now()
+updated_at timestamptz default now()
+10.19. central_padroes_exceptions
+id uuid primary key
+title text not null
+standard_id uuid references central_padroes_standards(id)
+reason text
+authorized_by text
+risk_level text default 'medium'
+correction_plan text
+expires_at date
+status text default 'active'
+created_at timestamptz default now()
+updated_at timestamptz default now()
+11. RLS e segurança
+
+Seguir o padrão atual do projeto.
+
+Se o projeto já usa RLS:
+
+habilitar RLS nas novas tabelas;
+criar políticas para leitura de usuários autenticados;
+restringir escrita conforme papel, se já existir estrutura de roles;
+não criar política pública insegura.
+
+Se o projeto ainda não tem roles maduros para este módulo:
+
+criar RLS mínima segura;
+permitir leitura autenticada;
+documentar pendência de permissões finas;
+registrar em DECISIONS.md e PLANNED.md.
+
+Não travar a implantação visual por falta de autorização granular, mas registrar a pendência.
+
+12. Buckets sugeridos
+
+Criar buckets se o projeto permitir e se não houver risco de conflito:
+
+central-padroes-documents
+central-padroes-canonical
+central-padroes-ingestion
+central-padroes-triage
+central-padroes-evidence
+central-padroes-module-docs
+central-padroes-exports
+
+Se a criação automática de buckets não estiver no fluxo do projeto, registrar a recomendação e deixar o código preparado.
+
+13. Seeds iniciais obrigatórios
+13.1. Responsáveis
+
+Inserir os 12 responsáveis:
+
+pietro_carboni
+savio_codare
+alice_montini
+pedro_gazan
+pierre_zanulli
+klaus_wagen
+yuri_sague
+noah_verdili
+dante_montoya
+nilo_barret
+julio_mosqueira
+cesar_tulli
+13.2. Áreas
+
+Inserir:
+
+governanca
+tecnica
+ui_ux
+seguranca
+agentes
+modelos_ia
+processos
+naming
+ideias_labs
+metodologias
+acadb
+ventures
+13.3. Padrões iniciais
+
+Inserir padrões iniciais de referência:
+
+Arquitetura Mestra da Central de Padrões
+Tipos Normativos Oficiais
+Padrão de Módulos Plugáveis
+Matriz de Reaproveitamento Técnico
+Padrão de Documentação Interna
+Padrão de Documentação Externa
+Padrão de Decisões e ADRs
+Padrão de Segurança e Acessos
+Alice UI Standard v1.0
+Padrão Supabase e Back-end
+Padrão Netlify e Deploy
+Padrão GitHub e Repositório
+Padrão de Agentes
+13.4. Checklists iniciais
+
+Inserir:
+
+Antes de criar sistema
+Antes de criar módulo
+Antes de criar tabela
+Antes de criar API
+Antes de deploy
+Antes de publicar documento externo
+Antes de liberar agente
+Antes de aprovar padrão
+Antes de transformar conversa em documento
+Antes de mover documento para canônico
+13.5. Módulos iniciais
+
+Inserir:
+
+Central de Padrões
+Agenda Inteligente
+Documentos
+Monitoramento
+API SagB
+MCP SagB
+
+Se algum não existir no projeto, marcar como needs_validation, não como ativo confirmado.
+
+14. Services obrigatórios
+
+Criar ou ajustar:
+
+services/
+├── centralPadroesRepository.ts
+├── centralPadroesDashboardService.ts
+├── centralStandardsService.ts
+├── centralDocumentsService.ts
+├── centralResponsiblesService.ts
+├── centralEcosystemService.ts
+├── centralModulesService.ts
+├── centralBaseModulesService.ts
+├── centralAgentsService.ts
+├── centralDecisionsService.ts
+├── centralChecklistsService.ts
+├── centralAuditsService.ts
+├── centralTriageService.ts
+├── centralRelationshipsService.ts
+├── centralPadroesFallbackData.ts
+└── governanceRulesAdapter.ts
+
+O governanceRulesAdapter.ts deve permitir leitura compatível de governance_rules como item legado/embrião de padrão, sem quebrar o serviço atual.
+
+Regra:
+
+Tentar Supabase.
+Se falhar, usar fallback.
+Não quebrar a interface.
+
+Mensagem amigável se falhar:
+
+Não foi possível carregar os dados online agora. Exibindo base local de referência.
+
+15. Types obrigatórios
+
+Criar types fortes, sem any desnecessário:
+
+CentralArea
+CentralResponsible
+CentralStandard
+CentralStandardVersion
+CentralDocument
+CentralDocumentVersion
+CentralDecision
+CentralChecklist
+CentralChecklistItem
+CentralModule
+CentralBaseModule
+CentralAgent
+CentralAudit
+CentralEvidence
+CentralRelationship
+CentralActivityLog
+CentralIngestionSource
+CentralIngestionItem
+CentralException
+CentralDashboardSummary
+CentralStatus
+CentralNormativeType
+CentralDocumentStatus
+CentralVisibility
+CentralSensitivityLevel
+CentralRiskLevel
+16. Componentes visuais obrigatórios
+
+Criar componentes reutilizáveis:
+
+components/shared/
+├── PageHeader.tsx
+├── SectionHeader.tsx
+├── CentralMetricCard.tsx
+├── StatusPill.tsx
+├── ActionCard.tsx
+├── SearchInput.tsx
+├── FilterChip.tsx
+├── EmptyState.tsx
+├── LoadingState.tsx
+└── ErrorState.tsx
+
+Criar componentes específicos:
+
+components/dashboard/
+components/standards/
+components/documents/
+components/modules/
+components/agents/
+components/decisions/
+components/checklists/
+components/audits/
+components/triage/
+components/responsibles/
+components/ecosystem/
+17. Design obrigatório
+
+Respeitar:
+
+Alice UI Standard;
+Robust Clean;
+Module Full Screen;
+Mobile Compact Clean;
+Rubik;
+paleta GrupoB;
+cards compactos;
+borda suave;
+sombra controlada;
+chips legíveis;
+dark mode sem preto puro;
+ícones lineares;
+sem emoji como ícone principal.
+
+A cor deve aparecer nos elementos, não no fundo inteiro.
+
+O módulo deve parecer parte do SagB, não landing page.
+
+18. Rotas obrigatórias
+
+Configurar rotas:
+
+/central_padroes
+/central_padroes/arquitetura
+/central_padroes/responsaveis
+/central_padroes/padroes
+/central_padroes/padroes/:slug
+/central_padroes/documentos
+/central_padroes/documentos/:slug
+/central_padroes/registro-mestre
+/central_padroes/modulos
+/central_padroes/modulos-base
+/central_padroes/agentes
+/central_padroes/decisoes
+/central_padroes/checklists
+/central_padroes/auditorias
+/central_padroes/triagem
+/central_padroes/modo-dev
+/central_padroes/modo-agente
+/central_padroes/configuracoes
+
+Se o roteamento atual exigir outro padrão, adaptar e registrar.
+
+19. Documentação obrigatória
+
+Atualizar:
+
+README.md
+DECISIONS.md
+CHANGELOG.md
+PLANNED.md
+module-doc.ts
+
+Criar em docs/:
+
+central-padroes-implantacao-et-01-31-05-2026.md
+central-padroes-schema-v1.md
+central-padroes-ui-v1.md
+central-padroes-rotas-v1.md
+central-padroes-governance-rules-compatibilidade.md
+central-padroes-validacao-final-et-01.md
+
+Registrar obrigatoriamente:
+
+arquivos criados;
+arquivos alterados;
+migration criada;
+tabelas criadas;
+seeds criados;
+services criados;
+páginas criadas;
+componentes criados;
+decisões técnicas;
+limitações;
+pendências ET 02;
+resultado de build;
+resultado de dev;
+commit;
+push;
+deploy/redeploy.
+20. Registros obrigatórios
+
+Criar ou atualizar registros em:
+
+DECISIONS.md
+CHANGELOG.md
+PLANNED.md
+docs/central-padroes-implantacao-et-01-31-05-2026.md
+docs/central-padroes-validacao-final-et-01.md
+
+Registrar decisões como:
+
+Central de Padrões vira portal vivo de governança.
+governance_rules será preservada como embrião/legado funcional.
+Novas entidades usarão prefixo central_padroes_.
+Sidebar própria será preservada.
+Fallback local será obrigatório.
+Páginas de Arquitetura Mestra, Responsáveis, Registro Mestre, Triagem e Módulos Base entram na ET 01.
+CRUD avançado, aprovação multiusuário, diff visual, busca semântica e grafo ficam para etapas futuras, salvo se forem simples de estruturar agora.
+21. O que não precisa ficar completo nesta etapa
+
+Pode deixar como placeholder funcional ou fallback:
+
+editor rico estilo Notion;
+busca semântica real;
+grafo visual real;
+workflow completo multiusuário;
+permissões finas avançadas;
+upload real complexo;
+publicação externa real;
+diff visual avançado;
+IA real dentro do módulo;
+detector semântico de duplicidade;
+migração completa de governance_rules para central_padroes_standards.
+
+Mas a estrutura deve estar preparada.
+
+22. Validações obrigatórias
+
+Rodar:
+
+npm run dev
+npm run build
+
+Se existirem:
+
+npm run lint
+npm test
+
+Se algum comando não existir, informar.
+
+Validar manualmente:
+
+clicar em Central de Padrões no SagB;
+abrir full screen;
+confirmar sidebar global oculta;
+confirmar sidebar própria;
+navegar por todas as páginas;
+abrir dashboard;
+abrir Padrões;
+abrir Documentos;
+abrir Registro Mestre;
+abrir Responsáveis;
+abrir Módulos;
+abrir Módulos Base;
+abrir Agentes;
+abrir Decisões;
+abrir Checklists;
+abrir Auditorias;
+abrir Triagem;
+abrir Modo Dev;
+abrir Modo Agente;
+abrir Configurações;
+confirmar fallback se Supabase falhar;
+verificar console;
+verificar responsivo básico;
+verificar dark mode, se disponível.
+23. Commit, push e deploy
+
+Fazer commit.
+
+Sugestão:
+
+feat(central-padroes): implanta portal vivo de governança
+
+Fazer push.
+
+Se o deploy for automático, acompanhar.
+
+Se precisar redeploy manual, executar conforme fluxo do projeto.
+
+Se não for possível, registrar motivo.
+
+24. Resposta final esperada
+
+Ao concluir, responder com:
+
+resumo executivo;
+arquivos criados;
+arquivos alterados;
+migration criada;
+tabelas criadas;
+buckets criados ou pendentes;
+seeds criados;
+services criados;
+pages criadas;
+components criados;
+rotas criadas;
+como governance_rules foi preservado;
+como governanceRulesService.ts foi preservado;
+como governanceRulesAdapter.ts foi criado ou planejado;
+como a sidebar própria foi preservada;
+como o Alice UI foi aplicado;
+como o fallback funciona;
+pendências para ET 02;
+resultado do npm run dev;
+resultado do npm run build;
+resultado de lint/test, se houver;
+commit hash;
+status do push;
+status do deploy/redeploy;
+riscos remanescentes;
+recomendações para próxima etapa.
+
+Fechamento obrigatório:
+
+ET 01 concluída
+
+Somente usar essa frase se:
+
+módulo estiver funcionando;
+rotas funcionando;
+sidebar própria preservada;
+dashboard implantado;
+páginas principais criadas;
+schema base criado;
+validações executadas;
+registros atualizados;
+commit/push/deploy feito ou justificativa clara informada.
+25. Próxima etapa prevista
+
+A ET 02 será:
+
+CRUD real de padrões e documentos
+workflow de aprovação
+versionamento operacional
+revisão e publicação canônica
+vínculos avançados padrão ↔ documento ↔ módulo ↔ agente ↔ decisão
+
+Mas nesta ET 01 a fundação precisa nascer certa.
+
+Pode executar.
+
+Faz o seguinte, você já faz a etapa 2, a 3, a 4, a 5, todas as etapas, você já faz, porque eu vou colocar num documento lá e ele vai lendo e vai executando. Lendo e executando, lendo e executando e dando feedback, entendeu? Então, essa que é a ideia.
+Pensou por 14s
+
+Pietro aqui.
+
+Entendi. A ideia agora é criar um documento sequencial de execução, para o Cássio ir lendo etapa por etapa, executando e devolvendo feedback.
+
+A ET 01 já ficou como a fundação: portal vivo, estrutura, rotas, tabelas base, sidebar, dashboard, páginas principais, services, fallback e registros.
+
+Agora segue a continuação completa, da ET 02 até ET 08.
+
+SagB | Central de Padrões | Plano Executivo ET 02 a ET 08
+
+Cássio, tudo bem? Aqui é o Pietro Carboni.
+
+Estou aqui em conversa com o Rodrigues.
+
+A ET 01 implantou a fundação da Central de Padrões como portal vivo de governança.
+
+Agora você deve seguir com as próximas etapas, uma por vez, sempre lendo, executando, validando, registrando e dando feedback antes de avançar.
+
+Regra geral para todas as etapas:
+
+1. preservar o que já existe;
+2. não quebrar ET 01;
+3. registrar decisões;
+4. atualizar README, DECISIONS, CHANGELOG e PLANNED;
+5. rodar validações;
+6. gerar relatório da etapa;
+7. fazer commit/push/deploy quando aplicável;
+8. só marcar etapa concluída se realmente estiver funcionando.
+ET 02/08 — CRUD Real de Padrões e Documentos
+Objetivo
+
+Transformar as páginas Padrões e Documentos em áreas realmente operacionais, permitindo criar, editar, visualizar, revisar e classificar padrões e documentos.
+
+A ET 01 criou a base.
+A ET 02 deve fazer o módulo começar a operar de verdade.
+
+1. Escopo da ET 02
+
+Implementar CRUD real para:
+
+central_padroes_standards
+central_padroes_standard_versions
+central_padroes_documents
+central_padroes_document_versions
+
+Também deve integrar:
+
+central_padroes_areas
+central_padroes_responsibles
+central_padroes_relationships
+central_padroes_activity_log
+2. Funcionalidades obrigatórias
+2.1. Padrões
+
+A página Padrões deve permitir:
+
+listar padrões;
+filtrar por tipo normativo;
+filtrar por status;
+filtrar por área;
+filtrar por responsável;
+filtrar por visibilidade;
+filtrar por sensibilidade;
+buscar por título, resumo e conteúdo;
+criar novo padrão;
+editar padrão existente;
+abrir detalhe do padrão;
+alterar status;
+marcar como canônico;
+criar nova versão;
+registrar alteração no activity log.
+2.2. Documentos
+
+A página Documentos deve permitir:
+
+listar documentos;
+filtrar por tipo;
+filtrar por status;
+filtrar por maturidade;
+filtrar por área;
+filtrar por responsável;
+filtrar por visibilidade;
+filtrar por sensibilidade;
+buscar por título, resumo e conteúdo;
+criar novo documento;
+editar documento existente;
+abrir detalhe;
+alterar status;
+marcar como canônico;
+criar nova versão;
+registrar alteração no activity log.
+3. Editor simples obrigatório
+
+Não precisa implementar editor rico estilo Notion nesta etapa.
+
+Criar um editor simples com:
+
+título
+resumo
+conteúdo markdown/texto
+tipo
+status
+área
+responsável
+visibilidade
+sensibilidade
+versão
+escopo dentro
+escopo fora
+fonte/origem
+
+O editor deve ser limpo, com padrão Alice UI, e funcional.
+
+4. Status obrigatórios
+Padrões
+draft
+review
+curation
+approved
+published
+canonical
+deprecated
+replaced
+archived
+Documentos
+raw
+treated
+consolidated
+review
+approved
+canonical
+legacy
+replaced
+archived
+5. Versionamento inicial
+
+Ao editar padrão ou documento, criar opção de:
+
+Salvar alteração simples
+Salvar como nova versão
+
+Quando salvar nova versão:
+
+gravar snapshot em central_padroes_standard_versions ou central_padroes_document_versions;
+registrar resumo da alteração;
+registrar autor;
+registrar data;
+atualizar versão atual no item principal.
+6. Regras de canônico
+
+Um padrão ou documento só pode ser marcado como canônico se tiver:
+
+título;
+tipo;
+área;
+responsável;
+status aprovado ou publicado;
+versão;
+conteúdo;
+visibilidade;
+sensibilidade;
+registro de aprovação ou responsável.
+
+Se algum campo faltar, exibir aviso claro.
+
+7. Activity log
+
+Registrar eventos:
+
+standard_created
+standard_updated
+standard_version_created
+standard_status_changed
+standard_marked_canonical
+document_created
+document_updated
+document_version_created
+document_status_changed
+document_marked_canonical
+8. Validações obrigatórias da ET 02
+
+Validar:
+
+criar padrão;
+editar padrão;
+criar versão de padrão;
+abrir detalhe de padrão;
+filtrar padrões;
+criar documento;
+editar documento;
+criar versão de documento;
+abrir detalhe de documento;
+filtrar documentos;
+marcar item como canônico;
+consultar activity log;
+build passando.
+9. Documentação da ET 02
+
+Criar:
+
+docs/central-padroes-et-02-crud-padroes-documentos.md
+
+Atualizar:
+
+README.md
+DECISIONS.md
+CHANGELOG.md
+PLANNED.md
+10. Resposta final da ET 02
+
+Responder com:
+
+resumo executivo;
+arquivos criados;
+arquivos alterados;
+telas funcionais;
+tabelas usadas;
+services criados/alterados;
+como funciona o CRUD;
+como funciona o versionamento inicial;
+resultado do npm run dev;
+resultado do npm run build;
+commit hash;
+status do push/deploy;
+pendências para ET 03.
+
+Fechamento:
+
+ET 02 concluída
+
+Somente usar se estiver realmente funcionando.
+
+ET 03/08 — Workflow de Aprovação, Canonicidade e Revisão
+Objetivo
+
+Criar o fluxo operacional para um padrão ou documento sair de rascunho, passar por revisão, receber aprovação e virar canônico.
+
+Esta etapa transforma a Central de Padrões em uma ferramenta de governança real.
+
+1. Escopo da ET 03
+
+Implementar fluxo de:
+
+rascunho → revisão → aprovado → canônico
+
+Com suporte para:
+
+solicitação de aprovação;
+aprovação;
+rejeição;
+devolução para ajuste;
+justificativa;
+registro de decisão;
+registro de responsável;
+histórico.
+2. Tabelas novas ou complementares
+
+Criar migration, se ainda não existir:
+
+central_padroes_approval_requests
+central_padroes_review_comments
+central_padroes_approval_requests
+
+Campos mínimos:
+
+id uuid primary key
+entity_type text not null
+entity_id uuid not null
+requested_by text
+requested_to text
+status text default 'pending'
+reason text
+decision_note text
+approved_by text
+approved_at timestamptz
+rejected_by text
+rejected_at timestamptz
+returned_by text
+returned_at timestamptz
+created_at timestamptz default now()
+updated_at timestamptz default now()
+
+Status:
+
+pending
+approved
+rejected
+returned
+cancelled
+central_padroes_review_comments
+
+Campos mínimos:
+
+id uuid primary key
+entity_type text not null
+entity_id uuid not null
+author_name text
+comment text not null
+comment_type text default 'general'
+status text default 'open'
+created_at timestamptz default now()
+updated_at timestamptz default now()
+3. Funcionalidades obrigatórias
+3.1. Solicitar aprovação
+
+Em padrões e documentos, criar ação:
+
+Solicitar aprovação
+
+Campos:
+
+motivo;
+responsável solicitado;
+observação;
+impacto.
+3.2. Aprovar
+
+Aprovação deve:
+
+atualizar status;
+registrar aprovador;
+registrar data;
+registrar decisão;
+criar activity log;
+permitir marcar como canônico quando aplicável.
+3.3. Rejeitar
+
+Rejeição deve:
+
+manter ou voltar status;
+registrar motivo;
+registrar responsável;
+criar activity log.
+3.4. Devolver para ajuste
+
+Devolução deve:
+
+alterar status para revisão/ajuste;
+registrar comentário;
+criar activity log.
+4. Página ou seção de Revisões
+
+Criar seção dentro da Central:
+
+Fila de Revisão
+
+Pode ficar no dashboard e/ou em página própria.
+
+Deve mostrar:
+
+itens aguardando aprovação;
+tipo;
+responsável;
+solicitante;
+data;
+prioridade;
+status.
+5. Regras de aprovação
+
+Nesta etapa, não precisa ter permissão multiusuário avançada, mas deve existir a lógica.
+
+Regras:
+
+responsável da área aprova conteúdo da área;
+Pietro aprova canonicidade final;
+itens sensíveis precisam indicação de revisão Pedro Gazan;
+documentação externa precisa revisão específica;
+exceção precisa justificativa.
+6. Registro em decisões
+
+Quando algo for aprovado como canônico, criar ou vincular uma decisão em:
+
+central_padroes_decisions
+
+Tipo de decisão:
+
+canonical_approval
+standard_approval
+document_approval
+status_change
+7. Validações obrigatórias da ET 03
+
+Validar:
+
+solicitar aprovação de padrão;
+aprovar padrão;
+rejeitar padrão;
+devolver padrão;
+solicitar aprovação de documento;
+aprovar documento;
+rejeitar documento;
+devolver documento;
+registrar comentários;
+registrar activity log;
+aparecer na fila de revisão;
+marcar canônico apenas quando permitido.
+8. Documentação da ET 03
+
+Criar:
+
+docs/central-padroes-et-03-workflow-aprovacao-canonicidade.md
+
+Atualizar:
+
+README.md
+DECISIONS.md
+CHANGELOG.md
+PLANNED.md
+9. Resposta final da ET 03
+
+Responder com:
+
+resumo executivo;
+migration criada;
+tabelas criadas;
+services alterados;
+telas alteradas;
+como funciona solicitação de aprovação;
+como funciona aprovação;
+como funciona devolução;
+como funciona canônico;
+validações realizadas;
+resultado do build;
+commit hash;
+pendências para ET 04.
+
+Fechamento:
+
+ET 03 concluída
+ET 04/08 — Relacionamentos: Padrões, Módulos, Agentes, Decisões e Documentos
+Objetivo
+
+Fazer a Central de Padrões deixar de ser apenas uma biblioteca e virar uma rede relacional.
+
+A ET 04 deve permitir ver:
+
+qual padrão governa qual módulo
+qual documento originou qual padrão
+qual decisão alterou qual padrão
+qual agente pode consumir qual padrão
+qual módulo depende de qual checklist
+1. Escopo da ET 04
+
+Aprimorar e usar intensamente:
+
+central_padroes_relationships
+
+Com vínculos entre:
+
+padrão ↔ documento;
+padrão ↔ módulo;
+padrão ↔ agente;
+padrão ↔ decisão;
+padrão ↔ checklist;
+documento ↔ decisão;
+documento ↔ evidência;
+módulo ↔ agente;
+módulo ↔ checklist;
+módulo ↔ base_module;
+triagem ↔ documento.
+2. Tipos de relacionamento
+
+Padronizar:
+
+derives_from
+replaces
+depends_on
+applies_to
+used_by
+governs
+documents
+approves
+blocks
+references
+impacts
+consumes
+requires
+generated_from
+3. Componentes obrigatórios
+
+Criar componentes:
+
+RelationshipPanel.tsx
+RelationshipList.tsx
+RelationshipCreateModal.tsx
+RelatedStandardsCard.tsx
+RelatedDocumentsCard.tsx
+RelatedModulesCard.tsx
+RelatedAgentsCard.tsx
+RelatedDecisionsCard.tsx
+4. Funcionalidades por página
+Padrão
+
+Mostrar:
+
+documentos relacionados;
+módulos relacionados;
+agentes relacionados;
+decisões relacionadas;
+checklists relacionados;
+padrões que substitui;
+padrões que dependem dele.
+Documento
+
+Mostrar:
+
+padrões derivados;
+decisões vinculadas;
+evidências;
+fonte de origem;
+triagem relacionada.
+Módulo
+
+Mostrar:
+
+padrões que governam o módulo;
+checklists obrigatórios;
+agentes relacionados;
+documentos técnicos;
+riscos.
+Agente
+
+Mostrar:
+
+padrões que pode consumir;
+documentos canônicos;
+limites;
+riscos.
+Decisão
+
+Mostrar:
+
+padrão impactado;
+documento impactado;
+módulo impactado;
+agente impactado;
+evidências.
+5. Tela de mapa relacional simples
+
+Não precisa criar grafo visual complexo ainda.
+
+Criar uma visualização simples:
+
+Entidade atual
+├── Relacionados diretos
+├── Impactados
+├── Dependências
+└── Histórico
+6. Validações obrigatórias da ET 04
+
+Validar:
+
+criar relação padrão → módulo;
+criar relação padrão → agente;
+criar relação documento → padrão;
+criar relação decisão → padrão;
+visualizar relações no detalhe;
+filtrar relações por tipo;
+remover relação;
+registrar activity log.
+7. Documentação da ET 04
+
+Criar:
+
+docs/central-padroes-et-04-relacionamentos-governanca.md
+
+Atualizar:
+
+README.md
+DECISIONS.md
+CHANGELOG.md
+PLANNED.md
+8. Resposta final da ET 04
+
+Responder com:
+
+resumo executivo;
+relacionamentos implementados;
+componentes criados;
+services criados/alterados;
+páginas alteradas;
+validações realizadas;
+resultado do build;
+commit hash;
+pendências para ET 05.
+
+Fechamento:
+
+ET 04 concluída
+ET 05/08 — Triagem, Ingestão, Auditorias, Evidências e Exceções
+Objetivo
+
+Implementar a camada de rastreabilidade da Central de Padrões.
+
+Essa etapa deve permitir registrar:
+
+conteúdo bruto;
+origem;
+destino;
+triagem;
+documentos gerados;
+auditorias;
+evidências;
+exceções;
+achados;
+riscos.
+1. Escopo da ET 05
+
+Aprimorar as áreas:
+
+Triagem
+Auditorias
+Evidências
+Exceções
+
+Usar as tabelas:
+
+central_padroes_ingestion_sources
+central_padroes_ingestion_items
+central_padroes_audits
+central_padroes_evidence
+central_padroes_exceptions
+central_padroes_relationships
+central_padroes_activity_log
+2. Página Triagem
+
+A página Triagem deve representar o fluxo:
+
+99_triagem/
+├── arquivo_morto/
+├── 01_compilado_bruto_existente.md
+├── 02_novas_informacoes.md
+└── 03_documento_base_consolidado_para_aprovacao.md
+
+Deve permitir registrar:
+
+fonte;
+tipo da fonte;
+caminho da fonte;
+origem;
+destino sugerido;
+destino aplicado;
+status da triagem;
+documento relacionado;
+observações.
+
+Status da triagem:
+
+raw
+mapped
+copied_to_bruto
+treated
+consolidated
+sent_to_canvas
+approved
+canonical
+archived
+needs_validation
+3. Página Auditorias
+
+Deve permitir:
+
+listar auditorias;
+criar auditoria;
+classificar auditoria;
+registrar severidade;
+registrar achados;
+vincular padrões/documentos/módulos;
+registrar responsável;
+marcar status.
+
+Status:
+
+open
+in_review
+resolved
+accepted_risk
+archived
+
+Severidade:
+
+low
+medium
+high
+critical
+4. Evidências
+
+Implementar visualização/cadastro simples de evidências:
+
+título;
+tipo;
+descrição;
+caminho;
+bucket;
+auditoria vinculada;
+documento vinculado;
+padrão vinculado.
+
+Tipos:
+
+screenshot
+log
+file
+report
+decision
+chat_extract
+manual_note
+external_reference
+5. Exceções
+
+Criar área para exceções a padrões.
+
+Exceção deve registrar:
+
+padrão excepcionado;
+motivo;
+quem autorizou;
+risco;
+plano de correção;
+validade;
+status.
+
+Status:
+
+active
+expired
+corrected
+revoked
+archived
+
+Regra:
+
+Exceção não é bagunça. Exceção é desvio controlado, registrado e temporário.
+6. Fluxo de bruto para canônico
+
+Criar componente visual simples:
+
+Bruto → Tratado → Consolidado → Canvas → Aprovado → Canônico
+
+Esse fluxo deve aparecer em Triagem e em Documentos.
+
+7. Validações obrigatórias da ET 05
+
+Validar:
+
+criar fonte de ingestão;
+criar item de triagem;
+alterar status da triagem;
+vincular triagem a documento;
+criar auditoria;
+criar evidência;
+vincular evidência a auditoria;
+criar exceção;
+vincular exceção a padrão;
+registrar activity log;
+build passar.
+8. Documentação da ET 05
+
+Criar:
+
+docs/central-padroes-et-05-triagem-auditoria-evidencias.md
+
+Atualizar:
+
+README.md
+DECISIONS.md
+CHANGELOG.md
+PLANNED.md
+9. Resposta final da ET 05
+
+Responder com:
+
+resumo executivo;
+telas criadas/alteradas;
+services criados/alterados;
+fluxo de triagem implementado;
+auditorias implementadas;
+evidências implementadas;
+exceções implementadas;
+validações realizadas;
+resultado do build;
+commit hash;
+pendências para ET 06.
+
+Fechamento:
+
+ET 05 concluída
+ET 06/08 — Modo Dev, Modo Agente e Biblioteca de Módulos Base Reutilizáveis
+Objetivo
+
+Transformar a Central de Padrões em ferramenta prática para programadores, agentes e criação de módulos.
+
+Essa etapa liga fortemente a Central à Biblioteca de Módulos Base Reutilizáveis.
+
+1. Escopo da ET 06
+
+Aprimorar:
+
+Modo Dev
+Modo Agente
+Módulos
+Módulos Base
+Agentes
+Checklists
+Matriz de Reaproveitamento Técnico
+2. Modo Dev
+
+O Modo Dev deve começar com a pergunta:
+
+O que você quer criar?
+
+Cards obrigatórios:
+
+Sistema novo
+Módulo novo
+Módulo base
+Tabela Supabase
+API
+Integração
+Deploy
+Refatorar legado
+Reaproveitar módulo
+
+Cada card deve abrir uma orientação com:
+
+padrões obrigatórios;
+checklists;
+matriz aplicável;
+responsáveis;
+riscos;
+documentos úteis;
+módulos existentes relacionados;
+próximo passo.
+3. Matriz de Reaproveitamento Técnico
+
+Criar visual e estrutura para responder:
+
+Já existe algo parecido?
+Existe módulo base?
+Existe módulo plugável?
+Existe módulo de produto?
+Existe service/helper/component?
+Pode ser adaptado?
+Pode ser refatorado?
+Deve ser criado novo?
+Quem valida?
+Qual risco de duplicidade?
+
+Resultado possível:
+
+reaproveitar
+adaptar
+refatorar
+criar_novo
+precisa_validacao
+nao_criar
+4. Biblioteca de Módulos Base
+
+A página Módulos Base deve listar:
+
+auth_core
+users_core
+permissions_core
+settings_core
+notifications_core
+files_storage_core
+logs_audit_core
+integrations_core
+ai_core
+billing_core
+dashboard_core
+reports_core
+forms_core
+calendar_core
+search_core
+workflow_core
+onboarding_core
+support_core
+backup_core
+multiempresa_core
+internal_messages_core
+
+Status:
+
+idea
+analysis
+existing
+reusable
+needs_refactor
+in_creation
+approved
+legacy
+discarded
+
+Cada módulo base deve ter:
+
+nome;
+função;
+quando usar;
+quando não usar;
+dependências;
+tabelas prováveis;
+padrões vinculados;
+riscos;
+status;
+responsável.
+5. Modo Agente
+
+O Modo Agente deve orientar agentes com:
+
+documentos canônicos;
+padrões permitidos;
+regras obrigatórias;
+o que não fazer;
+quando escalar para humano;
+limites de uso;
+padrões por domínio;
+prompts oficiais.
+
+Criar cards:
+
+Agente programador
+Agente de UX/UI
+Agente de segurança
+Agente de naming
+Agente de metodologia
+Agente de documentação
+Agente de triagem
+Agente estratégico
+6. Agentes e padrões
+
+Permitir visualizar para cada agente:
+
+padrões que pode consumir;
+documentos canônicos;
+área;
+responsável;
+riscos;
+permissões futuras;
+lacunas.
+7. Validações obrigatórias da ET 06
+
+Validar:
+
+abrir Modo Dev;
+abrir card Sistema Novo;
+abrir card Módulo Novo;
+abrir card Tabela Supabase;
+abrir matriz de reaproveitamento;
+listar módulos base;
+abrir detalhe de módulo base;
+abrir Modo Agente;
+visualizar padrões por tipo de agente;
+relacionar agente com padrão;
+build passar.
+8. Documentação da ET 06
+
+Criar:
+
+docs/central-padroes-et-06-modo-dev-agente-modulos-base.md
+
+Atualizar:
+
+README.md
+DECISIONS.md
+CHANGELOG.md
+PLANNED.md
+9. Resposta final da ET 06
+
+Responder com:
+
+resumo executivo;
+Modo Dev implementado;
+Modo Agente implementado;
+Biblioteca de Módulos Base implementada;
+Matriz de Reaproveitamento implementada;
+componentes criados;
+services criados/alterados;
+validações realizadas;
+resultado do build;
+commit hash;
+pendências para ET 07.
+
+Fechamento:
+
+ET 06 concluída
+ET 07/08 — Busca Inteligente, Cobertura, Alertas e Painéis de Governança
+Objetivo
+
+Fazer a Central de Padrões virar uma ferramenta de consulta, auditoria e alerta.
+
+Essa etapa deve melhorar busca, filtros, cobertura por área, saúde da Central e alertas de governança.
+
+1. Busca unificada
+
+Criar busca global dentro da Central para consultar:
+
+padrões;
+documentos;
+módulos;
+módulos base;
+agentes;
+decisões;
+checklists;
+auditorias;
+evidências;
+responsáveis.
+
+A busca deve ter filtros:
+
+tipo
+status
+área
+responsável
+sensibilidade
+visibilidade
+risco
+canônico
+tag
+data
+2. Tags
+
+Se ainda não existir, criar tabela:
+
+central_padroes_tags
+central_padroes_entity_tags
+central_padroes_tags
+id uuid primary key
+slug text unique not null
+name text not null
+color text
+created_at timestamptz default now()
+central_padroes_entity_tags
+id uuid primary key
+tag_id uuid references central_padroes_tags(id) on delete cascade
+entity_type text not null
+entity_id uuid not null
+created_at timestamptz default now()
+3. Painel de cobertura
+
+Criar painel que mostre cobertura por área:
+
+Governança
+Técnica
+UX/UI
+Segurança
+Agentes
+Modelos IA
+Processos
+Naming
+Ideias
+Metodologias
+AcadB
+Ventures
+
+Critérios de cobertura:
+
+tem responsável;
+tem padrões;
+tem documentos;
+tem checklists;
+tem matrizes;
+tem decisões;
+tem pendências;
+tem itens canônicos.
+4. Alertas de governança
+
+Criar alertas para:
+
+padrão sem responsável;
+documento sem status;
+item sem área;
+documento sensível marcado como externo;
+padrão canônico sem versão;
+módulo sem padrão vinculado;
+agente sem documentos canônicos;
+checklist sem itens;
+auditoria crítica aberta;
+exceção vencida;
+documento em revisão há muito tempo.
+5. Saúde da Central
+
+Criar cálculo simples de saúde:
+
+Boa
+Atenção
+Crítica
+
+Critérios:
+
+número de pendências;
+documentos sem status;
+padrões sem responsável;
+auditorias críticas;
+exceções vencidas;
+itens sem área;
+módulos sem padrão.
+6. Página de Alertas
+
+Criar ou incluir em dashboard:
+
+Alertas de Governança
+
+Cada alerta deve ter:
+
+tipo;
+entidade;
+severidade;
+responsável sugerido;
+ação recomendada;
+status.
+7. Validações obrigatórias da ET 07
+
+Validar:
+
+busca global;
+filtros;
+tags;
+cobertura por área;
+alertas;
+saúde da Central;
+clicar alerta e abrir entidade relacionada;
+build passar.
+8. Documentação da ET 07
+
+Criar:
+
+docs/central-padroes-et-07-busca-alertas-governanca.md
+
+Atualizar:
+
+README.md
+DECISIONS.md
+CHANGELOG.md
+PLANNED.md
+9. Resposta final da ET 07
+
+Responder com:
+
+resumo executivo;
+busca implementada;
+tags implementadas;
+alertas implementados;
+saúde da Central implementada;
+cobertura por área implementada;
+validações realizadas;
+resultado do build;
+commit hash;
+pendências para ET 08.
+
+Fechamento:
+
+ET 07 concluída
+ET 08/08 — Exportação, Documentação Externa, Publicação e Fechamento da V1
+Objetivo
+
+Fechar a V1 da Central de Padrões com capacidade de exportação, preparação de documentação externa, revisão final, hardening e relatório consolidado.
+
+1. Exportações
+
+Implementar exportação simples para:
+
+Markdown;
+JSON;
+CSV, quando fizer sentido.
+
+PDF pode ficar planejado se exigir dependência grande.
+
+Exportar:
+
+padrão;
+documento;
+checklist;
+matriz;
+decisão;
+relatório de auditoria;
+lista de padrões por área.
+2. Documentação externa
+
+Criar fluxo inicial para marcar documentos como:
+
+external_candidate
+external_public
+
+Antes de external_public, exigir:
+
+sensibilidade public;
+revisão de segurança;
+revisão de linguagem;
+aprovação do responsável;
+decisão registrada.
+
+Se ainda não houver workflow completo, estruturar visualmente e registrar pendência.
+
+3. Página ou seção de Publicação Externa
+
+Criar:
+
+Documentação Externa
+
+Deve listar:
+
+documentos candidatos;
+documentos públicos;
+pendentes de revisão;
+bloqueados por sensibilidade;
+histórico de publicação.
+4. Hardening
+
+Revisar:
+
+rotas quebradas;
+console errors;
+fallback;
+responsividade;
+dark mode;
+carregamento;
+nomes;
+status;
+seed data;
+RLS;
+policies;
+migrations;
+types;
+services;
+documentação.
+5. Relatório consolidado da V1
+
+Criar:
+
+docs/central-padroes-v1-relatorio-final.md
+
+Deve conter:
+
+o que foi implantado da ET 01 à ET 08;
+tabelas criadas;
+páginas criadas;
+fluxos criados;
+serviços;
+limitações;
+riscos;
+próximos passos;
+prints ou evidências, se possível;
+status final.
+6. PLANNED para V2
+
+Atualizar PLANNED.md com V2:
+
+busca semântica real
+grafo visual
+IA assistente da Central
+workflow multiusuário avançado
+RLS granular por papel
+publicação externa completa
+PDF automático
+detecção de duplicidade
+integração profunda com todos os módulos SagB
+painel executivo para Rodrigues/Pietro
+7. Validações finais da V1
+
+Validar tudo:
+
+dashboard;
+arquitetura;
+responsáveis;
+padrões;
+documentos;
+registro mestre;
+módulos;
+módulos base;
+agentes;
+decisões;
+checklists;
+auditorias;
+triagem;
+modo dev;
+modo agente;
+configurações;
+busca;
+alertas;
+exportação;
+documentação externa;
+build;
+dev;
+lint/test, se houver;
+deploy.
+8. Documentação da ET 08
+
+Criar:
+
+docs/central-padroes-et-08-exportacao-publicacao-v1.md
+docs/central-padroes-v1-relatorio-final.md
+
+Atualizar:
+
+README.md
+DECISIONS.md
+CHANGELOG.md
+PLANNED.md
+module-doc.ts
+9. Resposta final da ET 08
+
+Responder com:
+
+resumo executivo final;
+ETs concluídas;
+arquivos criados;
+arquivos alterados;
+migrations criadas;
+tabelas criadas;
+páginas criadas;
+componentes criados;
+services criados;
+fluxos funcionais;
+exportações criadas;
+documentação externa estruturada;
+limitações;
+riscos remanescentes;
+resultado do npm run dev;
+resultado do npm run build;
+resultado de lint/test;
+commit hash final;
+status do push;
+status do deploy;
+recomendação para V2.
+
+Fechamento obrigatório:
+
+Central de Padrões V1 concluída
+
+Somente usar essa frase se todas as etapas essenciais estiverem funcionando ou se houver justificativa clara do que ficou pendente.
+
+Regra final para o Cássio
+
+Cássio, execute uma etapa por vez.
+
+Depois de cada etapa, pare e envie feedback.
+
+Formato do feedback por etapa:
+
+ET XX — Status
+
+1. O que foi feito
+2. Arquivos criados
+3. Arquivos alterados
+4. Migrations criadas
+5. Tabelas criadas/alteradas
+6. Services criados/alterados
+7. Páginas criadas/alteradas
+8. Componentes criados/alterados
+9. Validações executadas
+10. Resultado do build
+11. Commit hash
+12. Push/deploy
+13. Pendências
+14. Riscos
+15. Próxima etapa recomendada
+
+Se encontrar risco crítico, pare e avise antes de continuar.
+
+Minha recomendação para você, Rodrigues: colocar esse plano inteiro no documento, logo depois da ET 01. Assim o Cássio consegue seguir como roteiro operacional completo, lendo, executando, registrando e devolvendo etapa por etapa.
