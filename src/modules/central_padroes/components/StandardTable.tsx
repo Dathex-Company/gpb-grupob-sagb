@@ -2,7 +2,7 @@ import React from 'react';
 import { CentralStandard } from '../types';
 import { StatusBadge } from './StatusBadge';
 
-export const StandardTable: React.FC<{ standards: CentralStandard[] }> = ({ standards }) => (
+export const StandardTable: React.FC<{ standards: CentralStandard[]; onEdit?: (id: string) => void; onDelete?: (id: string) => void }> = ({ standards, onEdit, onDelete }) => (
   <div className="overflow-hidden rounded-2xl border border-sagb-line">
     <table className="w-full text-left text-[12px]">
       <thead className="bg-sagb-bg-2 text-[10px] uppercase tracking-[0.14em] text-sagb-muted">
@@ -13,6 +13,7 @@ export const StandardTable: React.FC<{ standards: CentralStandard[] }> = ({ stan
           <th className="px-4 py-3">Status</th>
           <th className="px-4 py-3">Risco</th>
           <th className="px-4 py-3">Owner</th>
+          {(onEdit || onDelete) && <th className="px-4 py-3">Ações</th>}
         </tr>
       </thead>
       <tbody className="divide-y divide-sagb-line">
@@ -24,10 +25,17 @@ export const StandardTable: React.FC<{ standards: CentralStandard[] }> = ({ stan
             <td className="px-4 py-3"><StatusBadge value={standard.status} /></td>
             <td className="px-4 py-3"><StatusBadge value={standard.risk} /></td>
             <td className="px-4 py-3 text-sagb-muted">{standard.owner}</td>
+            {(onEdit || onDelete) && (
+              <td className="px-4 py-3">
+                <div className="flex gap-2">
+                  {onEdit && <button onClick={() => onEdit(standard.id)} className="rounded-lg bg-sagb-bg-2 px-2 py-1 text-[10px] font-black text-sagb-text">Editar</button>}
+                  {onDelete && <button onClick={() => onDelete(standard.id)} className="rounded-lg bg-red-500/10 px-2 py-1 text-[10px] font-black text-red-600">Excluir</button>}
+                </div>
+              </td>
+            )}
           </tr>
         ))}
       </tbody>
     </table>
   </div>
 );
-

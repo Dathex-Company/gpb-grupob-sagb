@@ -1,5 +1,7 @@
 import { centralPadroesFallbackData } from '../data/fallbackData';
-import { CentralDashboardMetrics, CentralRepositorySnapshot } from '../types';
+import { CentralDashboardMetrics, CentralRepositorySnapshot, CreateStandardInput, UpdateStandardInput } from '../types';
+import { centralPadroesCrudService } from './centralPadroesCrudService';
+import { centralPadroesSyncService } from './centralPadroesSyncService';
 import { listGovernanceRules } from './governanceRulesService';
 
 const cloneFallback = (): CentralRepositorySnapshot => JSON.parse(JSON.stringify(centralPadroesFallbackData));
@@ -8,6 +10,7 @@ export const centralPadroesRepository = {
   async getSnapshot(): Promise<CentralRepositorySnapshot> {
     const snapshot = cloneFallback();
     try {
+      const onlineSnapshot = await centralPadroesSyncService.buildOnlineSnapshot();
       const rules = await listGovernanceRules();
       const legacyStandards = rules.map((rule) => ({
         id: rule.id,
@@ -25,10 +28,22 @@ export const centralPadroesRepository = {
         relatedModules: ['central_padroes'],
         updatedAt: rule.updated_at
       }));
-      return { ...snapshot, standards: [...legacyStandards, ...snapshot.standards] };
+      return { ...onlineSnapshot, standards: [...legacyStandards, ...onlineSnapshot.standards], isOnline: true };
     } catch {
-      return snapshot;
+      return { ...snapshot, isOnline: false };
     }
+  },
+
+  createStandard(input: CreateStandardInput) {
+    return centralPadroesCrudService.createStandard(input);
+  },
+
+  updateStandard(id: string, input: UpdateStandardInput) {
+    return centralPadroesCrudService.updateStandard(id, input);
+  },
+
+  deleteStandard(id: string) {
+    return centralPadroesCrudService.deleteStandard(id);
   },
 
   getMetrics(snapshot: CentralRepositorySnapshot): CentralDashboardMetrics {
@@ -42,4 +57,3 @@ export const centralPadroesRepository = {
     };
   }
 };
-

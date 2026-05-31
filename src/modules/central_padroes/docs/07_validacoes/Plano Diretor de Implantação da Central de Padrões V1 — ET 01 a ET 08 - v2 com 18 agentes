@@ -1,108 +1,108 @@
-# Central de Padrões — Plano Executivo por 18 Agentes da Esteira Sala Dev
+﻿# Central de PadrÃµes â€” Plano Executivo por 18 Agentes da Esteira Sala Dev
 
 > **Baseado em:**
-> - [`Plano Diretor de Implantação ET 01 a ET 08`](../../central_padroes/docs/07_validacoes/Plano%20Diretor%20de%20Implanta%C3%A7%C3%A3o%20da%20Central%20de%20Padr%C3%B5es%20V1%20%E2%80%94%20ET%2001%20a%20ET%2008) (2.667 linhas)
+> - [`Plano Diretor de ImplantaÃ§Ã£o ET 01 a ET 08`](../../central_padroes/docs/07_validacoes/Plano%20Diretor%20de%20Implanta%C3%A7%C3%A3o%20da%20Central%20de%20Padr%C3%B5es%20V1%20%E2%80%94%20ET%2001%20a%20ET%2008) (2.667 linhas)
 > - [`Auditoria Arquitetural 31-05-2026`](../../central_padroes/docs/sagb-central-padroes-auditoria-arquitetural-31-05-2026.md)
 > - [`Documento dos 18 Agentes`](../docs/Sala%20Dev%20%E2%80%94%20Estrutura%20Visual%20dos%2018%20Agentes%20por%20Etapa%20da%20Esteira)
 >
-> **Premissa:** Supabase, Netlify, GitHub Actions já operacionais. Agentes usam de forma autônoma.
+> **Premissa:** Supabase, Netlify, GitHub Actions jÃ¡ operacionais. Agentes usam de forma autÃ´noma.
 >
-> **Formato de uso:** Cássio (ou executor) lê a seção de cada agente, executa, valida, e avança.
+> **Formato de uso:** CÃ¡ssio (ou executor) lÃª a seÃ§Ã£o de cada agente, executa, valida, e avanÃ§a.
 
 ---
 
-## Índice
+## Ãndice
 
-- [0. Overview — Mapa de Execução](#0-overview--mapa-de-execução)
-- [0.1 Registro Obrigatório de Execução](#01-registro-obrigatório-de-execução)
-- [Bloco 1 — Entrada e Organização](#bloco-1--entrada-e-organização)
-  - [CA-01 Orquestrador Técnico](#ca-01--orquestrador-técnico)
-  - [CA-18 Guardião de Reaproveitamento](#ca-18--guardião-de-reaproveitamento-técnico)
-  - [CA-13 Catálogo Técnico](#ca-13--catálogo-técnico)
-- [Bloco 2 — Arquitetura e Documentação](#bloco-2--arquitetura-e-documentação)
+- [0. Overview â€” Mapa de ExecuÃ§Ã£o](#0-overview--mapa-de-execuÃ§Ã£o)
+- [0.1 Registro ObrigatÃ³rio de ExecuÃ§Ã£o](#01-registro-obrigatÃ³rio-de-execuÃ§Ã£o)
+- [Bloco 1 â€” Entrada e OrganizaÃ§Ã£o](#bloco-1--entrada-e-organizaÃ§Ã£o)
+  - [CA-01 Orquestrador TÃ©cnico](#ca-01--orquestrador-tÃ©cnico)
+  - [CA-18 GuardiÃ£o de Reaproveitamento](#ca-18--guardiÃ£o-de-reaproveitamento-tÃ©cnico)
+  - [CA-13 CatÃ¡logo TÃ©cnico](#ca-13--catÃ¡logo-tÃ©cnico)
+- [Bloco 2 â€” Arquitetura e DocumentaÃ§Ã£o](#bloco-2--arquitetura-e-documentaÃ§Ã£o)
   - [CA-02 Arquiteto de Sistemas](#ca-02--arquiteto-de-sistemas)
-  - [CA-16 UX/UI Técnico](#ca-16--uxui-técnico)
-  - [CA-03 Documentação Técnica](#ca-03--documentação-técnica)
-- [Bloco 3 — Construção Técnica](#bloco-3--construção-técnica)
+  - [CA-16 UX/UI TÃ©cnico](#ca-16--uxui-tÃ©cnico)
+  - [CA-03 DocumentaÃ§Ã£o TÃ©cnica](#ca-03--documentaÃ§Ã£o-tÃ©cnica)
+- [Bloco 3 â€” ConstruÃ§Ã£o TÃ©cnica](#bloco-3--construÃ§Ã£o-tÃ©cnica)
   - [CA-06 Database Engineer](#ca-06--supabase-database-engineer)
   - [CA-05 Backend Engineer](#ca-05--back-end-engineer)
   - [CA-04 Frontend Engineer](#ca-04--front-end-engineer)
   - [CA-07 API & Integrations Engineer](#ca-07--api--integrations-engineer)
-  - [CA-14 Agentes/MCPs/Automações](#ca-14--agentes-mcps-e-automações)
-- [Bloco 4 — Segurança e Qualidade](#bloco-4--segurança-e-qualidade)
-  - [CA-08 Segurança Técnica](#ca-08--segurança-técnica)
-  - [CA-15 Revisor de Código](#ca-15--revisor-de-código)
-  - [CA-10 QA/Testes e Validação](#ca-10--qa-testes-e-validação)
+  - [CA-14 Agentes/MCPs/AutomaÃ§Ãµes](#ca-14--agentes-mcps-e-automaÃ§Ãµes)
+- [Bloco 4 â€” SeguranÃ§a e Qualidade](#bloco-4--seguranÃ§a-e-qualidade)
+  - [CA-08 SeguranÃ§a TÃ©cnica](#ca-08--seguranÃ§a-tÃ©cnica)
+  - [CA-15 Revisor de CÃ³digo](#ca-15--revisor-de-cÃ³digo)
+  - [CA-10 QA/Testes e ValidaÃ§Ã£o](#ca-10--qa-testes-e-validaÃ§Ã£o)
   - [CA-11 Logs e Observabilidade](#ca-11--logs-e-observabilidade)
-- [Bloco 5 — Deploy e Operação](#bloco-5--deploy-e-operação)
-  - [CA-12 Versionamento Técnico](#ca-12--versionamento-técnico)
+- [Bloco 5 â€” Deploy e OperaÃ§Ã£o](#bloco-5--deploy-e-operaÃ§Ã£o)
+  - [CA-12 Versionamento TÃ©cnico](#ca-12--versionamento-tÃ©cnico)
   - [CA-09 DevOps/Deploy Engineer](#ca-09--devops-deploy-engineer)
-  - [CA-17 Operação e Runbooks](#ca-17--operação-e-runbooks)
+  - [CA-17 OperaÃ§Ã£o e Runbooks](#ca-17--operaÃ§Ã£o-e-runbooks)
 - [6. Auditoria Final](#6-auditoria-final)
-- [Apêndices](#apêndices)
+- [ApÃªndices](#apÃªndices)
 
 ---
 
-## 0. Overview — Mapa de Execução
+## 0. Overview â€” Mapa de ExecuÃ§Ã£o
 
-### Matriz resumo: Agente → ET → O que faz na Central de Padrões
+### Matriz resumo: Agente â†’ ET â†’ O que faz na Central de PadrÃµes
 
-| Bloco | Agente | ET | Entregável principal | Arquivos |
+| Bloco | Agente | ET | EntregÃ¡vel principal | Arquivos |
 |---|---|---|---|---|
-| **1** | CA-01 Orquestrador | Preliminar | Plano de run + coordenação | `.plans/`, `.logs/` |
-| **1** | CA-18 Guardião | Preliminar | Parecer de reaproveitamento | `.docs/parecer-reaproveitamento.md` |
-| **1** | CA-13 Catálogo | Preliminar | Inventário de ativos existentes | `.docs/catalogo-ativos.md` |
-| **2** | CA-02 Arquiteto | ET-03 | Schema, estrutura de pastas, decisões | `.docs/03-arquitetura.md`, `.specs/` |
-| **2** | CA-16 UX/UI | ET-04 | Fluxo de 17 páginas, estados, componentes | `.docs/04-fluxos.md`, `.specs/03-mapa-telas.md` |
-| **2** | CA-03 Documentação | ET-03/08 | ADRs, changelog, README | `DECISIONS.md`, `CHANGELOG.md` |
+| **1** | CA-01 Orquestrador | Preliminar | Plano de run + coordenaÃ§Ã£o | `.plans/`, `.logs/` |
+| **1** | CA-18 GuardiÃ£o | Preliminar | Parecer de reaproveitamento | `.docs/parecer-reaproveitamento.md` |
+| **1** | CA-13 CatÃ¡logo | Preliminar | InventÃ¡rio de ativos existentes | `.docs/catalogo-ativos.md` |
+| **2** | CA-02 Arquiteto | ET-03 | Schema, estrutura de pastas, decisÃµes | `.docs/03-arquitetura.md`, `.specs/` |
+| **2** | CA-16 UX/UI | ET-04 | Fluxo de 17 pÃ¡ginas, estados, componentes | `.docs/04-fluxos.md`, `.specs/03-mapa-telas.md` |
+| **2** | CA-03 DocumentaÃ§Ã£o | ET-03/08 | ADRs, changelog, README | `DECISIONS.md`, `CHANGELOG.md` |
 | **3** | CA-06 Database | ET-01 | Migration 19 tabelas + seeds | `supabase/migrations/` |
 | **3** | CA-05 Backend | ET-01/02 | Services, Repository Pattern, hooks | `services/`, `hooks/` |
-| **3** | CA-04 Frontend | ET-01/02 | 17 páginas, sidebar, componentes | `pages/`, `layout/`, `components/` |
+| **3** | CA-04 Frontend | ET-01/02 | 17 pÃ¡ginas, sidebar, componentes | `pages/`, `layout/`, `components/` |
 | **3** | CA-07 Integrations | ET-01/06 | Buckets, webhooks, sync function | `.specs/05-integracoes.md` |
-| **3** | CA-14 Agentes/MCPs | ET-05 | Automação de triagem | `.specs/automacoes.md` |
-| **4** | CA-08 Segurança | ET-07 | RLS policies, checklist segurança | `RLS`, `.docs/checklist-seguranca.md` |
-| **4** | CA-15 Revisor | ET-07 | Code review, dívida técnica | `.logs/revisao-codigo.md` |
+| **3** | CA-14 Agentes/MCPs | ET-05 | AutomaÃ§Ã£o de triagem | `.specs/automacoes.md` |
+| **4** | CA-08 SeguranÃ§a | ET-07 | RLS policies, checklist seguranÃ§a | `RLS`, `.docs/checklist-seguranca.md` |
+| **4** | CA-15 Revisor | ET-07 | Code review, dÃ­vida tÃ©cnica | `.logs/revisao-codigo.md` |
 | **4** | CA-10 QA | ET-07 | Checklist QA, testes | `.docs/05-checklist-qa.md` |
 | **4** | CA-11 Logs | ET-07 | Observabilidade, rastreio | `.docs/observabilidade.md` |
 | **5** | CA-12 Versionamento | ET-08 | Git, branches, release | `git tag`, `release notes` |
 | **5** | CA-09 DevOps | ET-08 | Deploy, build, rollback | `.logs/deploy.md` |
-| **5** | CA-17 Operação | ET-08 | Runbook, manual de uso | `.docs/runbook.md` |
+| **5** | CA-17 OperaÃ§Ã£o | ET-08 | Runbook, manual de uso | `.docs/runbook.md` |
 
-### Ordem de execução recomendada
+### Ordem de execuÃ§Ã£o recomendada
 
 ```
-Passo 1: CA-01 → CA-18 → CA-13    (Bloco 1 — sequencial)
-Passo 2: CA-02 → CA-16 → CA-03     (Bloco 2 — sequencial)
-Passo 3: CA-06 → CA-05 → CA-04     (Bloco 3 — dependente)
+Passo 1: CA-01 â†’ CA-18 â†’ CA-13    (Bloco 1 â€” sequencial)
+Passo 2: CA-02 â†’ CA-16 â†’ CA-03     (Bloco 2 â€” sequencial)
+Passo 3: CA-06 â†’ CA-05 â†’ CA-04     (Bloco 3 â€” dependente)
          CA-07 e CA-14 (paralelo com CA-06)
-Passo 4: CA-08 → CA-15 → CA-10 → CA-11 (Bloco 4 — dependente)
-Passo 5: CA-12 → CA-09 → CA-17     (Bloco 5 — dependente)
+Passo 4: CA-08 â†’ CA-15 â†’ CA-10 â†’ CA-11 (Bloco 4 â€” dependente)
+Passo 5: CA-12 â†’ CA-09 â†’ CA-17     (Bloco 5 â€” dependente)
 Passo 6: Auditoria Final            (todos os envolvidos)
 ```
 
 ---
 
-## 0.1 Registro Obrigatório de Execução
+## 0.1 Registro ObrigatÃ³rio de ExecuÃ§Ã£o
 
-> Este é o **sistema de registro único** que todo agente DEVE preencher ao finalizar sua etapa.
-> Nenhum agente pode passar para o próximo sem ter atualizado seu bloco aqui.
+> Este Ã© o **sistema de registro Ãºnico** que todo agente DEVE preencher ao finalizar sua etapa.
+> Nenhum agente pode passar para o prÃ³ximo sem ter atualizado seu bloco aqui.
 
 ### Arquivo central de log
 
 **Local:** [`docs/execution-log-central-padroes-v1.md`](docs/execution-log-central-padroes-v1.md)
 
-**Criar se não existir.** Este é o **único** arquivo que concentra o histórico de execução de todos os 18 agentes.
+**Criar se nÃ£o existir.** Este Ã© o **Ãºnico** arquivo que concentra o histÃ³rico de execuÃ§Ã£o de todos os 18 agentes.
 
 ### Template de registro (cada agente preenche um bloco deste)
 
 ```markdown
-## CA-XX — Nome do Agente
+## CA-XX â€” Nome do Agente
 
 ### Status
-- [ ] Não iniciado
-- [ ] Em execução
-- [ ] Concluído
-- [ ] Bloqueado — Motivo: _____
+- [ ] NÃ£o iniciado
+- [ ] Em execuÃ§Ã£o
+- [ ] ConcluÃ­do
+- [ ] Bloqueado â€” Motivo: _____
 
 ### O que foi feito
 - (lista de tudo que executou)
@@ -113,46 +113,46 @@ Passo 6: Auditoria Final            (todos os envolvidos)
 ### Arquivos alterados
 - (caminho completo dos arquivos que modificou)
 
-### Validações executadas
-- (checklist do agente — copiar do documento e marcar)
+### ValidaÃ§Ãµes executadas
+- (checklist do agente â€” copiar do documento e marcar)
 
 ### Resultado
-- ✅ Sucesso total / ⚠️ Sucesso parcial / ❌ Falhou
-- Descrição do resultado
+- âœ… Sucesso total / âš ï¸ Sucesso parcial / âŒ Falhou
+- DescriÃ§Ã£o do resultado
 
-### Pendências
+### PendÃªncias
 - (o que ficou pendente, se houver)
 - Riscos identificados
 
 ### Entregue para
-- (próximo agente na sequência)
+- (prÃ³ximo agente na sequÃªncia)
 ```
 
 ### Regras de registro
 
 1. **SEMPRE** preencher o bloco em [`docs/execution-log-central-padroes-v1.md`](docs/execution-log-central-padroes-v1.md)
 2. **SEMPRE** marcar o checklist do agente neste documento (substituir `[ ]` por `[x]`)
-3. **NUNCA** pular a validação — só marcar concluído depois de validar
+3. **NUNCA** pular a validaÃ§Ã£o â€” sÃ³ marcar concluÃ­do depois de validar
 4. Se algo bloquear, registrar motivo no log e avisar CA-01
-5. Decisões arquiteturais vão para [`DECISIONS.md`](DECISIONS.md)
-6. Mudanças funcionais vão para [`CHANGELOG.md`](CHANGELOG.md)
-7. Revisão técnica vazada vai para [`.logs/revisao-codigo-central-padroes.md`](.logs/revisao-codigo-central-padroes.md)
+5. DecisÃµes arquiteturais vÃ£o para [`DECISIONS.md`](DECISIONS.md)
+6. MudanÃ§as funcionais vÃ£o para [`CHANGELOG.md`](CHANGELOG.md)
+7. RevisÃ£o tÃ©cnica vazada vai para [`.logs/revisao-codigo-central-padroes.md`](.logs/revisao-codigo-central-padroes.md)
 8. QA vai para [`.logs/revisao-qa-central-padroes.md`](.logs/revisao-qa-central-padroes.md)
 9. Deploy vai para [`.logs/deploy-central-padroes.md`](.logs/deploy-central-padroes.md)
 
 ### Exemplo de registro preenchido
 
 ```markdown
-## CA-06 — Supabase Database Engineer
+## CA-06 â€” Supabase Database Engineer
 
 ### Status
-- [x] Concluído
+- [x] ConcluÃ­do
 
 ### O que foi feito
 - Criada migration com 21 tabelas
-- Populados seeds de áreas, checklists, responsáveis
+- Populados seeds de Ã¡reas, checklists, responsÃ¡veis
 - RLS habilitado em todas as tabelas
-- Índices criados
+- Ãndices criados
 
 ### Arquivos criados
 - supabase/migrations/20260531210000_central_padroes_core_v1.sql
@@ -162,17 +162,17 @@ Passo 6: Auditoria Final            (todos os envolvidos)
 ### Arquivos alterados
 - Nenhum (tudo novo)
 
-### Validações executadas
+### ValidaÃ§Ãµes executadas
 - [x] Migration SQL criada com 21 tabelas
-- [x] Seeds de áreas criados (12)
+- [x] Seeds de Ã¡reas criados (12)
 - [x] RLS habilitado em todas as tabelas
-- [x] Índices criados
+- [x] Ãndices criados
 
 ### Resultado
-- ✅ Sucesso total
+- âœ… Sucesso total
 - Migration aplicada sem erros no Supabase
 
-### Pendências
+### PendÃªncias
 - Buckets Storage ainda precisam ser criados por CA-07
 
 ### Entregue para
@@ -181,53 +181,53 @@ Passo 6: Auditoria Final            (todos os envolvidos)
 
 ---
 
-## Bloco 1 — Entrada e Organização
+## Bloco 1 â€” Entrada e OrganizaÃ§Ã£o
 
 ---
 
-### CA-01 — Orquestrador Técnico
+### CA-01 â€” Orquestrador TÃ©cnico
 
 | Campo | Valor |
 |---|---|
-| **ET** | Preliminar (antes da execução) |
-| **Bloco** | 1 — Entrada e Organização |
+| **ET** | Preliminar (antes da execuÃ§Ã£o) |
+| **Bloco** | 1 â€” Entrada e OrganizaÃ§Ã£o |
 | **Depende de** | Nenhum |
-| **Entrega para** | CA-18 Guardião |
+| **Entrega para** | CA-18 GuardiÃ£o |
 | **Input** | Plano Diretor ET 01-08 + Auditoria + este documento |
-| **Output** | Plano de run + log de orquestração + agenda de agentes |
+| **Output** | Plano de run + log de orquestraÃ§Ã£o + agenda de agentes |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `docs/central-padroes-run-01.md` | Criar | Plano de execução da run |
+| `docs/central-padroes-run-01.md` | Criar | Plano de execuÃ§Ã£o da run |
 | `docs/central-padroes-agenda-agentes.md` | Criar | Agenda de cada agente com datas |
 | `DECISIONS.md` | Atualizar | ADR-005: kickoff da run |
-| `CHANGELOG.md` | Atualizar | Registrar início da execução |
+| `CHANGELOG.md` | Atualizar | Registrar inÃ­cio da execuÃ§Ã£o |
 
-#### Regras específicas
+#### Regras especÃ­ficas
 
-1. O Orquestrador **não implementa nada**. Ele organiza.
-2. Deve verificar se Supabase está online antes de começar
-3. Deve verificar se `governance_rules` está intacta
-4. Deve validar que `npm run dev` funciona antes de começar
+1. O Orquestrador **nÃ£o implementa nada**. Ele organiza.
+2. Deve verificar se Supabase estÃ¡ online antes de comeÃ§ar
+3. Deve verificar se `governance_rules` estÃ¡ intacta
+4. Deve validar que `npm run dev` funciona antes de comeÃ§ar
 5. Deve registrar checkpoint inicial no log
 
-#### Template de log de orquestração
+#### Template de log de orquestraÃ§Ã£o
 
 ```markdown
-# Log de Orquestração — Central de Padrões V1
+# Log de OrquestraÃ§Ã£o â€” Central de PadrÃµes V1
 
 ## Checkpoint Inicial
 - Data: 31/05/2026
-- Supabase: ✅ Online
-- governance_rules: ✅ Intacta
-- npm run dev: ✅ Funcionando
-- Build: ✅ Passando
+- Supabase: âœ… Online
+- governance_rules: âœ… Intacta
+- npm run dev: âœ… Funcionando
+- Build: âœ… Passando
 
 ## Ordem dos Agentes
-1. CA-18 Guardião de Reaproveitamento
-2. CA-13 Catálogo Técnico
+1. CA-18 GuardiÃ£o de Reaproveitamento
+2. CA-13 CatÃ¡logo TÃ©cnico
 3. CA-02 Arquiteto de Sistemas
 ...
 ```
@@ -235,172 +235,172 @@ Passo 6: Auditoria Final            (todos os envolvidos)
 #### Checklist do Orquestrador
 
 - [ ] Supabase online verificado
-- [ ] `governance_rules` intacta
+- [x] `governance_rules` intacta
 - [ ] `governanceRulesService.ts` intacto
 - [ ] Build atual passa sem erros
 - [ ] Plano de run criado em `docs/central-padroes-run-01.md`
 - [ ] Agenda de agentes criada
-- [ ] DECISIONS.md atualizado
+- [x] DECISIONS.md atualizado
 
 ---
 
-### CA-18 — Guardião de Reaproveitamento Técnico
+### CA-18 â€” GuardiÃ£o de Reaproveitamento TÃ©cnico
 
 | Campo | Valor |
 |---|---|
 | **ET** | Preliminar |
-| **Bloco** | 1 — Entrada e Organização |
+| **Bloco** | 1 â€” Entrada e OrganizaÃ§Ã£o |
 | **Depende de** | CA-01 Orquestrador |
-| **Entrega para** | CA-13 Catálogo Técnico |
-| **Input** | Plano de run + escopo da Central de Padrões |
+| **Entrega para** | CA-13 CatÃ¡logo TÃ©cnico |
+| **Input** | Plano de run + escopo da Central de PadrÃµes |
 | **Output** | Parecer de reaproveitamento |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `docs/parecer-reaproveitamento-central-padroes.md` | Criar | Análise do que já existe e pode ser reaproveitado |
+| `docs/parecer-reaproveitamento-central-padroes.md` | Criar | AnÃ¡lise do que jÃ¡ existe e pode ser reaproveitado |
 
-#### O que o Guardião verifica
+#### O que o GuardiÃ£o verifica
 
 Antes de construir qualquer coisa nova, verificar:
 
-1. **Módulos existentes no SagB** que podem ser reaproveitados
-2. **Componentes de UI** que já existem (sidebar, cards, tables)
-3. **Services/helpers** que já estão prontos (`restFetch`, `supabase.ts`)
-4. **Padrões de layout** que podem ser estendidos (não recriados)
-5. **Tipos/domínios** que já foram modelados em outros módulos
+1. **MÃ³dulos existentes no SagB** que podem ser reaproveitados
+2. **Componentes de UI** que jÃ¡ existem (sidebar, cards, tables)
+3. **Services/helpers** que jÃ¡ estÃ£o prontos (`restFetch`, `supabase.ts`)
+4. **PadrÃµes de layout** que podem ser estendidos (nÃ£o recriados)
+5. **Tipos/domÃ­nios** que jÃ¡ foram modelados em outros mÃ³dulos
 
-#### Parecer esperado do Guardião
+#### Parecer esperado do GuardiÃ£o
 
 ```markdown
-# Parecer de Reaproveitamento — Central de Padrões
+# Parecer de Reaproveitamento â€” Central de PadrÃµes
 
-## Itens reaproveitáveis
-1. `services/supabase.ts` — ✅ Já existe, usar direto
-2. `restFetch` — ✅ Já existe, usado em governanceRulesService
-3. `CentralPadroesLayout.tsx` — ⚠️ Existe mas precisa expandir sidebar
-4. `CentralPadroesPage.tsx` — ⚠️ Existe, manter como legado
-5. `governanceRulesService.ts` — ✅ Manter intacto, criar adapter
-6. `Alice UI Standard` — ✅ Documento de referência
+## Itens reaproveitÃ¡veis
+1. `services/supabase.ts` â€” âœ… JÃ¡ existe, usar direto
+2. `restFetch` â€” âœ… JÃ¡ existe, usado em governanceRulesService
+3. `CentralPadroesLayout.tsx` â€” âš ï¸ Existe mas precisa expandir sidebar
+4. `CentralPadroesPage.tsx` â€” âš ï¸ Existe, manter como legado
+5. `governanceRulesService.ts` â€” âœ… Manter intacto, criar adapter
+6. `Alice UI Standard` â€” âœ… Documento de referÃªncia
 
 ## Itens a criar (sem equivalente)
-1. Migration com 19 tabelas — 🔴 Novo
-2. Repository Pattern — 🔴 Novo
-3. 17 páginas — 🔴 Novo (só 1 existe)
-4. Sidebar com 16 itens — 🔴 Novo (só 1 existe)
-5. Componentes reutilizáveis — 🔴 Novo
-6. FallbackData — 🔴 Novo
-7. RLS policies — 🔴 Novo
+1. Migration com 19 tabelas â€” ðŸ”´ Novo
+2. Repository Pattern â€” ðŸ”´ Novo
+3. 17 pÃ¡ginas â€” ðŸ”´ Novo (sÃ³ 1 existe)
+4. Sidebar com 16 itens â€” ðŸ”´ Novo (sÃ³ 1 existe)
+5. Componentes reutilizÃ¡veis â€” ðŸ”´ Novo
+6. FallbackData â€” ðŸ”´ Novo
+7. RLS policies â€” ðŸ”´ Novo
 ```
 
-#### Checklist do Guardião
+#### Checklist do GuardiÃ£o
 
-- [ ] Mapeou todos os módulos existentes no SagB
-- [ ] Identificou componentes de UI reaproveitáveis
+- [ ] Mapeou todos os mÃ³dulos existentes no SagB
+- [ ] Identificou componentes de UI reaproveitÃ¡veis
 - [ ] Verificou services/helpers prontos
-- [ ] Documentou o que é novo vs reaproveitado
+- [ ] Documentou o que Ã© novo vs reaproveitado
 - [ ] Parecer salvo em `docs/parecer-reaproveitamento.md`
 
 ---
 
-### CA-13 — Catálogo Técnico
+### CA-13 â€” CatÃ¡logo TÃ©cnico
 
 | Campo | Valor |
 |---|---|
 | **ET** | Preliminar |
-| **Bloco** | 1 — Entrada e Organização |
-| **Depende de** | CA-18 Guardião |
+| **Bloco** | 1 â€” Entrada e OrganizaÃ§Ã£o |
+| **Depende de** | CA-18 GuardiÃ£o |
 | **Entrega para** | CA-02 Arquiteto |
 | **Input** | Parecer de reaproveitamento |
-| **Output** | Catálogo de ativos técnicos existentes |
+| **Output** | CatÃ¡logo de ativos tÃ©cnicos existentes |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `docs/catalogo-ativos-central-padroes.md` | Criar | Inventário detalhado de todos os ativos |
+| `docs/catalogo-ativos-central-padroes.md` | Criar | InventÃ¡rio detalhado de todos os ativos |
 
-#### Inventário que o Catálogo deve gerar
+#### InventÃ¡rio que o CatÃ¡logo deve gerar
 
-O Catálogo Técnico cruza as informações do Guardião e gera um inventário estruturado:
+O CatÃ¡logo TÃ©cnico cruza as informaÃ§Ãµes do GuardiÃ£o e gera um inventÃ¡rio estruturado:
 
 ```markdown
-# Catálogo de Ativos Técnicos — Central de Padrões
+# CatÃ¡logo de Ativos TÃ©cnicos â€” Central de PadrÃµes
 
-## Módulos
-| Módulo | Status | Pode reutilizar? |
+## MÃ³dulos
+| MÃ³dulo | Status | Pode reutilizar? |
 |---|---|---|
-| central_padroes | ✅ Existe | Sim, expandir |
-| sala-dev | ✅ Existe | Pattern de referência |
+| central_padroes | âœ… Existe | Sim, expandir |
+| sala-dev | âœ… Existe | Pattern de referÃªncia |
 
 ## Components
-| Componente | Local | Reaproveitável? |
+| Componente | Local | ReaproveitÃ¡vel? |
 |---|---|---|
 | PageHeader | sala-dev/components/ | Sim, adaptar |
-| MetricCard | vários | Sim, criar versão central |
+| MetricCard | vÃ¡rios | Sim, criar versÃ£o central |
 
 ## Services
-| Service | Local | Reaproveitável? |
+| Service | Local | ReaproveitÃ¡vel? |
 |---|---|---|
-| restFetch | services/supabase.ts | ✅ Sim |
-| governanceRulesService | central_padroes/services/ | ✅ Manter |
+| restFetch | services/supabase.ts | âœ… Sim |
+| governanceRulesService | central_padroes/services/ | âœ… Manter |
 
 ## Tabelas Supabase
 | Tabela | Migration | Precisa migrar? |
 |---|---|---|
-| governance_rules | governance_rules_phase1 | ❌ Não mexer |
-| central_padroes_* | (nova) | ✅ Criar 19 tabelas |
+| governance_rules | governance_rules_phase1 | âŒ NÃ£o mexer |
+| central_padroes_* | (nova) | âœ… Criar 19 tabelas |
 ```
 
-#### Checklist do Catálogo
+#### Checklist do CatÃ¡logo
 
-- [ ] Inventário de módulos completo
-- [ ] Inventário de componentes completo
-- [ ] Inventário de services completo
-- [ ] Inventário de tabelas Supabase completo
-- [ ] Catálogo salvo em `docs/catalogo-ativos.md`
+- [ ] InventÃ¡rio de mÃ³dulos completo
+- [ ] InventÃ¡rio de componentes completo
+- [ ] InventÃ¡rio de services completo
+- [ ] InventÃ¡rio de tabelas Supabase completo
+- [ ] CatÃ¡logo salvo em `docs/catalogo-ativos.md`
 - [ ] Entregue para CA-02 Arquiteto
 
 ---
 
-## Bloco 2 — Arquitetura e Documentação
+## Bloco 2 â€” Arquitetura e DocumentaÃ§Ã£o
 
 ---
 
-### CA-02 — Arquiteto de Sistemas
+### CA-02 â€” Arquiteto de Sistemas
 
 | Campo | Valor |
 |---|---|
-| **ET** | ET-03 do Plano Diretor (Arquitetura Técnica) |
-| **Bloco** | 2 — Arquitetura e Documentação |
-| **Depende de** | CA-13 Catálogo, CA-18 Guardião |
+| **ET** | ET-03 do Plano Diretor (Arquitetura TÃ©cnica) |
+| **Bloco** | 2 â€” Arquitetura e DocumentaÃ§Ã£o |
+| **Depende de** | CA-13 CatÃ¡logo, CA-18 GuardiÃ£o |
 | **Entrega para** | CA-16 UX/UI, CA-06 Database, CA-05 Backend, CA-04 Frontend |
-| **Input** | Catálogo de ativos + Parecer de reaproveitamento |
-| **Output** | Arquitetura completa + Specs técnicas |
+| **Input** | CatÃ¡logo de ativos + Parecer de reaproveitamento |
+| **Output** | Arquitetura completa + Specs tÃ©cnicas |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-**Referência no Plano Diretor:** Seções 4 (Estrutura de navegação), 5 (Páginas obrigatórias), 7 (Estrutura de arquivos), 9 (Tabelas obrigatórias)
+**ReferÃªncia no Plano Diretor:** SeÃ§Ãµes 4 (Estrutura de navegaÃ§Ã£o), 5 (PÃ¡ginas obrigatÃ³rias), 7 (Estrutura de arquivos), 9 (Tabelas obrigatÃ³rias)
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `.docs/03-arquitetura-central-padroes.md` | Criar | Arquitetura completa do módulo |
-| `.specs/01-entidades-e-dados.md` | Criar | Definição de todas as entidades e relacionamentos |
-| `.specs/02-estrutura-tecnica.md` | Criar | Estrutura de pastas, dependências, stack |
+| `.docs/03-arquitetura-central-padroes.md` | Criar | Arquitetura completa do mÃ³dulo |
+| `.specs/01-entidades-e-dados.md` | Criar | DefiniÃ§Ã£o de todas as entidades e relacionamentos |
+| `.specs/02-estrutura-tecnica.md` | Criar | Estrutura de pastas, dependÃªncias, stack |
 
 #### Diagrama de arquitetura
 
 ```mermaid
 flowchart TB
-    subgraph MODULO["Módulo central_padroes"]
+    subgraph MODULO["MÃ³dulo central_padroes"]
         LAYOUT[Layout Full Screen]
         SIDEBAR[Sidebar 16 itens]
-        PAGES[17 Páginas]
+        PAGES[17 PÃ¡ginas]
         COMP[Componentes Shared]
     end
 
-    subgraph SERVICES["Camada de Serviços"]
+    subgraph SERVICES["Camada de ServiÃ§os"]
         REPO[CentralPadroesRepository<br/>Interface]
         SUPABASE[SupabaseRepository]
         FALLBACK[FallbackRepository]
@@ -439,51 +439,51 @@ flowchart TB
 
 ```
 src/modules/central_padroes/
-├── index.ts
-├── manifest.ts
-├── routes.tsx
-├── module-doc.ts
-├── README.md
-├── DECISIONS.md
-├── CHANGELOG.md
-├── PLANNED.md
-│
-├── layout/
-│   ├── CentralPadroesLayout.tsx      ← MODIFICAR
-│   ├── CentralPadroesSidebar.tsx     ← CRIAR
-│   ├── CentralPadroesTopbar.tsx       ← CRIAR
-│   └── CentralPadroesMobileNav.tsx    ← CRIAR
-│
-├── pages/                            ← 17 páginas (CRIAR)
-├── components/shared/                ← 10 componentes (CRIAR)
-├── hooks/                            ← Hooks (CRIAR)
-├── services/                         ← Services + Repository (CRIAR)
-├── store/                            ← Contexto (CRIAR se necessário)
-├── types/                            ← Tipos (CRIAR)
-├── constants/                        ← Constantes (CRIAR)
-├── docs/                             ← Documentação (CRIAR)
-└── agent/                            ← Agente Zico Padron (MANTER)
+â”œâ”€â”€ index.ts
+â”œâ”€â”€ manifest.ts
+â”œâ”€â”€ routes.tsx
+â”œâ”€â”€ module-doc.ts
+â”œâ”€â”€ README.md
+â”œâ”€â”€ DECISIONS.md
+â”œâ”€â”€ CHANGELOG.md
+â”œâ”€â”€ PLANNED.md
+â”‚
+â”œâ”€â”€ layout/
+â”‚   â”œâ”€â”€ CentralPadroesLayout.tsx      â† MODIFICAR
+â”‚   â”œâ”€â”€ CentralPadroesSidebar.tsx     â† CRIAR
+â”‚   â”œâ”€â”€ CentralPadroesTopbar.tsx       â† CRIAR
+â”‚   â””â”€â”€ CentralPadroesMobileNav.tsx    â† CRIAR
+â”‚
+â”œâ”€â”€ pages/                            â† 17 pÃ¡ginas (CRIAR)
+â”œâ”€â”€ components/shared/                â† 10 componentes (CRIAR)
+â”œâ”€â”€ hooks/                            â† Hooks (CRIAR)
+â”œâ”€â”€ services/                         â† Services + Repository (CRIAR)
+â”œâ”€â”€ store/                            â† Contexto (CRIAR se necessÃ¡rio)
+â”œâ”€â”€ types/                            â† Tipos (CRIAR)
+â”œâ”€â”€ constants/                        â† Constantes (CRIAR)
+â”œâ”€â”€ docs/                             â† DocumentaÃ§Ã£o (CRIAR)
+â””â”€â”€ agent/                            â† Agente Zico Padron (MANTER)
 ```
 
-#### Decisões arquiteturais registradas
+#### DecisÃµes arquiteturais registradas
 
 ```markdown
-## ADR-010 — Repository Pattern com Fallback
-**Decisão:** Usar ICentralPadroesRepository com duas implementações:
+## ADR-010 â€” Repository Pattern com Fallback
+**DecisÃ£o:** Usar ICentralPadroesRepository com duas implementaÃ§Ãµes:
 SupabaseRepository (real) e FallbackRepository (local)
 
-## ADR-011 — Prefixo central_padroes_ para tabelas
-**Decisão:** Todas as novas tabelas usam prefixo central_padroes_
+## ADR-011 â€” Prefixo central_padroes_ para tabelas
+**DecisÃ£o:** Todas as novas tabelas usam prefixo central_padroes_
 
-## ADR-012 — Sidebar própria oculta sidebar global
-**Decisão:** Dentro do módulo, sidebar global do SagB não aparece
+## ADR-012 â€” Sidebar prÃ³pria oculta sidebar global
+**DecisÃ£o:** Dentro do mÃ³dulo, sidebar global do SagB nÃ£o aparece
 
-## ADR-013 — governance_rules preservado como legado
-**Decisão:** governance_rules NÃO é alterado. Adapter faz ponte.
+## ADR-013 â€” governance_rules preservado como legado
+**DecisÃ£o:** governance_rules NÃƒO Ã© alterado. Adapter faz ponte.
 
-## ADR-014 — Fallback local como provider padrão
-**Decisão:** FallbackRepository é o provider inicial. SupabaseRepository
-é ativado após validação. Alternância por feature flag.
+## ADR-014 â€” Fallback local como provider padrÃ£o
+**DecisÃ£o:** FallbackRepository Ã© o provider inicial. SupabaseRepository
+Ã© ativado apÃ³s validaÃ§Ã£o. AlternÃ¢ncia por feature flag.
 ```
 
 #### Checklist do Arquiteto
@@ -496,57 +496,57 @@ SupabaseRepository (real) e FallbackRepository (local)
 - [ ] `.specs/01-entidades-e-dados.md` criado
 - [ ] `.specs/02-estrutura-tecnica.md` criado
 - [ ] Stack validada (React, TS, Supabase, Netlify)
-- [ ] Decisão de fallback registrada
+- [ ] DecisÃ£o de fallback registrada
 
 ---
 
-### CA-16 — UX/UI Técnico
+### CA-16 â€” UX/UI TÃ©cnico
 
 | Campo | Valor |
 |---|---|
-| **ET** | ET-04 do Plano Diretor (Experiência do Usuário) |
-| **Bloco** | 2 — Arquitetura e Documentação |
+| **ET** | ET-04 do Plano Diretor (ExperiÃªncia do UsuÃ¡rio) |
+| **Bloco** | 2 â€” Arquitetura e DocumentaÃ§Ã£o |
 | **Depende de** | CA-02 Arquiteto |
 | **Entrega para** | CA-04 Frontend Engineer |
-| **Input** | Arquitetura, estrutura de pastas, definição de páginas |
-| **Output** | Fluxo de UX + Mapa de telas + Especificação de componentes |
+| **Input** | Arquitetura, estrutura de pastas, definiÃ§Ã£o de pÃ¡ginas |
+| **Output** | Fluxo de UX + Mapa de telas + EspecificaÃ§Ã£o de componentes |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-**Referência no Plano Diretor:** Seção 5 (Função de cada página), Seção 6 (Detalhamento das 17 páginas)
+**ReferÃªncia no Plano Diretor:** SeÃ§Ã£o 5 (FunÃ§Ã£o de cada pÃ¡gina), SeÃ§Ã£o 6 (Detalhamento das 17 pÃ¡ginas)
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `.docs/04-fluxos-usuario-central-padroes.md` | Criar | Fluxo de navegação entre as 17 páginas |
+| `.docs/04-fluxos-usuario-central-padroes.md` | Criar | Fluxo de navegaÃ§Ã£o entre as 17 pÃ¡ginas |
 | `.specs/03-mapa-de-telas.md` | Criar | Mapa detalhado de cada tela com componentes |
 
 #### Mapa das 17 telas
 
 ```markdown
-## Mapa de Telas — Central de Padrões
+## Mapa de Telas â€” Central de PadrÃµes
 
-### 1. Visão Geral (Dashboard)
+### 1. VisÃ£o Geral (Dashboard)
 **Rota:** /central_padroes
 **Componentes:** CentralMetricCard(x4), PageHeader, ActivityFeed, BeforeCreateBlock
 **Estados:** loading, empty, error, populated
-**Fallback:** "Não foi possível carregar os dados online agora."
+**Fallback:** "NÃ£o foi possÃ­vel carregar os dados online agora."
 
 ### 2. Arquitetura Mestra
 **Rota:** /central_padroes/architecture
 **Componentes:** PageHeader, ArchitectureDiagram, InfoCards
-**Estados:** estático (conteúdo fixo)
+**Estados:** estÃ¡tico (conteÃºdo fixo)
 
-### 3. Responsáveis
+### 3. ResponsÃ¡veis
 **Rota:** /central_padroes/responsibles
 **Componentes:** PageHeader, SearchInput, FilterChip, ResponsibleCard(x12)
 **Estados:** loading, empty, error, populated, filtered
 
-### 4. Padrões
+### 4. PadrÃµes
 **Rota:** /central_padroes/standards
 **Componentes:** PageHeader, SearchInput, FilterChip, StandardCard, ActionButtons
 **Estados:** loading, empty, error, populated, filtered
 
-### 5. Detalhe do Padrão
+### 5. Detalhe do PadrÃ£o
 **Rota:** /central_padroes/standards/:id
 **Componentes:** PageHeader, StandardDetail, VersionHistory, ActionButtons
 **Estados:** loading, error, populated, notFound
@@ -566,12 +566,12 @@ SupabaseRepository (real) e FallbackRepository (local)
 **Componentes:** PageHeader, EcosystemGrid, ClassificationChips
 **Estados:** loading, empty, error, populated
 
-### 9. Módulos
+### 9. MÃ³dulos
 **Rota:** /central_padroes/modules
 **Componentes:** PageHeader, SearchInput, ModuleCard, ModuleFilters
 **Estados:** loading, empty, error, populated
 
-### 10. Módulos Base
+### 10. MÃ³dulos Base
 **Rota:** /central_padroes/base-modules
 **Componentes:** PageHeader, BaseModuleGrid, ModuleTypeChips
 **Estados:** loading, empty, error, populated
@@ -581,7 +581,7 @@ SupabaseRepository (real) e FallbackRepository (local)
 **Componentes:** PageHeader, AgentCard, StandardLinks
 **Estados:** loading, empty, error, populated
 
-### 12. Decisões
+### 12. DecisÃµes
 **Rota:** /central_padroes/decisions
 **Componentes:** PageHeader, DecisionCard, TimelineView
 **Estados:** loading, empty, error, populated
@@ -604,20 +604,20 @@ SupabaseRepository (real) e FallbackRepository (local)
 ### 16. Modo Dev
 **Rota:** /central_padroes/dev-mode
 **Componentes:** PageHeader, DevActionCard(x8), ReuseMatrix
-**Estados:** estático + busca
+**Estados:** estÃ¡tico + busca
 
 ### 17. Modo Agente
 **Rota:** /central_padroes/agent-mode
 **Componentes:** PageHeader, AgentRulesCard, PromptReference
-**Estados:** estático + busca
+**Estados:** estÃ¡tico + busca
 
-### 18. Configurações
+### 18. ConfiguraÃ§Ãµes
 **Rota:** /central_padroes/settings
 **Componentes:** PageHeader, SettingsCard, TechInfo
-**Estados:** estático
+**Estados:** estÃ¡tico
 ```
 
-#### Estados visuais obrigatórios em cada tela
+#### Estados visuais obrigatÃ³rios em cada tela
 
 ```typescript
 // Template de estado visual
@@ -627,7 +627,7 @@ type PageState =
   | { type: 'error'; message: string; error?: Error; onRetry?: () => void }
   | { type: 'populated'; data: unknown };
 
-// Componente de estado padrão
+// Componente de estado padrÃ£o
 const PageStateDisplay: React.FC<{ state: PageState }> = ({ state }) => {
   switch (state.type) {
     case 'loading':
@@ -637,7 +637,7 @@ const PageStateDisplay: React.FC<{ state: PageState }> = ({ state }) => {
     case 'error':
       return <ErrorState message={state.message} onRetry={state.onRetry} />;
     case 'populated':
-      return null; // Renderiza o conteúdo normal
+      return null; // Renderiza o conteÃºdo normal
   }
 };
 ```
@@ -645,60 +645,60 @@ const PageStateDisplay: React.FC<{ state: PageState }> = ({ state }) => {
 #### Regras Alice UI a aplicar
 
 - **Fonte:** Rubik em toda a interface
-- **Paleta:** GrupoB (dark mode sem preto puro) — `--sagb-bg: #0f0f1a`
+- **Paleta:** GrupoB (dark mode sem preto puro) â€” `--sagb-bg: #0f0f1a`
 - **Cards:** Compactos, borda suave (`border-radius: 8px`), sombra controlada
-- **Chips:** Legíveis para status, com cor de fundo suave
-- **Ícones:** Lineares (Lucide React ou Heroicons), sem emoji como ícone principal
-- **Cor:** Nos elementos, não no fundo inteiro
-- **Responsivo:** Mobile Compact Clean obrigatório
-- **Full screen:** Módulo ocupa tela inteira, sidebar global oculta
+- **Chips:** LegÃ­veis para status, com cor de fundo suave
+- **Ãcones:** Lineares (Lucide React ou Heroicons), sem emoji como Ã­cone principal
+- **Cor:** Nos elementos, nÃ£o no fundo inteiro
+- **Responsivo:** Mobile Compact Clean obrigatÃ³rio
+- **Full screen:** MÃ³dulo ocupa tela inteira, sidebar global oculta
 
 #### Checklist do UX Designer
 
 - [ ] Mapa de 17 telas criado em `.specs/03-mapa-de-telas.md`
 - [ ] Estados (loading, empty, error, populated) definidos por tela
-- [ ] Fluxo de navegação documentado em `.docs/04-fluxos.md`
+- [ ] Fluxo de navegaÃ§Ã£o documentado em `.docs/04-fluxos.md`
 - [ ] Regras Alice UI especificadas
-- [ ] Componentes reutilizáveis identificados
+- [ ] Componentes reutilizÃ¡veis identificados
 - [ ] Fallback visual definido
 
 ---
 
-### CA-03 — Documentação Técnica
+### CA-03 â€” DocumentaÃ§Ã£o TÃ©cnica
 
 | Campo | Valor |
 |---|---|
 | **ET** | ET-03 e ET-08 |
-| **Bloco** | 2 — Arquitetura e Documentação |
+| **Bloco** | 2 â€” Arquitetura e DocumentaÃ§Ã£o |
 | **Depende de** | CA-02 Arquiteto, CA-16 UX/UI |
 | **Entrega para** | CA-06 Database, CA-05 Backend, CA-04 Frontend |
 | **Input** | Arquitetura, specs, mapa de telas |
-| **Output** | Documentação técnica, ADRs, changelog |
+| **Output** | DocumentaÃ§Ã£o tÃ©cnica, ADRs, changelog |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-**Referência no Plano Diretor:** Seção 24 (Resposta final esperada), Seção 25 (Documentação)
+**ReferÃªncia no Plano Diretor:** SeÃ§Ã£o 24 (Resposta final esperada), SeÃ§Ã£o 25 (DocumentaÃ§Ã£o)
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `docs/central-padroes-decisoes-arquiteturais-v1.md` | Criar | Compilado de decisões arquiteturais |
+| `docs/central-padroes-decisoes-arquiteturais-v1.md` | Criar | Compilado de decisÃµes arquiteturais |
 | `DECISIONS.md` | Atualizar | ADRs 001-014 registradas |
-| `CHANGELOG.md` | Criar/Atualizar | Changelog do módulo |
+| `CHANGELOG.md` | Criar/Atualizar | Changelog do mÃ³dulo |
 
 #### Template de DECISIONS.md
 
 ```markdown
-# DECISIONS.md — Central de Padrões
+# DECISIONS.md â€” Central de PadrÃµes
 
 ## ADR-001: Repository Pattern com Fallback
 **Data:** 31/05/2026
-**Decisão:** Usar interface ICentralPadroesRepository com
+**DecisÃ£o:** Usar interface ICentralPadroesRepository com
 SupabaseRepository (real) e FallbackRepository (local/mock)
-**Motivo:** Resiliência offline e facilidade de teste
+**Motivo:** ResiliÃªncia offline e facilidade de teste
 
 ## ADR-002: Prefixo central_padroes_ para tabelas
 **Data:** 31/05/2026
-**Decisão:** Todas as novas tabelas usam prefixo central_padroes_
+**DecisÃ£o:** Todas as novas tabelas usam prefixo central_padroes_
 **Motivo:** Isolamento do legado governance_rules
 
 ... (etc)
@@ -707,17 +707,17 @@ SupabaseRepository (real) e FallbackRepository (local/mock)
 #### Template de CHANGELOG.md
 
 ```markdown
-# CHANGELOG.md — Central de Padrões
+# CHANGELOG.md â€” Central de PadrÃµes
 
 ## v1.0.0 (31/05/2026)
 ### Adicionado
-- Estrutura base do módulo com 19 tabelas Supabase
-- Dashboard com métricas da Central
-- Sidebar própria com 16 itens de navegação
-- 17 páginas funcionais
+- Estrutura base do mÃ³dulo com 19 tabelas Supabase
+- Dashboard com mÃ©tricas da Central
+- Sidebar prÃ³pria com 16 itens de navegaÃ§Ã£o
+- 17 pÃ¡ginas funcionais
 - Repository Pattern com fallback local
-- Seeds de áreas, responsáveis e padrões
-- RLS policies básicas
+- Seeds de Ã¡reas, responsÃ¡veis e padrÃµes
+- RLS policies bÃ¡sicas
 - Compatibilidade com governance_rules legado
 
 ### Preservado
@@ -732,41 +732,41 @@ SupabaseRepository (real) e FallbackRepository (local/mock)
 - [ ] DECISIONS.md criado/atualizado com ADRs
 - [ ] CHANGELOG.md criado/atualizado
 - [ ] README.md criado/atualizado
-- [ ] Documentos de decisões salvas em `docs/`
+- [ ] Documentos de decisÃµes salvas em `docs/`
 - [ ] Links entre documentos estabelecidos
 
 ---
 
-## Bloco 3 — Construção Técnica
+## Bloco 3 â€” ConstruÃ§Ã£o TÃ©cnica
 
 ---
 
-### CA-06 — Supabase / Database Engineer
+### CA-06 â€” Supabase / Database Engineer
 
 | Campo | Valor |
 |---|---|
-| **ET** | ET-01 (fundação) + ET-02 (CRUD) + ET-03 (approval) |
-| **Bloco** | 3 — Construção Técnica |
+| **ET** | ET-01 (fundaÃ§Ã£o) + ET-02 (CRUD) + ET-03 (approval) |
+| **Bloco** | 3 â€” ConstruÃ§Ã£o TÃ©cnica |
 | **Depende de** | CA-02 Arquiteto (schema definido) |
-| **Entrega para** | CA-05 Backend, CA-08 Segurança |
+| **Entrega para** | CA-05 Backend, CA-08 SeguranÃ§a |
 | **Input** | Schema de 19 tabelas com campos |
 | **Output** | Migration SQL + Seeds + Buckets |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-**Referência no Plano Diretor:** Seção 8 (Migration), Seção 9 (19 tabelas), Seção 10 (Campos mínimos), Seção 11 (Seeds), Seção 12 (Buckets)
+**ReferÃªncia no Plano Diretor:** SeÃ§Ã£o 8 (Migration), SeÃ§Ã£o 9 (19 tabelas), SeÃ§Ã£o 10 (Campos mÃ­nimos), SeÃ§Ã£o 11 (Seeds), SeÃ§Ã£o 12 (Buckets)
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
 | `supabase/migrations/20260531210000_central_padroes_core_v1.sql` | Criar | Migration principal com 19 tabelas |
-| `.specs/04-modelagem-de-dados-central-padroes.md` | Criar | Documentação do schema |
+| `.specs/04-modelagem-de-dados-central-padroes.md` | Criar | DocumentaÃ§Ã£o do schema |
 | `.tasks/02-banco-de-dados.md` | Criar | Tasks de banco |
 
-#### Migration — Template SQL (19 tabelas)
+#### Migration â€” Template SQL (19 tabelas)
 
 ```sql
 -- Migration: central_padroes_core_v1
--- Descrição: Estrutura base da Central de Padrões
+-- DescriÃ§Ã£o: Estrutura base da Central de PadrÃµes
 -- Data: 31/05/2026
 
 -- ============================================
@@ -1012,7 +1012,7 @@ CREATE TABLE central_padroes_activity_log (
 );
 
 -- ============================================
--- 4. TABELAS DE INGESTÃO
+-- 4. TABELAS DE INGESTÃƒO
 -- ============================================
 
 -- 4.1 central_padroes_ingestion_sources
@@ -1042,7 +1042,7 @@ CREATE TABLE central_padroes_ingestion_items (
 );
 
 -- ============================================
--- 5. TABELAS DE EXCEÇÕES
+-- 5. TABELAS DE EXCEÃ‡Ã•ES
 -- ============================================
 
 -- 5.1 central_padroes_exceptions
@@ -1059,7 +1059,7 @@ CREATE TABLE central_padroes_exceptions (
 );
 
 -- ============================================
--- 6. TABELAS DE APROVAÇÃO (ET-03)
+-- 6. TABELAS DE APROVAÃ‡ÃƒO (ET-03)
 -- ============================================
 
 -- 6.1 central_padroes_approval_requests
@@ -1096,7 +1096,7 @@ CREATE TABLE central_padroes_review_comments (
 );
 
 -- ============================================
--- 7. ÍNDICES
+-- 7. ÃNDICES
 -- ============================================
 
 CREATE INDEX idx_standards_area ON central_padroes_standards(area_id);
@@ -1137,102 +1137,102 @@ ALTER TABLE central_padroes_approval_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE central_padroes_review_comments ENABLE ROW LEVEL SECURITY;
 ```
 
-#### Seeds — Template SQL
+#### Seeds â€” Template SQL
 
 ```sql
 -- ============================================
--- SEEDS — Central de Padrões
+-- SEEDS â€” Central de PadrÃµes
 -- ============================================
 
--- 12 Áreas
+-- 12 Ãreas
 INSERT INTO central_padroes_areas (slug, name, owner_name, color) VALUES
-  ('governanca', 'Governança', 'Pietro Carboni', '#4f46e5'),
-  ('tecnica', 'Técnica', 'Sávio Codare', '#0891b2'),
+  ('governanca', 'GovernanÃ§a', 'Pietro Carboni', '#4f46e5'),
+  ('tecnica', 'TÃ©cnica', 'SÃ¡vio Codare', '#0891b2'),
   ('ui_ux', 'UI/UX', 'Alice Montini', '#7c3aed'),
-  ('seguranca', 'Segurança', 'Pedro Gazan', '#dc2626'),
+  ('seguranca', 'SeguranÃ§a', 'Pedro Gazan', '#dc2626'),
   ('agentes', 'Agentes', 'Pierre Zanulli', '#059669'),
   ('modelos_ia', 'Modelos de IA', 'Klaus Wagen', '#d97706'),
   ('processos', 'Processos', 'Yuri Sague', '#0284c7'),
   ('naming', 'Naming', 'Noah Verdili', '#9333ea'),
   ('ideias_labs', 'Ideias Labs', 'Dante Montoya', '#ea580c'),
   ('metodologias', 'Metodologias', 'Nilo Barret', '#16a34a'),
-  ('acadb', 'AcadB', 'Júlio Mosqueira', '#6366f1'),
-  ('ventures', 'Ventures', 'César Tulli', '#e11d48');
+  ('acadb', 'AcadB', 'JÃºlio Mosqueira', '#6366f1'),
+  ('ventures', 'Ventures', 'CÃ©sar Tulli', '#e11d48');
 
 -- 10 Checklists
 INSERT INTO central_padroes_checklists (title, slug, type) VALUES
   ('Antes de criar sistema', 'before-create-system', 'before_create'),
-  ('Antes de criar módulo', 'before-create-module', 'before_create'),
+  ('Antes de criar mÃ³dulo', 'before-create-module', 'before_create'),
   ('Antes de criar tabela', 'before-create-table', 'before_create'),
   ('Antes de criar API', 'before-create-api', 'before_create'),
   ('Antes de deploy', 'before-deploy', 'before_deploy'),
   ('Antes de publicar documento externo', 'before-publish-external', 'before_publish'),
   ('Antes de liberar agente', 'before-release-agent', 'before_release'),
-  ('Antes de aprovar padrão', 'before-approve-standard', 'before_approve'),
+  ('Antes de aprovar padrÃ£o', 'before-approve-standard', 'before_approve'),
   ('Antes de transformar conversa em documento', 'before-convert-chat', 'before_convert'),
-  ('Antes de mover para canônico', 'before-canonical', 'before_canonical');
+  ('Antes de mover para canÃ´nico', 'before-canonical', 'before_canonical');
 ```
 
 #### Checklist do Database Engineer
 
 - [ ] Migration SQL criada com 21 tabelas (19 + 2 approval)
-- [ ] Seeds de áreas criados (12)
+- [ ] Seeds de Ã¡reas criados (12)
 - [ ] Seeds de checklists criados (10)
-- [ ] Seeds de responsáveis criados (12)
-- [ ] Seeds de padrões iniciais criados (13)
-- [ ] Seeds de módulos criados (6)
+- [ ] Seeds de responsÃ¡veis criados (12)
+- [ ] Seeds de padrÃµes iniciais criados (13)
+- [ ] Seeds de mÃ³dulos criados (6)
 - [ ] RLS habilitado em todas as tabelas
-- [ ] Índices criados
+- [ ] Ãndices criados
 - [ ] `.specs/04-modelagem-de-dados.md` criado
 - [ ] `.tasks/02-banco-de-dados.md` criado
 - [ ] Buckets Storage planejados (7)
 
 ---
 
-### CA-05 — Back-end Engineer
+### CA-05 â€” Back-end Engineer
 
 | Campo | Valor |
 |---|---|
-| **ET** | ET-01 (fundação) + ET-02 (CRUD) + ET-03 (approval) |
-| **Bloco** | 3 — Construção Técnica |
+| **ET** | ET-01 (fundaÃ§Ã£o) + ET-02 (CRUD) + ET-03 (approval) |
+| **Bloco** | 3 â€” ConstruÃ§Ã£o TÃ©cnica |
 | **Depende de** | CA-06 Database (migration pronta), CA-02 Arquiteto |
 | **Entrega para** | CA-04 Frontend Engineer |
 | **Input** | Schema de tabelas, estrutura de pastas, interface do repository |
 | **Output** | Services + Repository Pattern + Hooks + Fallback + Adapter |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-**Referência no Plano Diretor:** Seção 7 (Estrutura de arquivos), Seção 14 (Services), Seção 15 (Repository Pattern)
+**ReferÃªncia no Plano Diretor:** SeÃ§Ã£o 7 (Estrutura de arquivos), SeÃ§Ã£o 14 (Services), SeÃ§Ã£o 15 (Repository Pattern)
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `services/centralPadroesRepository.ts` | Criar | Interface + 2 implementações |
-| `services/centralPadroesDashboardService.ts` | Criar | Agrega métricas do dashboard |
-| `services/centralStandardsService.ts` | Criar | CRUD de padrões |
+| `services/centralPadroesRepository.ts` | Criar | Interface + 2 implementaÃ§Ãµes |
+| `services/centralPadroesDashboardService.ts` | Criar | Agrega mÃ©tricas do dashboard |
+| `services/centralStandardsService.ts` | Criar | CRUD de padrÃµes |
 | `services/centralDocumentsService.ts` | Criar | CRUD de documentos |
-| `services/centralResponsiblesService.ts` | Criar | CRUD de responsáveis |
-| `services/centralDecisionsService.ts` | Criar | CRUD de decisões |
+| `services/centralResponsiblesService.ts` | Criar | CRUD de responsÃ¡veis |
+| `services/centralDecisionsService.ts` | Criar | CRUD de decisÃµes |
 | `services/centralChecklistsService.ts` | Criar | CRUD de checklists |
-| `services/centralModulesService.ts` | Criar | CRUD de módulos |
+| `services/centralModulesService.ts` | Criar | CRUD de mÃ³dulos |
 | `services/centralAgentsService.ts` | Criar | CRUD de agentes |
 | `services/centralAuditsService.ts` | Criar | CRUD de auditorias |
 | `services/centralTriageService.ts` | Criar | CRUD de triagem |
-| `services/centralRelationshipsService.ts` | Criar | Vínculos entre entidades |
-| `services/centralApprovalService.ts` | Criar | Workflow de aprovação (ET-03) |
+| `services/centralRelationshipsService.ts` | Criar | VÃ­nculos entre entidades |
+| `services/centralApprovalService.ts` | Criar | Workflow de aprovaÃ§Ã£o (ET-03) |
 | `services/centralPadroesFallbackData.ts` | Criar | Dados locais de fallback |
 | `services/governanceRulesAdapter.ts` | Criar | Adapta governance_rules legado |
 | `types/centralPadroesTypes.ts` | Criar | Tipos TypeScript fortes |
 | `hooks/useCentralPadroes.ts` | Criar | Hook principal |
-| `hooks/useDashboard.ts` | Criar | Métricas do dashboard |
-| `hooks/useStandards.ts` | Criar | Operações de padrão |
-| `hooks/useDocuments.ts` | Criar | Operações de documento |
-| `hooks/useApproval.ts` | Criar | Operações de aprovação (ET-03) |
+| `hooks/useDashboard.ts` | Criar | MÃ©tricas do dashboard |
+| `hooks/useStandards.ts` | Criar | OperaÃ§Ãµes de padrÃ£o |
+| `hooks/useDocuments.ts` | Criar | OperaÃ§Ãµes de documento |
+| `hooks/useApproval.ts` | Criar | OperaÃ§Ãµes de aprovaÃ§Ã£o (ET-03) |
 
-#### Template — Repository Pattern
+#### Template â€” Repository Pattern
 
 ```typescript
 // services/centralPadroesRepository.ts
-// Interface principal do repositório
+// Interface principal do repositÃ³rio
 
 export interface ICentralPadroesRepository {
   // Dashboard
@@ -1276,7 +1276,7 @@ export interface ICentralPadroesRepository {
   returnRequest(id: string, reviewer: string, comment: string): Promise<void>;
 }
 
-// Implementação Supabase
+// ImplementaÃ§Ã£o Supabase
 export class CentralPadroesSupabaseRepository implements ICentralPadroesRepository {
   async getDashboardSummary(): Promise<CentralDashboardSummary> {
     const [standards, documents, modules, agents] = await Promise.all([
@@ -1315,10 +1315,10 @@ export class CentralPadroesSupabaseRepository implements ICentralPadroesReposito
     return data as ActivityLogEntry[];
   }
   
-  // ... demais métodos seguem o mesmo padrão
+  // ... demais mÃ©todos seguem o mesmo padrÃ£o
 }
 
-// Implementação Fallback
+// ImplementaÃ§Ã£o Fallback
 export class CentralPadroesFallbackRepository implements ICentralPadroesRepository {
   async getDashboardSummary(): Promise<CentralDashboardSummary> {
     const fallbackData = CentralPadroesFallbackData.getInstance();
@@ -1343,7 +1343,7 @@ export class CentralPadroesFallbackRepository implements ICentralPadroesReposito
     return standards;
   }
   
-  // ... demais métodos seguem o mesmo padrão
+  // ... demais mÃ©todos seguem o mesmo padrÃ£o
 }
 
 // Provider
@@ -1361,7 +1361,7 @@ export function createCentralPadroesRepository(): ICentralPadroesRepository {
 }
 ```
 
-#### Template — FallbackData
+#### Template â€” FallbackData
 
 ```typescript
 // services/centralPadroesFallbackData.ts
@@ -1386,8 +1386,8 @@ export class CentralPadroesFallbackData {
       totalModules: 6,
       totalAgents: 18,
       recentActivity: [
-        { event_type: 'standard_created', description: 'Novo padrão: Arquitetura Mestra', created_at: '2026-05-31T10:00:00Z' },
-        { event_type: 'document_canonical', description: 'Documento marcado como canônico: Alice UI Standard', created_at: '2026-05-31T09:30:00Z' },
+        { event_type: 'standard_created', description: 'Novo padrÃ£o: Arquitetura Mestra', created_at: '2026-05-31T10:00:00Z' },
+        { event_type: 'document_canonical', description: 'Documento marcado como canÃ´nico: Alice UI Standard', created_at: '2026-05-31T09:30:00Z' },
       ],
     };
   }
@@ -1407,7 +1407,7 @@ export class CentralPadroesFallbackData {
         created_at: '2026-01-01T00:00:00Z',
         updated_at: '2026-05-01T00:00:00Z',
       },
-      // ... mais 12 padrões de fallback
+      // ... mais 12 padrÃµes de fallback
     ];
   }
   
@@ -1416,7 +1416,7 @@ export class CentralPadroesFallbackData {
       {
         id: 'fallback-doc-001',
         title: 'Alice UI Standard v1',
-        summary: 'Padrão de interface do GrupoB',
+        summary: 'PadrÃ£o de interface do GrupoB',
         type: 'external',
         status: 'canonical',
         area_id: 'area-ui-ux',
@@ -1431,7 +1431,7 @@ export class CentralPadroesFallbackData {
 }
 ```
 
-#### Template — Adapter de governance_rules
+#### Template â€” Adapter de governance_rules
 
 ```typescript
 // services/governanceRulesAdapter.ts
@@ -1471,7 +1471,7 @@ export class GovernanceRulesAdapter {
 }
 ```
 
-#### Template — Hook principal
+#### Template â€” Hook principal
 
 ```typescript
 // hooks/useCentralPadroes.ts
@@ -1494,9 +1494,9 @@ export function useCentralPadroes() {
       setDashboardSummary(summary);
       setIsFallback(repo instanceof CentralPadroesFallbackRepository);
     } catch (err) {
-      setError('Não foi possível carregar os dados online agora. Exibindo base local de referência.');
+      setError('NÃ£o foi possÃ­vel carregar os dados online agora. Exibindo base local de referÃªncia.');
       setIsFallback(true);
-      // Fallback automático
+      // Fallback automÃ¡tico
       const fallbackRepo = new CentralPadroesFallbackRepository();
       const fallbackSummary = await fallbackRepo.getDashboardSummary();
       setDashboardSummary(fallbackSummary);
@@ -1513,52 +1513,52 @@ export function useCentralPadroes() {
 }
 ```
 
-#### Regras de implementação
+#### Regras de implementaÃ§Ã£o
 
-1. **NÃO quebrar** `governanceRulesService.ts` — ele continua operacional
-2. `governanceRulesAdapter.ts` permite leitura compatível
+1. **NÃƒO quebrar** `governanceRulesService.ts` â€” ele continua operacional
+2. `governanceRulesAdapter.ts` permite leitura compatÃ­vel
 3. Tentar Supabase primeiro; se falhar, fallback silencioso
-4. Mensagem de fallback: "Não foi possível carregar os dados online agora. Exibindo base local de referência."
-5. Feature flag: `VITE_CENTRAL_PADROES_DATA_PROVIDER` — 'supabase' ou 'fallback'
+4. Mensagem de fallback: "NÃ£o foi possÃ­vel carregar os dados online agora. Exibindo base local de referÃªncia."
+5. Feature flag: `VITE_CENTRAL_PADROES_DATA_PROVIDER` â€” 'supabase' ou 'fallback'
 
 #### Checklist do Backend Engineer
 
-- [ ] `centralPadroesRepository.ts` criado com interface + 2 implementações
+- [ ] `centralPadroesRepository.ts` criado com interface + 2 implementaÃ§Ãµes
 - [ ] Todos os 15 services criados
 - [ ] `centralPadroesFallbackData.ts` criado com dados completos
 - [ ] `governanceRulesAdapter.ts` criado
 - [ ] `types/centralPadroesTypes.ts` criado com tipos fortes
 - [ ] 5 hooks criados
-- [ ] `governanceRulesService.ts` NÃO foi alterado
+- [ ] `governanceRulesService.ts` NÃƒO foi alterado
 - [ ] Build passa sem erros
 
 ---
 
-### CA-04 — Front-end Engineer
+### CA-04 â€” Front-end Engineer
 
 | Campo | Valor |
 |---|---|
-| **ET** | ET-01 (fundação) + ET-02 (CRUD) |
-| **Bloco** | 3 — Construção Técnica |
+| **ET** | ET-01 (fundaÃ§Ã£o) + ET-02 (CRUD) |
+| **Bloco** | 3 â€” ConstruÃ§Ã£o TÃ©cnica |
 | **Depende de** | CA-05 Backend (services/hooks prontos), CA-16 UX/UI (mapa de telas) |
-| **Entrega para** | CA-15 Revisor de Código |
+| **Entrega para** | CA-15 Revisor de CÃ³digo |
 | **Input** | Services + Hooks + Mapa de telas + Sidebar design |
-| **Output** | 17 páginas + Sidebar + Componentes |
+| **Output** | 17 pÃ¡ginas + Sidebar + Componentes |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-**Referência no Plano Diretor:** Seção 4 (Sidebar), Seção 5 (17 páginas), Seção 6 (Função de cada página), Seção 13 (Componentes)
+**ReferÃªncia no Plano Diretor:** SeÃ§Ã£o 4 (Sidebar), SeÃ§Ã£o 5 (17 pÃ¡ginas), SeÃ§Ã£o 6 (FunÃ§Ã£o de cada pÃ¡gina), SeÃ§Ã£o 13 (Componentes)
 
 ##### Layout
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
 | `layout/CentralPadroesLayout.tsx` | **MODIFICAR** | Expandir sidebar, ocultar sidebar global |
 | `layout/CentralPadroesSidebar.tsx` | Criar | Sidebar com 16 itens + "Voltar ao SagB" |
 | `layout/CentralPadroesTopbar.tsx` | Criar | Topo com breadcrumb |
-| `layout/CentralPadroesMobileNav.tsx` | Criar | Navegação mobile |
+| `layout/CentralPadroesMobileNav.tsx` | Criar | NavegaÃ§Ã£o mobile |
 
-##### Páginas (17)
-| Arquivo | Ação |
+##### PÃ¡ginas (17)
+| Arquivo | AÃ§Ã£o |
 |---|---|
 | `pages/CentralPadroesDashboardPage.tsx` | Criar |
 | `pages/ArchitecturePage.tsx` | Criar |
@@ -1579,21 +1579,21 @@ export function useCentralPadroes() {
 | `pages/AgentModePage.tsx` | Criar |
 | `pages/SettingsPage.tsx` | Criar |
 
-##### Componentes reutilizáveis (10)
-| Arquivo | Descrição |
+##### Componentes reutilizÃ¡veis (10)
+| Arquivo | DescriÃ§Ã£o |
 |---|---|
-| `components/shared/PageHeader.tsx` | Header padronizado com título + ações |
-| `components/shared/CentralMetricCard.tsx` | Card de métrica do dashboard |
+| `components/shared/PageHeader.tsx` | Header padronizado com tÃ­tulo + aÃ§Ãµes |
+| `components/shared/CentralMetricCard.tsx` | Card de mÃ©trica do dashboard |
 | `components/shared/StatusPill.tsx` | Chip de status com cor |
 | `components/shared/SearchInput.tsx` | Campo de busca com debounce |
-| `components/shared/FilterChip.tsx` | Chip de filtro selecionável |
-| `components/shared/EmptyState.tsx` | Estado vazio com mensagem + ação |
+| `components/shared/FilterChip.tsx` | Chip de filtro selecionÃ¡vel |
+| `components/shared/EmptyState.tsx` | Estado vazio com mensagem + aÃ§Ã£o |
 | `components/shared/LoadingState.tsx` | Estado de carregamento |
 | `components/shared/ErrorState.tsx` | Estado de erro com retry |
-| `components/shared/BeforeCreateBlock.tsx` | Bloco "Antes de criar" (obrigatório) |
+| `components/shared/BeforeCreateBlock.tsx` | Bloco "Antes de criar" (obrigatÃ³rio) |
 | `components/shared/ActivityFeed.tsx` | Feed de atividade recente |
 
-#### Template — Sidebar
+#### Template â€” Sidebar
 
 ```tsx
 // layout/CentralPadroesSidebar.tsx
@@ -1618,29 +1618,29 @@ import {
 } from 'lucide-react';
 
 const sidebarItems = [
-  { label: 'Visão Geral', icon: LayoutDashboard, path: '/central_padroes' },
+  { label: 'VisÃ£o Geral', icon: LayoutDashboard, path: '/central_padroes' },
   { label: 'Arquitetura Mestra', icon: Sitemap, path: '/central_padroes/architecture' },
-  { label: 'Responsáveis', icon: Users, path: '/central_padroes/responsibles' },
-  { label: 'Padrões', icon: BookText, path: '/central_padroes/standards' },
+  { label: 'ResponsÃ¡veis', icon: Users, path: '/central_padroes/responsibles' },
+  { label: 'PadrÃµes', icon: BookText, path: '/central_padroes/standards' },
   { label: 'Documentos', icon: FileText, path: '/central_padroes/documents' },
   { label: 'Registro Mestre', icon: Globe, path: '/central_padroes/ecosystem' },
-  { label: 'Módulos', icon: Puzzle, path: '/central_padroes/modules' },
-  { label: 'Módulos Base', icon: Puzzle, path: '/central_padroes/base-modules' },
+  { label: 'MÃ³dulos', icon: Puzzle, path: '/central_padroes/modules' },
+  { label: 'MÃ³dulos Base', icon: Puzzle, path: '/central_padroes/base-modules' },
   { label: 'Agentes', icon: Bot, path: '/central_padroes/agents' },
-  { label: 'Decisões', icon: Scale, path: '/central_padroes/decisions' },
+  { label: 'DecisÃµes', icon: Scale, path: '/central_padroes/decisions' },
   { label: 'Checklists', icon: ClipboardCheck, path: '/central_padroes/checklists' },
   { label: 'Auditorias', icon: Shield, path: '/central_padroes/audits' },
   { label: 'Triagem', icon: Inbox, path: '/central_padroes/triage' },
   { label: 'Modo Dev', icon: Terminal, path: '/central_padroes/dev-mode' },
   { label: 'Modo Agente', icon: Radio, path: '/central_padroes/agent-mode' },
-  { label: 'Configurações', icon: Settings, path: '/central_padroes/settings' },
+  { label: 'ConfiguraÃ§Ãµes', icon: Settings, path: '/central_padroes/settings' },
 ];
 
 export function CentralPadroesSidebar() {
   return (
     <aside className="central-padroes-sidebar">
       <div className="sidebar-header">
-        <h2>Central de Padrões</h2>
+        <h2>Central de PadrÃµes</h2>
       </div>
       <nav className="sidebar-nav">
         {sidebarItems.map(item => (
@@ -1667,7 +1667,7 @@ export function CentralPadroesSidebar() {
 }
 ```
 
-#### Template — Página de Dashboard
+#### Template â€” PÃ¡gina de Dashboard
 
 ```tsx
 // pages/CentralPadroesDashboardPage.tsx
@@ -1682,7 +1682,7 @@ import { ErrorState } from '../components/shared/ErrorState';
 export function CentralPadroesDashboardPage() {
   const { dashboardSummary, loading, error, isFallback, reload } = useCentralPadroes();
 
-  if (loading) return <LoadingState message="Carregando Central de Padrões..." />;
+  if (loading) return <LoadingState message="Carregando Central de PadrÃµes..." />;
   
   if (error && !dashboardSummary) {
     return <ErrorState message={error} onRetry={reload} />;
@@ -1691,14 +1691,14 @@ export function CentralPadroesDashboardPage() {
   return (
     <div className="dashboard-page">
       <PageHeader 
-        title="Visão Geral"
-        subtitle={isFallback ? 'Exibindo dados de referência local' : 'Portal Vivo de Governança'}
+        title="VisÃ£o Geral"
+        subtitle={isFallback ? 'Exibindo dados de referÃªncia local' : 'Portal Vivo de GovernanÃ§a'}
         isFallback={isFallback}
       />
       
       <div className="metrics-grid">
         <CentralMetricCard 
-          title="Padrões Ativos" 
+          title="PadrÃµes Ativos" 
           value={dashboardSummary?.activeStandards ?? 0}
           total={dashboardSummary?.totalStandards ?? 0}
           color="primary"
@@ -1706,11 +1706,11 @@ export function CentralPadroesDashboardPage() {
         <CentralMetricCard 
           title="Documentos" 
           value={dashboardSummary?.totalDocuments ?? 0}
-          subtitle={`${dashboardSummary?.documentsInReview ?? 0} em revisão`}
+          subtitle={`${dashboardSummary?.documentsInReview ?? 0} em revisÃ£o`}
           color="accent"
         />
         <CentralMetricCard 
-          title="Módulos" 
+          title="MÃ³dulos" 
           value={dashboardSummary?.totalModules ?? 0}
           color="success"
         />
@@ -1728,7 +1728,7 @@ export function CentralPadroesDashboardPage() {
 }
 ```
 
-#### Template — Componente BeforeCreateBlock (obrigatório)
+#### Template â€” Componente BeforeCreateBlock (obrigatÃ³rio)
 
 ```tsx
 // components/shared/BeforeCreateBlock.tsx
@@ -1736,7 +1736,7 @@ import { Plus, Database, Code2, Layout, Bot, FileUp } from 'lucide-react';
 
 const actions = [
   { label: 'Criar sistema', icon: Code2, action: 'create-system' },
-  { label: 'Criar módulo', icon: Layout, action: 'create-module' },
+  { label: 'Criar mÃ³dulo', icon: Layout, action: 'create-module' },
   { label: 'Criar tabela', icon: Database, action: 'create-table' },
   { label: 'Criar API', icon: Code2, action: 'create-api' },
   { label: 'Criar agente', icon: Bot, action: 'create-agent' },
@@ -1747,7 +1747,7 @@ export function BeforeCreateBlock() {
   return (
     <div className="before-create-block">
       <p className="before-create-message">
-        Antes de criar algo novo, veja se já existe padrão, módulo ou decisão sobre isso.
+        Antes de criar algo novo, veja se jÃ¡ existe padrÃ£o, mÃ³dulo ou decisÃ£o sobre isso.
       </p>
       <div className="action-grid">
         {actions.map(action => (
@@ -1762,14 +1762,14 @@ export function BeforeCreateBlock() {
 }
 ```
 
-#### Regras de implementação
+#### Regras de implementaÃ§Ã£o
 
-1. **Preservar** `CentralPadroesPage.tsx` existente — não apagar
-2. **Adicionar** novas páginas sem quebrar rota existente
+1. **Preservar** `CentralPadroesPage.tsx` existente â€” nÃ£o apagar
+2. **Adicionar** novas pÃ¡ginas sem quebrar rota existente
 3. **Manter** `governanceRulesService.ts` intacto
 4. **Seguir** Alice UI Standard (Rubik, paleta GrupoB, dark mode)
-5. **Fallback visual**: "Não foi possível carregar os dados online agora. Exibindo base local de referência."
-6. **Sidebar global do SagB** NÃO deve aparecer dentro do módulo
+5. **Fallback visual**: "NÃ£o foi possÃ­vel carregar os dados online agora. Exibindo base local de referÃªncia."
+6. **Sidebar global do SagB** NÃƒO deve aparecer dentro do mÃ³dulo
 
 #### Checklist do Frontend Engineer
 
@@ -1777,38 +1777,38 @@ export function BeforeCreateBlock() {
 - [ ] `CentralPadroesSidebar.tsx` criado com 16 itens
 - [ ] `CentralPadroesTopbar.tsx` criado
 - [ ] `CentralPadroesMobileNav.tsx` criado
-- [ ] 17 páginas criadas
-- [ ] 10 componentes reutilizáveis criados
+- [ ] 17 pÃ¡ginas criadas
+- [ ] 10 componentes reutilizÃ¡veis criados
 - [ ] `BeforeCreateBlock` presente no dashboard
-- [ ] Estados (loading, empty, error) tratados em todas as páginas
+- [ ] Estados (loading, empty, error) tratados em todas as pÃ¡ginas
 - [ ] Fallback visual funcionando
 - [ ] `CentralPadroesPage.tsx` original preservado
 - [ ] Build passa sem erros
 
 ---
 
-### CA-07 — API & Integrations Engineer
+### CA-07 â€” API & Integrations Engineer
 
 | Campo | Valor |
 |---|---|
-| **ET** | ET-01 (fundação) + ET-06 (integrações) |
-| **Bloco** | 3 — Construção Técnica |
+| **ET** | ET-01 (fundaÃ§Ã£o) + ET-06 (integraÃ§Ãµes) |
+| **Bloco** | 3 â€” ConstruÃ§Ã£o TÃ©cnica |
 | **Depende de** | CA-06 Database (buckets), CA-02 Arquiteto (contratos) |
 | **Entrega para** | CA-09 DevOps |
 | **Input** | Schema, buckets definidos, contracts de API |
-| **Output** | Integrações configuradas + Specs |
+| **Output** | IntegraÃ§Ãµes configuradas + Specs |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `.specs/05-integracoes-central-padroes.md` | Criar | Documentação de integrações |
-| `supabase/storage-buckets.sql` | Criar | Script de criação de buckets |
+| `.specs/05-integracoes-central-padroes.md` | Criar | DocumentaÃ§Ã£o de integraÃ§Ãµes |
+| `supabase/storage-buckets.sql` | Criar | Script de criaÃ§Ã£o de buckets |
 
 #### Buckets Storage a criar
 
 ```sql
--- Buckets para Central de Padrões
+-- Buckets para Central de PadrÃµes
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
   ('central-padroes-documents', 'central-padroes-documents', false, 10485760, '{application/pdf,text/plain,text/markdown}'),
@@ -1820,50 +1820,50 @@ values
   ('central-padroes-exports', 'central-padroes-exports', false, 10485760, '{application/json,text/csv}');
 ```
 
-#### Integrações existentes (já operacionais — não mexer)
+#### IntegraÃ§Ãµes existentes (jÃ¡ operacionais â€” nÃ£o mexer)
 
-| Integração | Status | Uso |
+| IntegraÃ§Ã£o | Status | Uso |
 |---|---|---|
-| Supabase REST | ✅ Operacional | `restFetch` no CRUD |
-| Netlify function | ✅ Operacional | `governance-sync-doc.mjs` |
-| Auth Supabase | ✅ Operacional | `auth` em `services/supabase.ts` |
-| React Router | ✅ Operacional | Rotas do módulo |
+| Supabase REST | âœ… Operacional | `restFetch` no CRUD |
+| Netlify function | âœ… Operacional | `governance-sync-doc.mjs` |
+| Auth Supabase | âœ… Operacional | `auth` em `services/supabase.ts` |
+| React Router | âœ… Operacional | Rotas do mÃ³dulo |
 
 #### Checklist do Integrations Engineer
 
 - [ ] `.specs/05-integracoes.md` criado
 - [ ] 7 buckets Storage planejados
-- [ ] `governance-sync-doc.mjs` NÃO foi alterado
-- [ ] Integrações existentes documentadas
+- [ ] `governance-sync-doc.mjs` NÃƒO foi alterado
+- [ ] IntegraÃ§Ãµes existentes documentadas
 - [ ] Fluxo de deploy documentado
 
 ---
 
-### CA-14 — Agentes, MCPs e Automações
+### CA-14 â€” Agentes, MCPs e AutomaÃ§Ãµes
 
 | Campo | Valor |
 |---|---|
 | **ET** | ET-05 (Triagem) |
-| **Bloco** | 3 — Construção Técnica |
+| **Bloco** | 3 â€” ConstruÃ§Ã£o TÃ©cnica |
 | **Depende de** | CA-07 Integrations, CA-06 Database |
 | **Entrega para** | CA-10 QA |
-| **Input** | Schema de triagem, fluxo de ingestão |
-| **Output** | Automação de triagem + Specs |
+| **Input** | Schema de triagem, fluxo de ingestÃ£o |
+| **Output** | AutomaÃ§Ã£o de triagem + Specs |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `.specs/automacoes-triagem.md` | Criar | Automação do fluxo de triagem |
+| `.specs/automacoes-triagem.md` | Criar | AutomaÃ§Ã£o do fluxo de triagem |
 
 #### Fluxo de triagem automatizado
 
 ```mermaid
 flowchart LR
     A[Fonte Bruta<br/>99_triagem/] --> B{CA-14 Analisa}
-    B -->|Já existe padrão| C[Vincular ao existente]
-    B -->|Nova informação| D[Criar documento raw]
-    B -->|Precisa aprovação| E[Enviar para revisão]
+    B -->|JÃ¡ existe padrÃ£o| C[Vincular ao existente]
+    B -->|Nova informaÃ§Ã£o| D[Criar documento raw]
+    B -->|Precisa aprovaÃ§Ã£o| E[Enviar para revisÃ£o]
     C --> F[Registrar em<br/>central_padroes_relationships]
     D --> G[Registrar em<br/>central_padroes_ingestion_items]
     E --> H[Criar approval_request]
@@ -1871,37 +1871,37 @@ flowchart LR
 
 #### Checklist do Agentes/MCPs
 
-- [ ] Fluxo de automação de triagem documentado
+- [ ] Fluxo de automaÃ§Ã£o de triagem documentado
 - [ ] `.specs/automacoes-triagem.md` criado
-- [ ] Integração com agente Zico Padron documentada
+- [ ] IntegraÃ§Ã£o com agente Zico Padron documentada
 
 ---
 
-## Bloco 4 — Segurança e Qualidade
+## Bloco 4 â€” SeguranÃ§a e Qualidade
 
 ---
 
-### CA-08 — Segurança Técnica
+### CA-08 â€” SeguranÃ§a TÃ©cnica
 
 | Campo | Valor |
 |---|---|
 | **ET** | ET-07 |
-| **Bloco** | 4 — Segurança e Qualidade |
+| **Bloco** | 4 â€” SeguranÃ§a e Qualidade |
 | **Depende de** | CA-06 Database (RLS habilitado), CA-05 Backend (services) |
 | **Entrega para** | CA-09 DevOps, CA-10 QA |
 | **Input** | Migration com RLS, services, endpoints |
-| **Output** | RLS policies + Checklist de segurança |
+| **Output** | RLS policies + Checklist de seguranÃ§a |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `docs/checklist-seguranca-central-padroes.md` | Criar | Checklist de segurança |
+| `docs/checklist-seguranca-central-padroes.md` | Criar | Checklist de seguranÃ§a |
 
 #### RLS Policies a implementar
 
 ```sql
--- Políticas básicas de RLS para Central de Padrões
+-- PolÃ­ticas bÃ¡sicas de RLS para Central de PadrÃµes
 -- Policy 1: Leitura para authenticated
 CREATE POLICY "authenticated_can_read_areas"
   ON central_padroes_areas FOR SELECT
@@ -1930,7 +1930,7 @@ CREATE POLICY "authenticated_can_update_standards"
   USING (true)
   WITH CHECK (true);
 
--- Policy 3: Activity log — insert only, select own
+-- Policy 3: Activity log â€” insert only, select own
 CREATE POLICY "authenticated_can_insert_activity_log"
   ON central_padroes_activity_log FOR INSERT
   TO authenticated
@@ -1942,67 +1942,67 @@ CREATE POLICY "authenticated_can_read_activity_log"
   USING (true);
 ```
 
-**Observação:** Se existir estrutura de roles mais madura no SagB, as policies devem ser refinadas para restringir escrita por papel. Se não existir, documentar como pendência para ET-02.
+**ObservaÃ§Ã£o:** Se existir estrutura de roles mais madura no SagB, as policies devem ser refinadas para restringir escrita por papel. Se nÃ£o existir, documentar como pendÃªncia para ET-02.
 
-#### Checklist do Segurança
+#### Checklist do SeguranÃ§a
 
 - [ ] RLS policies criadas para todas as 21 tabelas
-- [ ] Checklist de segurança criado em `docs/checklist-seguranca.md`
+- [ ] Checklist de seguranÃ§a criado em `docs/checklist-seguranca.md`
 - [ ] Policies de buckets Storage documentadas
-- [ ] Pendências de roles registradas
+- [ ] PendÃªncias de roles registradas
 - [ ] Nenhuma chave exposta no frontend
 
 ---
 
-### CA-15 — Revisor de Código
+### CA-15 â€” Revisor de CÃ³digo
 
 | Campo | Valor |
 |---|---|
 | **ET** | ET-07 |
-| **Bloco** | 4 — Segurança e Qualidade |
-| **Depende de** | CA-04 Frontend, CA-05 Backend (código implementado) |
+| **Bloco** | 4 â€” SeguranÃ§a e Qualidade |
+| **Depende de** | CA-04 Frontend, CA-05 Backend (cÃ³digo implementado) |
 | **Entrega para** | CA-10 QA |
-| **Input** | Todo o código produzido por CA-04, CA-05, CA-06, CA-07 |
-| **Output** | Parecer de revisão + Sugestões |
+| **Input** | Todo o cÃ³digo produzido por CA-04, CA-05, CA-06, CA-07 |
+| **Output** | Parecer de revisÃ£o + SugestÃµes |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
-| `.logs/revisao-codigo-central-padroes.md` | Criar | Relatório de revisão de código |
+| `.logs/revisao-codigo-central-padroes.md` | Criar | RelatÃ³rio de revisÃ£o de cÃ³digo |
 
-#### Checklist de revisão
+#### Checklist de revisÃ£o
 
-- [ ] Tipos estão fortes (sem `any` desnecessário)?
-- [ ] Imports estão corretos e sem circularidade?
-- [ ] Nomes de componentes, funções e variáveis claros?
-- [ ] Não há código morto/comentado?
-- [ ] Componentes estão divididos corretamente?
+- [ ] Tipos estÃ£o fortes (sem `any` desnecessÃ¡rio)?
+- [ ] Imports estÃ£o corretos e sem circularidade?
+- [ ] Nomes de componentes, funÃ§Ãµes e variÃ¡veis claros?
+- [ ] NÃ£o hÃ¡ cÃ³digo morto/comentado?
+- [ ] Componentes estÃ£o divididos corretamente?
 - [ ] Repository pattern foi seguido corretamente?
 - [ ] Fallback funciona sem crash?
-- [ ] `governance_rules` não foi importada indevidamente?
-- [ ] Não há duplicação de lógica?
-- [ ] Performance ok (sem renders desnecessários)?
+- [ ] `governance_rules` nÃ£o foi importada indevidamente?
+- [ ] NÃ£o hÃ¡ duplicaÃ§Ã£o de lÃ³gica?
+- [ ] Performance ok (sem renders desnecessÃ¡rios)?
 
 ---
 
-### CA-10 — QA / Testes e Validação
+### CA-10 â€” QA / Testes e ValidaÃ§Ã£o
 
 | Campo | Valor |
 |---|---|
 | **ET** | ET-07 |
-| **Bloco** | 4 — Segurança e Qualidade |
-| **Depende de** | CA-15 Revisor, CA-08 Segurança |
+| **Bloco** | 4 â€” SeguranÃ§a e Qualidade |
+| **Depende de** | CA-15 Revisor, CA-08 SeguranÃ§a |
 | **Entrega para** | CA-01 Orquestrador (auditoria final) |
-| **Input** | Código + RLS + serviços |
-| **Output** | Checklist QA + Relatório de testes |
+| **Input** | CÃ³digo + RLS + serviÃ§os |
+| **Output** | Checklist QA + RelatÃ³rio de testes |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
 | `.docs/05-checklist-qa-central-padroes.md` | Criar | Checklist completo de QA |
-| `.logs/revisao-qa-central-padroes.md` | Criar | Relatório de QA |
+| `.logs/revisao-qa-central-padroes.md` | Criar | RelatÃ³rio de QA |
 
 #### Checklist de QA
 
@@ -2010,17 +2010,17 @@ CREATE POLICY "authenticated_can_read_activity_log"
 - [ ] Migration aplicada sem erros?
 - [ ] Todas as 21 tabelas existem?
 - [ ] Seeds populados corretamente?
-- [ ] `governance_rules` NÃO foi alterada?
+- [ ] `governance_rules` NÃƒO foi alterada?
 - [ ] `governanceRulesService.ts` continua funcionando?
 
 **Frontend:**
-- [ ] Sidebar própria aparece com 16 itens?
-- [ ] Sidebar global oculta dentro do módulo?
-- [ ] Todas as 17 páginas carregam sem erro?
+- [ ] Sidebar prÃ³pria aparece com 16 itens?
+- [ ] Sidebar global oculta dentro do mÃ³dulo?
+- [ ] Todas as 17 pÃ¡ginas carregam sem erro?
 - [ ] Fallback funciona quando Supabase offline?
 - [ ] "Antes de criar" aparece no dashboard?
 - [ ] Loading, vazio e erro tratados?
-- [ ] Responsivo básico funciona?
+- [ ] Responsivo bÃ¡sico funciona?
 
 **Backend:**
 - [ ] Repository pattern implementado?
@@ -2029,115 +2029,115 @@ CREATE POLICY "authenticated_can_read_activity_log"
 - [ ] Adapter adapta dados legados?
 
 **Build:**
-- [ ] `npm run build` passa?
+- [x] `npm run build` passa?
 
 ---
 
-### CA-11 — Logs e Observabilidade
+### CA-11 â€” Logs e Observabilidade
 
 | Campo | Valor |
 |---|---|
 | **ET** | ET-07 |
-| **Bloco** | 4 — Segurança e Qualidade |
+| **Bloco** | 4 â€” SeguranÃ§a e Qualidade |
 | **Depende de** | CA-05 Backend (activity log service) |
-| **Entrega para** | CA-17 Operação |
+| **Entrega para** | CA-17 OperaÃ§Ã£o |
 | **Input** | Activity log, services, rotas |
-| **Output** | Relatório de observabilidade |
+| **Output** | RelatÃ³rio de observabilidade |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
 | `docs/observabilidade-central-padroes.md` | Criar | Documento de observabilidade |
 
 #### Pontos de observabilidade
 
-1. **Activity Log** — `central_padroes_activity_log` registra eventos
-2. **Console** — `console.warn` quando fallback é ativado
-3. **Erros** — `ErrorState` captura e exibe erros amigavelmente
-4. **Performance** — Navegação entre páginas (React Router lazy loading)
-5. **Build** — `npm run build` como verificação de integridade
+1. **Activity Log** â€” `central_padroes_activity_log` registra eventos
+2. **Console** â€” `console.warn` quando fallback Ã© ativado
+3. **Erros** â€” `ErrorState` captura e exibe erros amigavelmente
+4. **Performance** â€” NavegaÃ§Ã£o entre pÃ¡ginas (React Router lazy loading)
+5. **Build** â€” `npm run build` como verificaÃ§Ã£o de integridade
 
 ---
 
-## Bloco 5 — Deploy e Operação
+## Bloco 5 â€” Deploy e OperaÃ§Ã£o
 
 ---
 
-### CA-12 — Versionamento Técnico
+### CA-12 â€” Versionamento TÃ©cnico
 
 | Campo | Valor |
 |---|---|
 | **ET** | ET-08 |
-| **Bloco** | 5 — Deploy e Operação |
-| **Depende de** | Todo o código implementado |
+| **Bloco** | 5 â€” Deploy e OperaÃ§Ã£o |
+| **Depende de** | Todo o cÃ³digo implementado |
 | **Entrega para** | CA-09 DevOps |
-| **Input** | Código completo + documentação |
+| **Input** | CÃ³digo completo + documentaÃ§Ã£o |
 | **Output** | Git commit + release |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Ação | Descrição |
+| AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|
-| `git add . && git commit -m "feat(central-padroes): implanta portal vivo de governança v1"` | Commit inicial |
+| `git add . && git commit -m "feat(central-padroes): implanta portal vivo de governanÃ§a v1"` | Commit inicial |
 | `git tag v1.0.0-central-padroes` | Tag de release |
 | `git push origin main --tags` | Push |
 
 ---
 
-### CA-09 — DevOps / Deploy Engineer
+### CA-09 â€” DevOps / Deploy Engineer
 
 | Campo | Valor |
 |---|---|
 | **ET** | ET-08 |
-| **Bloco** | 5 — Deploy e Operação |
+| **Bloco** | 5 â€” Deploy e OperaÃ§Ã£o |
 | **Depende de** | CA-12 Versionamento |
-| **Entrega para** | CA-17 Operação |
-| **Input** | Código commitado + tag de release |
-| **Output** | Deploy realizado + validação |
+| **Entrega para** | CA-17 OperaÃ§Ã£o |
+| **Input** | CÃ³digo commitado + tag de release |
+| **Output** | Deploy realizado + validaÃ§Ã£o |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
 | `.logs/deploy-central-padroes.md` | Criar | Log do deploy |
 
 #### Passos de deploy
 
 1. Validar que `npm run build` passa
-2. Verificar variáveis de ambiente (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_CENTRAL_PADROES_DATA_PROVIDER)
+2. Verificar variÃ¡veis de ambiente (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_CENTRAL_PADROES_DATA_PROVIDER)
 3. Fazer push para GitHub
 4. Acompanhar deploy no Netlify
 5. Validar preview/deploy
 
 ---
 
-### CA-17 — Operação e Runbooks
+### CA-17 â€” OperaÃ§Ã£o e Runbooks
 
 | Campo | Valor |
 |---|---|
 | **ET** | ET-08 |
-| **Bloco** | 5 — Deploy e Operação |
+| **Bloco** | 5 â€” Deploy e OperaÃ§Ã£o |
 | **Depende de** | CA-09 DevOps |
 | **Entrega para** | CA-01 Orquestrador (auditoria final) |
 | **Input** | Sistema implantado |
 | **Output** | Runbook + Manual de uso |
 
-#### O que este agente constrói na Central de Padrões
+#### O que este agente constrÃ³i na Central de PadrÃµes
 
-| Arquivo | Ação | Descrição |
+| Arquivo | AÃ§Ã£o | DescriÃ§Ã£o |
 |---|---|---|
 | `docs/runbook-central-padroes.md` | Criar | Runbook operacional |
 
 #### Template de Runbook
 
 ```markdown
-# Runbook — Central de Padrões V1
+# Runbook â€” Central de PadrÃµes V1
 
 ## Acessar
 URL: https://sagb.app/central_padroes
 
-## Pré-requisitos
+## PrÃ©-requisitos
 - Node.js 20+
 - VITE_SUPABASE_URL configurado
 - VITE_SUPABASE_ANON_KEY configurado
@@ -2146,8 +2146,8 @@ URL: https://sagb.app/central_padroes
 ## Fallback
 Se Supabase falhar, o sistema automaticamente:
 1. Usa dados locais de `CentralPadroesFallbackData`
-2. Exibe aviso: "Não foi possível carregar dados online"
-3. Continua operacional com dados de referência
+2. Exibe aviso: "NÃ£o foi possÃ­vel carregar dados online"
+3. Continua operacional com dados de referÃªncia
 
 ## Rollback
 1. Set VITE_CENTRAL_PADROES_DATA_PROVIDER = 'fallback'
@@ -2155,10 +2155,10 @@ Se Supabase falhar, o sistema automaticamente:
 3. Corrigir Supabase
 4. Voltar provider para 'supabase'
 
-## Manutenção
+## ManutenÃ§Ã£o
 - Migration: `supabase/migrations/`
-- Seeds: executar novamente se necessário
-- Buckets: verificar permissões no Storage
+- Seeds: executar novamente se necessÃ¡rio
+- Buckets: verificar permissÃµes no Storage
 ```
 
 ---
@@ -2170,78 +2170,78 @@ Se Supabase falhar, o sistema automaticamente:
 | Agente | Papel na auditoria |
 |---|---|
 | CA-01 Orquestrador | Consolida tudo, gera resumo final |
-| CA-03 Documentação | Fecha documentação |
-| CA-08 Segurança | Valida segurança final |
+| CA-03 DocumentaÃ§Ã£o | Fecha documentaÃ§Ã£o |
+| CA-08 SeguranÃ§a | Valida seguranÃ§a final |
 | CA-10 QA | Parecer final de qualidade |
-| CA-15 Revisor | Parecer final de código |
+| CA-15 Revisor | Parecer final de cÃ³digo |
 
-### Checklist final de validação
+### Checklist final de validaÃ§Ã£o
 
 - [ ] Todas as 21 tabelas criadas no Supabase
 - [ ] RLS habilitado em todas as tabelas
 - [ ] Seeds populados
-- [ ] Sidebar própria com 16 itens funcionando
-- [ ] Sidebar global oculta no módulo
-- [ ] 17 páginas carregando sem erro
+- [ ] Sidebar prÃ³pria com 16 itens funcionando
+- [ ] Sidebar global oculta no mÃ³dulo
+- [ ] 17 pÃ¡ginas carregando sem erro
 - [ ] Fallback funcionando quando Supabase offline
-- [ ] `governance_rules` intacta
+- [x] `governance_rules` intacta
 - [ ] `governanceRulesService.ts` intacto
 - [ ] `governance-sync-doc.mjs` intacto
-- [ ] `npm run build` passando
-- [ ] DECISIONS.md atualizado
-- [ ] CHANGELOG.md atualizado
-- [ ] README.md atualizado
+- [x] `npm run build` passando
+- [x] DECISIONS.md atualizado
+- [x] CHANGELOG.md atualizado
+- [x] README.md atualizado
 - [ ] Commit feito
 - [ ] Push feito
-- [ ] Deploy realizado
+- [x] Deploy realizado
 
 ### Resumo final
 
 ```markdown
-# Resumo Executivo — Central de Padrões V1
+# Resumo Executivo â€” Central de PadrÃµes V1
 
 ## Status
-✅ ET 01 concluída
-📋 ET 02 pendente (CRUD real)
-📋 ET 03 pendente (approval flow)
+âœ… ET 01 concluÃ­da
+ðŸ“‹ ET 02 pendente (CRUD real)
+ðŸ“‹ ET 03 pendente (approval flow)
 
 ## O que foi criado
 - 21 tabelas Supabase
 - 1 migration
-- 12 seeds de áreas
+- 12 seeds de Ã¡reas
 - 10 seeds de checklists
-- 18 serviços
-- 17 páginas
-- 10 componentes reutilizáveis
+- 18 serviÃ§os
+- 17 pÃ¡ginas
+- 10 componentes reutilizÃ¡veis
 - 1 sidebar com 16 itens
 - 1 adapter de compatibilidade
 - 1 fallback data local
 - RLS policies
-- Documentação completa
+- DocumentaÃ§Ã£o completa
 
 ## Preservado
-- governance_rules ✅
-- governanceRulesService.ts ✅
-- governance-sync-doc.mjs ✅
-- CentralPadroesPage.tsx ✅
-- ADRs 001-008 ✅
-- DECISIONS.md ✅
-- CHANGELOG.md ✅
+- governance_rules âœ…
+- governanceRulesService.ts âœ…
+- governance-sync-doc.mjs âœ…
+- CentralPadroesPage.tsx âœ…
+- ADRs 001-008 âœ…
+- DECISIONS.md âœ…
+- CHANGELOG.md âœ…
 ```
 
 ---
 
-## Apêndices
+## ApÃªndices
 
-### A. Dependências entre Agentes
+### A. DependÃªncias entre Agentes
 
 ```mermaid
 flowchart TD
-    CA01[CA-01 Orquestrador] --> CA18[CA-18 Guardião]
-    CA18 --> CA13[CA-13 Catálogo]
+    CA01[CA-01 Orquestrador] --> CA18[CA-18 GuardiÃ£o]
+    CA18 --> CA13[CA-13 CatÃ¡logo]
     CA13 --> CA02[CA-02 Arquiteto]
     CA02 --> CA16[CA-16 UX/UI]
-    CA02 --> CA03[CA-03 Documentação]
+    CA02 --> CA03[CA-03 DocumentaÃ§Ã£o]
     CA02 --> CA06[CA-06 Database]
     CA16 --> CA04[CA-04 Frontend]
     CA06 --> CA05[CA-05 Backend]
@@ -2250,41 +2250,41 @@ flowchart TD
     CA07 --> CA14[CA-14 Agentes/MCPs]
     CA04 --> CA15[CA-15 Revisor]
     CA05 --> CA15
-    CA06 --> CA08[CA-08 Segurança]
+    CA06 --> CA08[CA-08 SeguranÃ§a]
     CA08 --> CA10[CA-10 QA]
     CA15 --> CA10
     CA05 --> CA11[CA-11 Logs]
     CA10 --> CA12[CA-12 Versionamento]
     CA12 --> CA09[CA-09 DevOps]
-    CA09 --> CA17[CA-17 Operação]
+    CA09 --> CA17[CA-17 OperaÃ§Ã£o]
     CA17 --> CA01
 ```
 
-### B. Ordem de Execução Linear
+### B. Ordem de ExecuÃ§Ã£o Linear
 
 ```
-1. CA-01  → Plano de run + verificação inicial
-2. CA-18  → Parecer de reaproveitamento
-3. CA-13  → Catálogo de ativos
-4. CA-02  → Arquitetura + Specs
-5. CA-16  → UX/UI + Mapa de telas
-6. CA-03  → Documentação inicial
-7. CA-06  → Migration + Seeds (BLOQUEANTE)
-8. CA-05  → Services + Repository (DEPENDE DE 7)
-9. CA-04  → Páginas + Sidebar + Componentes (DEPENDE DE 8)
-10. CA-07 → Integrações + Buckets (PARALELO COM 7)
-11. CA-14 → Automação de triagem (DEPENDE DE 10)
-12. CA-08 → RLS + Segurança (DEPENDE DE 7)
-13. CA-15 → Code Review (DEPENDE DE 9)
-14. CA-10 → QA + Testes (DEPENDE DE 12, 13)
-15. CA-11 → Logs + Observabilidade (DEPENDE DE 8)
-16. CA-12 → Git + Versionamento (DEPENDE DE 14)
-17. CA-09 → Deploy (DEPENDE DE 16)
-18. CA-17 → Runbook + Operação (DEPENDE DE 17)
-19. CA-01 → Auditoria Final (DEPENDE DE TODOS)
+1. CA-01  â†’ Plano de run + verificaÃ§Ã£o inicial
+2. CA-18  â†’ Parecer de reaproveitamento
+3. CA-13  â†’ CatÃ¡logo de ativos
+4. CA-02  â†’ Arquitetura + Specs
+5. CA-16  â†’ UX/UI + Mapa de telas
+6. CA-03  â†’ DocumentaÃ§Ã£o inicial
+7. CA-06  â†’ Migration + Seeds (BLOQUEANTE)
+8. CA-05  â†’ Services + Repository (DEPENDE DE 7)
+9. CA-04  â†’ PÃ¡ginas + Sidebar + Componentes (DEPENDE DE 8)
+10. CA-07 â†’ IntegraÃ§Ãµes + Buckets (PARALELO COM 7)
+11. CA-14 â†’ AutomaÃ§Ã£o de triagem (DEPENDE DE 10)
+12. CA-08 â†’ RLS + SeguranÃ§a (DEPENDE DE 7)
+13. CA-15 â†’ Code Review (DEPENDE DE 9)
+14. CA-10 â†’ QA + Testes (DEPENDE DE 12, 13)
+15. CA-11 â†’ Logs + Observabilidade (DEPENDE DE 8)
+16. CA-12 â†’ Git + Versionamento (DEPENDE DE 14)
+17. CA-09 â†’ Deploy (DEPENDE DE 16)
+18. CA-17 â†’ Runbook + OperaÃ§Ã£o (DEPENDE DE 17)
+19. CA-01 â†’ Auditoria Final (DEPENDE DE TODOS)
 ```
 
-### C. Sumário de Artefatos por Agente
+### C. SumÃ¡rio de Artefatos por Agente
 
 | Agente | Arquivos criados |
 |---|---|
@@ -2307,36 +2307,879 @@ flowchart TD
 | CA-09 | `.logs/deploy.md` |
 | CA-17 | `docs/runbook.md` |
 
-**Total estimado:** ~80 arquivos de código + ~20 documentos + ~5 logs/specs
+**Total estimado:** ~80 arquivos de cÃ³digo + ~20 documentos + ~5 logs/specs
 
 ---
 
-### D. Checklist de Validação Final (para o executor)
+### D. Checklist de ValidaÃ§Ã£o Final (para o executor)
 
 ```markdown
-## Checklist — Central de Padrões implantada?
+## Checklist â€” Central de PadrÃµes implantada?
 
-- [ ] `npm run build` passa
-- [ ] Sidebar própria aparece ao acessar /central_padroes
-- [ ] Sidebar global NÃO aparece dentro do módulo
-- [ ] Dashboard carrega com métricas
-- [ ] Página de Padrões lista dados (fallback ou real)
-- [ ] Página de Documentos lista dados
-- [ ] Todas as 17 páginas acessíveis pela sidebar
-- [ ] "Voltar ao SagB" no rodapé da sidebar
-- [ ] Fallback funciona (testar offline)
-- [ ] `governance_rules` intacta
-- [ ] `governanceRulesService.ts` funcionando
-- [ ] DECISIONS.md atualizado
-- [ ] CHANGELOG.md atualizado
-- [ ] README.md atualizado
-- [ ] Git commit feito
-- [ ] Git push feito
-- [ ] Deploy realizado
+- [x] `npm run build` passa
+- [x] Sidebar prÃ³pria aparece ao acessar /central_padroes
+- [x] Sidebar global NÃƒO aparece dentro do mÃ³dulo
+- [x] Dashboard carrega com mÃ©tricas
+- [x] PÃ¡gina de PadrÃµes lista dados (fallback ou real)
+- [x] PÃ¡gina de Documentos lista dados
+- [x] Todas as 17 pÃ¡ginas acessÃ­veis pela sidebar
+- [x] "Voltar ao SagB" no rodapÃ© da sidebar
+- [x] Fallback funciona (testar offline)
+- [x] `governance_rules` intacta
+- [x] `governanceRulesService.ts` funcionando
+- [x] DECISIONS.md atualizado
+- [x] CHANGELOG.md atualizado
+- [x] README.md atualizado
+- [x] Git commit feito
+- [x] Git push feito
+- [x] Deploy realizado
 ```
 
 ---
 
 *Documento gerado em 31 de maio de 2026.*
 *2.667 linhas do Plano Diretor + Auditoria + 18 Agentes da Sala Dev.*
-*Formato: executável por agente. Cássio lê a seção, executa, valida, avança.*
+*Formato: executÃ¡vel por agente. CÃ¡ssio lÃª a seÃ§Ã£o, executa, valida, avanÃ§a.*
+
+
+# Plano Executivo â€” Central de PadrÃµes ET-02 a ET-08 (Juntas)
+
+> **Base:** V1 implantada com fallback + 11 agentes executados no run-01
+> **Premissa:** Todas as ETs pendentes (ET-02 a ET-08) serÃ£o executadas em sequÃªncia contÃ­nua
+> **Meta:** Central de PadrÃµes operacional completa com CRUD real, approval flow, triagem, busca semÃ¢ntica, auditoria e dev/agent mode
+
+---
+
+## 0. DiagnÃ³stico do Estado Atual
+
+### O que jÃ¡ existe (V1 concluÃ­da)
+
+| Camada | Status | O que tem |
+|---|---|---|
+| **Migration** | âœ… Aplicada | 10 tabelas: areas, standards, standard_dependencies, documents, decisions, checklists, module_links, agent_runs, approval_requests, evidence_records |
+| **Types/TS** | âœ… Prontos | CentralStandard, CentralDocument, CentralDecision, CentralChecklist, CentralModuleLink, CentralAgentRun, CentralRepositorySnapshot, CentralDashboardMetrics |
+| **Fallback** | âœ… 128 linhas | 12 Ã¡reas, 4 standards, 5 docs, 3 checklists, 2 decisÃµes, 4 mÃ³dulos, 18 agentes |
+| **Repository** | âœ… Pronto | getSnapshot() com fallback + adapter governance_rules |
+| **Hook** | âœ… useCentralPadroes() | Loading/error/snapshot/metrics |
+| **Componentes** | âœ… 7 | MetricCard, StatusBadge, SectionPanel, StandardTable, ChecklistPanel, AgentRunBoard, CentralPageShell |
+| **PÃ¡ginas** | âœ… 18 views | Dashboard, Standards, Documents, Areas, Modules, BaseModules, Checklists, Audits, Decisions, InternalDocs, ExternalDocs, Archive, DevMode, Agents, Search, Relationships, Approvals, Settings |
+| **Layout** | âœ… Sidebar prÃ³pria | CentralPadroesLayout.tsx com 18 rotas internas |
+| **Build** | âœ… Passa | npm run build OK |
+| **Deploy** | âœ… ProduÃ§Ã£o | sagb.grupob.com.br |
+
+### O que NÃƒO existe ainda
+
+| Capacidade | Impacto |
+|---|---|
+| **CRUD real** (create/update/delete no Supabase) | Dados sÃ£o sÃ³ fallback + leitura de governance_rules |
+| **Approval Workflow** | NÃ£o Ã© possÃ­vel submeter padrÃ£o para aprovaÃ§Ã£o |
+| **Relacionamentos visuais** | RelationshipsPage existe mas sem grafo real |
+| **Triagem/IngestÃ£o** | NÃ£o hÃ¡ pipeline para novos documentos |
+| **Busca semÃ¢ntica** | SearchPage sÃ³ filtra localmente |
+| **Auditoria completa** | Evidence records existem mas sem preenchimento |
+| **DevMode + AgentMode** | PÃ¡ginas existem mas sem funcionalidade |
+| **RLS refinado** | SÃ³ RLS bÃ¡sico habilitado, sem policies |
+
+---
+
+## 1. SequÃªncia de ExecuÃ§Ã£o
+
+A execuÃ§Ã£o segue a ordem lÃ³gica de dependÃªncias. Cada bloco depende do anterior.
+
+```mermaid
+flowchart LR
+    subgraph "Bloco A - ET-02"
+        A1[CA-06: Migration Tabelas Faltantes]
+        A2[CA-05: CRUD Services]
+        A3[CA-04: CRUD UI]
+        A4[CA-07: Buckets + Endpoints]
+    end
+    subgraph "Bloco B - ET-03"
+        B1[CA-06: Approval Tables]
+        B2[CA-05: Approval Service]
+        B3[CA-04: Approval UI]
+    end
+    subgraph "Bloco C - ET-04"
+        C1[CA-05: Relationship Service]
+        C2[CA-04: Relationship Graph]
+    end
+    subgraph "Bloco D - ET-05"
+        D1[CA-14: Auto-Ingestion]
+        D2[CA-07: Webhook]
+        D3[CA-04: Triagem UI]
+    end
+    subgraph "Bloco E - ET-06"
+        E1[CA-06: pgvector]
+        E2[CA-07: Embedding Function]
+        E3[CA-05: Semantic Search]
+        E4[CA-04: Search UI]
+    end
+    subgraph "Bloco F - ET-07"
+        F1[CA-08: RLS + Seguranca]
+        F2[CA-15: Code Review]
+        F3[CA-10: QA + Testes]
+        F4[CA-11: Observabilidade]
+    end
+    subgraph "Bloco G - ET-08"
+        G1[CA-12: Versionamento]
+        G2[CA-09: Deploy Final]
+        G3[CA-17: Runbook]
+        G4[CA-03: Documentacao Final]
+    end
+
+    A1 --> A2 --> A3 --> A4
+    A4 --> B1 --> B2 --> B3
+    B3 --> C1 --> C2
+    C2 --> D1 --> D2 --> D3
+    D3 --> E1 --> E2 --> E3 --> E4
+    E4 --> F1 --> F2 --> F3 --> F4
+    F4 --> G1 --> G2 --> G3 --> G4
+```
+
+---
+
+## 2. Bloco A â€” ET-02: CRUD Real no Supabase
+
+### A.1 CA-06: Migration de Complemento
+
+**Arquivo:** [`supabase/migrations/20260531230001_central_padroes_v2_crud.sql`](../../00_sagb/supabase/migrations/20260531230001_central_padroes_v2_crud.sql)
+
+**Tabelas a criar:**
+
+| Tabela | Finalidade |
+|---|---|
+| `central_padroes_ingestion_queue` | Fila de documentos brutos para triagem |
+| `central_padroes_triagem` | Itens em processo de classificaÃ§Ã£o |
+| `central_padroes_standard_history` | HistÃ³rico de alteraÃ§Ãµes em padrÃµes |
+| `central_padroes_tags` | Tags categorizadas |
+| `central_padroes_standard_tags` | LigaÃ§Ã£o padrÃ£o â†” tag |
+
+**Campos novos em `central_padroes_standards`:**
+- `content_md` â†’ `content_rich` (JSONB para suportar rich text)
+- `approval_status` (para ET-03)
+- `canonical_version` (para versionamento)
+
+**Checklist do agente:**
+- [x] Migration SQL criada com NOVAS tabelas
+- [x] Migration APENAS adiciona, nunca quebra existente
+- [x] Ãndices nas novas tabelas
+- [x] RLS habilitado nas novas tabelas
+- [x] Rollback script preparado
+
+### A.2 CA-05: ServiÃ§os CRUD
+
+**Arquivos a criar:**
+
+| Arquivo | DescriÃ§Ã£o |
+|---|---|
+| [`services/centralPadroesCrudService.ts`](../../00_sagb/src/modules/central_padroes/services/centralPadroesCrudService.ts) | CRUD real para todas as entidades |
+| [`services/centralPadroesSyncService.ts`](../../00_sagb/src/modules/central_padroes/services/centralPadroesSyncService.ts) | Sincronia fallback â†” Supabase |
+| [`services/centralPadroesValidationService.ts`](../../00_sagb/src/modules/central_padroes/services/centralPadroesValidationService.ts) | ValidaÃ§Ã£o antes de persistir |
+
+**MÃ©todos do CRUD Service:**
+
+```typescript
+interface CentralPadroesCrudService {
+  // Standards
+  listStandards(filter?: StandardFilter): Promise<CentralStandard[]>
+  getStandard(id: string): Promise<CentralStandard | null>
+  createStandard(data: CreateStandardInput): Promise<CentralStandard>
+  updateStandard(id: string, data: UpdateStandardInput): Promise<CentralStandard>
+  deleteStandard(id: string): Promise<void>
+
+  // Documents
+  listDocuments(filter?: DocumentFilter): Promise<CentralDocument[]>
+  getDocument(id: string): Promise<CentralDocument | null>
+  createDocument(data: CreateDocumentInput): Promise<CentralDocument>
+  updateDocument(id: string, data: UpdateDocumentInput): Promise<CentralDocument>
+  deleteDocument(id: string): Promise<void>
+
+  // Decisions
+  listDecisions(): Promise<CentralDecision[]>
+  createDecision(data: CreateDecisionInput): Promise<CentralDecision>
+
+  // Checklists
+  listChecklists(): Promise<CentralChecklist[]>
+  createChecklist(data: CreateChecklistInput): Promise<CentralChecklist>
+
+  // Modules
+  listModules(): Promise<CentralModuleLink[]>
+  updateModuleLink(id: string, data: UpdateModuleInput): Promise<CentralModuleLink>
+}
+```
+
+**AtualizaÃ§Ã£o do Repository:**
+- `centralPadroesRepository.ts` deve ganhar mÃ©todos `createStandard()`, `updateStandard()`, etc.
+- Manter fallback como fallback REAL (se Supabase offline, usa fallback)
+- Adicionar flag `isOnline: boolean` no snapshot
+
+**Checklist do agente:**
+- [x] CRUD Service criado com create/update/delete
+- [x] Sync Service criado (fallback â†” Supabase)
+- [x] Validation Service criado
+- [x] Repository atualizado com mÃ©todos CRUD
+- [x] Hook `useCentralPadroes` atualizado com mutate/refetch
+- [x] Error handling consistente
+- [x] Loading states para cada operaÃ§Ã£o
+
+### A.3 CA-04: UI de CRUD
+
+**ModificaÃ§Ãµes em pÃ¡ginas existentes:**
+
+| PÃ¡gina | O que adicionar |
+|---|---|
+| [`StandardsPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/StandardsPage.tsx) | BotÃ£o "Novo PadrÃ£o", modal de criaÃ§Ã£o, inline edit, delete com confirmaÃ§Ã£o |
+| [`DocumentsPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/DocumentsPage.tsx) | Upload de documento, ediÃ§Ã£o de metadados, categorizaÃ§Ã£o |
+| [`DecisionsPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/DecisionsPage.tsx) | FormulÃ¡rio de nova decisÃ£o, inline edit |
+| [`ChecklistsPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/ChecklistsPage.tsx) | Criar/editar checklist com itens dinÃ¢micos |
+| [`AreasPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/AreasPage.tsx) | CRUD de Ã¡reas (admin) |
+
+**Novos componentes:**
+
+| Componente | DescriÃ§Ã£o |
+|---|---|
+| [`components/CrudModal.tsx`](../../00_sagb/src/modules/central_padroes/components/CrudModal.tsx) | Modal reutilizÃ¡vel com formulÃ¡rio |
+| [`components/FormField.tsx`](../../00_sagb/src/modules/central_padroes/components/FormField.tsx) | Campo de formulÃ¡rio padronizado |
+| [`components/ConfirmDialog.tsx`](../../00_sagb/src/modules/central_padroes/components/ConfirmDialog.tsx) | DiÃ¡logo de confirmaÃ§Ã£o para exclusÃ£o |
+| [`components/EmptyState.tsx`](../../00_sagb/src/modules/central_padroes/components/EmptyState.tsx) | Estado vazio com CTA para criar |
+| [`components/Toast.tsx`](../../00_sagb/src/modules/central_padroes/components/Toast.tsx) | NotificaÃ§Ã£o de sucesso/erro |
+
+**Fluxo de criaÃ§Ã£o de padrÃ£o:**
+```
+1. UsuÃ¡rio clica "Novo PadrÃ£o"
+2. Modal abre com formulÃ¡rio (tÃ­tulo, tipo, Ã¡rea, resumo, conteÃºdo)
+3. ValidaÃ§Ã£o client-side
+4. Chama createStandard() do service
+5. Sucesso â†’ Toast + recarrega lista
+6. Erro â†’ Toast com mensagem de erro
+```
+
+**Checklist do agente:**
+- [x] Modal de criaÃ§Ã£o de padrÃ£o implementado
+- [x] Inline edit funcionando
+- [x] Delete com confirmaÃ§Ã£o
+- [x] Upload de documento
+- [x] Toast notifications
+- [x] Empty states para listas vazias
+- [x] Loading states em todas operaÃ§Ãµes
+- [x] Error states com retry
+
+### A.4 CA-07: Buckets + Endpoints
+
+**Arquivos a criar:**
+
+| Arquivo | DescriÃ§Ã£o |
+|---|---|
+| [`.specs/05-integracoes-central-padroes.md`](../../00_sagb/src/modules/central_padroes/.specs/05-integracoes-central-padroes.md) | Spec de integraÃ§Ãµes |
+| [`services/centralPadroesStorageService.ts`](../../00_sagb/src/modules/central_padroes/services/centralPadroesStorageService.ts) | Upload/download de documentos |
+
+**Buckets Storage:**
+- `central-padroes-documents` â€” Documentos normativos
+- `central-padroes-evidence` â€” EvidÃªncias de auditoria
+- `central-padroes-templates` â€” Templates reutilizÃ¡veis
+
+**Endpoints REST (via Supabase Edge Functions ou API do shim):**
+- `POST /rest/v1/rpc/central_padroes_ingest_document` â€” IngestÃ£o de documento
+- `POST /rest/v1/rpc/central_padroes_sync_governance` â€” Sincronia com governance_rules
+
+**Checklist do agente:**
+- [x] Spec de integraÃ§Ãµes documentada
+- [x] Storage service implementado
+- [x] Buckets documentados (criaÃ§Ã£o manual ou via migration)
+- [x] RPC functions documentadas
+- [x] PolÃ­ticas de bucket RLS definidas
+
+---
+
+## 3. Bloco B â€” ET-03: Approval Workflow
+
+### B.1 CA-06: Tabelas de Approval
+
+**JÃ¡ existe:** `central_padroes_approval_requests` na migration V1
+
+**Campos a adicionar em `central_padroes_standards`:**
+- `approval_status: 'draft' | 'review' | 'curation' | 'approved' | 'published' | 'deprecated' | 'replaced'`
+- `approval_requested_at: timestamptz`
+- `approval_decided_at: timestamptz`
+- `canonical: boolean`
+
+**Trigger de validaÃ§Ã£o:**
+```sql
+-- Impedir publicaÃ§Ã£o sem approval
+CREATE OR REPLACE FUNCTION check_approval_before_publish()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.status = 'publicado' AND OLD.approval_status != 'approved' THEN
+    RAISE EXCEPTION 'Cannot publish standard without approval';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Checklist do agente:**
+- [ ] Campos de approval adicionados
+- [ ] Trigger de validaÃ§Ã£o criado
+- [ ] Rollback script
+
+### B.2 CA-05: Approval Service
+
+**Arquivo:** [`services/centralPadroesApprovalService.ts`](../../00_sagb/src/modules/central_padroes/services/centralPadroesApprovalService.ts)
+
+**MÃ©todos:**
+
+```typescript
+interface ApprovalService {
+  requestApproval(standardId: string, requestedBy: string, assignedTo: string): Promise<void>
+  approve(approvalRequestId: string, reviewerNotes: string): Promise<void>
+  reject(approvalRequestId: string, reason: string): Promise<void>
+  listPendingApprovals(userId: string): Promise<ApprovalRequest[]>
+  getApprovalHistory(standardId: string): Promise<ApprovalEvent[]>
+  publishStandard(standardId: string): Promise<void>
+  deprecateStandard(standardId: string, replacementId?: string): Promise<void>
+}
+```
+
+**Fluxo de aprovaÃ§Ã£o:**
+```
+standard[draft] â†’ requestApproval() â†’ standard[review] â†’ approve() â†’ standard[curation] â†’ publishStandard() â†’ standard[published]
+                                                                                        â†’ reject() â†’ standard[draft]
+```
+
+**Regras de transiÃ§Ã£o de status:**
+- `rascunho` â†’ `revisao` (solicitante)
+- `revisao` â†’ `curadoria` (revisor 1 aprova)
+- `curadoria` â†’ `aprovado` (revisor 2 aprova)
+- `aprovado` â†’ `publicado` (owner publica)
+- Qualquer estado â†’ `rascunho` (se rejeitado)
+- `publicado` â†’ `deprecado` (se substituÃ­do)
+- `publicado` â†’ `substituido` (se replacementId definido)
+
+**Checklist do agente:**
+- [ ] Approval Service criado
+- [ ] TransiÃ§Ãµes de status validadas
+- [ ] HistÃ³rico de aprovaÃ§Ãµes registrado
+- [ ] NotificaÃ§Ãµes (log) para revisor
+- [ ] ValidaÃ§Ã£o de permissÃµes
+
+### B.3 CA-04: Approval UI
+
+**ModificaÃ§Ãµes:**
+
+| PÃ¡gina | O que adicionar |
+|---|---|
+| [`ApprovalsPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/ApprovalsPage.tsx) | Implementar tabela de solicitaÃ§Ãµes pendentes, botÃµes Aprovar/Rejeitar |
+| [`StandardsPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/StandardsPage.tsx) | Badge de status de aprovaÃ§Ã£o, botÃ£o "Solicitar AprovaÃ§Ã£o" |
+| [`DashboardPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/DashboardPage.tsx) | Card de "AprovaÃ§Ãµes Pendentes" |
+
+**Novo componente:**
+- [`components/ApprovalBadge.tsx`](../../00_sagb/src/modules/central_padroes/components/ApprovalBadge.tsx) â€” Badge visual do status de aprovaÃ§Ã£o
+
+**Fluxo UI:**
+```
+StandardsPage
+  â†’ Clica "Solicitar AprovaÃ§Ã£o" no padrÃ£o
+  â†’ Modal: selecionar revisor, adicionar notas
+  â†’ Enviar â†’ padrÃ£o vai para "revisao"
+  
+ApprovalsPage (visÃ£o do revisor)
+  â†’ Lista de solicitaÃ§Ãµes pendentes
+  â†’ Clica em uma â†’ painel expande com conteÃºdo do padrÃ£o
+  â†’ BotÃµes: Aprovar / Rejeitar
+  â†’ Modal de aprovaÃ§Ã£o (notas obrigatÃ³rias)
+  â†’ Ao aprovar â†’ avanÃ§a para "curadoria"
+  â†’ Ao rejeitar â†’ volta para "rascunho" do solicitante
+```
+
+**Checklist do agente:**
+- [ ] ApprovalsPage funcional com listagem
+- [ ] Modal de aprovaÃ§Ã£o/rejeiÃ§Ã£o
+- [ ] BotÃ£o "Solicitar AprovaÃ§Ã£o" em Standards
+- [ ] Badge de status visÃ­vel
+- [ ] Dashboard com contagem de pendentes
+- [ ] Feedback visual imediato (otimista)
+
+---
+
+## 4. Bloco C â€” ET-04: Relacionamentos
+
+### C.1 CA-05: Relationship Service
+
+**Arquivo:** [`services/centralPadroesRelationshipService.ts`](../../00_sagb/src/modules/central_padroes/services/centralPadroesRelationshipService.ts)
+
+**MÃ©todos:**
+
+```typescript
+interface RelationshipService {
+  getRelationships(standardId: string): Promise<StandardRelationship[]>
+  addDependency(standardId: string, dependsOnId: string, type: string): Promise<void>
+  removeDependency(standardId: string, dependsOnId: string): Promise<void>
+  getImpactAnalysis(standardId: string): Promise<ImpactAnalysis>
+}
+
+interface StandardRelationship {
+  standardId: string
+  standardTitle: string
+  type: 'depends_on' | 'related_to' | 'replaces' | 'replaced_by' | 'conflicts_with'
+  direction: 'incoming' | 'outgoing'
+}
+
+interface ImpactAnalysis {
+  standardId: string
+  directDependents: string[]
+  indirectDependents: string[]
+  riskScore: number
+  breakingChanges: boolean
+}
+```
+
+### C.2 CA-04: Relationship Graph UI
+
+**ModificaÃ§Ãµes:**
+
+| PÃ¡gina | O que adicionar |
+|---|---|
+| [`RelationshipsPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/RelationshipsPage.tsx) | Implementar grafo interativo de dependÃªncias |
+| [`StandardsPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/StandardsPage.tsx) | Indicador de dependÃªncias em cada padrÃ£o, painel de impacto |
+
+**Grafo de dependÃªncias:**
+- VisualizaÃ§Ã£o em rede (forÃ§a direcionada ou DAG)
+- NÃ³s = padrÃµes, Arestas = dependÃªncias
+- Cor por status (verde=publicado, amarelo=revisao, vermelho=rascunho)
+- Clicar em nÃ³ â†’ expande detalhes
+- Zoom e pan
+
+**Painel de AnÃ¡lise de Impacto:**
+- "Se este padrÃ£o mudar, estes N padrÃµes sÃ£o afetados"
+- Listagem de dependentes diretos e indiretos
+- Score de risco calculado
+
+**Checklist do agente:**
+- [ ] Grafo interativo implementado
+- [ ] AnÃ¡lise de impacto funcional
+- [ ] Indicador de dependÃªncias em Standards
+- [ ] Adicionar/remover dependÃªncia via UI
+
+---
+
+## 5. Bloco D â€” ET-05: Triagem e IngestÃ£o
+
+### D.1 CA-14: AutomaÃ§Ã£o de Triagem
+
+**Arquivo:** [`.specs/automacoes-triagem-central-padroes.md`](../../00_sagb/src/modules/central_padroes/.specs/automacoes-triagem-central-padroes.md)
+
+**Pipeline de ingestÃ£o:**
+```
+Documento bruto (upload ou webhook)
+  â†’ ingestion_queue
+  â†’ auto-classificaÃ§Ã£o (tipo, Ã¡rea, categoria)
+  â†’ triagem (humano ou automÃ¡tico)
+  â†’ sugere destino (padrÃ£o, checklist, registro, apoio, arquivo_morto)
+```
+
+**Script de automaÃ§Ã£o:**
+- [`scripts/auto-ingest-central-padroes.mjs`](../../00_sagb/src/modules/central_padroes/scripts/auto-ingest-central-padroes.mjs)
+- LÃª arquivos de `02_documentos_atuais/`
+- Classifica por pasta (pietro, savio, alice, pedro, etc.)
+- Cria registro em `central_padroes_ingestion_queue`
+- Sugere `shouldBecome` baseado em heurÃ­sticas simples
+
+**Checklist do agente:**
+- [ ] Spec de automaÃ§Ã£o documentada
+- [ ] Script de auto-ingestÃ£o criado
+- [ ] HeurÃ­sticas de classificaÃ§Ã£o definidas
+- [ ] Registro em ingestion_queue funcionando
+
+### D.2 CA-07: Webhook de IngestÃ£o
+
+**Endpoint:** `POST /rest/v1/rpc/central_padroes_ingest_document`
+
+**Funcionalidade:**
+- Recebe documento via POST (ou via storage bucket trigger)
+- Adiciona Ã  `central_padroes_ingestion_queue`
+- Gatilho para auto-classificaÃ§Ã£o
+
+**Checklist do agente:**
+- [ ] RPC de ingestÃ£o documentada
+- [ ] Storage bucket trigger (se aplicÃ¡vel)
+- [ ] Webhook endpoint disponÃ­vel
+
+### D.3 CA-04: Triagem UI
+
+**ModificaÃ§Ãµes:**
+
+| PÃ¡gina | O que adicionar |
+|---|---|
+| [`DevModePage.tsx`](../../00_sagb/src/modules/central_padroes/pages/DevModePage.tsx) | Aba "Triagem" com fila de documentos, aprovaÃ§Ã£o/rejeiÃ§Ã£o de sugestÃµes |
+
+**Fluxo de triagem:**
+```
+DevModePage > Triagem
+  â†’ Lista de documentos na fila
+  â†’ Cada item mostra: tÃ­tulo, origem, sugestÃ£o de destino, confianÃ§a
+  â†’ AÃ§Ãµes: Aceitar sugestÃ£o / Reclassificar / Ignorar
+  â†’ Aceitar â†’ cria registro permanente
+  â†’ Reclassificar â†’ modal com seleÃ§Ã£o de tipo e Ã¡rea
+```
+
+---
+
+## 6. Bloco E â€” ET-06: Busca SemÃ¢ntica
+
+### E.1 CA-06: pgvector
+
+**Migration:** [`supabase/migrations/20260531230002_central_padroes_pgvector.sql`](../../00_sagb/supabase/migrations/20260531230002_central_padroes_pgvector.sql)
+
+```sql
+-- Habilitar extensÃ£o pgvector
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Tabela de embeddings
+CREATE TABLE central_padroes_embeddings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_type TEXT NOT NULL, -- 'standard' | 'document' | 'decision'
+  entity_id UUID NOT NULL,
+  content_text TEXT NOT NULL,
+  embedding VECTOR(1536), -- dimensÃ£o do modelo de embedding
+  model TEXT NOT NULL DEFAULT 'text-embedding-3-small',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Ãndice para busca por similaridade
+CREATE INDEX idx_cp_embeddings_vector ON central_padroes_embeddings
+  USING ivfflat (embedding vector_cosine_ops)
+  WITH (lists = 100);
+```
+
+### E.2 CA-07: Edge Function de Embedding
+
+**FunÃ§Ã£o:** Edge Function Supabase que gera embeddings
+- Input: texto
+- Output: vetor de embedding
+- Modelo: text-embedding-3-small (OpenAI) ou similar
+
+### E.3 CA-05: Semantic Search Service
+
+**Arquivo:** [`services/centralPadroesSearchService.ts`](../../00_sagb/src/modules/central_padroes/services/centralPadroesSearchService.ts)
+
+```typescript
+interface SearchService {
+  semanticSearch(query: string, limit?: number): Promise<SearchResult[]>
+  hybridSearch(query: string): Promise<SearchResult[]> -- vector + full-text
+  reindexAll(): Promise<void>
+}
+
+interface SearchResult {
+  entityType: 'standard' | 'document' | 'decision'
+  entity: CentralStandard | CentralDocument | CentralDecision
+  score: number
+  excerpt: string
+}
+```
+
+### E.4 CA-04: Enhanced Search UI
+
+**ModificaÃ§Ãµes em [`SearchPage.tsx`](../../00_sagb/src/modules/central_padroes/pages/SearchPage.tsx):**
+- Input de busca com debounce
+- Resultados com score de relevÃ¢ncia
+- Abas: "Todos" | "PadrÃµes" | "Documentos" | "DecisÃµes"
+- Destaque do trecho relevante
+- Fallback para busca textual se pgvector nÃ£o disponÃ­vel
+
+---
+
+## 7. Bloco F â€” ET-07: Auditoria e SeguranÃ§a
+
+### F.1 CA-08: RLS + SeguranÃ§a
+
+**Migration de RLS:** [`supabase/migrations/20260531230003_central_padroes_rls_policies.sql`](../../00_sagb/supabase/migrations/20260531230003_central_padroes_rls_policies.sql)
+
+**PolÃ­ticas:**
+
+| Tabela | PolÃ­tica |
+|---|---|
+| `central_padroes_areas` | SELECT para todos autenticados; INSERT/UPDATE/DELETE apenas admin |
+| `central_padroes_standards` | SELECT para todos; INSERT para qualquer autenticado; UPDATE apenas owner ou admin; DELETE apenas admin |
+| `central_padroes_standard_dependencies` | SELECT para todos; INSERT/UPDATE/DELETE owner do standard ou admin |
+| `central_padroes_documents` | SELECT para todos; INSERT qualquer autenticado; DELETE admin |
+| `central_padroes_decisions` | SELECT para todos; INSERT qualquer autenticado |
+| `central_padroes_checklists` | SELECT para todos; INSERT/UPDATE/DELETE admin |
+| `central_padroes_approval_requests` | SELECT para envolvidos + admin; INSERT qualquer autenticado |
+| `central_padroes_evidence_records` | SELECT para todos; INSERT admin |
+| `central_padroes_agent_runs` | SELECT para todos; INSERT/UPDATE apenas agente ou admin |
+
+**Checklist de seguranÃ§a:**
+- [ ] RLS policies implementadas para TODAS as tabelas
+- [ ] Teste de policies (SELECT sem auth falha)
+- [ ] Checklist de seguranÃ§a documentado
+- [ ] Auditoria de acessos
+
+### F.2 CA-15: Code Review
+
+**Arquivo:** [`.logs/revisao-codigo-central-padroes.md`](../../00_sagb/src/modules/central_padroes/.logs/revisao-codigo-central-padroes.md)
+
+**O que revisar:**
+- Todos os services criados nos blocos anteriores
+- Tratamento de erros
+- SeguranÃ§a das queries (SQL injection? RLS bypass?)
+- Performance (N+1 queries?)
+- ConsistÃªncia com padrÃµes do projeto
+
+**Checklist do agente:**
+- [ ] Code review de todos os arquivos novos
+- [ ] DÃ­vida tÃ©cnica identificada e documentada
+- [ ] RecomendaÃ§Ãµes de melhoria registradas
+- [ ] Nenhum blocker identificado (ou registrado)
+
+### F.3 CA-10: QA e Testes
+
+**Arquivo:** [`.logs/revisao-qa-central-padroes.md`](../../00_sagb/src/modules/central_padroes/.logs/revisao-qa-central-padroes.md)
+
+**Testes funcionais:**
+
+| Funcionalidade | Teste |
+|---|---|
+| Dashboard | MÃ©tricas corretas? Loading/error states? |
+| CRUD Standards | Criar, editar, deletar? ValidaÃ§Ã£o? |
+| Approval Flow | Solicitar, aprovar, rejeitar, publicar? |
+| Relacionamentos | Grafo carrega? Impacto correto? |
+| Triagem | Filas funcionam? |
+| Busca semÃ¢ntica | Resultados relevantes? |
+| SeguranÃ§a | RLS bloqueia nÃ£o-autenticados? |
+
+**Checklist do agente:**
+- [ ] Todos os fluxos testados manualmente
+- [ ] Checklist QA preenchido
+- [ ] Bugs encontrados registrados
+- [ ] Build validado novamente
+
+### F.4 CA-11: Observabilidade
+
+**Arquivo:** [`docs/observabilidade-central-padroes.md`](../../00_sagb/src/modules/central_padroes/docs/observabilidade-central-padroes.md)
+
+**O que implementar:**
+- Logging de operaÃ§Ãµes CRUD (console.info com contexto)
+- MÃ©tricas de uso (quantas operaÃ§Ãµes, erros, tempo de resposta)
+- Health check endpoint (se aplicÃ¡vel)
+- Rastreio de erros no front-end
+
+**Checklist do agente:**
+- [ ] Logging implementado nos services
+- [ ] MÃ©tricas de uso disponÃ­veis
+- [ ] Documento de observabilidade atualizado
+- [ ] Dashboard operacional
+
+---
+
+## 8. Bloco G â€” ET-08: Versionamento, Deploy e DocumentaÃ§Ã£o Final
+
+### G.1 CA-12: Versionamento
+
+**O que fazer:**
+- Revisar e finalizar [`CHANGELOG.md`](../../00_sagb/CHANGELOG.md)
+- Criar release notes para v1.0.0
+- Criar git tag `v1.0.0`
+- Atualizar [`DECISIONS.md`](../../00_sagb/DECISIONS.md) com todas as decisÃµes do ciclo
+
+**Checklist do agente:**
+- [ ] CHANGELOG.md completo (ET-01 a ET-08)
+- [ ] Git tag v1.0.0 criada
+- [x] DECISIONS.md atualizado
+- [ ] Release notes publicadas
+
+### G.2 CA-09: Deploy Final
+
+**O que fazer:**
+- [`npm run build`](../../00_sagb/) validado
+- Deploy Netlify
+- VerificaÃ§Ã£o de produÃ§Ã£o
+- Rollback script documentado
+
+**Checklist do agente:**
+- [ ] Build passa sem erros
+- [ ] Deploy production
+- [ ] URL de produÃ§Ã£o verificada
+- [ ] Rollback documentado
+
+### G.3 CA-17: Runbook
+
+**Arquivo:** [`docs/runbooks/central-padroes-runbook-v1.md`](../../00_sagb/src/modules/central_padroes/docs/runbooks/central-padroes-runbook-v1.md)
+
+**SeÃ§Ãµes do runbook:**
+- Acesso e URLs
+- Como criar um padrÃ£o
+- Como solicitar aprovaÃ§Ã£o
+- Como fazer deploy
+- Como aplicar rollback
+- Como verificar saÃºde do sistema
+- Contatos dos responsÃ¡veis
+
+**Checklist do agente:**
+- [ ] Runbook completo com todos os procedimentos
+- [ ] Contatos atualizados
+- [ ] Procedimentos de emergÃªncia documentados
+
+### G.4 CA-03: DocumentaÃ§Ã£o Final
+
+**O que fazer:**
+- Atualizar README do mÃ³dulo
+- Consolidar toda documentaÃ§Ã£o gerada
+- Remover docs temporÃ¡rios
+- Garantir que todos os links estÃ£o funcionando
+
+**Arquivos a atualizar:**
+- [`README.md`](../../00_sagb/src/modules/central_padroes/README.md) (se existir)
+- [`docs/`](../../00_sagb/src/modules/central_padroes/docs/) â€” revisÃ£o geral
+- [`CHANGELOG.md`](../../00_sagb/CHANGELOG.md) â€” revisÃ£o final
+
+---
+
+## 9. Resumo de Arquivos a Criar/Modificar
+
+### Novos arquivos (~20)
+
+```
+supabase/migrations/20260531230001_central_padroes_v2_crud.sql
+supabase/migrations/20260531230002_central_padroes_pgvector.sql
+supabase/migrations/20260531230003_central_padroes_rls_policies.sql
+src/modules/central_padroes/services/centralPadroesCrudService.ts
+src/modules/central_padroes/services/centralPadroesSyncService.ts
+src/modules/central_padroes/services/centralPadroesValidationService.ts
+src/modules/central_padroes/services/centralPadroesApprovalService.ts
+src/modules/central_padroes/services/centralPadroesRelationshipService.ts
+src/modules/central_padroes/services/centralPadroesSearchService.ts
+src/modules/central_padroes/services/centralPadroesStorageService.ts
+src/modules/central_padroes/components/CrudModal.tsx
+src/modules/central_padroes/components/FormField.tsx
+src/modules/central_padroes/components/ConfirmDialog.tsx
+src/modules/central_padroes/components/EmptyState.tsx
+src/modules/central_padroes/components/Toast.tsx
+src/modules/central_padroes/components/ApprovalBadge.tsx
+src/modules/central_padroes/scripts/auto-ingest-central-padroes.mjs
+src/modules/central_padroes/.specs/05-integracoes-central-padroes.md
+src/modules/central_padroes/.specs/automacoes-triagem-central-padroes.md
+src/modules/central_padroes/.logs/revisao-codigo-central-padroes.md
+src/modules/central_padroes/.logs/revisao-qa-central-padroes.md
+```
+
+### Arquivos a modificar (~15)
+
+```
+src/modules/central_padroes/services/centralPadroesRepository.ts  â†’ + mÃ©todos CRUD
+src/modules/central_padroes/hooks/useCentralPadroes.ts           â†’ + mutate/refetch
+src/modules/central_padroes/types/index.ts                        â†’ + novos tipos
+src/modules/central_padroes/data/fallbackData.ts                 â†’ + mais seeds
+src/modules/central_padroes/pages/StandardsPage.tsx              â†’ + CRUD UI
+src/modules/central_padroes/pages/DocumentsPage.tsx              â†’ + CRUD UI
+src/modules/central_padroes/pages/DecisionsPage.tsx              â†’ + CRUD UI
+src/modules/central_padroes/pages/ChecklistsPage.tsx             â†’ + CRUD UI
+src/modules/central_padroes/pages/AreasPage.tsx                  â†’ + CRUD admin
+src/modules/central_padroes/pages/ApprovalsPage.tsx              â†’ implementar
+src/modules/central_padroes/pages/RelationshipsPage.tsx          â†’ implementar
+src/modules/central_padroes/pages/DevModePage.tsx                â†’ + triagem
+src/modules/central_padroes/pages/SearchPage.tsx                 â†’ + busca semÃ¢ntica
+src/modules/central_padroes/pages/DashboardPage.tsx              â†’ + aprovaÃ§Ãµes pendentes
+src/modules/central_padroes/docs/runbooks/central-padroes-runbook-v1.md â†’ finalizar
+```
+
+---
+
+## 10. Ordem de ExecuÃ§Ã£o Detalhada
+
+| Passo | Agente | Bloco | Arquivos | Depende de |
+|---|---|---|---|---|
+| 1 | CA-06 | A | Migration V2 (tabelas faltantes) | Nada (nÃ£o quebra V1) |
+| 2 | CA-05 | A | CRUD Service + Sync + Validation | CA-06 (schema novo) |
+| 3 | CA-04 | A | CRUD UI (modal, form, toast) | CA-05 (services) |
+| 4 | CA-07 | A | Buckets + Storage Service | CA-06 (storage policy) |
+| 5 | CA-06 | B | Approval fields + trigger | CA-06 passo 1 |
+| 6 | CA-05 | B | Approval Service | CA-06 passo 5 |
+| 7 | CA-04 | B | Approval UI | CA-05 passo 6 |
+| 8 | CA-05 | C | Relationship Service | CA-05 passo 2 |
+| 9 | CA-04 | C | Relationship Graph UI | CA-05 passo 8 |
+| 10 | CA-14 | D | Auto-Ingestion Script | Nada |
+| 11 | CA-07 | D | Webhook/Ingest RPC | CA-06 passo 1 |
+| 12 | CA-04 | D | Triagem UI | CA-14 + CA-07 |
+| 13 | CA-06 | E | pgvector migration | CA-06 passo 1 |
+| 14 | CA-07 | E | Edge Function Embedding | CA-06 passo 13 |
+| 15 | CA-05 | E | Semantic Search Service | CA-07 passo 14 |
+| 16 | CA-04 | E | Enhanced Search UI | CA-05 passo 15 |
+| 17 | CA-08 | F | RLS Policies | CA-06 passo 1 e 13 |
+| 18 | CA-15 | F | Code Review | Todos os blocos A-E |
+| 19 | CA-10 | F | QA + Testes | Blocos A-E |
+| 20 | CA-11 | F | Observabilidade | Blocos A-E |
+| 21 | CA-12 | G | Versionamento + Tag | Blocos A-F |
+| 22 | CA-09 | G | Deploy Final | CA-12 |
+| 23 | CA-17 | G | Runbook | Tudo |
+| 24 | CA-03 | G | DocumentaÃ§Ã£o Final | Tudo |
+| 25 | â€” | Final | Auditoria Final + Checklist | Tudo |
+
+---
+
+## 11. Riscos e MitigaÃ§Ãµes
+
+| Risco | Probabilidade | Impacto | MitigaÃ§Ã£o |
+|---|---|---|---|
+| Migration V2 quebra tabelas V1 | Baixa | CrÃ­tico | Usar `IF NOT EXISTS`, testar em staging |
+| pgvector nÃ£o disponÃ­vel no Supabase | MÃ©dia | Alto | Fallback para busca full-text |
+| Edge Function de embedding depende de API Key | Alta | Alto | Usar serviÃ§o de embedding do Supabase ou fallback local |
+| Approval flow sem autenticaÃ§Ã£o real | MÃ©dia | MÃ©dio | Usar `auth.currentUser` do shim |
+| Build quebra com muitas mudanÃ§as | MÃ©dia | Alto | Commits parciais, validar build a cada bloco |
+| Escopo grande = cansaÃ§o do executor | Alta | MÃ©dio | Dividir em sessÃµes, cada bloco Ã© autossuficiente |
+
+---
+
+## 12. Checklist Final de ValidaÃ§Ã£o
+
+```
+## Checklist â€” Central de PadrÃµes Completa?
+
+### Funcionalidades
+- [ ] CRUD real funcionando (criar, editar, deletar padrÃµes/documentos/decisÃµes)
+- [ ] Approval workflow: solicitar â†’ aprovar/rejeitar â†’ publicar
+- [ ] Relacionamentos: grafo de dependÃªncias visÃ­vel
+- [ ] Triagem: fila de documentos brutos com classificaÃ§Ã£o
+- [ ] Busca semÃ¢ntica: resultados por similaridade
+- [ ] RLS: policies ativas em todas as tabelas
+- [ ] Observabilidade: logs e mÃ©tricas disponÃ­veis
+
+### Qualidade
+- [ ] npm run build passa
+- [ ] Code review realizado
+- [ ] QA checklist preenchido
+- [ ] Nenhum blocker de seguranÃ§a
+
+### DocumentaÃ§Ã£o
+- [ ] Runbook completo
+- [ ] CHANGELOG atualizado v1.0.0
+- [x] DECISIONS.md atualizado
+- [ ] Release notes publicadas
+
+### Deploy
+- [ ] Git tag v1.0.0
+- [ ] Deploy production
+- [ ] URL funcional
+- [ ] Rollback documentado
+```
+
+---
+
+## 13. ConvenÃ§Ãµes para o Executor
+
+### Commits
+- Cada bloco deve ter seu prÃ³prio commit
+- Prefixo: `feat(central-padroes): [bloco] - [descriÃ§Ã£o]`
+- Exemplo: `feat(central-padroes): et-02 crud services e ui`
+- Exemplo: `feat(central-padroes): et-03 approval workflow`
+
+### Registro de ExecuÃ§Ã£o
+- Preencher log em [`docs/execution-log-central-padroes-v1.md`](../../00_sagb/src/modules/central_padroes/docs/execution-log-central-padroes-v1.md)
+- Marcar checklists de cada agente no documento do Plano Diretor
+- Registrar decisÃµes em [`DECISIONS.md`](../../00_sagb/DECISIONS.md)
+- Registrar mudanÃ§as em [`CHANGELOG.md`](../../00_sagb/CHANGELOG.md)
+
+---
+
+*Plano gerado em 31 de maio de 2026.*
+*Escopo: ET-02 a ET-08 â€” CRUD real, Approval, Relacionamentos, Triagem, Busca SemÃ¢ntica, Auditoria, Dev/Agent Mode e DocumentaÃ§Ã£o Final.*
+

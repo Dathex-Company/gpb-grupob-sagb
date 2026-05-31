@@ -111,5 +111,48 @@ export interface CentralRepositorySnapshot {
   decisions: CentralDecision[];
   modules: CentralModuleLink[];
   agents: CentralAgentRun[];
+  isOnline?: boolean;
 }
 
+export interface StandardFilter {
+  status?: CentralStandardStatus;
+  areaId?: string;
+  query?: string;
+}
+
+export interface DocumentFilter {
+  status?: CentralDocument['status'];
+  areaId?: string;
+  query?: string;
+}
+
+export type CreateStandardInput = Omit<CentralStandard, 'id' | 'updatedAt' | 'version'> & {
+  contentMd?: string;
+};
+
+export type UpdateStandardInput = Partial<CreateStandardInput> & {
+  status?: CentralStandardStatus;
+};
+
+export type CreateDocumentInput = Omit<CentralDocument, 'id'>;
+export type UpdateDocumentInput = Partial<CreateDocumentInput>;
+export type CreateDecisionInput = Omit<CentralDecision, 'id'>;
+export type CreateChecklistInput = Omit<CentralChecklist, 'id'>;
+export type UpdateModuleInput = Partial<Omit<CentralModuleLink, 'id'>>;
+
+export interface CentralIngestionItem {
+  id: string;
+  title: string;
+  sourcePath?: string | null;
+  sourceKind: string;
+  suggestedAreaId?: string | null;
+  suggestedDestination: CentralDocument['shouldBecome'];
+  confidence: number;
+  status: 'queued' | 'triage' | 'accepted' | 'rejected' | 'ignored';
+  createdAt: string;
+}
+
+export interface CentralOperationState {
+  loading: boolean;
+  error: string | null;
+}
