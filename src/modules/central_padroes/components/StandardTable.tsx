@@ -24,7 +24,7 @@ export const StandardTable: React.FC<{ standards: CentralStandard[]; onEdit?: (i
             <td className="px-4 py-3 text-sagb-muted">{standard.type.replace(/_/g, ' ')}</td>
             <td className="px-4 py-3"><StatusBadge value={standard.status} /></td>
             <td className="px-4 py-3"><StatusBadge value={standard.risk} /></td>
-            <td className="px-4 py-3 text-sagb-muted">{standard.owner}</td>
+            <td className="px-4 py-3 text-sagb-muted">{standard.owner}<div className="mt-1 text-[10px]">Deps: {standard.dependencies.length}</div></td>
             {(onEdit || onDelete || onRequestApproval) && (
               <td className="px-4 py-3">
                 <div className="flex gap-2">

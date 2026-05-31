@@ -2755,10 +2755,10 @@ interface ImpactAnalysis {
 - Score de risco calculado
 
 **Checklist do agente:**
-- [ ] Grafo interativo implementado
-- [ ] AnÃ¡lise de impacto funcional
-- [ ] Indicador de dependÃªncias em Standards
-- [ ] Adicionar/remover dependÃªncia via UI
+- [x] Grafo interativo implementado
+- [x] AnÃ¡lise de impacto funcional
+- [x] Indicador de dependÃªncias em Standards
+- [x] Adicionar/remover dependÃªncia via UI
 
 ---
 

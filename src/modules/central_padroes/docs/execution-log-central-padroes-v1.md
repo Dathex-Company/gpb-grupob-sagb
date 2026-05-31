@@ -15,3 +15,10 @@
 - Service de approval criado com request, approve, reject, publish e history.
 - ApprovalsPage implementada com modal de decisão.
 - Dashboard recebeu contagem de aprovações pendentes.
+
+## Bloco C — ET-04 Relacionamentos
+
+- Build: `npm run build` OK.
+- Relationship service criado com leitura, add/remove e análise de impacto.
+- RelationshipsPage substituída por grafo visual V1 com painel de impacto.
+- StandardTable mostra quantidade de dependências por padrão.
