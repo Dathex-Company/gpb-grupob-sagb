@@ -22,3 +22,11 @@
 - Relationship service criado com leitura, add/remove e análise de impacto.
 - RelationshipsPage substituída por grafo visual V1 com painel de impacto.
 - StandardTable mostra quantidade de dependências por padrão.
+
+## Bloco D — ET-05 Triagem e Ingestão
+
+- Build: `npm run build` OK.
+- Spec de automação de triagem criada.
+- Script `auto-ingest-central-padroes.mjs` criado com heurísticas por caminho/título.
+- Triagem service criado com fallback.
+- DevModePage recebeu aba Triagem com aceitar/ignorar sugestões.

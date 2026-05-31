@@ -2785,10 +2785,10 @@ Documento bruto (upload ou webhook)
 - Sugere `shouldBecome` baseado em heurÃ­sticas simples
 
 **Checklist do agente:**
-- [ ] Spec de automaÃ§Ã£o documentada
-- [ ] Script de auto-ingestÃ£o criado
-- [ ] HeurÃ­sticas de classificaÃ§Ã£o definidas
-- [ ] Registro em ingestion_queue funcionando
+- [x] Spec de automaÃ§Ã£o documentada
+- [x] Script de auto-ingestÃ£o criado
+- [x] HeurÃ­sticas de classificaÃ§Ã£o definidas
+- [x] Registro em ingestion_queue funcionando
 
 ### D.2 CA-07: Webhook de IngestÃ£o
 
@@ -2800,9 +2800,9 @@ Documento bruto (upload ou webhook)
 - Gatilho para auto-classificaÃ§Ã£o
 
 **Checklist do agente:**
-- [ ] RPC de ingestÃ£o documentada
-- [ ] Storage bucket trigger (se aplicÃ¡vel)
-- [ ] Webhook endpoint disponÃ­vel
+- [x] RPC de ingestÃ£o documentada
+- [x] Storage bucket trigger (se aplicÃ¡vel)
+- [x] Webhook endpoint disponÃ­vel
 
 ### D.3 CA-04: Triagem UI
 
