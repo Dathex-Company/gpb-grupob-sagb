@@ -24,11 +24,12 @@ begin
     'central_padroes_embeddings'
   ]
   loop
-    execute format('alter table if exists public.%I enable row level security', t);
-    execute format('drop policy if exists "cp_read_authenticated_%s" on public.%I', t, t);
-    execute format('create policy "cp_read_authenticated_%s" on public.%I for select using (auth.role() = ''authenticated'')', t, t);
-    execute format('drop policy if exists "cp_write_authenticated_%s" on public.%I', t, t);
-    execute format('create policy "cp_write_authenticated_%s" on public.%I for all using (auth.role() = ''authenticated'') with check (auth.role() = ''authenticated'')', t, t);
+    if to_regclass(format('public.%I', t)) is not null then
+      execute format('alter table public.%I enable row level security', t);
+      execute format('drop policy if exists "cp_read_authenticated_%s" on public.%I', t, t);
+      execute format('create policy "cp_read_authenticated_%s" on public.%I for select using (auth.role() = ''authenticated'')', t, t);
+      execute format('drop policy if exists "cp_write_authenticated_%s" on public.%I', t, t);
+      execute format('create policy "cp_write_authenticated_%s" on public.%I for all using (auth.role() = ''authenticated'') with check (auth.role() = ''authenticated'')', t, t);
+    end if;
   end loop;
 end $$;
-
