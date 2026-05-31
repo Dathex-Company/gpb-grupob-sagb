@@ -23,7 +23,9 @@ create table if not exists public.central_padroes_standards (
   version int not null default 1,
   agent_available boolean not null default false,
   replaced_by uuid null references public.central_padroes_standards(id),
-  source_governance_rule_id uuid null references public.governance_rules(id),
+  -- Referência lógica opcional ao embrião governance_rules.
+  -- Não usa FK porque alguns ambientes remotos ainda não possuem public.governance_rules aplicado.
+  source_governance_rule_id uuid null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -176,4 +178,3 @@ insert into public.central_padroes_checklists (title, context, owner_name, items
   ('Antes de criar tabela Supabase', 'criar_tabela', 'Sávio Codare', '["Verificar tabela existente", "Validar naming", "Definir RLS", "Criar rollback", "Registrar migration"]'::jsonb),
   ('Antes de publicar padrão', 'publicar_padrao', 'Pietro Carboni', '["Validar tipo normativo", "Definir owner", "Checar dependências", "Checar risco", "Aprovar curadoria"]'::jsonb)
 on conflict do nothing;
-
