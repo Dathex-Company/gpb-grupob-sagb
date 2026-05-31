@@ -30,3 +30,10 @@
 - Script `auto-ingest-central-padroes.mjs` criado com heurísticas por caminho/título.
 - Triagem service criado com fallback.
 - DevModePage recebeu aba Triagem com aceitar/ignorar sugestões.
+
+## Bloco E — ET-06 Busca Semântica
+
+- Build: `npm run build` OK.
+- Migration pgvector/embeddings criada.
+- Search service criado com busca híbrida e fallback textual.
+- SearchPage aprimorada com debounce, abas, score e trechos.

@@ -2886,6 +2886,13 @@ interface SearchResult {
 - Destaque do trecho relevante
 - Fallback para busca textual se pgvector nÃ£o disponÃ­vel
 
+**Checklist do agente:**
+- [x] Migration pgvector criada
+- [x] Tabela de embeddings definida
+- [x] Search Service criado
+- [x] Busca híbrida com fallback textual
+- [x] Search UI com debounce, abas e score
+
 ---
 
 ## 7. Bloco F â€” ET-07: Auditoria e SeguranÃ§a
