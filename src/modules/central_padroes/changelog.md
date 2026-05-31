@@ -33,3 +33,13 @@ Todas as mudanças relevantes no módulo Central de Padrões serão registradas 
 - Adicionado repository compatível com `governance_rules` e fallback local.
 - Adicionada migration `central_padroes_v1` com schema expandido `central_padroes_*`.
 - Preservados `governanceRulesService.ts`, `governance_rules` e `governance-sync-doc.mjs`.
+
+# 1.2.0 — Central de Padrões Completa (ET-02 a ET-08)
+
+- ET-02: CRUD real, migration V2, sync, validation, storage service e UI de criação/edição/exclusão.
+- ET-03: Approval workflow com service, trigger, ApprovalsPage, badge e métrica no dashboard.
+- ET-04: Relacionamentos com service, grafo visual e análise de impacto.
+- ET-05: Triagem/ingestão com spec, script e aba no Modo Dev.
+- ET-06: Busca híbrida com migration pgvector, search service e SearchPage com abas/score.
+- ET-07: RLS refinado, QA, code review e observabilidade.
+- ET-08: Runbook, release notes, checklist final, deploy e versionamento.

@@ -2989,10 +2989,10 @@ interface SearchResult {
 - Atualizar [`DECISIONS.md`](../../00_sagb/DECISIONS.md) com todas as decisÃµes do ciclo
 
 **Checklist do agente:**
-- [ ] CHANGELOG.md completo (ET-01 a ET-08)
-- [ ] Git tag v1.0.0 criada
+- [x] CHANGELOG.md completo (ET-01 a ET-08)
+- [x] Git tag v1.0.0 criada
 - [x] DECISIONS.md atualizado
-- [ ] Release notes publicadas
+- [x] Release notes publicadas
 
 ### G.2 CA-09: Deploy Final
 
@@ -3003,10 +3003,10 @@ interface SearchResult {
 - Rollback script documentado
 
 **Checklist do agente:**
-- [ ] Build passa sem erros
-- [ ] Deploy production
-- [ ] URL de produÃ§Ã£o verificada
-- [ ] Rollback documentado
+- [x] Build passa sem erros
+- [x] Deploy production
+- [x] URL de produÃ§Ã£o verificada
+- [x] Rollback documentado
 
 ### G.3 CA-17: Runbook
 
@@ -3022,9 +3022,9 @@ interface SearchResult {
 - Contatos dos responsÃ¡veis
 
 **Checklist do agente:**
-- [ ] Runbook completo com todos os procedimentos
-- [ ] Contatos atualizados
-- [ ] Procedimentos de emergÃªncia documentados
+- [x] Runbook completo com todos os procedimentos
+- [x] Contatos atualizados
+- [x] Procedimentos de emergÃªncia documentados
 
 ### G.4 CA-03: DocumentaÃ§Ã£o Final
 
@@ -3142,31 +3142,31 @@ src/modules/central_padroes/docs/runbooks/central-padroes-runbook-v1.md â†’
 ## Checklist â€” Central de PadrÃµes Completa?
 
 ### Funcionalidades
-- [ ] CRUD real funcionando (criar, editar, deletar padrÃµes/documentos/decisÃµes)
-- [ ] Approval workflow: solicitar â†’ aprovar/rejeitar â†’ publicar
-- [ ] Relacionamentos: grafo de dependÃªncias visÃ­vel
-- [ ] Triagem: fila de documentos brutos com classificaÃ§Ã£o
-- [ ] Busca semÃ¢ntica: resultados por similaridade
-- [ ] RLS: policies ativas em todas as tabelas
-- [ ] Observabilidade: logs e mÃ©tricas disponÃ­veis
+- [x] CRUD real funcionando (criar, editar, deletar padrÃµes/documentos/decisÃµes)
+- [x] Approval workflow: solicitar â†’ aprovar/rejeitar â†’ publicar
+- [x] Relacionamentos: grafo de dependÃªncias visÃ­vel
+- [x] Triagem: fila de documentos brutos com classificaÃ§Ã£o
+- [x] Busca semÃ¢ntica: resultados por similaridade
+- [x] RLS: policies ativas em todas as tabelas
+- [x] Observabilidade: logs e mÃ©tricas disponÃ­veis
 
 ### Qualidade
-- [ ] npm run build passa
-- [ ] Code review realizado
-- [ ] QA checklist preenchido
-- [ ] Nenhum blocker de seguranÃ§a
+- [x] npm run build passa
+- [x] Code review realizado
+- [x] QA checklist preenchido
+- [x] Nenhum blocker de seguranÃ§a
 
 ### DocumentaÃ§Ã£o
-- [ ] Runbook completo
-- [ ] CHANGELOG atualizado v1.0.0
+- [x] Runbook completo
+- [x] CHANGELOG atualizado v1.0.0
 - [x] DECISIONS.md atualizado
-- [ ] Release notes publicadas
+- [x] Release notes publicadas
 
 ### Deploy
-- [ ] Git tag v1.0.0
-- [ ] Deploy production
-- [ ] URL funcional
-- [ ] Rollback documentado
+- [x] Git tag v1.0.0
+- [x] Deploy production
+- [x] URL funcional
+- [x] Rollback documentado
 ```
 
 ---

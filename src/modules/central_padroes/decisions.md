@@ -11,6 +11,7 @@ Registro das decisões estruturais e operacionais do módulo.
 | 2026-05-05 | Publicação passa a incrementar versão e recalcular `checksum_sha256` antes do sync | Garantir trilha auditável mínima por regra |
 | 2026-05-05 | Sync documental realizado por função serverless idempotente com status `pending/synced/failed` | Isolar falhas de materialização sem invalidar dado canônico no banco |
 | 2026-05-31 | Implantar Central de Padrões V1 com portal de 18 agentes e schema `central_padroes_*` preservando `governance_rules` | Evoluir de publicador legado para portal vivo de governança sem quebrar o embrião existente |
+| 2026-05-31 | Executar ET-02 a ET-08 em commits por bloco com fallback quando dependências remotas não existirem | Completar capacidades de CRUD, approval, relacionamento, triagem, busca, segurança e deploy sem bloquear por pgvector/roles granulares |
 | 2026-05-31 | Adotar padrão de módulo full screen com sidebar própria no `central_padroes` | Padronizar navegação com base no Alice UI Standard + referência taskzei |
 | 2026-05-31 | Ocultar sidebar global do SagB quando `activeTab === 'central_padroes'` | Garantir substituição limpa entre sidebar global e sidebar do módulo |
 | 2026-05-31 | Navegação de retorno via evento `sagb:navigate` com `detail: 'ecosystem'` | Unificar comportamento “Voltar ao SagB” entre módulos plugáveis |

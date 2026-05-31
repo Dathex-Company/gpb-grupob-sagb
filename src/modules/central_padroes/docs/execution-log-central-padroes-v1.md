@@ -45,3 +45,11 @@
 - Code review registrado em `.logs/revisao-codigo-central-padroes.md`.
 - QA registrado em `.logs/revisao-qa-central-padroes.md`.
 - Observabilidade documentada em `docs/observabilidade-central-padroes.md`.
+
+## Bloco G — ET-08 Versionamento, Deploy e Documentação
+
+- Runbook finalizado.
+- CHANGELOG e DECISIONS do módulo atualizados.
+- Release notes v1.0.0 criadas.
+- Checklist final preenchido no plano diretor.
+- Deploy production executado no Netlify.
