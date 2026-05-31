@@ -18,6 +18,50 @@ Módulo responsável por manter, governar e auditar os padrões de desenvolvimen
 - Refatoração total para tokens semânticos e remoção de inline styles.
 - Integração plena da auditoria visual no ciclo de desenvolvimento.
 
+## 4.1 Plano de Continuidade — Módulo Modelo (100%)
+
+### Etapa A — Consolidação do Shell (concluída)
+- [x] Sidebar global do SagB oculta para `central_padroes` em [`App.tsx`](00_sagb/App.tsx).
+- [x] Sidebar própria do módulo implementada em [`CentralPadroesLayout.tsx`](00_sagb/src/modules/central_padroes/layout/CentralPadroesLayout.tsx).
+- [x] Ação "Voltar ao SagB" com evento `sagb:navigate` padronizada.
+
+### Etapa B — Evolução da Navegação Interna (próxima)
+- [ ] Substituir visão única (`overview`) por seções internas reais no layout:
+  - [ ] `overview`
+  - [ ] `normas`
+  - [ ] `operacional`
+  - [ ] `templates`
+  - [ ] `auditoria`
+- [ ] Persistir última seção aberta em storage local do módulo.
+- [ ] Criar componente reutilizável de item de menu para reduzir duplicação.
+
+### Etapa C — Conformidade Alice UI Standard v1.0
+- [ ] Migrar `font-inter` para Rubik no módulo.
+- [ ] Revisar tipografia para tokens canônicos (sidebar/menu/cards/listas).
+- [ ] Revisar densidade de listas para assinatura de 32px onde aplicável.
+- [ ] Padronizar hover/focus/active com tokens `--primary`, `--primary-soft`, `--line`.
+- [ ] Revisar dark mode para evitar preto puro e manter contraste aprovado.
+
+### Etapa D — Hardening Técnico
+- [ ] Centralizar configuração `hideSidebar` em registro de módulos (evitar condição longa inline no app raiz).
+- [ ] Especificar contrato de navegação (evento de entrada/saída do shell do módulo).
+- [ ] Adicionar testes de regressão visual para shell do módulo.
+- [ ] Adicionar smoke test para fluxo: entrar módulo → trocar seção → voltar ao SagB.
+
+### Etapa E — Governança e Reuso (módulo modelo)
+- [ ] Publicar ADR interno do padrão sidebar plugável usando `central_padroes` como módulo referência.
+- [ ] Extrair `ModuleSidebar` genérico em `src/core/ui` para reaproveito em novos módulos.
+- [ ] Criar checklist operacional "Pronto para produção" para módulos plugáveis.
+- [ ] Replicar padrão nos próximos módulos com rastreabilidade em changelog/decisions.
+
+### Critério de “Módulo 100% Modelo”
+- [ ] Shell full screen consistente com Alice UI Standard v1.0.
+- [ ] Navegação interna estruturada em múltiplas seções.
+- [ ] Sidebar global/global return funcionando sem exceções.
+- [ ] Tokens e tipografia consolidados (Rubik + paleta + densidade).
+- [ ] Testes mínimos de fluxo e regressão visual ativos.
+- [ ] Documentação viva em [`CHANGELOG.md`](00_sagb/src/modules/central_padroes/CHANGELOG.md) e [`DECISIONS.md`](00_sagb/src/modules/central_padroes/DECISIONS.md).
+
 ## 5. Fase 1 — Governança SagB-first (Supabase como Source of Truth)
 
 ### Objetivo

@@ -1,0 +1,4 @@
+Build (Supabase stack)	active	239852963
+Enforce History Compliance	active	250974654
+Deploy to Netlify (backup via Actions)	active	240134050
+Ziplia CRM Check	active	269213936

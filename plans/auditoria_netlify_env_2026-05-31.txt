@@ -1,0 +1,25 @@
+10 environment variables for project sagbapp in the dev context 
+-|----------------------------|
+| ANTHROPIC_API_KEY         | **************************************************
+ | Builds, Functions, Runtime |
+| ANTHROPIC_MODEL           | **************************************************
+ | All                        |
+| DEEPSEEK_API_KEY          | **************************************************
+ | Builds, Functions, Runtime |
+| GEMINI_API_KEY            | **************************************************
+ | Builds, Functions, Runtime |
+| OPENAI_API_KEY            | **************************************************
+ | Builds, Functions, Runtime |
+| SECRETS_SCAN_OMIT_KEYS    | **************************************************
+ | Builds, Functions, Runtime |
+| SUPABASE_SERVICE_ROLE_KEY | **************************************************
+ | Builds, Functions, Runtime |
+| VITE_SUPABASE_ANON_KEY    | **************************************************
+ | Builds, Functions, Runtime |
+| VITE_SUPABASE_URL         | **************************************************
+ | Builds, Functions, Runtime |
+| NODE_VERSION              | **************************************************
+ | Builds, Post processing    |
+'-------------------------------------------------------------------------------
+------------------------------'
+? Show values? (y/N) [21D[21C

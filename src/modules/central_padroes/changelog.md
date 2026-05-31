@@ -18,3 +18,11 @@ Todas as mudanças relevantes no módulo Central de Padrões serão registradas 
 - Evolução da `CentralPadroesPage.tsx` para editor Markdown + preview + publicação.
 - Criação da função serverless `governance-sync-doc.mjs` para materializar cópia fiel em `docs/governanca_sagb/*.md`.
 - Fluxo de falha de sync preserva regra válida no Supabase com `sync_status='failed'` e erro persistido.
+
+## 1.2.0 — 2026-05-31
+
+- Implantado padrão de módulo full screen com sidebar própria em [`CentralPadroesLayout.tsx`](00_sagb/src/modules/central_padroes/layout/CentralPadroesLayout.tsx).
+- Atualizado [`routes.tsx`](00_sagb/src/modules/central_padroes/routes.tsx) para renderizar layout com shell próprio do módulo.
+- Atualizado [`App.tsx`](00_sagb/App.tsx) para ocultar sidebar global do SagB quando `activeTab === 'central_padroes'`.
+- Adicionado botão "Voltar ao SagB" no rodapé da sidebar do módulo usando evento `sagb:navigate`.
+- Padrão alinhado ao Alice UI Standard v1.0 (Module Full Screen) com referência técnica no taskzei.

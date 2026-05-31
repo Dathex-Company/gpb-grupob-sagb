@@ -1,0 +1,30 @@
+completed	success	chore: novo deploy após renomeacao da pasta raiz	Deploy to Netlify (backup via Actions)	main	push	26720153396	29s	2026-05-31T17:58:28Z
+completed	success	chore: novo deploy após renomeacao da pasta raiz	Build (Supabase stack)	main	push	26720153391	28s	2026-05-31T17:58:28Z
+completed	success	feat(taskzei): custom fields, modal de tarefas e ajustes de provider/…	Deploy to Netlify (backup via Actions)	main	push	26034006084	26s	2026-05-18T12:39:13Z
+completed	success	feat(taskzei): custom fields, modal de tarefas e ajustes de provider/…	Build (Supabase stack)	main	push	26034006070	29s	2026-05-18T12:39:13Z
+completed	success	feat: commit geral sagb (taskzei docs/ux, metodologias, supabase e aj…	Build (Supabase stack)	main	push	25761691006	31s	2026-05-12T20:55:39Z
+completed	success	feat: commit geral sagb (taskzei docs/ux, metodologias, supabase e aj…	Deploy to Netlify (backup via Actions)	main	push	25761691002	24s	2026-05-12T20:55:39Z
+completed	success	feat: email sync background functions + agent logs update	Build (Supabase stack)	main	push	25414482142	31s	2026-05-06T03:14:12Z
+completed	success	feat: email sync background functions + agent logs update	Deploy to Netlify (backup via Actions)	main	push	25414482141	24s	2026-05-06T03:14:12Z
+completed	success	fix(whatsapp-webhook): remove import statement invalido dentro de han…	Deploy to Netlify (backup via Actions)	main	push	25411492809	34s	2026-05-06T01:25:09Z
+completed	success	fix(whatsapp-webhook): remove import statement invalido dentro de han…	Build (Supabase stack)	main	push	25411492807	33s	2026-05-06T01:25:09Z
+completed	success	chore: update agent logs (falas_user, session_log)	Deploy to Netlify (backup via Actions)	main	push	25411137103	30s	2026-05-06T01:11:45Z
+completed	success	chore: update agent logs (falas_user, session_log)	Build (Supabase stack)	main	push	25411137098	29s	2026-05-06T01:11:45Z
+completed	success	fix: hotfix REAL — remove module-level .bind() calls de hub-integraca…	Build (Supabase stack)	main	push	25357829971	30s	2026-05-05T04:27:02Z
+completed	success	fix: hotfix REAL — remove module-level .bind() calls de hub-integraca…	Deploy to Netlify (backup via Actions)	main	push	25357829969	24s	2026-05-05T04:27:02Z
+completed	success	fix: white screen - MCP SagB barrel export + loggerService duplicate …	Deploy to Netlify (backup via Actions)	main	push	25357265127	36s	2026-05-05T04:06:05Z
+completed	success	fix: white screen - MCP SagB barrel export + loggerService duplicate …	Build (Supabase stack)	main	push	25357265126	30s	2026-05-05T04:06:05Z
+completed	success	feat: checkpoint geral sagb - api-sagb endpoints/audit/integration/ro…	Build (Supabase stack)	main	push	25356893186	25s	2026-05-05T03:52:04Z
+completed	success	feat: checkpoint geral sagb - api-sagb endpoints/audit/integration/ro…	Deploy to Netlify (backup via Actions)	main	push	25356893172	29s	2026-05-05T03:52:04Z
+completed	success	feat: checkpoint sagb - api-sagb security/auth, conventions, plano-ex…	Deploy to Netlify (backup via Actions)	main	push	25354841051	30s	2026-05-05T02:36:19Z
+completed	success	feat: checkpoint sagb - api-sagb security/auth, conventions, plano-ex…	Build (Supabase stack)	main	push	25354840863	19s	2026-05-05T02:36:19Z
+completed	success	feat: checkpoint completo sagb - taskzei evolucao, mentorias, hub-int…	Build (Supabase stack)	main	push	25354483005	26s	2026-05-05T02:22:57Z
+completed	success	feat: checkpoint completo sagb - taskzei evolucao, mentorias, hub-int…	Deploy to Netlify (backup via Actions)	main	push	25354483003	29s	2026-05-05T02:22:57Z
+completed	success	feat: checkpoint completo sagb - metodologias, mentorias, nucleo-conv…	Deploy to Netlify (backup via Actions)	main	push	25348794197	33s	2026-05-04T23:17:30Z
+completed	success	feat: checkpoint completo sagb - metodologias, mentorias, nucleo-conv…	Build (Supabase stack)	main	push	25348794185	21s	2026-05-04T23:17:30Z
+completed	success	feat(chat): botão Gerar Nomes para sugerir títulos automaticamente	Deploy to Netlify (backup via Actions)	main	push	25280332211	30s	2026-05-03T13:22:25Z
+completed	success	feat(chat): botão Gerar Nomes para sugerir títulos automaticamente	Build (Supabase stack)	main	push	25280332202	23s	2026-05-03T13:22:25Z
+completed	success	feat(chat): seleção de modelo específico por provedor	Deploy to Netlify (backup via Actions)	main	push	25264901114	26s	2026-05-02T23:47:07Z
+completed	success	feat(chat): seleção de modelo específico por provedor	Build (Supabase stack)	main	push	25264901112	26s	2026-05-02T23:47:07Z
+completed	success	fix: correcao tela preta chat + health check Claude + build errors	Deploy to Netlify (backup via Actions)	main	push	25263261080	32s	2026-05-02T22:17:58Z
+completed	success	fix: correcao tela preta chat + health check Claude + build errors	Build (Supabase stack)	main	push	25263261076	22s	2026-05-02T22:17:58Z
