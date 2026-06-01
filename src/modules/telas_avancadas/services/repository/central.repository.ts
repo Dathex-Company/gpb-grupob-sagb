@@ -2,6 +2,7 @@ import {
   BlocoTela,
   BlueprintTela,
   ExportacaoTela,
+  ProjectVisualConfig,
   ProjetoTela,
   ReferenciaTela,
   TelaAvancada,
@@ -10,6 +11,7 @@ import {
 type CentralPayload = {
   projetos: ProjetoTela[];
   blueprints: BlueprintTela[];
+  visuais: ProjectVisualConfig[];
   referencias: ReferenciaTela[];
   blocos: BlocoTela[];
   exportacoes: ExportacaoTela[];
@@ -22,6 +24,7 @@ const parseDate = (value: string | Date) => new Date(value);
 const emptyPayload = (): CentralPayload => ({
   projetos: [],
   blueprints: [],
+  visuais: [],
   referencias: [],
   blocos: [],
   exportacoes: [],
@@ -40,6 +43,7 @@ export const loadCentralData = (): CentralPayload => {
         updatedAt: parseDate(p.updatedAt),
       })),
       blueprints: data.blueprints || [],
+      visuais: data.visuais || [],
       referencias: (data.referencias || []).map((r: ReferenciaTela) => ({
         ...r,
         createdAt: parseDate(r.createdAt),
@@ -124,4 +128,3 @@ export const toLibraryFromExport = (
   createdAt: new Date(),
   updatedAt: new Date(),
 });
-

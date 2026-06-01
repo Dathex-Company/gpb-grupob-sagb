@@ -86,6 +86,8 @@ Módulo responsável por manter, governar e auditar os padrões de desenvolvimen
 - [x] ET-10 a ET-20 carregadas operacionalmente no fallback do módulo.
 - [x] Relatórios por divisão criados em `docs/07_validacoes/`.
 - [x] ET-21 — Auditoria de Cobertura da Curadoria Geral concluída.
+- [x] ET-21 — Correção de build por filesystem concluída e validada.
 - [ ] Validação final de Pietro para canonicidade.
 - [ ] Revisão de cada responsável de divisão.
 - [ ] Evoluir estrutura própria para matrizes e registros/evidências quando o módulo suportar entidades dedicadas.
+- [ ] Sanear numeração do Modelo Padrão para Documentos de Padrões por Área, corrigindo pequenas duplicidades no índice e repetição de numeração em algumas seções.

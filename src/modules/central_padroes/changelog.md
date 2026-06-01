@@ -9,6 +9,8 @@ Todas as mudanças relevantes no módulo Central de Padrões serão registradas 
 - Canonicidade final mantida como pendente de validação Pietro.
 - Relatório criado em docs/07_validacoes/central-padroes-et-21-auditoria-cobertura-curadoria-geral.md.
 - Auditoria confirma que os 6 itens por divisão são suficientes como carga inicial operacional, mas não como extração normativa completa.
+- Correção técnica de build aplicada: `vite build --emptyOutDir false` e assets direcionados para `assets_build` para contornar bloqueio de filesystem em `dist/assets`.
+- Build reexecutado com sucesso após correção.
 
 ## 1.5.0 — 2026-06-01
 

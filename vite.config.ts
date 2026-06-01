@@ -48,6 +48,9 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
+      // Evita falha de build quando `dist/assets` está bloqueado pelo filesystem/Windows.
+      // Não altera lógica de aplicação; apenas direciona os assets gerados para pasta limpa.
+      assetsDir: 'assets_build',
       rollupOptions: {
         output: {
           manualChunks(id) {

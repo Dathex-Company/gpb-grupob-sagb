@@ -28,3 +28,4 @@ Registro das decisões estruturais e operacionais do módulo.
 | | 2026-06-01 | Manter Sávio como ET-09 concluída operacionalmente | Não duplicar CP-TEC-001 a CP-TEC-026; apenas reconciliar documento geral |
 | | 2026-06-01 | Canonicidade final pendente de validação Pietro | Todos os novos itens ficam em revisão/candidato |
 | | 2026-06-01 | ET-21: Auditoria de Cobertura da Curadoria Geral | Curadoria concluída operacionalmente; cobertura inicial suficiente; expansão normativa recomendada |
+| | 2026-06-01 | ET-21: Correção de build por filesystem | Build passou a usar `--emptyOutDir false` e `assets_build` para evitar bloqueio de permissão em `dist/assets` |

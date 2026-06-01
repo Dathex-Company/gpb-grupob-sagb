@@ -9,6 +9,7 @@ import { IntegrationHealthPanel } from './IntegrationHealthPanel';
 import { SalaDevChatPanel } from './SalaDevChatPanel';
 import { Agent } from '../../../../types';
 import { NewProjectEntryPanel } from './NewProjectEntryPanel';
+import { SalaDevStudioPanel } from './SalaDevStudioPanel';
 
 interface DevRoomViewProps {
   onBack?: () => void;
@@ -18,6 +19,7 @@ interface DevRoomViewProps {
 const DevRoomView: React.FC<DevRoomViewProps> = ({ onBack, agents: officialAgents = [] }) => {
   const [showIntegrationPanel, setShowIntegrationPanel] = useState(false);
   const [activeLeftTab, setActiveLeftTab] = useState<'command' | 'chat'>('command');
+  const [activeWorkspaceMode, setActiveWorkspaceMode] = useState<'pipeline' | 'studio'>('pipeline');
   const {
     run,
     agents,
@@ -69,6 +71,30 @@ const DevRoomView: React.FC<DevRoomViewProps> = ({ onBack, agents: officialAgent
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {pipelineStarted && (
+            <div className="mr-2 flex rounded-xl border border-slate-700 bg-slate-900 p-1">
+              <button
+                onClick={() => setActiveWorkspaceMode('pipeline')}
+                className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition-colors ${
+                  activeWorkspaceMode === 'pipeline'
+                    ? 'bg-cyan-500 text-slate-950'
+                    : 'text-slate-500 hover:bg-slate-800 hover:text-slate-200'
+                }`}
+              >
+                Esteira
+              </button>
+              <button
+                onClick={() => setActiveWorkspaceMode('studio')}
+                className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider transition-colors ${
+                  activeWorkspaceMode === 'studio'
+                    ? 'bg-cyan-500 text-slate-950'
+                    : 'text-slate-500 hover:bg-slate-800 hover:text-slate-200'
+                }`}
+              >
+                Studio
+              </button>
+            </div>
+          )}
           {/* Integration Health Panel toggle */}
           <button
             onClick={() => setShowIntegrationPanel(!showIntegrationPanel)}
@@ -91,6 +117,15 @@ const DevRoomView: React.FC<DevRoomViewProps> = ({ onBack, agents: officialAgent
       </header>
 
       {pipelineStarted ? (
+        activeWorkspaceMode === 'studio' ? (
+          <div className="flex-1 overflow-hidden">
+            <SalaDevStudioPanel
+              runId={run.id}
+              projectName={run.projectName}
+              currentStage={run.currentStage}
+            />
+          </div>
+        ) : (
         <div className="flex-1 flex overflow-hidden relative">
           <div className="w-[380px] shrink-0 border-r border-slate-800 h-full flex flex-col bg-[#0F172A]">
             <div className="flex shrink-0 border-b border-slate-800 bg-[#0B1121] p-2">
@@ -190,6 +225,7 @@ const DevRoomView: React.FC<DevRoomViewProps> = ({ onBack, agents: officialAgent
             />
           )}
         </div>
+        )
       ) : (
         <NewProjectEntryPanel
           form={projectEntryForm}

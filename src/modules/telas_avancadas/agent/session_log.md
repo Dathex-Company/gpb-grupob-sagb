@@ -29,3 +29,9 @@
 
 ## 2026-05-31 22:43
 **cassio-mendes:** Contexto de execução definido para a etapa: foco em estabilização (sem expansão descontrolada), investigação de causa-raiz do build (`vite:html-inline-proxy`), revisão de integridade (types/store/services/repository), validação do ciclo fim-a-fim (estúdio → exportação → biblioteca) e ajustes de coerência funcional/visual do módulo `telas_avancadas`.
+
+## 2026-06-01 00:00
+**usuario:** Solicitou a MEGA-ETAPA 04 para refino premium de UX/UI + Evolução Real do Estúdio, com foco em elevar a Central de Telas Avançadas de base funcional para ferramenta madura de uso interno.
+
+## 2026-06-01 00:00
+**cassio-mendes:** Decisão de execução registrada para MEGA-ETAPA 04: implementar refino prioritário em 4 frentes — (A) Estúdio guiado com seções claras, blueprint editor melhorado, blocos/efeitos/direção visual mais inteligíveis; (B) Preview/Exportação/Publicação mais convincentes e coerentes com o projeto; (C) Biblioteca com governança (edição rápida, filtros, metadados); (D) Referências organizadas + hierarquia visual da Central inteira. Não expandir arquitetura, não criar features fora do escopo, preservar build estável.

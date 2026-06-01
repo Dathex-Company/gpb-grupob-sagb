@@ -13,7 +13,6 @@ Registrar literalmente as falas do usuário associadas a este módulo/agente, se
 
 ## registros
 
-
 ## 2026-05-31 22:26 (America/Sao_Paulo)
 
 TAREFA: SagB | Telas Avançadas | MEGA-ETAPA 02 | Central de Telas Avançadas — Biblioteca + Estúdio + Referências
@@ -48,3 +47,54 @@ A prioridade desta etapa é:
 3. auditar profundamente a Central de Telas Avançadas como produto real
 4. validar se Biblioteca, Estúdio, Referências e Preview/Publicação estão realmente bons na prática
 5. devolver um diagnóstico honesto com ajustes executados e pontos ainda pendentes
+
+## 2026-06-01 00:00 (America/Sao_Paulo)
+
+TAREFA: SagB | Telas Avançadas | MEGA-ETAPA 04 | Refino Premium de UX/UI + Evolução Real do Estúdio
+
+Cássio, agora que a Central de Telas Avançadas foi estruturada e estabilizada, a prioridade desta etapa é transformar essa base em uma ferramenta realmente forte, clara e convincente como produto.
+
+Não quero nova expansão caótica.
+Quero refino premium de experiência, principalmente no Estúdio, mas também melhorando Biblioteca, Referências e Preview/Publicação.
+
+Contexto consolidado
+Hoje o módulo telas_avancadas já funciona como uma Central com:
+- Biblioteca
+- Estúdio
+- Referências
+- Preview / Exportação / Publicação
+
+A base estrutural foi implantada e a estabilização técnica foi concluída, inclusive com:
+- npm run dev ok
+- npm run build ok
+
+Agora a missão muda:
+não é mais provar que a Central existe.
+É fazer ela parecer, funcionar e conduzir como um produto muito melhor.
+
+Objetivo macro
+Elevar a Central de Telas Avançadas de uma base funcional para uma ferramenta madura de uso interno, com foco em:
+1. UX mais guiada
+2. interface mais clara
+3. melhor hierarquia visual
+4. fluxo de criação mais forte
+5. preview mais útil
+6. referências mais bem organizadas
+7. governança melhor na Biblioteca
+8. sensação de plataforma premium, não de formulário técnico
+
+Direção obrigatória desta etapa
+Quero que você trate esta etapa como um refino de produto, não apenas como "mais código".
+
+Pergunta central que deve orientar tudo:
+"Isso está ajudando de verdade alguém a criar, organizar, visualizar e publicar telas avançadas com clareza?"
+
+Se a resposta for "mais ou menos", melhore.
+
+Estratégia da etapa
+Dividir esta evolução em quatro grandes frentes:
+
+A. REFÍNO DO ESTÚDIO
+B. REFÍNO DO PREVIEW / EXPORTAÇÃO / PUBLICAÇÃO
+C. REFÍNO DA BIBLIOTECA
+D. REFÍNO DE REFERÊNCIAS + HIERARQUIA VISUAL DA CENTRAL

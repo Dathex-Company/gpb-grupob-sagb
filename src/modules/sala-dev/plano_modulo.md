@@ -31,6 +31,15 @@ Seu papel é organizar, coordenar e tornar auditável a execução de runs.
 - decisão arquitetural: Sala Dev ainda não substitui VS Code/Roo Code porque a ponte técnica atual bloqueia escrita de arquivos, comandos, sync e deploy por segurança
 - próximo caminho recomendado: implementar primeiro Studio Mock Interativo antes de liberar filesystem/comandos reais
 
+### 01/06/2026
+
+- iniciado Ciclo 1 do plano de autonomia total da Sala Dev
+- criada base de tipos do Studio em `types/salaDev.studio.ts`
+- criada persistência local/mock de sessão do Studio em `services/salaDevStudioSessionStorage.ts`
+- criado painel visual `components/SalaDevStudioPanel.tsx` com comando, plano, arquivos impactados, diff simulado, aprovações, terminal simulado, preview placeholder e timeline
+- integrada alternância `Esteira` / `Studio` no header de `components/DevRoomView.tsx`
+- Sala Dev passa a ter primeira experiência interna de IDE assistida em modo seguro, sem escrita real em filesystem e sem execução real de comandos
+
 ### 01/05/2026
 
 - estruturado plano canônico do módulo em 9 etapas

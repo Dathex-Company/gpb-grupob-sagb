@@ -4,6 +4,8 @@
 **Executor técnico:** Cássio/Procássio
 **Solicitante:** Pietro Carboni / Rodrigues
 **Status geral:** Curadoria Geral das Divisões — concluída operacionalmente
+**Status de conteúdo:** concluído
+**Status técnico:** validado após correção de build
 **Canonicidade final:** pendente de validação Pietro
 **Regra:** nada marcado como canônico final
 
@@ -45,11 +47,13 @@ Portanto:
 | Campo | Status |
 |---|---|
 | Curadoria Geral das Divisões | concluída operacionalmente |
+| Status de conteúdo | concluído |
+| Status técnico | validado após correção de build |
 | Canonicidade final | pendente de validação Pietro |
 | Itens novos | em revisão / candidatos |
 | Documentos-mãe | em revisão / candidatos a canônicos |
 | Relatórios ET-10 a ET-20 | criados |
-| Build | pendente nesta etapa até validação final |
+| Build | reexecutado com sucesso após correção de filesystem |
 
 ---
 
@@ -520,15 +524,82 @@ Recomenda-se criar versões detalhadas dos relatórios ET-10 a ET-20 no mesmo n�
 | Classificação normativa | Sem erro crítico detectado |
 | Relatórios ET-10 a ET-20 | Completos como sintéticos; aprofundamento recomendado |
 | Canonicidade | Pendente de validação Pietro |
+| Build | Reexecutado com sucesso |
 
 ---
 
-## 8. Conclusão
+## 8. Correção técnica de build
+
+### 8.1 Causa encontrada
+
+O build havia falhado por problema de filesystem no diretório de saída:
+
+```text
+ENOENT: no such file or directory, mkdir 'Z:\00_sagb\dist\assets'
+```
+
+Na verificação posterior, a causa foi refinada para bloqueio/permissão no diretório `dist/assets`:
+
+```text
+EPERM, Permission denied: \\?\Z:\00_sagb\dist\assets
+```
+
+O diretório `dist/assets` estava presente, mas negava inspeção/remoção direta pelo Vite durante o passo automático de limpeza do `outDir`.
+
+### 8.2 Correção aplicada
+
+Foi aplicada a correção mínima e segura, sem alterar lógica da Central de Padrões e sem alterar conteúdo da curadoria:
+
+1. o script `build` passou a executar `vite build --emptyOutDir false`, evitando a etapa automática de limpeza que falhava no `dist/assets` travado;
+2. o Vite passou a gerar novos assets em `dist/assets_build`, contornando o diretório `dist/assets` bloqueado.
+
+### 8.3 Arquivos alterados
+
+- `package.json`
+- `vite.config.ts`
+- `docs/07_validacoes/central-padroes-et-21-auditoria-cobertura-curadoria-geral.md`
+- `CHANGELOG.md`
+- `DECISIONS.md`
+- `PLANNED.md`
+
+### 8.4 Build reexecutado
+
+Comando:
+
+```text
+npm run build
+```
+
+Resultado:
+
+```text
+✓ built in 48.09s
+```
+
+### 8.5 Warnings remanescentes
+
+O build passou com warnings já conhecidos do projeto:
+
+- circular chunk `vendor -> react-vendor -> vendor`;
+- import dinâmico e estático de `services/supabase.ts` em pontos distintos;
+- chunks acima de 500 kB.
+
+Esses warnings não bloqueiam a validação técnica da ET-21.
+
+### 8.6 Pendências restantes
+
+- Canonicidade final continua pendente de validação Pietro.
+- Avaliar em etapa futura se o diretório antigo `dist/assets` deve ser removido manualmente com permissões administrativas.
+- Registrar como saneamento documental futuro o ajuste de numeração do Modelo Padrão para Documentos de Padrões por Área, pois há pequenas duplicidades no índice, como repetição de numeração em algumas seções.
+
+---
+
+## 9. Conclusão
 
 A Curadoria Geral das Divisões está operacionalmente concluída e com cobertura inicial suficiente para navegação, validação e governança no módulo Central de Padrões.
 
 A auditoria confirma que a carga foi bem estruturada, sem marcação indevida de canonicidade final, mas recomenda expansão futura porque os documentos de origem são muito mais ricos do que os 6 itens iniciais por divisão.
 
-**ET-21 — Auditoria de Cobertura da Curadoria Geral concluída.**
+**ET-21 — Auditoria de Cobertura da Curadoria Geral concluída e validada tecnicamente após correção de build.**
 
 **Canonicidade final — pendente de validação Pietro.**
