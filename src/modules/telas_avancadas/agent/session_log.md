@@ -35,3 +35,9 @@
 
 ## 2026-06-01 00:00
 **cassio-mendes:** Decisão de execução registrada para MEGA-ETAPA 04: implementar refino prioritário em 4 frentes — (A) Estúdio guiado com seções claras, blueprint editor melhorado, blocos/efeitos/direção visual mais inteligíveis; (B) Preview/Exportação/Publicação mais convincentes e coerentes com o projeto; (C) Biblioteca com governança (edição rápida, filtros, metadados); (D) Referências organizadas + hierarquia visual da Central inteira. Não expandir arquitetura, não criar features fora do escopo, preservar build estável.
+
+## 2026-06-01 23:24
+**usuario:** Solicitou execução imediata da MEGA-ETAPA 05 completa, com foco em potência de criação do Estúdio, templates reais de tela, presets reutilizáveis, persistência por projeto (blueprint/direção visual/blocos/efeitos/template/preset), blindagem de dados (especialmente quickEditTela) e composição mais forte de blocos (ordem, duplicação, remoção, ativação/desativação, agrupamento lógico e presets por bloco).
+
+## 2026-06-01 23:24
+**cassio-mendes:** Execução ET 05 aplicada no módulo `telas_avancadas`: novo domínio de templates/presets, persistência de visuais por projeto, aplicação de template/preset com hidratação de blueprint/blocos/efeitos, ações de composição avançada de blocos (duplicar, mover, toggle visibilidade, metadados de grupo/preset), blindagem de quick edit na biblioteca e integração da UI do Estúdio; build validado com sucesso.

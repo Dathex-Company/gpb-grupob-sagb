@@ -2,7 +2,10 @@ import React, { useMemo, useState } from 'react';
 import {
   BlocoMeta,
   BlocoTelaTipo,
+  BlockInspectorData,
   BlueprintEditorFields,
+  ComposerBlockState,
+  ComposerState,
   EfeitoGroup,
   EfeitoGroupId,
   EfeitoMeta,
@@ -10,6 +13,9 @@ import {
   EstudioProjetoStatus,
   IntensidadeMotion,
   IntensidadeVisual,
+  LayoutModelo,
+  LayoutZone,
+  PapelBloco,
   ProjetoTela,
   StudioPresetId,
   StudioStep,
@@ -18,6 +24,9 @@ import {
   VisualDirectionConfig,
 } from '../../types/telasAvancadas.types';
 import { STUDIO_PRESETS, STUDIO_TEMPLATES } from '../../data/studioCatalogs';
+import { LAYOUT_OPTIONS } from '../../data/layouts';
+import { ComposerCanvas } from '../composer/ComposerCanvas';
+import { BlockInspector } from '../composer/BlockInspector';
 
 // ── Constants ──
 
@@ -25,7 +34,8 @@ const STEPS: StudioStep[] = [
   { id: 'informacoes', label: 'Informações', subtitle: 'Nome, slug e categoria', icon: '📋' },
   { id: 'objetivo', label: 'Objetivo', subtitle: 'Propósito e público', icon: '🎯' },
   { id: 'blueprint', label: 'Blueprint', subtitle: 'Estrutura e direção', icon: '📐' },
-  { id: 'blocos', label: 'Blocos', subtitle: 'Composição da tela', icon: '🧱' },
+  { id: 'blocos', label: 'Blocos', subtitle: 'Adicionar e organizar', icon: '🧱' },
+  { id: 'composicao', label: 'Composição', subtitle: 'Layout e zonas', icon: '🎨' },
   { id: 'efeitos', label: 'Efeitos', subtitle: 'Motion e feedback', icon: '✨' },
   { id: 'direcao_visual', label: 'Visual', subtitle: 'Paleta, vidro, demo', icon: '🎨' },
   { id: 'preview_exportacao', label: 'Preview', subtitle: 'Revisão e exportar', icon: '🚀' },
@@ -94,6 +104,20 @@ interface EstudioPanelProps {
   onSetStudioBlueprint: (fields: BlueprintEditorFields) => void;
   onSetStudioVisual: (config: Partial<VisualDirectionConfig>) => void;
   blocosDoProjeto: { id: string; tipo: BlocoTelaTipo; visivel?: boolean; grupo?: string; presetId?: string }[];
+
+  // Composer
+  composer: ComposerState | null;
+  selectedBlockId: string | null;
+  composerViewMode: 'estrutural' | 'demo';
+  onLoadComposer: (projetoId: string) => void;
+  onChangeLayout: (projetoId: string, layout: LayoutModelo) => void;
+  onAssignBlocoToZona: (projetoId: string, blocoId: string, zonaId: string) => void;
+  onRemoveBlocoFromComposer: (projetoId: string, blocoId: string) => void;
+  onReorderBlocoInZona: (projetoId: string, blocoId: string, newOrdem: number) => void;
+  onSetBlocoPapelVisual: (projetoId: string, blocoId: string, papel: PapelBloco) => void;
+  onSelectBlockForInspector: (blocoId: string | null) => void;
+  onSetComposerViewMode: (mode: 'estrutural' | 'demo') => void;
+  onGetInspectorData: (blocoId: string) => BlockInspectorData | null;
 }
 
 // ── Component ──
@@ -103,6 +127,10 @@ export const EstudioPanel: React.FC<EstudioPanelProps> = ({
   onSelectProject, onCreateProject, onAddBloco, onRemoveBloco, onOpenSuperTela,
   onApplyTemplate, onApplyPreset, onDuplicateBloco, onMoveBloco, onToggleBloco, onUpdateBlocoMeta,
   onSetStudioStep, onSetStudioBlueprint, onSetStudioVisual, blocosDoProjeto,
+  composer, selectedBlockId, composerViewMode,
+  onLoadComposer, onChangeLayout, onAssignBlocoToZona, onRemoveBlocoFromComposer,
+  onReorderBlocoInZona, onSetBlocoPapelVisual, onSelectBlockForInspector, onSetComposerViewMode,
+  onGetInspectorData,
 }) => {
   // Form state for new project
   const [nome, setNome] = useState('');
@@ -229,6 +257,33 @@ export const EstudioPanel: React.FC<EstudioPanelProps> = ({
                     }`}>{selected.status}</span>
                   </div>
                 </div>
+                {/* Layout selector */}
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">🗺️ Layout da Tela</label>
+                  <div className="flex flex-wrap gap-2">
+                    {LAYOUT_OPTIONS.map((opt) => {
+                      const isActive = (composer?.layoutAtual ?? selected.layout) === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          onClick={() => {
+                            onChangeLayout(selected.id, opt.value);
+                            onLoadComposer(selected.id);
+                          }}
+                          className={`px-3 py-2 rounded-lg text-[10px] font-semibold text-left transition-all ${
+                            isActive
+                              ? 'bg-blue-600 text-white shadow-lg'
+                              : 'bg-black/30 text-gray-300 border border-white/10 hover:bg-white/10'
+                          }`}
+                          title={opt.descricao}
+                        >
+                          <span className="block">{opt.label}</span>
+                          <span className="block text-[8px] opacity-60 mt-0.5">{opt.descricao.slice(0, 40)}...</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <p className="text-xs text-gray-500">Versão: {selected.versao} • Criado: {selected.createdAt.toLocaleDateString()}</p>
               </div>
             )}
@@ -344,6 +399,96 @@ export const EstudioPanel: React.FC<EstudioPanelProps> = ({
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {studioStep === 'composicao' && selected && (
+              <div className="p-5 rounded-2xl border border-white/10 bg-white/5 space-y-4">
+                {/* Cabeçalho */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-white">🎨 Composição Visual</h3>
+                    <p className="text-xs text-gray-400">Distribua os blocos nas zonas do layout e defina papéis visuais.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-gray-500">Modo:</span>
+                    <button
+                      onClick={() => onSetComposerViewMode('estrutural')}
+                      className={`px-2 py-1 rounded text-[10px] font-semibold ${
+                        composerViewMode === 'estrutural' ? 'bg-blue-600 text-white' : 'bg-black/30 text-gray-400'
+                      }`}
+                    >
+                      🔲 Estrutural
+                    </button>
+                    <button
+                      onClick={() => onSetComposerViewMode('demo')}
+                      className={`px-2 py-1 rounded text-[10px] font-semibold ${
+                        composerViewMode === 'demo' ? 'bg-blue-600 text-white' : 'bg-black/30 text-gray-400'
+                      }`}
+                    >
+                      🎬 Demo
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Coluna principal: Canvas */}
+                  <div className="lg:col-span-2">
+                    {composer && (
+                      <ComposerCanvas
+                        layout={composer.layoutAtual}
+                        zonasComBlocos={composer.zonas.map((zona) => ({
+                          zona,
+                          blocos: composer.blocos
+                            .filter((b) => b.zonaId === zona.id)
+                            .sort((a, bb) => a.ordemZona - bb.ordemZona)
+                            .map((cs) => {
+                              const bloco = blocosDoProjeto.find((bp) => bp.id === cs.blocoId);
+                              return {
+                                blocoId: cs.blocoId,
+                                tipo: bloco?.tipo || 'unknown',
+                                ordemZona: cs.ordemZona,
+                                visivel: bloco?.visivel ?? true,
+                                papelVisual: cs.papelVisual,
+                              };
+                            }),
+                        }))}
+                        blocosDisponiveis={blocosDoProjeto
+                          .filter((bp) => !composer.blocos.some((c) => c.blocoId === bp.id))
+                          .map((bp) => ({ id: bp.id, projetoId: selected.id, tipo: bp.tipo as any, config: {}, ordem: 0, visivel: true }))}
+                        viewMode={composerViewMode}
+                        selectedBlockId={selectedBlockId}
+                        onSelectBlock={onSelectBlockForInspector}
+                        onAssignBlock={(blocoId, zonaId) => onAssignBlocoToZona(selected.id, blocoId, zonaId)}
+                        onRemoveBlock={(blocoId) => onRemoveBlocoFromComposer(selected.id, blocoId)}
+                      />
+                    )}
+                  </div>
+
+                  {/* Coluna lateral: BlockInspector */}
+                  <div className="space-y-3">
+                    {selectedBlockId && onGetInspectorData(selectedBlockId) ? (
+                      <BlockInspector
+                        data={onGetInspectorData(selectedBlockId)!}
+                        zonasDisponiveis={composer?.zonas || []}
+                        onAssignZona={(blocoId, zonaId) => onAssignBlocoToZona(selected.id, blocoId, zonaId)}
+                        onReorder={(blocoId, newOrdem) => onReorderBlocoInZona(selected.id, blocoId, newOrdem)}
+                        onSetPapelVisual={(blocoId, papel) => onSetBlocoPapelVisual(selected.id, blocoId, papel)}
+                        onToggleVisibility={(blocoId) => onToggleBloco(blocoId)}
+                        onRemove={(blocoId) => onRemoveBloco(blocoId)}
+                        onClose={() => onSelectBlockForInspector(null)}
+                      />
+                    ) : (
+                      <div className="p-4 rounded-xl border border-dashed border-white/5 bg-black/10 text-center">
+                        <p className="text-[11px] text-gray-500">
+                          {blocosDoProjeto.length === 0
+                            ? 'Adicione blocos primeiro na etapa "Blocos"'
+                            : 'Clique em um bloco no canvas para inspecionar'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

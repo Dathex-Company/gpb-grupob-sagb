@@ -109,6 +109,7 @@ export type StudioStepId =
   | 'objetivo'
   | 'blueprint'
   | 'blocos'
+  | 'composicao'
   | 'efeitos'
   | 'direcao_visual'
   | 'preview_exportacao';
@@ -180,6 +181,54 @@ export type LayoutModelo =
   | 'dashboard_grid'
   | 'mapa_central_paineis'
   | 'fluxo_vertical';
+
+export type ZonaPosicao =
+  | 'topo' | 'centro' | 'lateral_esquerda' | 'lateral_direita'
+  | 'rodape' | 'trilha_principal' | 'trilha_vertical' | 'nucleo'
+  | 'orbital' | 'header' | 'entrada' | 'saida' | 'painel_apoio'
+  | 'mapa_central' | 'esteira' | 'grid_principal' | 'header_kpis'
+  | 'conclusao' | 'painel_tecnico' | 'trilha_superior' | 'trilha_inferior'
+  | 'faixa_progresso';
+
+export type PapelBloco = 'principal' | 'secundario' | 'auxiliar' | 'suporte' | 'fechamento';
+
+export interface LayoutZone {
+  id: string;
+  label: string;
+  descricao: string;
+  posicao: ZonaPosicao;
+  ordem: number;
+}
+
+export interface LayoutComZonas {
+  layout: LayoutModelo;
+  nome: string;
+  descricao: string;
+  zonas: LayoutZone[];
+}
+
+export interface ComposerBlockState {
+  blocoId: string;
+  zonaId: string;
+  ordemZona: number;
+  papelVisual?: PapelBloco;
+}
+
+export interface ComposerState {
+  layoutAtual: LayoutModelo;
+  zonas: LayoutZone[];
+  blocos: ComposerBlockState[];
+}
+
+export interface BlockInspectorData {
+  bloco: BlocoTela;
+  meta: BlocoMeta | null;
+  zona: LayoutZone | null;
+  ordem: number;
+  papelVisual?: PapelBloco;
+  efeitoAplicado?: EfeitoVisualPreset;
+  grupo?: string;
+}
 
 export type TelaTemplateId =
   | 'esteira_agentes'

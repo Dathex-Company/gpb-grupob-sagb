@@ -1,13 +1,17 @@
 import React from 'react';
 
 export const CentralPageShell: React.FC<{ title: string; subtitle: string; children: React.ReactNode }> = ({ title, subtitle, children }) => (
-  <div className="h-full overflow-y-auto bg-sagb-bg p-6 text-sagb-text md:p-8">
-    <header className="mb-6 rounded-3xl border border-sagb-line bg-sagb-panel p-6 shadow-sm">
-      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sagb-muted">Central de Padrões V1</p>
-      <h1 className="mt-2 text-2xl font-black tracking-tight text-sagb-text md:text-3xl">{title}</h1>
-      <p className="mt-2 max-w-4xl text-[13px] leading-relaxed text-sagb-muted">{subtitle}</p>
-    </header>
-    <div className="space-y-6">{children}</div>
+  <div className="cp-docs-page">
+    <div className="cp-docs-wrap">
+      <header className="cp-docs-title-block">
+        <div className="cp-docs-title">
+          <div className="cp-docs-title-icon">📄</div>
+          <h1>{title}</h1>
+        </div>
+        <p className="cp-docs-subtitle">{subtitle}</p>
+        <div className="cp-docs-meta-line"><span className="cp-docs-owner-dot">P</span><span>Pietro Carboni</span><span>·</span><span>Central Docs UI</span><span>·</span><span>Canonicidade pendente quando aplicável</span></div>
+      </header>
+      <div className="cp-docs-content">{children}</div>
+    </div>
   </div>
 );
-

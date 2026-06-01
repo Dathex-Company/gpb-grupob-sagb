@@ -3,8 +3,14 @@ import {
   BlocoTela,
   BlueprintTela,
   BlueprintEditorFields,
+  BlockInspectorData,
   CentralTab,
+  ComposerBlockState,
+  ComposerState,
   ExportacaoTela,
+  LayoutModelo,
+  LayoutZone,
+  PapelBloco,
   ProjetoTela,
   ProjectVisualConfig,
   QuickEditData,
@@ -34,6 +40,20 @@ import {
   updateBlocoMeta,
 } from '../services/studio.service';
 import { loadCentralData, saveCentralData } from '../services/repository/central.repository';
+import {
+  assignBlocoToZona,
+  buildAllInspectorData,
+  buildInspectorData,
+  changeLayout,
+  getBlocosAgrupadosPorZona,
+  getComposerState,
+  getBlocosDisponiveis,
+  persistComposerState,
+  rebuildComposerState,
+  removeBlocoFromComposer,
+  reorderBlocoInZona,
+  setBlocoPapelVisual,
+} from '../services/composer/composer.service';
 
 type CentralState = {
   // ── Dados ──
@@ -53,6 +73,11 @@ type CentralState = {
   studioStep: StudioStepId;
   studioBlueprint: BlueprintEditorFields;
   studioVisual: VisualDirectionConfig;
+
+  // ── Composer / Preview ──
+  composer: ComposerState | null;
+  selectedBlockId: string | null;
+  composerViewMode: 'estrutural' | 'demo';
 
   // ── Biblioteca: filtros ──
   search: string;
@@ -74,6 +99,19 @@ type CentralState = {
   setStudioStep: (step: StudioStepId) => void;
   setStudioBlueprint: (fields: BlueprintEditorFields) => void;
   setStudioVisual: (config: Partial<VisualDirectionConfig>) => void;
+
+  // Composer / Preview
+  loadComposer: (projetoId: string) => void;
+  setComposerLayout: (projetoId: string, layout: LayoutModelo) => void;
+  assignBlocoToZona: (projetoId: string, blocoId: string, zonaId: string) => void;
+  removeBlocoFromComposer: (projetoId: string, blocoId: string) => void;
+  reorderBlocoInZona: (projetoId: string, blocoId: string, newOrdem: number) => void;
+  setBlocoPapelVisual: (projetoId: string, blocoId: string, papel: PapelBloco) => void;
+  selectBlockForInspector: (blocoId: string | null) => void;
+  setComposerViewMode: (mode: 'estrutural' | 'demo') => void;
+  getInspectorData: (blocoId: string) => BlockInspectorData | null;
+  getInspectorList: () => BlockInspectorData[];
+  getBlocosAgrupados: () => { zona: LayoutZone; blocos: ComposerBlockState[] }[];
 
   // Biblioteca
   setSearch: (value: string) => void;
@@ -157,6 +195,9 @@ export const useTelasAvancadasStore = create<CentralState>((set, get) => ({
   exportacoes: [],
   activeTab: 'biblioteca',
   selectedProjectId: null,
+  composer: null,
+  selectedBlockId: null,
+  composerViewMode: 'estrutural',
   studioStep: 'informacoes',
   studioBlueprint: defaultBlueprintFields(),
   studioVisual: defaultVisualConfig(),
@@ -186,6 +227,60 @@ export const useTelasAvancadasStore = create<CentralState>((set, get) => ({
   setStudioStep: (step) => set({ studioStep: step }),
   setStudioBlueprint: (fields) => set({ studioBlueprint: fields }),
   setStudioVisual: (config) => set((s) => ({ studioVisual: { ...s.studioVisual, ...config } })),
+
+  // ── Composer / Preview ──
+  loadComposer: (projetoId) => {
+    const state = getComposerState(projetoId);
+    set({ composer: state });
+  },
+
+  setComposerLayout: (projetoId, layout) => {
+    const state = changeLayout(projetoId, layout);
+    set({ composer: state });
+  },
+
+  assignBlocoToZona: (projetoId, blocoId, zonaId) => {
+    const state = assignBlocoToZona(projetoId, blocoId, zonaId);
+    set({ composer: state });
+  },
+
+  removeBlocoFromComposer: (projetoId, blocoId) => {
+    const state = removeBlocoFromComposer(projetoId, blocoId);
+    set({ composer: state });
+  },
+
+  reorderBlocoInZona: (projetoId, blocoId, newOrdem) => {
+    const state = reorderBlocoInZona(projetoId, blocoId, newOrdem);
+    set({ composer: state });
+  },
+
+  setBlocoPapelVisual: (projetoId, blocoId, papel) => {
+    const state = setBlocoPapelVisual(projetoId, blocoId, papel);
+    set({ composer: state });
+  },
+
+  selectBlockForInspector: (blocoId) => set({ selectedBlockId: blocoId }),
+
+  setComposerViewMode: (mode) => set({ composerViewMode: mode }),
+
+  getInspectorData: (blocoId) => {
+    const { blocos, composer } = get();
+    const bloco = blocos.find((b) => b.id === blocoId);
+    if (!bloco) return null;
+    return buildInspectorData(bloco, composer);
+  },
+
+  getInspectorList: () => {
+    const { selectedProjectId } = get();
+    if (!selectedProjectId) return [];
+    return buildAllInspectorData(selectedProjectId);
+  },
+
+  getBlocosAgrupados: () => {
+    const { selectedProjectId } = get();
+    if (!selectedProjectId) return [];
+    return getBlocosAgrupadosPorZona(selectedProjectId);
+  },
 
   // ── Biblioteca ──
   setSearch: (value) => set({ search: value }),

@@ -99,6 +99,19 @@ export const TelasAvancadasPage: React.FC = () => {
             onSetStudioBlueprint={store.setStudioBlueprint}
             onSetStudioVisual={store.setStudioVisual}
             blocosDoProjeto={blocosDoProjeto}
+            // Composer props
+            composer={store.composer}
+            selectedBlockId={store.selectedBlockId}
+            composerViewMode={store.composerViewMode}
+            onLoadComposer={store.loadComposer}
+            onChangeLayout={store.setComposerLayout}
+            onAssignBlocoToZona={store.assignBlocoToZona}
+            onRemoveBlocoFromComposer={store.removeBlocoFromComposer}
+            onReorderBlocoInZona={store.reorderBlocoInZona}
+            onSetBlocoPapelVisual={store.setBlocoPapelVisual}
+            onSelectBlockForInspector={store.selectBlockForInspector}
+            onSetComposerViewMode={store.setComposerViewMode}
+            onGetInspectorData={store.getInspectorData}
           />
         )}
 
@@ -116,8 +129,11 @@ export const TelasAvancadasPage: React.FC = () => {
             projetos={store.projetos}
             blueprints={store.blueprints}
             blocos={store.blocos}
+            visuais={store.visuais}
             selectedProjectId={store.selectedProjectId}
             exportacoes={store.exportacoes}
+            composer={store.composer}
+            composerViewMode={store.composerViewMode}
             onGerarExportacao={async (projectId) => { await store.gerarExportacao(projectId); }}
             onPublicar={async (exportacaoId) => { await store.publicarExportacao(exportacaoId); }}
           />
