@@ -649,6 +649,141 @@ const handleClaudeChat = async (payload) => {
   return requestClaudeCompletion(payload);
 };
 
+const requestPreferredTextCompletion = async (payload) => {
+  if (pickOpenAIKey()) return requestOpenAICompletion(payload);
+  if (pickDeepSeekKey()) return requestDeepSeekCompletion(payload);
+  if (pickAnthropicKey()) return requestClaudeCompletion(payload);
+  if (hasGeminiKey()) {
+    const ai = getGeminiClient();
+    const messages = Array.isArray(payload?.messages) ? payload.messages : [];
+    const prompt = [
+      payload?.systemInstruction ? `SISTEMA:\n${payload.systemInstruction}` : '',
+      ...messages.map((message) => `${String(message?.role || 'user').toUpperCase()}: ${String(message?.content || '')}`),
+    ].filter(Boolean).join('\n\n');
+
+    const response = await ai.models.generateContent({
+      model: payload.model || 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        temperature: typeof payload.temperature === 'number' ? payload.temperature : 0.4,
+      },
+    });
+
+    return { text: response.text || '' };
+  }
+  if (pickLlamaLocalUrl()) return requestLlamaLocalCompletion(payload);
+  throw createHttpError(500, 'No AI provider configured for Sala Dev. Configure OPENAI_API_KEY, DEEPSEEK_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY or LLAMA_LOCAL_URL.');
+};
+
+const handleSalaDevChat = async (payload) => {
+  const messages = Array.isArray(payload?.messages) ? payload.messages : [];
+  if (messages.length === 0) {
+    throw createHttpError(400, 'Missing required field: messages');
+  }
+
+  const completion = await requestPreferredTextCompletion({
+    ...payload,
+    messages,
+    systemInstruction: payload.systemInstruction || 'Voce e o Assistente IA independente da Sala Dev do SagB. Responda em portugues do Brasil, com clareza tecnica, markdown e proximos passos executaveis. Nao afirme que executou comandos ou alterou arquivos.',
+    temperature: typeof payload.temperature === 'number' ? payload.temperature : 0.5,
+    maxTokens: typeof payload.maxTokens === 'number' ? payload.maxTokens : 1800,
+  });
+
+  return {
+    content: completion.text || '',
+    finishReason: completion.finishReason || 'stop',
+    usage: completion.completionTokens
+      ? { completionTokens: completion.completionTokens }
+      : undefined,
+  };
+};
+
+const handleSalaDevGenerateBriefing = async (payload) => {
+  const projectName = String(payload?.projectName || 'Novo Projeto').trim();
+  const idea = String(payload?.idea || '').trim();
+  const objective = String(payload?.objective || '').trim();
+  const audience = String(payload?.audience || '').trim();
+  const constraints = String(payload?.constraints || '').trim();
+
+  const prompt = `
+Gere um briefing inicial para a Sala Dev em JSON valido.
+
+Dados:
+- Projeto: ${projectName}
+- Ideia: ${idea || 'nao informado'}
+- Objetivo: ${objective || 'nao informado'}
+- Publico/usuario: ${audience || 'nao informado'}
+- Restricoes: ${constraints || 'sem restricoes informadas'}
+
+Retorne APENAS JSON no formato:
+{
+  "summary": "resumo executivo em 1 paragrafo",
+  "scope": ["3 a 6 itens de escopo"],
+  "risks": ["3 a 5 riscos tecnicos ou de produto"],
+  "firstSteps": ["3 a 5 primeiros passos"]
+}
+`.trim();
+
+  const completion = await requestPreferredTextCompletion({
+    ...payload,
+    messages: [{ role: 'user', content: prompt }],
+    systemInstruction: 'Voce e um arquiteto senior de produto e software. Retorne somente JSON valido.',
+    temperature: 0.25,
+    maxTokens: 1600,
+  });
+
+  const parsed = parseJsonObject(completion.text, {});
+  return {
+    summary: String(parsed.summary || `${projectName}: ${idea || 'Escopo inicial em definicao.'}`),
+    scope: Array.isArray(parsed.scope) ? parsed.scope.map(String) : [`Projeto: ${projectName}`, 'Definir escopo funcional inicial.'],
+    risks: Array.isArray(parsed.risks) ? parsed.risks.map(String) : ['Escopo precisa ser validado antes da construcao.'],
+    firstSteps: Array.isArray(parsed.firstSteps) ? parsed.firstSteps.map(String) : ['Revisar briefing.', 'Validar premissas.', 'Iniciar esteira.'],
+  };
+};
+
+const handleSalaDevSuggestNextSteps = async (payload) => {
+  const context = String(payload?.context || payload?.contextText || '').trim();
+  const prompt = `
+Com base no contexto da Sala Dev abaixo, sugira exatamente 3 proximos passos curtos e acionaveis.
+
+CONTEXTO:
+${context || 'Sem contexto adicional.'}
+
+Retorne APENAS JSON Array de strings.
+`.trim();
+
+  const completion = await requestPreferredTextCompletion({
+    ...payload,
+    messages: [{ role: 'user', content: prompt }],
+    systemInstruction: 'Responda somente JSON array valido.',
+    temperature: 0.35,
+    maxTokens: 600,
+  });
+
+  return { suggestions: parseJsonArray(completion.text, []) };
+};
+
+const handleSalaDevAnalyzeCode = async (payload) => {
+  const fileContent = String(payload?.fileContent || '').trim();
+  const context = String(payload?.context || '').trim();
+  if (!fileContent) {
+    throw createHttpError(400, 'Missing required field: fileContent');
+  }
+
+  const completion = await requestPreferredTextCompletion({
+    ...payload,
+    messages: [{
+      role: 'user',
+      content: `Analise o codigo abaixo para riscos, bugs, melhorias e proximos passos.\n\nCONTEXTO:\n${context || 'Sem contexto adicional.'}\n\nCODIGO:\n\`\`\`\n${fileContent}\n\`\`\``,
+    }],
+    systemInstruction: 'Voce e um revisor senior de codigo da Sala Dev. Seja pratico, objetivo e use markdown.',
+    temperature: 0.2,
+    maxTokens: 1800,
+  });
+
+  return completion.text || '';
+};
+
 const handleTranscribeAudio = async (payload) => {
   const ai = getGeminiClient();
   const mimeType = payload.mimeType || 'audio/webm';
@@ -879,6 +1014,10 @@ const handleCreateAgentFromScratch = async (payload) => {
 };
 
 const actionHandlers = {
+  chat: handleSalaDevChat,
+  generateBriefing: handleSalaDevGenerateBriefing,
+  suggestNextSteps: handleSalaDevSuggestNextSteps,
+  analyzeCode: handleSalaDevAnalyzeCode,
   gemini_chat: handleGeminiChat,
   gemini_tts: handleGeminiTts,
   deepseek_chat: handleDeepSeekChat,

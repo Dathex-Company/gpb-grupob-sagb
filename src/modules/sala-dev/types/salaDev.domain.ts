@@ -11,6 +11,7 @@ import {
 
 export type ExecutionEnvironment = 'sagb_ui' | 'vscode_future' | 'roo_code_future';
 export type AgentPriority = 'low' | 'medium' | 'high' | 'critical';
+export type ExecutionBlock = 1 | 2 | 3 | 4 | 5;
 
 export interface DevRunEntity {
   id: string;
@@ -41,6 +42,24 @@ export interface MacroLayerEntity {
   artifactsCount: number;
   riskLevel: RiskLevel;
   nextRecommendedAction?: string;
+}
+
+export interface BlockEntity {
+  id: string;
+  runId: string;
+  block: ExecutionBlock;
+  name: string;
+  description?: string;
+  status: MacroLayerStatus;
+  progress: number;
+  agentsCount: number;
+  handoffsCount: number;
+  gatesCount: number;
+  artifactsCount: number;
+  riskLevel: RiskLevel;
+  currentAgentId?: string;
+  nextRecommendedAction?: string;
+  gateStatus?: GateStatus;
 }
 
 export interface HandoffEntity {

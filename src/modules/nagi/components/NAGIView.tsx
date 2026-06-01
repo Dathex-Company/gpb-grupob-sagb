@@ -1,325 +1,340 @@
-import React, { useDeferredValue, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { TabId } from '../../../../types';
-import { BackIcon, SearchIcon } from '../../../../components/Icon';
+import { BackIcon } from '../../../../components/Icon';
 import {
-  CATEGORY_OPTIONS,
-  INITIATIVES,
-  PRIORITY_OPTIONS,
-  STATUS_OPTIONS,
-  operationalMeta,
-  priorityTone,
-  statusTone,
-  InitiativeCategory,
-  InitiativePriority,
-  InitiativeStatus,
-  OperationalState
-} from '../data/nagiBlueprint';
+  getCatalogItems,
+  getTriageItems,
+  createAvulso,
+  resetToBlueprint,
+} from '../services/nagiService';
+import { getEligibleForPromotion, refreshEligibility } from '../services/nagiPromotionService';
+import { receiveFromNic, NicOutputPayload } from '../services/nagiNicBridge';
+import { NagiItem, NagiItemType, ITEM_TYPE_LABELS } from '../domain/types';
+import CatalogSection from './CatalogSection';
+import TriageSection from './TriageSection';
 
 interface NAGIViewProps {
   onBack?: () => void;
   onOpenTab?: (tab: TabId) => void;
 }
 
-/* dados movidos para ../data/nagiBlueprint.ts */
-
-const TogglePill: React.FC<{ state: OperationalState }> = ({ state }) => {
-  const meta = operationalMeta[state];
-  return (
-    <div className={`relative inline-flex items-center w-[72px] h-9 rounded-full px-2 transition-colors ${meta.on ? 'bg-emerald-500' : state === 'inactive' ? 'bg-slate-700' : 'bg-slate-400'}`}>
-      <span className={`absolute inset-y-1 w-7 h-7 rounded-full bg-white shadow-sm transition-transform ${meta.on ? 'translate-x-[34px]' : 'translate-x-0'}`} />
-      <span className={`relative z-10 text-[10px] font-black uppercase tracking-[0.24em] text-white ${meta.on ? 'ml-auto mr-1' : 'ml-1'}`}>
-        {meta.on ? 'ON' : 'OFF'}
-      </span>
-    </div>
-  );
-};
-
-const InfoList: React.FC<{ title: string; items: string[] }> = ({ title, items }) => (
-  <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
-    <h3 className="text-xl font-black tracking-tight text-slate-950 mb-4">{title}</h3>
-    <div className="space-y-3">
-      {items.map((item) => (
-        <div key={item} className="flex items-start gap-3 text-sm leading-7 text-slate-600">
-          <span className="mt-2 w-2 h-2 rounded-full bg-cyan-500 shrink-0" />
-          <span>{item}</span>
-        </div>
-      ))}
-    </div>
-  </section>
-);
+type NagiTab = 'catalogo' | 'triagem';
 
 const NAGIView: React.FC<NAGIViewProps> = ({ onBack, onOpenTab }) => {
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | InitiativeStatus>('all');
-  const [categoryFilter, setCategoryFilter] = useState<'all' | InitiativeCategory>('all');
-  const [priorityFilter, setPriorityFilter] = useState<'all' | InitiativePriority>('all');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const deferredSearch = useDeferredValue(search);
+  const [activeTab, setActiveTab] = useState<NagiTab>('triagem');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showNicForm, setShowNicForm] = useState(false);
 
-  const initiatives = INITIATIVES;
-  const selected = initiatives.find((initiative) => initiative.id === selectedId) || null;
+  const [catalogItems, setCatalogItems] = useState<NagiItem[]>([]);
+  const [triageItems, setTriageItems] = useState<NagiItem[]>([]);
+  const [eligibleCount, setEligibleCount] = useState(0);
 
-  const filtered = useMemo(() => {
-    const term = deferredSearch.trim().toLowerCase();
-    return initiatives.filter((initiative) => {
-      if (statusFilter !== 'all' && initiative.status !== statusFilter) return false;
-      if (categoryFilter !== 'all' && initiative.category !== categoryFilter) return false;
-      if (priorityFilter !== 'all' && initiative.priority !== priorityFilter) return false;
-      if (!term) return true;
-      return [
-        initiative.title,
-        initiative.shortDescription,
-        initiative.category,
-        initiative.status,
-        initiative.heroDescription
-      ].join(' ').toLowerCase().includes(term);
-    });
-  }, [initiatives, deferredSearch, statusFilter, categoryFilter, priorityFilter]);
+  const refresh = useCallback(() => {
+    refreshEligibility();
+    setCatalogItems(getCatalogItems());
+    setTriageItems(getTriageItems());
+    setEligibleCount(getEligibleForPromotion().length);
+    setRefreshKey((k) => k + 1);
+  }, []);
 
-  const statusCounts = useMemo(() => {
-    const counts = new Map<InitiativeStatus, number>();
-    initiatives.forEach((initiative) => counts.set(initiative.status, (counts.get(initiative.status) || 0) + 1));
-    return counts;
-  }, [initiatives]);
+  useEffect(() => { refresh(); }, [refresh]);
 
-  const operationalCounts = useMemo(() => {
-    const active = initiatives.filter((initiative) => operationalMeta[initiative.operationalState].on).length;
-    return { active, inactive: initiatives.length - active };
-  }, [initiatives]);
+  const handleNavigate = useCallback((tab: string) => {
+    if (onOpenTab) onOpenTab(tab as TabId);
+  }, [onOpenTab]);
 
-  if (selected) {
-    const stateMeta = operationalMeta[selected.operationalState];
-    return (
-      <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-[radial-gradient(circle_at_top_left,_rgba(8,145,178,0.16),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(251,191,36,0.14),_transparent_26%),linear-gradient(180deg,_#f8fafc_0%,_#eef4ff_100%)]">
-        <div className="max-w-[1500px] mx-auto px-6 md:px-10 py-8 space-y-8">
-          <header className="rounded-[34px] bg-slate-950 text-white shadow-[0_32px_90px_rgba(15,23,42,0.22)] overflow-hidden">
-            <div className="px-8 md:px-10 py-8">
-              <button onClick={() => setSelectedId(null)} className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] font-black text-cyan-300 mb-5">
-                <BackIcon className="w-4 h-4" /> Voltar ao hub
-              </button>
-              <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
-                <div className="max-w-4xl">
-                  <span className="text-[10px] uppercase tracking-[0.4em] font-black text-cyan-300 block mb-3">NAGI / Iniciativa</span>
-                  <h1 className="text-4xl md:text-5xl font-black tracking-[-0.04em]">{selected.title}</h1>
-                  <p className="text-slate-300 text-lg leading-8 mt-4">{selected.heroDescription}</p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-[300px]">
-                  <div className={`rounded-[24px] border px-4 py-4 ${statusTone[selected.status]}`}>
-                    <span className="text-[10px] uppercase tracking-[0.28em] font-black opacity-70 block mb-1">Status</span>
-                    <strong className="text-base font-black">{selected.status}</strong>
-                  </div>
-                  <div className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4">
-                    <span className="text-[10px] uppercase tracking-[0.28em] font-black text-slate-400 block mb-1">Categoria</span>
-                    <strong className="text-base font-black">{selected.category}</strong>
-                  </div>
-                  <div className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4">
-                    <span className="text-[10px] uppercase tracking-[0.28em] font-black text-slate-400 block mb-1">Prioridade</span>
-                    <strong className={`text-base font-black ${selected.priority === 'Alta' ? 'text-rose-300' : selected.priority === 'Média' ? 'text-amber-300' : 'text-slate-200'}`}>{selected.priority}</strong>
-                  </div>
-                  <div className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4">
-                    <span className="text-[10px] uppercase tracking-[0.28em] font-black text-slate-400 block mb-1">Vínculo</span>
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${stateMeta.dot}`} />
-                        <strong className="text-base font-black">{stateMeta.label}</strong>
-                      </div>
-                      <TogglePill state={selected.operationalState} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </header>
+  /* Criar ideia avulsa */
+  const handleCreateAvulso = useCallback(
+    (title: string, summary: string, itemType: NagiItemType, category: string) => {
+      createAvulso({ title, summary, itemType, category });
+      setShowCreateForm(false);
+      refresh();
+    },
+    [refresh],
+  );
 
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
-              <span className="text-[10px] uppercase tracking-[0.35em] font-black text-slate-400 block mb-3">Visão Geral</span>
-              <h2 className="text-2xl font-black tracking-tight text-slate-950 mb-4">O que é, para que serve e valor atual</h2>
-              <div className="space-y-4 text-sm leading-7 text-slate-600">
-                {selected.overview.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-                <div className="rounded-[22px] border border-cyan-100 bg-cyan-50 px-4 py-4">
-                  <div className="text-[10px] uppercase tracking-[0.24em] font-black text-cyan-700 mb-2">Valor do projeto</div>
-                  <p className="text-sm leading-7 text-cyan-900">{selected.value}</p>
-                </div>
-                <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4">
-                  <div className="text-[10px] uppercase tracking-[0.24em] font-black text-slate-500 mb-2">Estágio atual</div>
-                  <p className="text-sm leading-7 text-slate-700">{selected.currentStage}</p>
-                </div>
-              </div>
-            </section>
+  /* Importar do NIC */
+  const handleReceiveFromNic = useCallback(
+    (payload: NicOutputPayload) => {
+      receiveFromNic(payload);
+      setShowNicForm(false);
+      refresh();
+    },
+    [refresh],
+  );
 
-            <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
-              <span className="text-[10px] uppercase tracking-[0.35em] font-black text-slate-400 block mb-3">Estrutura</span>
-              <h2 className="text-2xl font-black tracking-tight text-slate-950 mb-4">Entradas, processamento, saídas e integrações</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { title: 'Entradas', items: selected.structure.inputs },
-                  { title: 'Processamento', items: selected.structure.processing },
-                  { title: 'Saídas', items: selected.structure.outputs },
-                  { title: 'Integrações', items: selected.structure.integrations }
-                ].map((block) => (
-                  <div key={block.title} className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-[10px] uppercase tracking-[0.24em] font-black text-slate-500 mb-3">{block.title}</div>
-                    <div className="space-y-2">
-                      {block.items.map((item) => (
-                        <div key={item} className="text-sm leading-6 text-slate-700">{item}</div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </section>
-
-          <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <InfoList title="O que já foi feito" items={selected.completed} />
-            <InfoList title="Próximos passos" items={selected.nextSteps} />
-            <InfoList title="Documentos e decisões" items={selected.documentsAndDecisions} />
-          </section>
-
-          <section className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
-                <span className="text-[10px] uppercase tracking-[0.35em] font-black text-slate-400 block mb-3">Conexão com SagB</span>
-                <h2 className="text-2xl font-black tracking-tight text-slate-950">Vínculo do projeto com o ecossistema</h2>
-                <p className="text-sm leading-7 text-slate-600 mt-3">
-                  Esta iniciativa existe dentro do NAGI como frente estratégica do ecossistema e pode se desdobrar em módulo real do SagB conforme sua maturidade operacional.
-                </p>
-              </div>
-              {selected.routeTab && onOpenTab && (
-                <button
-                  onClick={() => onOpenTab(selected.routeTab!)}
-                  className="px-5 py-3 rounded-2xl bg-slate-950 text-white font-black tracking-tight hover:bg-slate-800 transition-colors"
-                >
-                  Abrir módulo real no SagB
-                </button>
-              )}
-            </div>
-          </section>
-        </div>
-      </div>
-    );
-  }
+  const totalCatalogo = catalogItems.length;
+  const totalTriagem = triageItems.length;
 
   return (
-    <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-[radial-gradient(circle_at_top_left,_rgba(8,145,178,0.16),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(34,197,94,0.12),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef4ff_100%)]">
-      <div className="max-w-[1500px] mx-auto px-6 md:px-10 py-8 space-y-8">
-        <header className="rounded-[34px] border border-white/70 bg-slate-950 text-white shadow-[0_32px_90px_rgba(15,23,42,0.22)] overflow-hidden">
-          <div className="px-8 md:px-10 py-8">
-            <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
-              <div className="max-w-4xl">
+    <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-[#F8F6F4]">
+      <div className="max-w-[1500px] mx-auto px-6 md:px-10 py-8 space-y-6">
+
+        {/* Header — Alice UI: surface branco, sem dark */}
+        <header className="rounded-[24px] border border-[rgba(102,91,83,0.11)] bg-white shadow-sm">
+          <div className="px-6 md:px-8 py-6">
+            <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+              <div className="max-w-2xl">
                 {onBack && (
-                  <button onClick={onBack} className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] font-black text-cyan-300 mb-5">
-                    <BackIcon className="w-4 h-4" /> Voltar ao ecossistema
+                  <button onClick={onBack} className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.1em] font-semibold text-cyan-600 mb-3">
+                    <BackIcon className="w-3.5 h-3.5" /> Voltar
                   </button>
                 )}
-                <span className="text-[10px] uppercase tracking-[0.4em] font-black text-cyan-300 block mb-3">Hub Estrutural</span>
-                <h1 className="text-4xl md:text-5xl font-black tracking-[-0.04em]">NAGI</h1>
-                <p className="text-slate-300 text-lg leading-8 mt-4">
-                  Plataforma-mãe de captação, memória, transcrição e inteligência operacional.
+                <span className="text-[10px] uppercase tracking-[0.15em] font-semibold text-cyan-600 block mb-2">
+                  NAGI — Núcleo de Gestão de Ideias
+                </span>
+                <h1 className="text-[31px] font-extrabold tracking-[-0.04em] text-slate-950">
+                  Central de Ideias
+                </h1>
+                <p className="text-[13px] leading-6 text-slate-500 mt-2 max-w-xl">
+                  Receba, organize, avalie e direcione ideias para os módulos especialistas do ecossistema.
+                  Aqui você decide o que segue adiante e o que merece virar item oficial.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-w-[320px]">
-                <div className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4">
-                  <span className="text-[10px] uppercase tracking-[0.28em] font-black text-slate-400 block mb-1">Frentes</span>
-                  <strong className="text-3xl font-black tracking-tight">{initiatives.length}</strong>
+              {/* Métricas — Alice UI: metric-card compacto */}
+              <div className="grid grid-cols-3 gap-2 min-w-[200px]">
+                <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3">
+                  <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Catálogo</span>
+                  <strong className="text-[24px] font-bold text-slate-950">{totalCatalogo}</strong>
                 </div>
-                <div className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4">
-                  <span className="text-[10px] uppercase tracking-[0.28em] font-black text-slate-400 block mb-1">Ligadas</span>
-                  <div className="flex items-center justify-between gap-3">
-                    <strong className="text-3xl font-black tracking-tight">{operationalCounts.active}</strong>
-                    <TogglePill state="active" />
-                  </div>
+                <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3">
+                  <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Triagem</span>
+                  <strong className="text-[24px] font-bold text-slate-950">{totalTriagem}</strong>
                 </div>
-                <div className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4">
-                  <span className="text-[10px] uppercase tracking-[0.28em] font-black text-slate-400 block mb-1">Desligadas</span>
-                  <div className="flex items-center justify-between gap-3">
-                    <strong className="text-3xl font-black tracking-tight">{operationalCounts.inactive}</strong>
-                    <TogglePill state="inactive" />
-                  </div>
+                <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3">
+                  <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Elegíveis</span>
+                  <strong className="text-[24px] font-bold text-emerald-600">{eligibleCount}</strong>
                 </div>
               </div>
             </div>
           </div>
         </header>
 
-        <section className="rounded-[30px] border border-white/80 bg-white/85 backdrop-blur-xl p-5 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-            <div className="flex flex-wrap gap-3">
-              <label className="relative">
-                <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Buscar iniciativa, categoria ou descrição..."
-                  className="pl-10 pr-3 py-3 rounded-2xl border border-slate-200 bg-white text-sm min-w-[260px]"
-                />
-              </label>
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | InitiativeStatus)} className="px-3 py-3 rounded-2xl border border-slate-200 bg-white text-sm">
-                <option value="all">Todos os status</option>
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status}>{status} ({statusCounts.get(status) || 0})</option>
-                ))}
-              </select>
-              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value as 'all' | InitiativeCategory)} className="px-3 py-3 rounded-2xl border border-slate-200 bg-white text-sm">
-                <option value="all">Todas as categorias</option>
-                {CATEGORY_OPTIONS.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-              <select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value as 'all' | InitiativePriority)} className="px-3 py-3 rounded-2xl border border-slate-200 bg-white text-sm">
-                <option value="all">Todas as prioridades</option>
-                {PRIORITY_OPTIONS.map((priority) => (
-                  <option key={priority} value={priority}>{priority}</option>
-                ))}
-              </select>
-            </div>
+        {/* Navegação + Ações — Alice UI: tabs clean */}
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+          <div className="flex gap-1.5">
+            <TabBtn active={activeTab === 'triagem'} onClick={() => setActiveTab('triagem')}>
+              Ideias em análise
+              <span className="ml-1.5 opacity-60">{totalTriagem}</span>
+            </TabBtn>
+            <TabBtn active={activeTab === 'catalogo'} onClick={() => setActiveTab('catalogo')}>
+              Catálogo
+              <span className="ml-1.5 opacity-60">{totalCatalogo}</span>
+            </TabBtn>
+            {eligibleCount > 0 && activeTab === 'triagem' && (
+              <span className="h-[37px] flex items-center px-3 rounded-[14px] bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold uppercase tracking-[0.05em]">
+                ★ {eligibleCount} prontos para catálogo
+              </span>
+            )}
+          </div>
 
-            <button className="px-5 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 text-sm font-black tracking-tight cursor-default">
-              Adicionar iniciativa depois
+          <div className="flex gap-2">
+            {activeTab === 'triagem' && (
+              <>
+                <button onClick={() => setShowNicForm(true)}
+                  className="h-[37px] px-4 rounded-[14px] bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold uppercase tracking-[0.06em] hover:bg-blue-100 transition-colors">
+                  + Do NIC
+                </button>
+                <button onClick={() => setShowCreateForm(true)}
+                  className="h-[37px] px-4 rounded-[14px] bg-slate-950 text-white text-[11px] font-semibold uppercase tracking-[0.06em] hover:bg-slate-800 transition-colors">
+                  + Nova ideia
+                </button>
+              </>
+            )}
+            <button onClick={() => { resetToBlueprint(); refresh(); }}
+              className="h-[37px] px-3 rounded-[14px] border border-[rgba(102,91,83,0.11)] bg-white text-slate-400 text-[10px] font-semibold uppercase tracking-[0.06em] hover:bg-slate-50">
+              ↺ Resetar
             </button>
           </div>
-        </section>
+        </div>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-          {filtered.map((initiative) => {
-            const stateMeta = operationalMeta[initiative.operationalState];
-            return (
-              <button
-                key={initiative.id}
-                onClick={() => setSelectedId(initiative.id)}
-                className={`group min-h-[228px] rounded-[28px] border p-4 text-left bg-white shadow-[0_18px_44px_rgba(15,23,42,0.06)] hover:shadow-[0_24px_60px_rgba(15,23,42,0.12)] transition-all ${initiative.featured ? 'border-cyan-300 ring-1 ring-cyan-200' : 'border-slate-200'} ${stateMeta.card}`}
-              >
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] font-black ${statusTone[initiative.status]}`}>
-                    <span className={`w-2 h-2 rounded-full ${stateMeta.dot}`} />
-                    {initiative.status}
-                  </div>
-                  <TogglePill state={initiative.operationalState} />
-                </div>
+        {/* Conteúdo */}
+        {activeTab === 'catalogo' && (
+          <div className="space-y-2">
+            <p className="text-[11px] text-slate-400 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              Itens oficiais e reconhecidos do ecossistema — prontos, catalogados e vinculados a módulos especialistas.
+            </p>
+            <CatalogSection key={`cat-${refreshKey}`} items={catalogItems} onRefresh={refresh} onNavigate={handleNavigate} />
+          </div>
+        )}
 
-                <div className="mb-4">
-                  <h3 className="text-[20px] leading-6 font-black tracking-tight text-slate-950 mb-2">{initiative.title}</h3>
-                  <p className="text-sm leading-6 text-slate-600">{initiative.shortDescription}</p>
-                </div>
+        {activeTab === 'triagem' && (
+          <div className="space-y-2">
+            <p className="text-[11px] text-slate-400 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              Ideias em análise, aguardando classificação, qualificação ou decisão. Itens com <strong className="text-emerald-600 font-semibold">★ Elegível</strong> podem ser promovidos ao catálogo.
+            </p>
+            <TriageSection key={`tri-${refreshKey}`} items={triageItems} onRefresh={refresh} onNavigate={handleNavigate} />
+          </div>
+        )}
 
-                <div className="mt-auto space-y-3">
-                  <div className="text-[10px] uppercase tracking-[0.24em] font-black text-slate-400">{initiative.category}</div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className={`text-xs font-black uppercase tracking-[0.18em] ${priorityTone[initiative.priority]}`}>Prioridade {initiative.priority}</span>
-                    {initiative.featured && <span className="text-[10px] uppercase tracking-[0.24em] font-black text-cyan-700">Primeiro módulo real</span>}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </section>
+        {/* Rodapé — Alice UI: sutil */}
+        <footer className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white/70 px-5 py-4 text-center">
+          <span className="text-[9px] uppercase tracking-[0.15em] font-semibold text-slate-400">
+            CID + RAI → NIC → NAGI → Módulos Especialistas
+          </span>
+          <p className="text-[10px] text-slate-400 mt-1">O NAGI governa. Os especialistas executam.</p>
+        </footer>
       </div>
+
+      {/* Modal: Nova ideia avulsa */}
+      {showCreateForm && (
+        <ModalShell title="Nova ideia" onClose={() => setShowCreateForm(false)}>
+          <CreateAvulsoForm onSubmit={handleCreateAvulso} />
+        </ModalShell>
+      )}
+
+      {/* Modal: Importar do NIC */}
+      {showNicForm && (
+        <ModalShell title="Importar do NIC" onClose={() => setShowNicForm(false)}>
+          <NicImportForm onSubmit={handleReceiveFromNic} />
+        </ModalShell>
+      )}
     </div>
   );
 };
+
+/* ── Tab Button ────────────────────────────────── */
+
+const TabBtn: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({
+  active, onClick, children,
+}) => (
+  <button
+    onClick={onClick}
+    className={`h-[37px] px-4 rounded-[14px] text-[11px] font-semibold uppercase tracking-[0.06em] transition-all ${
+      active ? 'bg-slate-950 text-white shadow-sm' : 'bg-white text-slate-500 border border-[rgba(102,91,83,0.11)] hover:bg-slate-50'
+    }`}
+  >
+    {children}
+  </button>
+);
+
+/* ── Modal Shell ───────────────────────────────── */
+
+const ModalShell: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({
+  title, onClose, children,
+}) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
+    <div className="bg-white rounded-[24px] shadow-lg max-w-lg w-full mx-4 p-6 space-y-5" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-[17px] font-semibold tracking-[-0.01em] text-slate-950">{title}</h3>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+      </div>
+      {children}
+    </div>
+  </div>
+);
+
+/* ── CreateAvulsoForm ──────────────────────────── */
+
+const CreateAvulsoForm: React.FC<{
+  onSubmit: (title: string, summary: string, itemType: NagiItemType, category: string) => void;
+}> = ({ onSubmit }) => {
+  const [title, setTitle] = useState('');
+  const [summary, setSummary] = useState('');
+  const [itemType, setItemType] = useState<NagiItemType>('ideia');
+  const [category, setCategory] = useState('');
+
+  const categoryOptions = [
+    'Memória Operacional', 'Inteligência Documental',
+    'Reuniões e Contexto', 'Treinamento e Capital Intelectual',
+    'Vídeo e Contexto', 'Criatividade e Inteligência Pessoal',
+    'Aplicação Comercial', 'Análise Multimodal',
+    'Organização Estratégica', 'Gestão de Portfólio',
+  ];
+
+  return (
+    <div className="space-y-3">
+      <Input label="Título" value={title} onChange={setTitle} placeholder="Nome da ideia…" />
+      <Textarea label="Descrição" value={summary} onChange={setSummary} placeholder="Resumo da ideia…" />
+      <Select label="Tipo" value={itemType} onChange={(v) => setItemType(v as NagiItemType)} options={Object.entries(ITEM_TYPE_LABELS) as [string, string][]} />
+      <Select label="Categoria" value={category} onChange={setCategory} options={categoryOptions.map((c) => [c, c])} placeholder="Selecione…" />
+      <button
+        onClick={() => { if (title.trim() && summary.trim() && category) onSubmit(title.trim(), summary.trim(), itemType, category); }}
+        disabled={!title.trim() || !summary.trim() || !category}
+        className="w-full h-[37px] rounded-[14px] bg-slate-950 text-white text-[11px] font-semibold uppercase tracking-[0.06em] hover:bg-slate-800 transition-colors disabled:opacity-40">
+        Criar ideia
+      </button>
+    </div>
+  );
+};
+
+/* ── NicImportForm ─────────────────────────────── */
+
+const NicImportForm: React.FC<{
+  onSubmit: (payload: NicOutputPayload) => void;
+}> = ({ onSubmit }) => {
+  const [title, setTitle] = useState('');
+  const [summary, setSummary] = useState('');
+  const [itemType, setItemType] = useState<NagiItemType>('iniciativa');
+  const [category, setCategory] = useState('');
+  const [originRefId, setOriginRefId] = useState('');
+  const [originSnapshot, setOriginSnapshot] = useState('');
+
+  return (
+    <div className="space-y-3">
+      <Input label="Título (do NIC)" value={title} onChange={setTitle} placeholder="Nome da saída do NIC…" />
+      <Textarea label="Resumo" value={summary} onChange={setSummary} placeholder="Resumo da inteligência gerada…" />
+      <Input label="ID de referência NIC" value={originRefId} onChange={setOriginRefId} placeholder="nic-output-003" />
+      <Textarea label="Snapshot (cópia do conteúdo NIC)" value={originSnapshot} onChange={setOriginSnapshot} placeholder="Cole aqui a saída original do NIC para referência…" />
+      <Select label="Tipo" value={itemType} onChange={(v) => setItemType(v as NagiItemType)} options={Object.entries(ITEM_TYPE_LABELS) as [string, string][]} />
+      <Input label="Categoria" value={category} onChange={setCategory} placeholder="Ex: Organização Estratégica" />
+      <button
+        onClick={() => {
+          if (title.trim() && summary.trim() && originRefId.trim() && category.trim()) {
+            onSubmit({
+              title: title.trim(), summary: summary.trim(),
+              itemType, category: category.trim(),
+              originRefId: originRefId.trim(), originSnapshot: originSnapshot.trim(),
+              evidenceLabel: 'Saída do NIC',
+              evidenceExcerpt: summary.substring(0, 120),
+            });
+          }
+        }}
+        disabled={!title.trim() || !summary.trim() || !originRefId.trim() || !category.trim()}
+        className="w-full h-[37px] rounded-[14px] bg-blue-600 text-white text-[11px] font-semibold uppercase tracking-[0.06em] hover:bg-blue-700 transition-colors disabled:opacity-40">
+        Importar do NIC para triagem
+      </button>
+    </div>
+  );
+};
+
+/* ── Field helpers ────────────────────────────── */
+
+const Input: React.FC<{ label: string; value: string; onChange: (v: string) => void; placeholder?: string }> = ({
+  label, value, onChange, placeholder,
+}) => (
+  <div>
+    <label className="text-[10px] uppercase tracking-[0.06em] font-semibold text-slate-500 block mb-1">{label}</label>
+    <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+      className="w-full h-[42px] rounded-[15px] border border-[rgba(102,91,83,0.11)] bg-[#FDFBFA] px-3 text-sm outline-none focus:border-slate-400" />
+  </div>
+);
+
+const Textarea: React.FC<{ label: string; value: string; onChange: (v: string) => void; placeholder?: string }> = ({
+  label, value, onChange, placeholder,
+}) => (
+  <div>
+    <label className="text-[10px] uppercase tracking-[0.06em] font-semibold text-slate-500 block mb-1">{label}</label>
+    <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} placeholder={placeholder}
+      className="w-full px-3 py-2.5 rounded-[15px] border border-[rgba(102,91,83,0.11)] bg-[#FDFBFA] text-sm resize-none outline-none focus:border-slate-400" />
+  </div>
+);
+
+const Select: React.FC<{ label: string; value: string; onChange: (v: string) => void; options: [string, string][]; placeholder?: string }> = ({
+  label, value, onChange, options, placeholder,
+}) => (
+  <div>
+    <label className="text-[10px] uppercase tracking-[0.06em] font-semibold text-slate-500 block mb-1">{label}</label>
+    <select value={value} onChange={(e) => onChange(e.target.value)}
+      className="w-full h-[42px] rounded-[15px] border border-[rgba(102,91,83,0.11)] bg-[#FDFBFA] px-3 text-sm outline-none focus:border-slate-400">
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map(([k, v]) => (<option key={k} value={k}>{v}</option>))}
+    </select>
+  </div>
+);
 
 export default NAGIView;

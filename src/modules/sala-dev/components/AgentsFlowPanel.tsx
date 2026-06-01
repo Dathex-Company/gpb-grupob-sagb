@@ -1,17 +1,19 @@
 import React from 'react';
 import { CheckIcon, XIcon, FileTextIcon, MessageSquareIcon, ArrowRightIcon, AlertCircleIcon, ClockIcon } from '../../../../components/Icon';
 import { AgentFlowEvent, DevAgent, EventStatus } from '../types/salaDev.types';
-import { AgentCatalogEntity, ArtifactEntity, GateEntity, HandoffEntity, MacroLayerEntity, RecommendedAgentEntity, RunAgentEntity, RunRiskEntity } from '../types/salaDev.domain';
+import { AgentCatalogEntity, ArtifactEntity, BlockEntity, GateEntity, HandoffEntity, MacroLayerEntity, RecommendedAgentEntity, RunAgentEntity, RunRiskEntity } from '../types/salaDev.domain';
 import { MacroLayerCard } from './MacroLayerCard';
 import { MacroLayerDetail } from './MacroLayerDetail';
 import { DomainDecision } from '../types/salaDev.status';
 import { AgentGroupPanel } from './AgentGroupPanel';
 import { getStatusView } from '../utils/salaDevStatusView';
+import { BlockFlowVisual } from './BlockFlowVisual';
 
 interface AgentsFlowPanelProps {
   events: AgentFlowEvent[];
   agents: DevAgent[];
   macroLayers: MacroLayerEntity[];
+  blocks?: BlockEntity[];
   handoffs: HandoffEntity[];
   gates: GateEntity[];
   runAgents: RunAgentEntity[];
@@ -20,7 +22,9 @@ interface AgentsFlowPanelProps {
   artifacts: ArtifactEntity[];
   risks: RunRiskEntity[];
   selectedMacroLayerId?: string;
+  selectedBlockId?: string | null;
   onSelectMacroLayer?: (layerId: string) => void;
+  onSelectBlock?: (blockId: string) => void;
   selectedHandoffId?: string;
   selectedGateId?: string;
   onSelectHandoff?: (handoffId: string) => void;
@@ -38,6 +42,7 @@ export const AgentsFlowPanel: React.FC<AgentsFlowPanelProps> = ({
   events,
   agents,
   macroLayers,
+  blocks = [],
   handoffs,
   gates,
   runAgents,
@@ -46,7 +51,9 @@ export const AgentsFlowPanel: React.FC<AgentsFlowPanelProps> = ({
   artifacts,
   risks,
   selectedMacroLayerId,
+  selectedBlockId,
   onSelectMacroLayer,
+  onSelectBlock,
   selectedHandoffId,
   selectedGateId,
   onSelectHandoff,
@@ -95,7 +102,26 @@ export const AgentsFlowPanel: React.FC<AgentsFlowPanelProps> = ({
     }
   };
 
-  const macroLayerNameById = macroLayers.reduce<Record<string, string>>((acc, layer) => {
+  const blockAwareLayers = blocks.length > 0
+    ? blocks.map((block): MacroLayerEntity => ({
+        id: block.id,
+        name: block.name,
+        order: block.block,
+        description: block.description,
+        status: block.status,
+        progress: block.progress,
+        agentsCount: block.agentsCount,
+        handoffsCount: block.handoffsCount,
+        gatesCount: block.gatesCount,
+        artifactsCount: block.artifactsCount,
+        riskLevel: block.riskLevel,
+        nextRecommendedAction: block.nextRecommendedAction
+      }))
+    : macroLayers;
+
+  const activeSelectedLayerId = selectedBlockId || selectedMacroLayerId;
+
+  const macroLayerNameById = blockAwareLayers.reduce<Record<string, string>>((acc, layer) => {
     acc[layer.id] = layer.name;
     return acc;
   }, {});
@@ -108,31 +134,47 @@ export const AgentsFlowPanel: React.FC<AgentsFlowPanelProps> = ({
           <p className="text-sm font-medium text-slate-300 mt-1">Timeline de execução ao vivo</p>
         </div>
         <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider text-right">
-          <div>{macroLayers.length} macrocamadas</div>
+          <div>{blocks.length || macroLayers.length} blocos</div>
           <div>{handoffs.length} handoffs • {gates.length} gates</div>
           <div>{runAgents.filter(a => a.status === 'active').length} agentes ativos</div>
         </div>
       </div>
 
       <div className="p-4 border-b border-slate-800 bg-[#0B1121] space-y-3">
-        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-black sticky top-0 bg-[#0B1121] py-1 z-10">Modo compacto · macrocamadas</p>
+        {blocks.length > 0 && (
+          <BlockFlowVisual
+            blocks={blocks}
+            runAgents={runAgents}
+            gates={gates}
+            selectedBlockId={activeSelectedLayerId}
+            onSelectBlock={(id) => {
+              onSelectBlock?.(id);
+              onSelectMacroLayer?.(id);
+            }}
+          />
+        )}
+
+        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-black sticky top-0 bg-[#0B1121] py-1 z-10">Modo compacto · {blocks.length > 0 ? 'blocos operacionais' : 'macrocamadas'}</p>
         <div className="grid grid-cols-1 gap-2 max-h-[270px] overflow-y-auto pr-1">
-          {macroLayers
+          {blockAwareLayers
             .sort((a, b) => a.order - b.order)
             .map((layer) => (
               <MacroLayerCard
                 key={layer.id}
                 layer={layer}
-                isActive={layer.id === macroLayers.find(m => m.status === 'running')?.id}
-                isSelected={selectedMacroLayerId === layer.id}
-                onSelect={(id) => onSelectMacroLayer?.(id)}
+                isActive={layer.id === blockAwareLayers.find(m => m.status === 'running')?.id}
+                isSelected={activeSelectedLayerId === layer.id}
+                onSelect={(id) => {
+                  onSelectBlock?.(id);
+                  onSelectMacroLayer?.(id);
+                }}
               />
             ))}
         </div>
 
-        {selectedMacroLayerId && (
+        {activeSelectedLayerId && blockAwareLayers.find(m => m.id === activeSelectedLayerId) && (
           <MacroLayerDetail
-            layer={macroLayers.find(m => m.id === selectedMacroLayerId)!}
+            layer={blockAwareLayers.find(m => m.id === activeSelectedLayerId)!}
             runAgents={runAgents}
             handoffs={handoffs}
             gates={gates}
@@ -152,7 +194,7 @@ export const AgentsFlowPanel: React.FC<AgentsFlowPanelProps> = ({
           availableAgents={availableAgents}
           recommendedAgents={recommendedAgents}
           macroLayerNameById={macroLayerNameById}
-          currentMacroLayerId={selectedMacroLayerId || undefined}
+          currentMacroLayerId={activeSelectedLayerId || undefined}
           onSummonAgent={(id) => onSummonAgent?.(id)}
           onSetRunAgentStatus={(id, status) => onSetRunAgentStatus?.(id, status)}
           onDeactivateRunAgent={(id) => onDeactivateRunAgent?.(id)}

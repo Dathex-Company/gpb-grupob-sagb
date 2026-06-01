@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createSalaDevState, deactivateRunAgent, summonAgentToRun, updateGateStatus, updateHandoffStatus, updateRunAgentStatus } from '../store/salaDev.store';
+import { advanceBlock, createSalaDevState, deactivateRunAgent, summonAgentToRun, updateGateStatus, updateHandoffStatus, updateRunAgentStatus } from '../store/salaDev.store';
 import { DomainDecision } from '../types/salaDev.status';
 import { SalaDevRepositoryAdapter } from '../services/salaDevRepository';
 import { Agent } from '../../../../types';
@@ -8,6 +8,8 @@ import { salaDevTechnicalExportService } from '../services/salaDevTechnicalExpor
 import { TechnicalExecutionPackage } from '../types/salaDev.technicalExport';
 import { salaDevTechnicalBridgeService } from '../services/salaDevTechnicalBridgeService';
 import { GeneratedInitialBriefing, NewProjectBriefingForm } from '../components/NewProjectEntryPanel';
+import { BlockNumber } from '../types/salaDev.agentConstants';
+import { createSalaDevLlmService } from '../services/SalaDevLlmService';
 
 interface UseSalaDevRunOptions {
   officialAgents?: Agent[];
@@ -49,6 +51,7 @@ export function useSalaDevRun(options: UseSalaDevRunOptions = {}) {
         updatedAt: new Date(),
         executionEnvironment: 'sagb_ui'
       },
+      blocks: [],
       macroLayers: [],
       handoffs: [],
       gates: [],
@@ -85,13 +88,18 @@ export function useSalaDevRun(options: UseSalaDevRunOptions = {}) {
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedMacroLayerId, setSelectedMacroLayerId] = useState<string | null>(
-    state.domain.run.currentMacroLayerId || state.domain.macroLayers[0]?.id || null
+    state.domain.run.currentMacroLayerId || state.domain.blocks[0]?.id || state.domain.macroLayers[0]?.id || null
+  );
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
+    state.domain.run.currentMacroLayerId || state.domain.blocks[0]?.id || null
   );
   const [selectedHandoffId, setSelectedHandoffId] = useState<string | null>(null);
   const [selectedGateId, setSelectedGateId] = useState<string | null>(null);
   const [lastTechnicalPackage, setLastTechnicalPackage] = useState<TechnicalExecutionPackage | null>(null);
   const [projectEntryForm, setProjectEntryForm] = useState<NewProjectBriefingForm>(emptyProjectEntryForm);
   const [generatedBriefing, setGeneratedBriefing] = useState<GeneratedInitialBriefing | null>(null);
+  const [isGeneratingBriefingWithAi, setIsGeneratingBriefingWithAi] = useState(false);
+  const [briefingAiError, setBriefingAiError] = useState<string | null>(null);
   const [pipelineStarted, setPipelineStarted] = useState(false);
   const selectedEvent = state.events.find(e => e.id === selectedEventId) || null;
 
@@ -110,7 +118,9 @@ export function useSalaDevRun(options: UseSalaDevRunOptions = {}) {
       };
 
       setState(createSalaDevState(statePayload));
-      setSelectedMacroLayerId(statePayload.domain.run.currentMacroLayerId || statePayload.domain.macroLayers[0]?.id || null);
+      const initialSelection = statePayload.domain.run.currentMacroLayerId || statePayload.domain.blocks[0]?.id || statePayload.domain.macroLayers[0]?.id || null;
+      setSelectedMacroLayerId(initialSelection);
+      setSelectedBlockId(initialSelection);
     };
     void load();
   }, [officialAgents]);
@@ -146,7 +156,30 @@ export function useSalaDevRun(options: UseSalaDevRunOptions = {}) {
   };
 
   const handleSummonAgent = (agentId: string) => {
-    setState(prev => summonAgentToRun(prev, agentId, selectedMacroLayerId || undefined));
+    setState(prev => summonAgentToRun(prev, agentId, selectedBlockId || selectedMacroLayerId || undefined));
+  };
+
+  const handleAdvanceBlock = (blockId: string) => {
+    setState(prev => advanceBlock(prev, blockId));
+    const currentBlock = state.domain.blocks.find(b => b.id === blockId);
+    const nextBlock = currentBlock ? state.domain.blocks.find(b => b.block === currentBlock.block + 1) : undefined;
+    if (nextBlock) {
+      setSelectedBlockId(nextBlock.id);
+      setSelectedMacroLayerId(nextBlock.id);
+    }
+  };
+
+  const handleSummonBlockAgent = (_blockNumber: BlockNumber, agentId: string) => {
+    const targetBlock = state.domain.blocks.find(block => block.block === _blockNumber);
+    setState(prev => summonAgentToRun(prev, agentId, targetBlock?.id || selectedBlockId || undefined));
+  };
+
+  const getActiveBlock = () => state.domain.blocks.find(block => block.id === state.domain.run.currentMacroLayerId) || state.domain.blocks.find(block => block.status === 'running');
+
+  const getBlockAgents = (blockNumber: BlockNumber) => {
+    const block = state.domain.blocks.find(item => item.block === blockNumber);
+    if (!block) return [];
+    return state.domain.runAgents.filter(agent => agent.macroLayerId === block.id);
   };
 
   const handleRunAgentStatusChange = (agentId: string, status: typeof state.domain.runAgents[number]['status']) => {
@@ -248,6 +281,30 @@ export function useSalaDevRun(options: UseSalaDevRunOptions = {}) {
     }));
   };
 
+  const handleGenerateInitialBriefingWithAi = async () => {
+    setIsGeneratingBriefingWithAi(true);
+    setBriefingAiError(null);
+
+    try {
+      const llmService = createSalaDevLlmService();
+      const briefing = await llmService.generateBriefing(projectEntryForm);
+      setGeneratedBriefing(briefing);
+      setState(prev => ({
+        ...prev,
+        run: {
+          ...prev.run,
+          projectName: projectEntryForm.projectName.trim() || 'Novo Projeto',
+          briefingSummary: briefing.summary
+        }
+      }));
+    } catch (error) {
+      setBriefingAiError((error as Error).message || 'Falha ao gerar briefing com IA. Usando fallback local.');
+      handleGenerateInitialBriefing();
+    } finally {
+      setIsGeneratingBriefingWithAi(false);
+    }
+  };
+
   const handleStartPipeline = () => {
     if (!generatedBriefing) return;
     setPipelineStarted(true);
@@ -265,6 +322,8 @@ export function useSalaDevRun(options: UseSalaDevRunOptions = {}) {
     setSelectedEventId,
     selectedMacroLayerId,
     setSelectedMacroLayerId,
+    selectedBlockId,
+    setSelectedBlockId,
     selectedHandoffId,
     setSelectedHandoffId,
     selectedGateId,
@@ -272,6 +331,10 @@ export function useSalaDevRun(options: UseSalaDevRunOptions = {}) {
     handleHandoffStatusChange,
     handleGateStatusChange,
     handleSummonAgent,
+    handleAdvanceBlock,
+    handleSummonBlockAgent,
+    getActiveBlock,
+    getBlockAgents,
     handleRunAgentStatusChange,
     handleDeactivateRunAgent,
     selectedEvent,
@@ -279,9 +342,12 @@ export function useSalaDevRun(options: UseSalaDevRunOptions = {}) {
     lastTechnicalPackage,
     projectEntryForm,
     generatedBriefing,
+    isGeneratingBriefingWithAi,
+    briefingAiError,
     pipelineStarted,
     handleProjectEntryFieldChange,
     handleGenerateInitialBriefing,
+    handleGenerateInitialBriefingWithAi,
     handleStartPipeline,
     handleStartNewProject
   };

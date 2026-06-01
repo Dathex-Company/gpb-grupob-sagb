@@ -20,7 +20,10 @@ interface NewProjectEntryPanelProps {
   briefing: GeneratedInitialBriefing | null;
   onChange: (field: keyof NewProjectBriefingForm, value: string) => void;
   onGenerateBriefing: () => void;
+  onGenerateBriefingWithAi?: () => void;
   onStartPipeline: () => void;
+  isGeneratingBriefingWithAi?: boolean;
+  briefingAiError?: string | null;
 }
 
 export const NewProjectEntryPanel: React.FC<NewProjectEntryPanelProps> = ({
@@ -28,7 +31,10 @@ export const NewProjectEntryPanel: React.FC<NewProjectEntryPanelProps> = ({
   briefing,
   onChange,
   onGenerateBriefing,
-  onStartPipeline
+  onGenerateBriefingWithAi,
+  onStartPipeline,
+  isGeneratingBriefingWithAi = false,
+  briefingAiError = null
 }) => {
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-10 bg-[#0B1121]">
@@ -97,12 +103,29 @@ export const NewProjectEntryPanel: React.FC<NewProjectEntryPanelProps> = ({
             />
           </div>
 
-          <button
-            onClick={onGenerateBriefing}
-            className="w-full md:w-auto inline-flex items-center justify-center rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider px-5 py-3 transition-colors"
-          >
-            Gerar briefing inicial
-          </button>
+          <div className="flex flex-col gap-3 md:flex-row">
+            <button
+              onClick={onGenerateBriefing}
+              className="w-full md:w-auto inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100 font-black text-xs uppercase tracking-wider px-5 py-3 transition-colors"
+            >
+              Gerar briefing local
+            </button>
+            {onGenerateBriefingWithAi && (
+              <button
+                onClick={onGenerateBriefingWithAi}
+                disabled={isGeneratingBriefingWithAi}
+                className="w-full md:w-auto inline-flex items-center justify-center rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-60 disabled:cursor-not-allowed text-slate-950 font-black text-xs uppercase tracking-wider px-5 py-3 transition-colors"
+              >
+                {isGeneratingBriefingWithAi ? 'Gerando com IA...' : '✨ Gerar briefing com IA'}
+              </button>
+            )}
+          </div>
+
+          {briefingAiError && (
+            <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs font-semibold text-yellow-200">
+              IA indisponível: {briefingAiError}. Um briefing local foi gerado como fallback.
+            </div>
+          )}
         </section>
 
         {briefing && (

@@ -2,6 +2,7 @@ import {
   AgentCatalogEntity,
   ArtifactEntity,
   ArtifactVersionEntity,
+  BlockEntity,
   DevRunEntity,
   FinalAuditEntity,
   FutureExecutionBridge,
@@ -69,6 +70,7 @@ export interface DevFileNode {
 
 export interface SalaDevDomainSnapshot {
   run: DevRunEntity;
+  blocks: BlockEntity[];
   macroLayers: MacroLayerEntity[];
   handoffs: HandoffEntity[];
   gates: GateEntity[];

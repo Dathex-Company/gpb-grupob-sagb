@@ -42,3 +42,8 @@ A versão V1 transforma o módulo em portal vivo de governança com:
 
 - [Padrão de Módulos Plugáveis](../../docs/governanca_sagb/padrao_modulos_plugaveis.md)
 - [Padrão Unificado de Governança](../../docs/governanca_sagb/padrao_unificado_governanca.md)
+
+
+## Curadoria Geral das Divisões
+
+Em 2026-06-01 foi carregada operacionalmente a Curadoria Geral das Divisões da Central de Padrões (ET-10 a ET-20), usando a ET-09 do Sávio como modelo. A carga inclui documentos-mãe, itens normativos atômicos, checklists, matrizes, registros/evidências, decisões propostas/lacunas e dependências por área. A canonicidade final permanece pendente de validação Pietro.

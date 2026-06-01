@@ -9,13 +9,27 @@ Seu papel é organizar, coordenar e tornar auditável a execução de runs.
 
 ## 1.1 status executivo
 
-- fase atual: `10/10 ET | Consolidação técnica e plano da Fase 2`
+- fase atual: `Fase 3 | Evolução Sala Dev v3.0.0 — 18 agentes oficiais`
 - responsavel atual: `denise_bogado`
-- progresso estimado: `100% da Fase 1`
-- proximo marco: `Fase 2 | ativação incremental controlada (persistência real, agentes oficiais e execução técnica)`
-- bloqueio principal: dependência de readiness transversal do SagB para ativação Supabase e integrações externas sem regressão
+- progresso estimado: `Fase 1 documental da evolução 11 → 18 agentes iniciada`
+- proximo marco: `Fase 2 técnica | tipos, mocks, hook central, componentes e sidebar plugável com 18 agentes`
+- bloqueio principal: alinhar documentos, personas e prompts antes de alterar o motor visual/código da Sala Dev
 
 ## 1.2 changelog curto
+
+### 31/05/2026
+
+- iniciada evolução oficial da Sala Dev para `v3.0.0` com 18 agentes CA-01 a CA-18
+- atualizado modelo metodológico de 11 agentes para 5 blocos operacionais
+- definidos blocos: Entrada e Organização, Arquitetura e Documentação, Construção Técnica, Segurança e Qualidade, Deploy e Operação
+- criadas personas dos novos agentes críticos: CA-08, CA-09, CA-11, CA-12, CA-13, CA-15 e CA-17
+- criados prompts de ativação dos novos agentes
+- `AGENTS.md`, `PROJECT_BOOTSTRAP.md` e `CONTEXT.md` atualizados para Sala Dev v3.0.0
+- implementada Fase 2 técnica inicial: constantes dos 18 agentes, `BlockEntity`, snapshot com `blocks`, mock v3, store com avanço de bloco, hook com seleção/orquestração de blocos, visual `BlockFlowVisual`, header `V3` e integração no fluxo
+- build de produção validado com sucesso via `npm run build`
+- criado plano arquitetural para transformar a Sala Dev em AI Studio de programação total: `plans/sala_dev_ai_studio_programacao_total.md`
+- decisão arquitetural: Sala Dev ainda não substitui VS Code/Roo Code porque a ponte técnica atual bloqueia escrita de arquivos, comandos, sync e deploy por segurança
+- próximo caminho recomendado: implementar primeiro Studio Mock Interativo antes de liberar filesystem/comandos reais
 
 ### 01/05/2026
 
@@ -68,6 +82,9 @@ Em caso de conflito, a norma canônica prevalece.
 7. Artefatos, logs, versões e auditoria são rastro obrigatório.
 8. VS Code / Roo Code ficam como camada futura, sem integração real nesta fase.
 9. Supabase entra após base modular e contrato de domínio mínimo.
+10. A Sala Dev v3.0.0 passa a operar com 18 agentes oficiais CA-01 a CA-18.
+11. O modelo de 11 agentes permanece como histórico, mas não é mais a referência operacional principal.
+12. A organização oficial passa de 6 macrocamadas visuais para 5 blocos operacionais multiagentes.
 
 ## 4. estado atual
 
@@ -360,6 +377,29 @@ Preparar camada operacional entre Sala Dev e execução técnica sem automação
 10. Toda persistência deve respeitar o contrato de domínio e os mappers existentes.
 
 ## 12. versionamento
+
+### v3.0.0 - 31/05/2026
+
+- Evolução metodológica da Sala Dev de 11 para 18 agentes oficiais iniciada.
+- `AGENTS.md` reestruturado para CA-01 a CA-18 com blocos, missões, inputs, outputs, limites e entregáveis.
+- `PROJECT_BOOTSTRAP.md` atualizado para refletir esteira de 5 blocos e 18 agentes.
+- `CONTEXT.md` atualizado com foco atual da Fase 1 documental da v3.0.0.
+- Criadas personas dos novos agentes: CA-08 Segurança Técnica, CA-09 DevOps/Deploy, CA-11 Logs e Observabilidade, CA-12 Versionamento Técnico, CA-13 Catálogo Técnico, CA-15 Revisor de Código e CA-17 Operação e Runbooks.
+- Criados prompts de ativação dos novos agentes em `agent/prompts/`.
+- Tipos, mocks, hook central, store e componentes principais atualizados para refletir 18 agentes no frontend.
+- Criado `salaDev.agentConstants.ts` com catálogo CA-01 a CA-18 e `BLOCK_CONFIG` dos 5 blocos.
+- Criado `BlockFlowVisual.tsx` para exibir a esteira v3 por 5 blocos operacionais.
+- Build de produção validado com sucesso após a implementação técnica inicial.
+- Próxima etapa técnica: refinar sidebar plugável, persistência real de blocks no Supabase e ações interativas avançadas de avanço/aprovação por bloco.
+
+### Caminho AI Studio de Programação Total
+
+- Documento-base criado em `plans/sala_dev_ai_studio_programacao_total.md`.
+- Prioridade 1: criar aba Studio dentro da Sala Dev com chat operacional, plano, arquivos impactados, diff simulado, aprovações, terminal simulado e preview placeholder.
+- Prioridade 2: backend mínimo local com sandbox para leitura/escrita controlada.
+- Prioridade 3: agente programador real com geração de patches e revisão CA-10/CA-15/CA-08.
+- Prioridade 4: persistência Supabase completa para sessões, mensagens, patches, comandos e logs.
+- Prioridade 5: preview real, terminal seguro e deploy aprovado.
 
 ### v0.9.0 - 01/05/2026
 

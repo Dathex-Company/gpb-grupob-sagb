@@ -1,0 +1,1120 @@
+# Sala Dev — Estrutura Visual dos 18 Agentes por Etapa da Esteira
+
+## 1. Visão geral
+
+A Sala Dev será a sala oficial de desenvolvimento da Loze / GrupoB dentro do SagB.
+
+Ela deve funcionar como uma esteira visual de criação de sistemas, aplicativos, módulos, automações e produtos digitais.
+
+A lógica central é simples:
+
+**uma ideia entra, os agentes trabalham em sequência, e a Sala Dev conduz essa ideia até uma entrega organizada de MVP.**
+
+A estrutura visual da Sala Dev não deve esconder os agentes. Pelo contrário: os agentes precisam aparecer de forma clara, dinâmica e vendável, com foto, nome, cargo, status e função na etapa.
+
+Isso transforma a Sala Dev em três coisas ao mesmo tempo:
+
+1. ambiente operacional real de desenvolvimento;
+2. cockpit de acompanhamento e governança;
+3. vitrine comercial da força dos agentes do GrupoB.
+
+---
+
+## 2. Decisão estrutural
+
+A Sala Dev terá duas fases de estruturação de agentes.
+
+### Fase 1 — 18 agentes essenciais
+
+A primeira versão oficial da esteira visual terá **18 agentes essenciais**.
+
+Esses agentes cobrem as frentes mínimas necessárias para uma operação profissional de desenvolvimento:
+
+* orquestração;
+* arquitetura;
+* documentação;
+* front-end;
+* back-end;
+* banco de dados;
+* integrações;
+* segurança;
+* deploy;
+* QA;
+* logs;
+* versionamento;
+* catálogo técnico;
+* automações;
+* revisão de código;
+* UX/UI técnico;
+* operação;
+* reaproveitamento técnico.
+
+### Fase 2 — expansão para até 30 agentes
+
+A segunda fase poderá expandir a Sala Dev para até **30 agentes técnicos**, criando especializações mais profundas conforme a maturidade real da operação.
+
+A regra é:
+
+**começar com 18 agentes visíveis e essenciais, mas desenhar a arquitetura preparada para crescer até 30 sem refazer a esteira.**
+
+---
+
+## 3. Princípio visual da Sala Dev
+
+A Sala Dev deve ser visual.
+
+Cada agente deve aparecer como um card vivo, contendo:
+
+* foto/avatar;
+* nome;
+* código CA;
+* função;
+* etapa atual;
+* status;
+* tarefa em execução;
+* origem da tarefa;
+* próximo destino;
+* artefatos gerados;
+* tempo ou progresso, quando fizer sentido.
+
+Exemplo de status:
+
+* aguardando;
+* em análise;
+* executando;
+* revisando;
+* bloqueado;
+* concluído;
+* aprovado.
+
+A tela precisa passar a sensação de uma equipe técnica trabalhando em tempo real.
+
+Não deve parecer um organograma parado.
+
+Deve parecer uma **linha de produção inteligente**.
+
+---
+
+## 4. Jornada principal da Sala Dev
+
+A jornada do usuário deve ser simples e progressiva.
+
+### Etapa 0 — Novo Projeto
+
+O usuário entra com a ideia.
+
+Pergunta central:
+
+**Qual projeto você quer criar?**
+
+Campos principais:
+
+* nome do projeto;
+* ideia do projeto;
+* objetivo;
+* público-alvo;
+* limitações importantes;
+* resultado esperado.
+
+### Etapa 1 — Briefing Inicial
+
+A Sala Dev organiza a ideia em um briefing claro.
+
+Entrega visual:
+
+* resumo da ideia;
+* objetivo do projeto;
+* público-alvo;
+* funcionalidades iniciais;
+* dúvidas pendentes;
+* complexidade estimada.
+
+### Etapa 2 — Plano do MVP
+
+Antes de abrir o cockpit técnico, a Sala Dev deve mostrar um plano simples do MVP.
+
+Entrega visual:
+
+* o que será construído na primeira versão;
+* o que fica fora da primeira versão;
+* quais etapas serão executadas;
+* quais agentes participarão;
+* quais entregáveis serão gerados;
+* riscos e pendências principais.
+
+Botão principal:
+
+**Aprovar plano e iniciar esteira**
+
+### Etapa 3 — Esteira de Desenvolvimento
+
+Após aprovação, entram os 18 agentes visíveis da Sala Dev.
+
+A partir daqui, o usuário acompanha:
+
+* agentes trabalhando;
+* handoffs;
+* gates;
+* artefatos;
+* decisões;
+* logs;
+* auditoria.
+
+### Etapa 4 — Entrega e Auditoria
+
+A Sala Dev apresenta:
+
+* entrega gerada;
+* documentação;
+* decisões tomadas;
+* riscos;
+* status final;
+* parecer de aprovação, revisão ou bloqueio.
+
+---
+
+## 5. Esteira visual por etapas
+
+A seguir está a organização recomendada dos 18 agentes dentro da esteira.
+
+A esteira deve ser apresentada em blocos, mas os agentes devem continuar visíveis.
+
+---
+
+# Bloco 1 — Entrada, Organização e Direção
+
+Este bloco transforma a ideia inicial em uma demanda organizada.
+
+## CA-01 — Orquestrador Técnico
+
+### Função
+
+Organiza a demanda, define a sequência da esteira, distribui tarefas e garante que cada agente entre no momento certo.
+
+### Quando aparece
+
+Desde o início da run.
+
+### O que mostra no card
+
+* recebeu a ideia;
+* organizando a esteira;
+* distribuindo tarefas;
+* monitorando handoffs;
+* aguardando aprovação humana, quando necessário.
+
+### Saídas esperadas
+
+* sequência da run;
+* agentes acionados;
+* próximos passos;
+* status geral da esteira.
+
+---
+
+## CA-18 — Guardião de Reaproveitamento Técnico
+
+### Função
+
+Antes de construir qualquer coisa, verifica se já existe algo parecido no SagB, em outros módulos, tabelas, serviços, componentes, automações ou documentações.
+
+### Por que vem cedo
+
+Esse agente precisa entrar no começo, porque evita duplicação.
+
+### O que mostra no card
+
+* verificando módulos existentes;
+* checando componentes reaproveitáveis;
+* analisando tabelas e services já criados;
+* sugerindo reaproveitamento.
+
+### Saídas esperadas
+
+* itens reaproveitáveis;
+* riscos de duplicação;
+* recomendação de usar, adaptar ou criar novo.
+
+---
+
+## CA-13 — Catálogo Técnico
+
+### Função
+
+Consulta e mantém o catálogo de módulos, tabelas, APIs, services, integrações, automações e componentes reaproveitáveis.
+
+### Relação com o CA-18
+
+O Guardião de Reaproveitamento pergunta:
+
+**já existe algo parecido?**
+
+O Catálogo Técnico responde:
+
+**onde está, como funciona e se pode ser reutilizado.**
+
+### O que mostra no card
+
+* pesquisando catálogo;
+* cruzando módulos;
+* listando assets técnicos;
+* vinculando referências existentes.
+
+### Saídas esperadas
+
+* lista de ativos técnicos;
+* módulos relacionados;
+* tabelas existentes;
+* componentes reaproveitáveis.
+
+---
+
+# Bloco 2 — Arquitetura, Escopo e Documentação Técnica
+
+Este bloco transforma o projeto em uma estrutura técnica clara.
+
+## CA-02 — Arquiteto de Sistemas
+
+### Função
+
+Define arquitetura, módulos, rotas, estrutura técnica, integrações e decisões estruturais.
+
+### Quando entra
+
+Depois que a ideia, o reaproveitamento e o catálogo inicial foram analisados.
+
+### O que mostra no card
+
+* desenhando arquitetura;
+* definindo módulos;
+* avaliando integrações;
+* apontando riscos estruturais.
+
+### Saídas esperadas
+
+* arquitetura do módulo;
+* estrutura de pastas;
+* dependências;
+* decisões técnicas principais.
+
+---
+
+## CA-03 — Especialista em Documentação Técnica
+
+### Função
+
+Aplica o padrão GB-DAS, organiza documentação técnica, ADRs, changelog, runbooks e documentos mestres.
+
+### Quando entra
+
+Logo após a arquitetura inicial, e continua acompanhando a run.
+
+### O que mostra no card
+
+* registrando documentação;
+* atualizando changelog;
+* criando decisão técnica;
+* organizando runbook.
+
+### Saídas esperadas
+
+* documento técnico;
+* ADRs;
+* changelog;
+* runbook;
+* documentação do módulo.
+
+---
+
+## CA-16 — UX/UI Técnico
+
+### Função
+
+Faz a ponte entre a experiência do usuário e a implementação técnica da interface.
+
+Cuida de fluxos, telas, componentes, padrões visuais e alinhamento com Alice Montini quando necessário.
+
+### Quando entra
+
+Antes do front-end construir tela.
+
+### O que mostra no card
+
+* organizando fluxo de tela;
+* validando hierarquia visual;
+* simplificando experiência;
+* revisando usabilidade técnica.
+
+### Saídas esperadas
+
+* fluxo UX;
+* estrutura de tela;
+* padrões de componente;
+* observações de clareza e usabilidade.
+
+---
+
+# Bloco 3 — Construção Técnica
+
+Este bloco materializa a solução em código, dados e integrações.
+
+## CA-04 — Front-end Engineer
+
+### Função
+
+Cuida de React, TypeScript, Tailwind, Vite, componentes, telas técnicas e estrutura do front.
+
+### Quando entra
+
+Após arquitetura e UX/UI técnico.
+
+### O que mostra no card
+
+* criando componentes;
+* ajustando layout;
+* conectando props;
+* refinando interface;
+* tratando estados visuais.
+
+### Saídas esperadas
+
+* páginas;
+* componentes;
+* tela funcional;
+* ajustes visuais;
+* estrutura front-end.
+
+---
+
+## CA-05 — Back-end Engineer
+
+### Função
+
+Cuida da lógica de servidor, APIs, services, regras de negócio e integrações internas.
+
+### Quando entra
+
+Quando o módulo precisa de lógica de domínio, serviços ou processamento.
+
+### O que mostra no card
+
+* criando service;
+* ajustando regra de negócio;
+* organizando camada lógica;
+* conectando dados ao front.
+
+### Saídas esperadas
+
+* services;
+* regras de negócio;
+* contratos internos;
+* lógica operacional.
+
+---
+
+## CA-06 — Supabase / Database Engineer
+
+### Função
+
+Cuida de banco de dados, tabelas, migrations, RLS, policies, storage, views, functions e persistência.
+
+### Quando entra
+
+Quando a run precisa de dados reais ou persistência.
+
+### O que mostra no card
+
+* modelando tabelas;
+* revisando RLS;
+* criando políticas;
+* validando persistência;
+* preparando rollback/fallback.
+
+### Saídas esperadas
+
+* schema;
+* tabelas;
+* policies;
+* mappers;
+* persistência;
+* validações de segurança de dados.
+
+---
+
+## CA-07 — API & Integrations Engineer
+
+### Função
+
+Cuida de endpoints, integrações externas, webhooks, bridges, conexões entre sistemas e contratos de API.
+
+### Quando entra
+
+Quando o projeto se conecta com sistemas externos ou precisa de comunicação entre módulos.
+
+### O que mostra no card
+
+* mapeando API;
+* criando contrato de integração;
+* validando payload;
+* revisando webhook;
+* definindo fallback.
+
+### Saídas esperadas
+
+* contratos de API;
+* integração documentada;
+* payloads;
+* endpoints;
+* riscos de integração.
+
+---
+
+## CA-14 — Agentes, MCPs e Automações
+
+### Função
+
+Cuida de agentes técnicos, MCPs, bridges, automações com n8n e integração entre IA e sistemas.
+
+### Quando entra
+
+Quando o projeto exige automação, agentes, IA operacional, MCP ou ponte entre sistemas.
+
+### O que mostra no card
+
+* analisando automação;
+* estruturando agente;
+* validando MCP;
+* avaliando bridge;
+* conectando IA com processo.
+
+### Saídas esperadas
+
+* fluxo automatizado;
+* agente configurado;
+* MCP/bridge planejado;
+* integração de IA documentada.
+
+---
+
+# Bloco 4 — Segurança, Qualidade e Revisão
+
+Este bloco garante que o que foi construído é seguro, estável e revisável.
+
+## CA-08 — Segurança Técnica
+
+### Função
+
+Cuida de autenticação, permissões, tokens, chaves, dados sensíveis, RLS, produção e riscos técnicos de segurança.
+
+### Quando entra
+
+Sempre que houver dados, usuários, permissões, tokens, integrações, banco ou produção.
+
+### O que mostra no card
+
+* revisando permissões;
+* checando dados sensíveis;
+* validando tokens;
+* analisando RLS;
+* bloqueando risco crítico.
+
+### Saídas esperadas
+
+* checklist de segurança;
+* riscos;
+* correções recomendadas;
+* aprovação ou bloqueio técnico.
+
+---
+
+## CA-10 — QA / Testes e Validação
+
+### Função
+
+Cuida de testes mínimos, validação de rotas, regressões, preview, build, bugs e checklist antes de publicar.
+
+### Quando entra
+
+Depois de qualquer implementação relevante.
+
+### O que mostra no card
+
+* testando fluxo;
+* validando rota;
+* checando regressão;
+* registrando bug;
+* conferindo checklist.
+
+### Saídas esperadas
+
+* relatório de QA;
+* bugs encontrados;
+* validações;
+* aprovação para seguir.
+
+---
+
+## CA-15 — Revisor de Código
+
+### Função
+
+Revisa qualidade, duplicidade, manutenção, clareza, riscos e dívida técnica.
+
+### Quando entra
+
+Depois do desenvolvimento e antes da validação final.
+
+### O que mostra no card
+
+* revisando código;
+* checando duplicação;
+* avaliando manutenção;
+* identificando dívida técnica;
+* sugerindo refatoração.
+
+### Saídas esperadas
+
+* parecer de código;
+* riscos de manutenção;
+* sugestões de melhoria;
+* liberação ou revisão.
+
+---
+
+## CA-11 — Logs e Observabilidade
+
+### Função
+
+Cuida de registros de erros, bugs, falhas de execução, incidentes técnicos, logs e rastreabilidade.
+
+### Quando entra
+
+Durante e depois da implementação, principalmente antes da publicação ou teste real.
+
+### O que mostra no card
+
+* avaliando logs;
+* registrando incidente;
+* checando falhas;
+* organizando rastreabilidade;
+* sugerindo monitoramento.
+
+### Saídas esperadas
+
+* logs analisados;
+* pontos de observabilidade;
+* incidentes registrados;
+* recomendações de rastreamento.
+
+---
+
+# Bloco 5 — Versionamento, Deploy e Operação
+
+Este bloco prepara a entrega para publicação, manutenção e operação.
+
+## CA-12 — Versionamento Técnico
+
+### Função
+
+Cuida de GitHub, branches, commits, releases, changelog técnico e organização de versões.
+
+### Quando entra
+
+Quando uma entrega precisa ser versionada, registrada ou preparada para release.
+
+### O que mostra no card
+
+* organizando versão;
+* validando branch;
+* revisando changelog;
+* preparando release;
+* registrando histórico técnico.
+
+### Saídas esperadas
+
+* versão organizada;
+* release notes;
+* changelog técnico;
+* controle de branch/commit.
+
+---
+
+## CA-09 — DevOps / Deploy Engineer
+
+### Função
+
+Cuida de Netlify, ambientes, variáveis, deploy, rollback, build, publicação e estabilidade.
+
+### Quando entra
+
+Na etapa de publicação, preview, deploy ou validação de ambiente.
+
+### O que mostra no card
+
+* preparando deploy;
+* validando build;
+* checando variáveis;
+* analisando rollback;
+* monitorando publicação.
+
+### Saídas esperadas
+
+* preview/deploy;
+* status de build;
+* validação de ambiente;
+* plano de rollback.
+
+---
+
+## CA-17 — Operação e Runbooks
+
+### Função
+
+Cuida de manuais operacionais, procedimentos de uso, recuperação, incidentes, suporte e operação diária.
+
+### Quando entra
+
+No fechamento da entrega e preparação para uso real.
+
+### O que mostra no card
+
+* criando manual;
+* documentando operação;
+* definindo recuperação;
+* preparando suporte;
+* registrando incidentes possíveis.
+
+### Saídas esperadas
+
+* runbook;
+* manual operacional;
+* instruções de suporte;
+* plano de recuperação.
+
+---
+
+# Bloco 6 — Auditoria e Fechamento
+
+Este bloco fecha a run com controle, aprovação e rastreabilidade.
+
+## CA-01 — Orquestrador Técnico
+
+O Orquestrador volta no final para consolidar tudo que foi feito.
+
+### Saídas esperadas
+
+* resumo final da run;
+* agentes acionados;
+* entregáveis gerados;
+* pendências;
+* decisão final.
+
+---
+
+## CA-03 — Especialista em Documentação Técnica
+
+O Documentador valida se os documentos obrigatórios foram atualizados.
+
+### Saídas esperadas
+
+* changelog atualizado;
+* decisões registradas;
+* documentação final;
+* runbook vinculado.
+
+---
+
+## CA-10 — QA / Testes e Validação
+
+O QA valida se a entrega pode seguir.
+
+### Saídas esperadas
+
+* checklist final;
+* validação de rotas;
+* bugs pendentes;
+* parecer de liberação.
+
+---
+
+## CA-08 — Segurança Técnica
+
+A Segurança valida se não há risco crítico.
+
+### Saídas esperadas
+
+* aprovação de segurança;
+* restrições;
+* bloqueios, se houver.
+
+---
+
+## CA-15 — Revisor de Código
+
+O Revisor valida qualidade, clareza e manutenção.
+
+### Saídas esperadas
+
+* parecer técnico;
+* dívida técnica;
+* pontos de melhoria.
+
+---
+
+## 6. Organização resumida dos 18 agentes por etapa
+
+| Etapa da esteira           | Agentes principais                                                                                             |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Entrada e organização      | CA-01 Orquestrador Técnico, CA-18 Guardião de Reaproveitamento, CA-13 Catálogo Técnico                         |
+| Arquitetura e documentação | CA-02 Arquiteto de Sistemas, CA-03 Documentação Técnica, CA-16 UX/UI Técnico                                   |
+| Construção                 | CA-04 Front-end, CA-05 Back-end, CA-06 Supabase/Database, CA-07 API/Integrações, CA-14 Agentes/MCPs/Automações |
+| Segurança e qualidade      | CA-08 Segurança Técnica, CA-10 QA/Testes, CA-15 Revisor de Código, CA-11 Logs/Observabilidade                  |
+| Versionamento e operação   | CA-12 Versionamento Técnico, CA-09 DevOps/Deploy, CA-17 Operação/Runbooks                                      |
+| Fechamento                 | CA-01, CA-03, CA-08, CA-10, CA-15                                                                              |
+
+---
+
+## 7. Como os agentes devem aparecer visualmente
+
+A Sala Dev deve mostrar os 18 agentes de forma dinâmica.
+
+### Visão 1 — Esteira completa
+
+Todos os 18 agentes aparecem em uma linha ou grid dividido por etapas.
+
+Cada card mostra:
+
+* foto;
+* nome;
+* código CA;
+* cargo;
+* etapa;
+* status;
+* tarefa atual.
+
+### Visão 2 — Agentes em ação
+
+Mostra em destaque apenas os agentes ativos naquele momento, mas sem esconder os demais.
+
+Os demais ficam em modo:
+
+* aguardando;
+* próximo;
+* concluído;
+* bloqueado.
+
+### Visão 3 — Handoff
+
+Quando um agente passa para outro, a tela mostra:
+
+**CA-02 Arquiteto → CA-04 Front-end**
+
+Com:
+
+* motivo;
+* artefato entregue;
+* status;
+* próxima ação.
+
+### Visão 4 — Marketing/demo
+
+Para apresentação comercial, a Sala Dev pode ter um modo visual mais cinematográfico:
+
+* cards maiores;
+* avatares em destaque;
+* animação de passagem;
+* status em tempo real;
+* linha da esteira;
+* artefatos surgindo.
+
+Esse modo não precisa ser diferente na lógica. É apenas uma forma mais bonita de apresentar o mesmo fluxo.
+
+---
+
+## 8. Diferença entre agente visível e agente acionado
+
+Mesmo que todos os 18 agentes apareçam visualmente, nem todos precisam atuar em toda run.
+
+A regra deve ser:
+
+* todos podem aparecer como parte da estrutura;
+* apenas alguns ficam ativos conforme a necessidade;
+* agentes não acionados aparecem como “não necessário nesta run” ou “aguardando acionamento”.
+
+Isso evita confusão.
+
+Exemplo:
+
+Se o projeto não tiver API externa, o CA-07 pode aparecer como:
+
+**Não acionado — sem integração externa nesta versão.**
+
+Se o projeto não tiver deploy, o CA-09 pode aparecer como:
+
+**Aguardando — será acionado na etapa de publicação.**
+
+---
+
+## 9. Estados visuais dos agentes
+
+Cada agente deve ter um estado claro.
+
+### Aguardando
+
+O agente ainda não entrou na run.
+
+### Analisando
+
+O agente está lendo briefing, contexto ou artefatos.
+
+### Executando
+
+O agente está produzindo uma saída.
+
+### Revisando
+
+O agente está validando algo feito por outro.
+
+### Bloqueado
+
+O agente depende de decisão, dado, arquivo ou correção.
+
+### Concluído
+
+O agente terminou sua parte.
+
+### Não necessário
+
+O agente faz parte da esteira, mas não será usado naquela run.
+
+---
+
+## 10. Entregáveis por agente
+
+Cada agente deve gerar ou validar algum entregável.
+
+| Código | Agente                               | Entregável principal                     |
+| ------ | ------------------------------------ | ---------------------------------------- |
+| CA-01  | Orquestrador Técnico                 | plano da run e resumo final              |
+| CA-02  | Arquiteto de Sistemas                | arquitetura técnica                      |
+| CA-03  | Documentação Técnica                 | docs, ADRs, changelog e runbook          |
+| CA-04  | Front-end Engineer                   | telas e componentes                      |
+| CA-05  | Back-end Engineer                    | services, regras e APIs internas         |
+| CA-06  | Supabase / Database Engineer         | schema, tabelas, policies e persistência |
+| CA-07  | API & Integrations Engineer          | contratos e integrações                  |
+| CA-08  | Segurança Técnica                    | checklist e parecer de segurança         |
+| CA-09  | DevOps / Deploy Engineer             | build, deploy e rollback                 |
+| CA-10  | QA / Testes e Validação              | relatório de QA                          |
+| CA-11  | Logs e Observabilidade               | trilha de logs e incidentes              |
+| CA-12  | Versionamento Técnico                | versionamento e release notes            |
+| CA-13  | Catálogo Técnico                     | referências reaproveitáveis              |
+| CA-14  | Agentes, MCPs e Automações           | fluxos IA, MCPs e automações             |
+| CA-15  | Revisor de Código                    | parecer de qualidade técnica             |
+| CA-16  | UX/UI Técnico                        | fluxo e estrutura de interface           |
+| CA-17  | Operação e Runbooks                  | manual operacional e suporte             |
+| CA-18  | Guardião de Reaproveitamento Técnico | parecer de reaproveitamento              |
+
+---
+
+## 11. Etapas recomendadas da run com os 18 agentes
+
+Abaixo está uma sugestão de fluxo completo.
+
+### 11.1 Ideia recebida
+
+Agente ativo:
+
+* CA-01 Orquestrador Técnico
+
+Objetivo:
+
+* receber a ideia;
+* organizar contexto;
+* criar briefing inicial.
+
+---
+
+### 11.2 Verificação do que já existe
+
+Agentes ativos:
+
+* CA-18 Guardião de Reaproveitamento Técnico;
+* CA-13 Catálogo Técnico.
+
+Objetivo:
+
+* evitar duplicidade;
+* localizar ativos existentes;
+* sugerir reaproveitamento.
+
+---
+
+### 11.3 Plano do MVP
+
+Agentes ativos:
+
+* CA-01 Orquestrador;
+* CA-02 Arquiteto;
+* CA-16 UX/UI Técnico;
+* CA-03 Documentação.
+
+Objetivo:
+
+* definir o que entra no MVP;
+* organizar etapas;
+* listar agentes necessários;
+* definir entregáveis.
+
+---
+
+### 11.4 Arquitetura e base técnica
+
+Agentes ativos:
+
+* CA-02 Arquiteto;
+* CA-06 Supabase/Database;
+* CA-07 API/Integrações;
+* CA-08 Segurança Técnica.
+
+Objetivo:
+
+* desenhar estrutura técnica;
+* verificar dados;
+* preparar contratos;
+* prevenir riscos.
+
+---
+
+### 11.5 Construção da interface e lógica
+
+Agentes ativos:
+
+* CA-04 Front-end;
+* CA-05 Back-end;
+* CA-06 Supabase/Database;
+* CA-14 Agentes/MCPs/Automações, se necessário.
+
+Objetivo:
+
+* implementar telas;
+* criar serviços;
+* conectar dados;
+* automatizar onde fizer sentido.
+
+---
+
+### 11.6 Revisão técnica
+
+Agentes ativos:
+
+* CA-15 Revisor de Código;
+* CA-08 Segurança Técnica;
+* CA-10 QA/Testes;
+* CA-11 Logs/Observabilidade.
+
+Objetivo:
+
+* revisar código;
+* testar fluxo;
+* verificar segurança;
+* garantir rastreabilidade.
+
+---
+
+### 11.7 Versionamento e deploy
+
+Agentes ativos:
+
+* CA-12 Versionamento Técnico;
+* CA-09 DevOps/Deploy;
+* CA-17 Operação/Runbooks.
+
+Objetivo:
+
+* organizar versão;
+* validar build;
+* preparar publicação;
+* documentar operação.
+
+---
+
+### 11.8 Auditoria final
+
+Agentes ativos:
+
+* CA-01 Orquestrador;
+* CA-03 Documentação;
+* CA-08 Segurança;
+* CA-10 QA;
+* CA-15 Revisor de Código;
+* CA-17 Operação/Runbooks.
+
+Objetivo:
+
+* consolidar entrega;
+* registrar decisão final;
+* aprovar, revisar ou bloquear.
+
+---
+
+## 12. Como preparar a expansão para 30 agentes
+
+A Fase 2 da Sala Dev poderá expandir a estrutura para até 30 agentes.
+
+Essa expansão deve acontecer por especialização, não por duplicação.
+
+Exemplos de agentes futuros:
+
+* Especialista em Performance Front-end;
+* Especialista em Acessibilidade;
+* Especialista em Mobile;
+* Especialista em Testes Automatizados;
+* Especialista em Design System;
+* Especialista em Dados e BI;
+* Especialista em IA aplicada;
+* Especialista em Prompt Engineering;
+* Especialista em Auditoria de Segurança;
+* Especialista em Custos de Infraestrutura;
+* Especialista em Compliance Técnico;
+* Especialista em Observabilidade Avançada.
+
+Regra de expansão:
+
+**a expansão para 30 agentes só deve acontecer quando houver necessidade operacional real.**
+
+Não é para criar agente por estética.
+
+É para criar agente quando uma função ficar recorrente o bastante para justificar especialização.
+
+---
+
+## 13. Regras oficiais da esteira visual
+
+1. Os 18 agentes essenciais devem estar visíveis na Sala Dev.
+2. Nem todos precisam atuar em toda run.
+3. Todo agente acionado deve ter motivo claro.
+4. Todo agente deve ter status visual.
+5. Todo handoff deve mostrar origem e destino.
+6. Todo agente deve gerar ou validar algum entregável.
+7. O Orquestrador conduz a esteira do início ao fim.
+8. O Guardião de Reaproveitamento entra cedo, antes de construir.
+9. Segurança, QA e Revisor não devem ficar só no final; podem bloquear etapas.
+10. A documentação deve acompanhar a run, não ficar apenas no encerramento.
+11. A Sala Dev deve ser vendável visualmente, mas operacionalmente real.
+12. A expansão para 30 agentes deve ser preparada, mas não antecipada sem necessidade.
+
+---
+
+## 14. Conclusão
+
+A estrutura recomendada para a Sala Dev é iniciar com **18 agentes essenciais visíveis**, organizados por etapa da esteira.
+
+Essa estrutura é mais forte que uma esteira de 6 ou 10 agentes, porque mostra profundidade técnica, dá percepção de operação profissional e cria um impacto visual importante para uso comercial.
+
+Ao mesmo tempo, ela ainda é controlável, porque os agentes são organizados em blocos e só entram ativamente quando fazem sentido para a run.
+
+A Sala Dev deve vender a sensação de uma equipe técnica completa trabalhando, mas sem virar bagunça.
+
+A frase-guia da estrutura deve ser:
+
+**A Sala Dev transforma uma ideia em um MVP com uma esteira visual de agentes técnicos especializados, cada um responsável por uma parte clara da construção.**

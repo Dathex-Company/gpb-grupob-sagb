@@ -74,6 +74,7 @@ export class SalaDevMockRepository implements ISalaDevRepository {
 export class SalaDevRepositoryAdapter {
   private static instance: ISalaDevRepository;
   private static fallback = new SalaDevMockRepository();
+  private static _activeProviderName: 'mock' | 'supabase' = 'mock';
 
   private static resolveProviderFromEnv(): 'mock' | 'supabase' {
     const configured = String(import.meta.env.VITE_SALA_DEV_DATA_PROVIDER || 'mock').toLowerCase();
@@ -82,11 +83,26 @@ export class SalaDevRepositoryAdapter {
 
   static getProvider(): ISalaDevRepository {
     if (!this.instance) {
-      const provider = this.resolveProviderFromEnv();
-      this.instance = provider === 'supabase'
+      this._activeProviderName = this.resolveProviderFromEnv();
+      this.instance = this._activeProviderName === 'supabase'
         ? new SalaDevSupabaseRepository(this.fallback)
         : this.fallback;
     }
     return this.instance;
+  }
+
+  /**
+   * Retorna o nome do provider ativo ('mock' | 'supabase').
+   * Útil para componentes e serviços que precisam exibir o status.
+   */
+  static getActiveProviderName(): string {
+    return this._activeProviderName;
+  }
+
+  /**
+   * Força a recriação do provider (útil para testes ou troca em runtime).
+   */
+  static resetProvider(): void {
+    this.instance = undefined as unknown as ISalaDevRepository;
   }
 }

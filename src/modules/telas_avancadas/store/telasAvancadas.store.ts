@@ -1,126 +1,155 @@
-/**
- * Store para gerenciamento de estado das Telas Avançadas
- * V2: Suporte a URL externa, arquivo HTML e código HTML
- */
-
-import * as React from 'react';
 import { create } from 'zustand';
-import { TelaAvancada, TelaAvancadaFormData, TelasAvancadasStore } from '../types/telasAvancadas.types';
+import {
+  BlocoTela,
+  BlueprintTela,
+  CentralTab,
+  ExportacaoTela,
+  ProjetoTela,
+  ReferenciaTela,
+  TelaAvancada,
+  TelaAvancadaFormData,
+} from '../types/telasAvancadas.types';
 import * as telasService from '../services/telasAvancadas.service';
+import {
+  addBloco,
+  addReferencia,
+  createProjeto,
+  gerarExportacao,
+  getStudioSnapshot,
+  publicarExportacaoNaBiblioteca,
+  saveBlueprint,
+} from '../services/studio.service';
 
-export const useTelasAvancadasStore = create<TelasAvancadasStore>((set, get) => ({
+type CentralState = {
+  telas: TelaAvancada[];
+  projetos: ProjetoTela[];
+  blueprints: BlueprintTela[];
+  referencias: ReferenciaTela[];
+  blocos: BlocoTela[];
+  exportacoes: ExportacaoTela[];
+  activeTab: CentralTab['id'];
+  selectedProjectId: string | null;
+  search: string;
+  filterStatus: string;
+  filterCategory: string;
+  isLoading: boolean;
+  error: string | null;
+  loadAll: () => Promise<void>;
+  setActiveTab: (tab: CentralTab['id']) => void;
+  setSelectedProjectId: (id: string | null) => void;
+  setSearch: (value: string) => void;
+  setFilterStatus: (value: string) => void;
+  setFilterCategory: (value: string) => void;
+  addTela: (formData: TelaAvancadaFormData) => Promise<TelaAvancada>;
+  removeTela: (id: string) => Promise<void>;
+  updateTela: (id: string, updates: Partial<TelaAvancada>) => Promise<TelaAvancada>;
+  createProjeto: (input: Omit<ProjetoTela, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'versao'>) => Promise<ProjetoTela>;
+  saveBlueprint: (blueprint: BlueprintTela) => Promise<void>;
+  addBloco: (projetoId: string, tipo: BlocoTela['tipo']) => Promise<BlocoTela>;
+  addReferencia: (ref: Omit<ReferenciaTela, 'id' | 'createdAt'>) => Promise<ReferenciaTela>;
+  gerarExportacao: (projetoId: string) => Promise<ExportacaoTela>;
+  publicarExportacao: (exportacaoId: string) => Promise<TelaAvancada>;
+  clearError: () => void;
+};
+
+const refreshCentral = (set: (p: Partial<CentralState>) => void) => {
+  const snapshot = getStudioSnapshot();
+  set({
+    projetos: snapshot.projetos,
+    blueprints: snapshot.blueprints,
+    referencias: snapshot.referencias,
+    blocos: snapshot.blocos,
+    exportacoes: snapshot.exportacoes,
+  });
+};
+
+export const useTelasAvancadasStore = create<CentralState>((set, get) => ({
   telas: [],
+  projetos: [],
+  blueprints: [],
+  referencias: [],
+  blocos: [],
+  exportacoes: [],
+  activeTab: 'biblioteca',
+  selectedProjectId: null,
+  search: '',
+  filterStatus: 'todos',
+  filterCategory: 'todos',
   isLoading: false,
   error: null,
-  
-  // Carrega todas as telas do storage
-  loadTelas: async () => {
+
+  loadAll: async () => {
     set({ isLoading: true, error: null });
-    
     try {
-      const telas = telasService.getAllTelas();
-      set({ telas, isLoading: false });
+      set({ telas: telasService.getAllTelas() });
+      refreshCentral(set);
+      set({ isLoading: false });
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro ao carregar telas',
-        isLoading: false 
-      });
+      set({ isLoading: false, error: error instanceof Error ? error.message : 'Erro ao carregar central' });
     }
   },
-  
-  // Adiciona uma nova tela (suporte a múltiplos tipos)
-  addTela: async (formData: TelaAvancadaFormData) => {
-    set({ isLoading: true, error: null });
-    
-    try {
-      const novaTela = await telasService.addTela(formData);
-      const telasAtualizadas = [...get().telas, novaTela];
-      
-      set({ 
-        telas: telasAtualizadas,
-        isLoading: false 
-      });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro ao adicionar tela',
-        isLoading: false 
-      });
-      throw error;
-    }
+
+  setActiveTab: (tab) => set({ activeTab: tab }),
+  setSelectedProjectId: (id) => set({ selectedProjectId: id }),
+  setSearch: (value) => set({ search: value }),
+  setFilterStatus: (value) => set({ filterStatus: value }),
+  setFilterCategory: (value) => set({ filterCategory: value }),
+
+  addTela: async (formData) => {
+    const novaTela = await telasService.addTela(formData);
+    set({ telas: [...get().telas, novaTela] });
+    return novaTela;
   },
-  
-  // Remove uma tela pelo ID
-  removeTela: async (id: string) => {
-    set({ isLoading: true, error: null });
-    
-    try {
-      telasService.removeTela(id);
-      const telasAtualizadas = get().telas.filter(tela => tela.id !== id);
-      
-      set({ 
-        telas: telasAtualizadas,
-        isLoading: false 
-      });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro ao remover tela',
-        isLoading: false 
-      });
-      throw error;
-    }
+
+  removeTela: async (id) => {
+    telasService.removeTela(id);
+    set({ telas: get().telas.filter((t) => t.id !== id) });
   },
-  
-  // Obtém uma tela pelo ID
-  getTelaById: (id: string) => {
-    return get().telas.find(tela => tela.id === id) || null;
+
+  updateTela: async (id, updates) => {
+    const updated = telasService.updateTela(id, updates);
+    if (!updated) throw new Error('Tela não encontrada');
+    set({ telas: get().telas.map((t) => (t.id === id ? updated : t)) });
+    return updated;
   },
-  
-  // Atualiza uma tela existente
-  updateTela: async (id: string, updates: Partial<TelaAvancada>) => {
-    set({ isLoading: true, error: null });
-    
-    try {
-      const telaAtualizada = telasService.updateTela(id, updates);
-      
-      if (!telaAtualizada) {
-        throw new Error('Tela não encontrada');
-      }
-      
-      const telasAtualizadas = get().telas.map(tela => 
-        tela.id === id ? telaAtualizada : tela
-      );
-      
-      set({ 
-        telas: telasAtualizadas,
-        isLoading: false 
-      });
-      
-      return telaAtualizada;
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro ao atualizar tela',
-        isLoading: false 
-      });
-      throw error;
-    }
+
+  createProjeto: async (input) => {
+    const projeto = createProjeto(input);
+    refreshCentral(set);
+    set({ selectedProjectId: projeto.id, activeTab: 'estudio' });
+    return projeto;
   },
-  
-  // Limpa erros
-  clearError: () => {
-    set({ error: null });
-  }
+
+  saveBlueprint: async (blueprint) => {
+    saveBlueprint(blueprint);
+    refreshCentral(set);
+  },
+
+  addBloco: async (projetoId, tipo) => {
+    const bloco = addBloco(projetoId, tipo);
+    refreshCentral(set);
+    return bloco;
+  },
+
+  addReferencia: async (ref) => {
+    const created = addReferencia(ref);
+    refreshCentral(set);
+    return created;
+  },
+
+  gerarExportacao: async (projetoId) => {
+    const exp = gerarExportacao(projetoId);
+    refreshCentral(set);
+    return exp;
+  },
+
+  publicarExportacao: async (exportacaoId) => {
+    const tela = await publicarExportacaoNaBiblioteca(exportacaoId);
+    set({ telas: telasService.getAllTelas(), activeTab: 'biblioteca' });
+    refreshCentral(set);
+    return tela;
+  },
+
+  clearError: () => set({ error: null }),
 }));
 
-/**
- * Hook personalizado para usar o store com carregamento inicial
- */
-export const useTelasAvancadas = () => {
-  const store = useTelasAvancadasStore();
-  
-  // Carrega as telas na inicialização
-  React.useEffect(() => {
-    store.loadTelas();
-  }, []);
-  
-  return store;
-};

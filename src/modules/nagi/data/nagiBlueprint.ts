@@ -1,164 +1,362 @@
-import { TabId } from '../../../../types';
+import { NagiItem } from '../domain/types';
 
-export type InitiativeStatus = 'Ideia' | 'Estruturação' | 'Em teste' | 'Ativo' | 'Pausado' | 'Produto futuro';
-export type InitiativeCategory =
-  | 'Memória operacional'
-  | 'Inteligência documental'
-  | 'Reuniões e contexto'
-  | 'Treinamento e capital intelectual'
-  | 'Vídeo e contexto'
-  | 'Criatividade e inteligência pessoal'
-  | 'Aplicação comercial'
-  | 'Análise multimodal'
-  | 'Organização estratégica'
-  | 'Gestão de portfólio';
-export type InitiativePriority = 'Alta' | 'Média' | 'Baixa';
-export type OperationalState = 'active' | 'inactive' | 'testing' | 'paused';
+/* ──────────────────────────────────────────────
+ * NAGI V2 — Dados blueprint (seed inicial)
+ * ────────────────────────────────────────────── */
 
-export type NagiInitiative = {
-  id: string;
-  title: string;
-  shortDescription: string;
-  heroDescription: string;
-  status: InitiativeStatus;
-  category: InitiativeCategory;
-  priority: InitiativePriority;
-  operationalState: OperationalState;
-  value: string;
-  currentStage: string;
-  overview: string[];
-  structure: {
-    inputs: string[];
-    processing: string[];
-    outputs: string[];
-    integrations: string[];
-  };
-  completed: string[];
-  nextSteps: string[];
-  documentsAndDecisions: string[];
-  routeTab?: TabId;
-  featured?: boolean;
-};
+/* === Itens do Catálogo Governado === */
 
-export const STATUS_OPTIONS: InitiativeStatus[] = ['Ideia', 'Estruturação', 'Em teste', 'Ativo', 'Pausado', 'Produto futuro'];
-export const CATEGORY_OPTIONS: InitiativeCategory[] = [
-  'Memória operacional',
-  'Inteligência documental',
-  'Reuniões e contexto',
-  'Treinamento e capital intelectual',
-  'Vídeo e contexto',
-  'Criatividade e inteligência pessoal',
-  'Aplicação comercial',
-  'Análise multimodal',
-  'Organização estratégica',
-  'Gestão de portfólio'
-];
-export const PRIORITY_OPTIONS: InitiativePriority[] = ['Alta', 'Média', 'Baixa'];
-
-export const INITIATIVES: NagiInitiative[] = [
+export const CATALOG_ITEMS: NagiItem[] = [
   {
-    id: 'continuous-memory',
+    id: 'cat-memoria-continua',
     title: 'Memória Contínua',
-    shortDescription: 'Captação contínua de fala ao longo do dia, com blocos curtos, transcrição e organização temporal.',
-    heroDescription: 'Captação contínua de fala e transcrição em blocos curtos para inteligência operacional.',
-    status: 'Em teste',
-    category: 'Memória operacional',
-    priority: 'Alta',
-    operationalState: 'active',
-    value: 'Transforma fala espontânea em memória operacional estruturada dentro do SagB.',
-    currentStage: 'Primeiro módulo real do NAGI, já funcional e validando a espinha dorsal da linha de captação e memória.',
-    overview: [
-      'Memória Contínua é a prova concreta de que o SagB pode captar a realidade do dia e convertê-la em inteligência utilizável.',
-      'Ela grava continuamente, fragmenta em blocos curtos, transcreve, organiza por sessão e por tempo, e prepara o terreno para classificação, resumos e extrações.',
-      'O projeto já nasce integrado à visão maior do NAGI, servindo como base para agentes, Fluxo de Inteligência e CID.'
-    ],
-    structure: {
-      inputs: ['Áudio contínuo de microfone', 'Contexto da sessão, venture, projeto e sensibilidade'],
-      processing: ['Chunking de 3 a 5 minutos', 'Persistência em storage', 'Transcrição por bloco', 'Timeline operacional com retry'],
-      outputs: ['Áudio original por chunk', 'Transcrição estruturada', 'Jobs rastreáveis', 'Extrações iniciais e labels'],
-      integrations: ['CID', 'Fluxo de Inteligência', 'Agentes', 'NIC']
+    summary: 'Captação contínua de fala com transcrição, chunking e organização temporal.',
+    createdAt: '2026-04-01T10:00:00Z',
+    updatedAt: '2026-05-20T14:30:00Z',
+    originType: 'catalogo',
+    itemType: 'iniciativa',
+    category: 'Memória Operacional',
+    tags: ['captação', 'transcrição', 'fala', 'operações'],
+    maturityStage: 'catalogada',
+    priority: 'alta',
+    score: {
+      impact: 5, effort: 3, risk: 2, alignment: 5,
+      final: 94, updatedAt: '2026-05-20T14:30:00Z',
     },
-    completed: ['Captação contínua V1', 'Chunking temporal', 'Transcrição por bloco', 'Timeline do dia', 'Reprocessamento por chunk'],
-    nextSteps: ['Classificação automática mais robusta', 'Resumos por sessão/manhã/tarde/dia', 'Extrações validadas por contexto', 'Leitura futura por agentes'],
-    documentsAndDecisions: ['Módulo oficial do SAGB já implantado', 'Storage fora do banco', 'RLS e pipeline preparados para escalar'],
-    routeTab: 'continuous-memory',
-    featured: true
+    operationalStatus: 'em_teste',
+    governanceStatus: 'aprovada',
+    promotionStatus: 'promovida',
+    specialistTarget: {
+      tab: 'continuous-memory',
+      label: 'Memória Contínua',
+      routingReason: 'Módulo real consolidado dentro do ecossistema SagB.',
+      routedAt: '2026-05-01T08:00:00Z',
+    },
+    handoffRecord: {
+      targetModuleTab: 'continuous-memory',
+      targetModuleLabel: 'Memória Contínua',
+      routedAt: '2026-05-01T08:00:00Z',
+      status: 'processado',
+      specialistNote: 'Módulo operacional ativo e em evolução.',
+    },
+    evidences: [
+      { id: 'ev1', type: 'doc', label: 'Documento de visão do projeto', createdAt: '2026-04-01T10:00:00Z' },
+      { id: 'ev2', type: 'nota', label: 'Primeira validação operacional concluída', createdAt: '2026-04-15T10:00:00Z' },
+    ],
+    decisionHistory: [
+      { id: 'dec-cat-mc-1', at: '2026-04-10T08:00:00Z', by: 'Cássio', action: 'qualificar', rationale: 'Score inicial definido com base na relevância estratégica.', toStage: 'qualificacao' },
+      { id: 'dec-cat-mc-2', at: '2026-04-20T08:00:00Z', by: 'Cássio', action: 'aprovar', rationale: 'Módulo aprovado como iniciativa oficial do ecossistema.', fromGovernance: 'em_analise', toGovernance: 'aprovada', toStage: 'decisao' },
+      { id: 'dec-cat-mc-3', at: '2026-05-01T08:00:00Z', by: 'Cássio', action: 'encaminhar', rationale: 'Encaminhado para módulo Memória Contínua.', toStage: 'encaminhada' },
+    ],
+    isCatalog: true,
+    ownerName: 'Cássio',
   },
   {
-    id: 'cid',
-    title: 'CID',
-    shortDescription: 'Centro de Inteligência Documental para armazenar, transcrever, resumir e organizar documentos, áudios e vídeos.',
-    heroDescription: 'Centro de inteligência documental para ingestão, transcrição e consolidação de materiais estratégicos.',
-    status: 'Em teste',
-    category: 'Inteligência documental',
-    priority: 'Alta',
-    operationalState: 'active',
-    value: 'Concentra ativos documentais e multimídia em uma camada consultável, resumível e reutilizável pelo ecossistema.',
-    currentStage: 'Estrutura avançada já implantada, com espaço para evolução de inteligência e governança documental.',
-    overview: [
-      'O CID organiza documentos, áudios, vídeos e saídas derivadas como ativo estratégico do SagB.',
-      'É a camada que sustenta parte da inteligência documental do NAGI e funciona como repositório operacional para materiais vivos.',
-      'No ecossistema, ele abastece consultas, resumos, consolidações e leitura futura por módulos e agentes.'
-    ],
-    structure: {
-      inputs: ['Uploads de documentos, áudio e vídeo', 'Metadados de projeto, área e sensibilidade'],
-      processing: ['Armazenamento', 'Fragmentação', 'Transcrição', 'Resumo e consolidação'],
-      outputs: ['Assets', 'Chunks', 'Outputs textuais', 'Links e tags documentais'],
-      integrations: ['NAGI', 'Fluxo de Inteligência', 'Governança', 'Agentes']
+    id: 'cat-cid',
+    title: 'CID — Centro de Inteligência Documental',
+    summary: 'Repositório documental com transcrição, resumo e consolidação de materiais estratégicos.',
+    createdAt: '2026-04-01T10:00:00Z',
+    updatedAt: '2026-05-18T09:15:00Z',
+    originType: 'catalogo',
+    itemType: 'iniciativa',
+    category: 'Inteligência Documental',
+    tags: ['documentos', 'transcrição', 'storage', 'consolidação'],
+    maturityStage: 'catalogada',
+    priority: 'alta',
+    score: {
+      impact: 5, effort: 4, risk: 2, alignment: 5,
+      final: 90, updatedAt: '2026-05-18T09:15:00Z',
     },
-    completed: ['Pipeline de upload', 'Jobs de processamento', 'Outputs e tags', 'Storage privado e RLS'],
-    nextSteps: ['Busca semântica', 'Vínculos mais fortes com NAGI', 'Leitura contextual por módulo', 'Consolidação comercial futura'],
-    documentsAndDecisions: ['CID permanece módulo próprio do SagB', 'NAGI o organiza como peça da linha de inteligência', 'Integração com memória e reuniões é prioritária'],
-    routeTab: 'cid'
+    operationalStatus: 'em_teste',
+    governanceStatus: 'aprovada',
+    promotionStatus: 'promovida',
+    specialistTarget: {
+      tab: 'cid',
+      label: 'CID',
+      routingReason: 'Módulo documental oficial do ecossistema SagB.',
+      routedAt: '2026-05-01T08:00:00Z',
+    },
+    handoffRecord: {
+      targetModuleTab: 'cid',
+      targetModuleLabel: 'CID',
+      routedAt: '2026-05-01T08:00:00Z',
+      status: 'processado',
+    },
+    evidences: [
+      { id: 'ev3', type: 'doc', label: 'Arquitetura do CID', createdAt: '2026-04-01T10:00:00Z' },
+      { id: 'ev4', type: 'link', label: 'Pipeline de upload e processamento', createdAt: '2026-04-10T10:00:00Z' },
+    ],
+    decisionHistory: [
+      { id: 'dec-cat-cid-1', at: '2026-04-05T08:00:00Z', by: 'Cássio', action: 'classificar', rationale: 'Classificado como iniciativa de inteligência documental.', toStage: 'classificacao' },
+      { id: 'dec-cat-cid-2', at: '2026-04-18T08:00:00Z', by: 'Cássio', action: 'aprovar', rationale: 'CID aprovado como módulo oficial.', fromGovernance: 'em_analise', toGovernance: 'aprovada', toStage: 'decisao' },
+      { id: 'dec-cat-cid-3', at: '2026-05-01T08:00:00Z', by: 'Cássio', action: 'encaminhar', rationale: 'Encaminhado para módulo CID.', toStage: 'encaminhada' },
+    ],
+    isCatalog: true,
+    ownerName: 'Cássio',
   },
   {
-    id: 'nic',
-    title: 'NIC - Núcleo de Inteligência Conectiva',
-    shortDescription: 'Sistema de leitura estratégica que cruza documentos internos, encontra conexões e gera inteligência orientada a ação.',
-    heroDescription: 'Motor de inteligência conectiva que encontra relações entre temas, metodologias e contextos organizacionais.',
-    status: 'Em teste',
-    category: 'Organização estratégica',
-    priority: 'Alta',
-    operationalState: 'active',
-    value: 'Lê o que o CID prepara e gera inteligência qualificada para que o NAGI governe as frentes e decisões.',
-    currentStage: 'Transição da interface de blueprint para motor real de leitura estratégica interna.',
-    overview: [
-      'O NIC atua como ponte inteligente entre o CID e o NAGI.',
-      'Sua função primária hoje é cruzar materiais internos aplicando lentes de leitura para gerar priorização e decisão.',
-      'O objetivo é identificar padrões recorrentes, tensões e sinergias, saindo da visão isolada de documento para uma visão de conexões ativas.'
-    ],
-    structure: {
-      inputs: ['Múltiplos documentos preparados pelo CID', 'Lentes de análise definidas pelo usuário', 'Filtros de conteúdo interno'],
-      processing: ['Cruzamento de documentos', 'Detecção de padrões e temas em comum', 'Identificação de conflitos e complementaridades'],
-      outputs: ['Evidências e trechos conectados', 'Saídas estratégicas (hipóteses, recomendações)', 'Memória de análise salva para histórico'],
-      integrations: ['CID', 'NAGI', 'Memória Contínua', 'Hub de Ventures']
+    id: 'cat-nic',
+    title: 'NIC — Núcleo de Inteligência Conectiva',
+    summary: 'Motor de leitura estratégica que cruza documentos e gera inteligência conectiva.',
+    createdAt: '2026-04-01T10:00:00Z',
+    updatedAt: '2026-05-18T09:15:00Z',
+    originType: 'catalogo',
+    itemType: 'iniciativa',
+    category: 'Organização Estratégica',
+    tags: ['leitura', 'cruzamento', 'conexões', 'inteligência'],
+    maturityStage: 'catalogada',
+    priority: 'alta',
+    score: {
+      impact: 5, effort: 4, risk: 3, alignment: 5,
+      final: 85, updatedAt: '2026-05-18T09:15:00Z',
     },
-    completed: ['Evolução de Radar de Conexões para NIC', 'Estruturação base da tela orientada a motor de leitura', 'Conceito do ecossistema CID > NIC > NAGI consolidado'],
-    nextSteps: ['Implementar motor real de cruzamento de conteúdos do CID', 'Habilitar seleção múltipla de documentos', 'Integrar saídas estratégicas ao NAGI para priorização'],
-    documentsAndDecisions: ['O foco da V1 é puramente interno, sem acessar fontes externas', 'Não é apenas um mural estático, deve operar como lente ativa de leitura', 'Decidido fluxo oficial: CID prepara, NIC interpreta, NAGI governa'],
-    routeTab: 'nic',
-    featured: true
-  }
+    operationalStatus: 'em_teste',
+    governanceStatus: 'aprovada',
+    promotionStatus: 'promovida',
+    specialistTarget: {
+      tab: 'nic',
+      label: 'NIC',
+      routingReason: 'Módulo de inteligência conectiva oficial do ecossistema.',
+      routedAt: '2026-05-01T08:00:00Z',
+    },
+    handoffRecord: {
+      targetModuleTab: 'nic',
+      targetModuleLabel: 'NIC',
+      routedAt: '2026-05-01T08:00:00Z',
+      status: 'processado',
+    },
+    evidences: [
+      { id: 'ev5', type: 'doc', label: 'Documento de visão do NIC', createdAt: '2026-04-01T10:00:00Z' },
+    ],
+    decisionHistory: [
+      { id: 'dec-cat-nic-1', at: '2026-04-08T08:00:00Z', by: 'Cássio', action: 'classificar', rationale: 'Classificado como iniciativa de organização estratégica.', toStage: 'classificacao' },
+      { id: 'dec-cat-nic-2', at: '2026-04-22T08:00:00Z', by: 'Cássio', action: 'aprovar', rationale: 'NIC aprovado como módulo de inteligência conectiva.', fromGovernance: 'em_analise', toGovernance: 'aprovada' },
+    ],
+    isCatalog: true,
+    ownerName: 'Cássio',
+  },
+  {
+    id: 'cat-rai',
+    title: 'RAI — Radar de Inteligência',
+    summary: 'Sistema de observação e captação de sinais externos para alimentar o ecossistema.',
+    createdAt: '2026-04-10T10:00:00Z',
+    updatedAt: '2026-05-15T11:00:00Z',
+    originType: 'catalogo',
+    itemType: 'iniciativa',
+    category: 'Organização Estratégica',
+    tags: ['radar', 'externo', 'sinais', 'inteligência'],
+    maturityStage: 'catalogada',
+    priority: 'media',
+    score: {
+      impact: 4, effort: 3, risk: 3, alignment: 4,
+      final: 70, updatedAt: '2026-05-15T11:00:00Z',
+    },
+    operationalStatus: 'nao_iniciado',
+    governanceStatus: 'aprovada',
+    promotionStatus: 'promovida',
+    specialistTarget: {
+      tab: 'rai',
+      label: 'RAI',
+      routingReason: 'Módulo de radar externo do ecossistema.',
+      routedAt: '2026-05-15T11:00:00Z',
+    },
+    handoffRecord: {
+      targetModuleTab: 'rai',
+      targetModuleLabel: 'RAI',
+      routedAt: '2026-05-15T11:00:00Z',
+      status: 'encaminhado',
+    },
+    evidences: [],
+    decisionHistory: [
+      { id: 'dec-cat-rai-1', at: '2026-04-20T08:00:00Z', by: 'Cássio', action: 'aprovar', rationale: 'RAI aprovado como módulo de observação externa.', fromGovernance: 'em_analise', toGovernance: 'aprovada', toStage: 'decisao' },
+    ],
+    isCatalog: true,
+    ownerName: 'Cássio',
+  },
+  {
+    id: 'cat-hub-ventures',
+    title: 'Hub de Ventures',
+    summary: 'Plataforma de gestão de ventures, spin-offs e novos negócios do ecossistema.',
+    createdAt: '2026-04-15T10:00:00Z',
+    updatedAt: '2026-05-10T14:00:00Z',
+    originType: 'catalogo',
+    itemType: 'venture',
+    category: 'Gestão de Portfólio',
+    tags: ['ventures', 'negócios', 'portfolio'],
+    maturityStage: 'catalogada',
+    priority: 'alta',
+    score: {
+      impact: 4, effort: 3, risk: 2, alignment: 5,
+      final: 80, updatedAt: '2026-05-10T14:00:00Z',
+    },
+    operationalStatus: 'em_execucao',
+    governanceStatus: 'aprovada',
+    promotionStatus: 'promovida',
+    specialistTarget: {
+      tab: 'ventures',
+      label: 'Hub de Ventures',
+      routingReason: 'Módulo de gestão de ventures do ecossistema.',
+      routedAt: '2026-05-10T14:00:00Z',
+    },
+    handoffRecord: {
+      targetModuleTab: 'ventures',
+      targetModuleLabel: 'Hub de Ventures',
+      routedAt: '2026-05-10T14:00:00Z',
+      status: 'finalizado',
+    },
+    evidences: [],
+    decisionHistory: [
+      { id: 'dec-cat-hv-1', at: '2026-04-25T08:00:00Z', by: 'Cássio', action: 'aprovar', rationale: 'Hub de Ventures aprovado como estrutura oficial do ecossistema.', fromGovernance: 'em_analise', toGovernance: 'aprovada', toStage: 'decisao' },
+    ],
+    isCatalog: true,
+    ownerName: 'Cássio',
+  },
 ];
 
-export const statusTone: Record<InitiativeStatus, string> = {
-  'Ideia': 'bg-slate-100 text-slate-700 border-slate-200',
-  'Estruturação': 'bg-blue-50 text-blue-700 border-blue-200',
-  'Em teste': 'bg-amber-50 text-amber-700 border-amber-200',
-  'Ativo': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  'Pausado': 'bg-gray-100 text-gray-600 border-gray-200',
-  'Produto futuro': 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200'
-};
+/* === Itens da Triagem / Ideias em Qualificação === */
 
-export const priorityTone: Record<InitiativePriority, string> = {
-  'Alta': 'text-rose-600',
-  'Média': 'text-amber-600',
-  'Baixa': 'text-slate-500'
-};
+export const TRIAGE_ITEMS: NagiItem[] = [
+  {
+    id: 'tri-plataforma-videos',
+    title: 'Plataforma de Vídeos e Contexto',
+    summary: 'Sistema para ingestão, transcrição e extração de inteligência a partir de vídeos.',
+    createdAt: '2026-05-05T09:00:00Z',
+    updatedAt: '2026-05-25T16:00:00Z',
+    originType: 'avulsa',
+    itemType: 'ideia',
+    category: 'Vídeo e Contexto',
+    tags: ['vídeo', 'transcrição', 'conteúdo'],
+    maturityStage: 'qualificacao',
+    priority: 'alta',
+    score: {
+      impact: 4, effort: 3, risk: 2, alignment: 5,
+      final: 80, updatedAt: '2026-05-25T16:00:00Z',
+    },
+    operationalStatus: 'nao_iniciado',
+    governanceStatus: 'em_analise',
+    promotionStatus: 'nao_elegivel',
+    evidences: [
+      { id: 'ev-t1', type: 'nota', label: 'Ideia levantada durante reunião de alinhamento', createdAt: '2026-05-05T09:00:00Z' },
+    ],
+    decisionHistory: [
+      { id: 'dec-tri-t1-1', at: '2026-05-05T09:00:00Z', by: 'Cássio', action: 'classificar', rationale: 'Classificado como ideia de vídeo e contexto.', toStage: 'classificacao' },
+      { id: 'dec-tri-t1-2', at: '2026-05-25T16:00:00Z', by: 'Cássio', action: 'qualificar', rationale: 'Score atribuído: impacto alto, alinhamento estratégico forte.', toStage: 'qualificacao' },
+    ],
+    isCatalog: false,
+    ownerName: 'Cássio',
+  },
+  {
+    id: 'tri-agente-comercial',
+    title: 'Agente Comercial Autônomo',
+    summary: 'Agente especializado em prospecção, qualificação e condução de vendas.',
+    createdAt: '2026-05-10T09:00:00Z',
+    updatedAt: '2026-05-20T10:00:00Z',
+    originType: 'avulsa',
+    itemType: 'ideia',
+    category: 'Aplicação Comercial',
+    tags: ['agente', 'vendas', 'prospecção'],
+    maturityStage: 'classificacao',
+    priority: 'media',
+    score: {
+      impact: 0, effort: 0, risk: 0, alignment: 0,
+      final: 0, updatedAt: '2026-05-10T09:00:00Z',
+    },
+    operationalStatus: 'nao_iniciado',
+    governanceStatus: 'em_triagem',
+    promotionStatus: 'nao_elegivel',
+    evidences: [],
+    decisionHistory: [
+      { id: 'dec-tri-t2-1', at: '2026-05-10T09:00:00Z', by: 'Cássio', action: 'classificar', rationale: 'Classificado como ideia de aplicação comercial.', toStage: 'classificacao' },
+    ],
+    isCatalog: false,
+    ownerName: 'Cássio',
+  },
+  {
+    id: 'tri-framework-metodologias',
+    title: 'Framework de Metodologias SagB',
+    summary: 'Estrutura unificada para catalogar e operacionalizar metodologias do ecossistema.',
+    createdAt: '2026-05-12T09:00:00Z',
+    updatedAt: '2026-05-22T14:00:00Z',
+    originType: 'nic',
+    originRefId: 'nic-output-003',
+    originSnapshot: 'Saída do NIC: conexões entre metodologias existentes apontam necessidade de framework unificado.',
+    itemType: 'framework',
+    category: 'Organização Estratégica',
+    tags: ['metodologias', 'framework', 'padronização'],
+    maturityStage: 'qualificacao',
+    priority: 'alta',
+    score: {
+      impact: 4, effort: 4, risk: 2, alignment: 5,
+      final: 75, updatedAt: '2026-05-22T14:00:00Z',
+    },
+    operationalStatus: 'nao_iniciado',
+    governanceStatus: 'em_analise',
+    promotionStatus: 'elegivel',
+    evidences: [
+      { id: 'ev-t3-1', type: 'doc', label: 'Saída NIC — conexões entre metodologias', uri: '#nic-output-003', createdAt: '2026-05-12T09:00:00Z' },
+    ],
+    decisionHistory: [
+      { id: 'dec-tri-t3-1', at: '2026-05-12T09:00:00Z', by: 'Cássio', action: 'classificar', rationale: 'Item oriundo do NIC, classificado como framework.', toStage: 'classificacao' },
+      { id: 'dec-tri-t3-2', at: '2026-05-22T14:00:00Z', by: 'Cássio', action: 'qualificar', rationale: 'Score atribuído com base na saída do NIC.', toStage: 'qualificacao' },
+    ],
+    isCatalog: false,
+    ownerName: 'Cássio',
+  },
+  {
+    id: 'tri-programa-mentorias',
+    title: 'Programa de Mentorias Estratégicas',
+    summary: 'Programa estruturado de mentorias internas para desenvolvimento de capital intelectual.',
+    createdAt: '2026-05-15T09:00:00Z',
+    updatedAt: '2026-05-15T09:00:00Z',
+    originType: 'avulsa',
+    itemType: 'programa',
+    category: 'Treinamento e Capital Intelectual',
+    tags: ['mentoria', 'capital intelectual', 'desenvolvimento'],
+    maturityStage: 'entrada',
+    priority: 'baixa',
+    score: {
+      impact: 0, effort: 0, risk: 0, alignment: 0,
+      final: 0, updatedAt: '2026-05-15T09:00:00Z',
+    },
+    operationalStatus: 'nao_iniciado',
+    governanceStatus: 'em_triagem',
+    promotionStatus: 'nao_elegivel',
+    evidences: [],
+    decisionHistory: [],
+    isCatalog: false,
+    ownerName: '',
+  },
+  {
+    id: 'tri-sistema-analise-multimodal',
+    title: 'Sistema de Análise Multimodal',
+    summary: 'Motor capaz de processar e cruzar dados de texto, áudio, vídeo e imagem.',
+    createdAt: '2026-05-18T09:00:00Z',
+    updatedAt: '2026-05-18T09:00:00Z',
+    originType: 'nic',
+    originRefId: 'nic-output-007',
+    originSnapshot: 'Saída do NIC: identificada necessidade de análise multimodal cruzada para evolução do CID.',
+    itemType: 'iniciativa',
+    category: 'Análise Multimodal',
+    tags: ['multimodal', 'análise', 'cruzamento'],
+    maturityStage: 'classificacao',
+    priority: 'media',
+    score: {
+      impact: 0, effort: 0, risk: 0, alignment: 0,
+      final: 0, updatedAt: '2026-05-18T09:00:00Z',
+    },
+    operationalStatus: 'nao_iniciado',
+    governanceStatus: 'em_analise',
+    promotionStatus: 'nao_elegivel',
+    evidences: [
+      { id: 'ev-t5-1', type: 'doc', label: 'Saída NIC — análise multimodal', uri: '#nic-output-007', createdAt: '2026-05-18T09:00:00Z' },
+    ],
+    decisionHistory: [
+      { id: 'dec-tri-t5-1', at: '2026-05-18T09:00:00Z', by: 'Cássio', action: 'classificar', rationale: 'Item oriundo do NIC com recomendação de análise multimodal.', toStage: 'classificacao' },
+    ],
+    isCatalog: false,
+    ownerName: '',
+  },
+];
 
-export const operationalMeta: Record<OperationalState, { label: string; dot: string; card: string; on: boolean }> = {
-  active: { label: 'Ativo', dot: 'bg-emerald-500', card: '', on: true },
-  inactive: { label: 'Inativo', dot: 'bg-rose-500', card: 'opacity-80 saturate-[0.85]', on: false },
-  testing: { label: 'Em teste', dot: 'bg-amber-400', card: '', on: true },
-  paused: { label: 'Pausado', dot: 'bg-slate-400', card: 'opacity-90', on: false }
-};
+/* Export consolidado */
+export const ALL_ITEMS: NagiItem[] = [...CATALOG_ITEMS, ...TRIAGE_ITEMS];

@@ -17,3 +17,15 @@
 
 ## 2026-04-20 00:42
 **cley-devis:** Correção aplicada no roteamento/identidade do módulo, restaurando compatibilidade com o ecossistema atual: `manifest.id` ajustado para `telas-avancadas` e `baseRoute/path` ajustados para `/telas-avancadas`.
+
+## 2026-05-31 22:26
+**usuario:** Solicitou a MEGA-ETAPA 02 do módulo `telas_avancadas` para evoluir de biblioteca simples para Central de Telas Avançadas com áreas internas de Biblioteca, Estúdio, Referências e fluxo de Preview/Exportação/Publicação, mantendo tudo no mesmo módulo nesta etapa.
+
+## 2026-05-31 22:27
+**cassio-mendes:** Decisão de execução registrada: implementar evolução estrutural completa com separação interna de responsabilidades (pages/components/services/store/types), preservar compatibilidade do acervo existente, reaproveitar componentes saudáveis, reposicionar `SuperTelaSagBPanel`, preparar camada de repositório para futura migração de persistência e validar com `npm run dev` e `npm run build`.
+
+## 2026-05-31 22:42
+**usuario:** Solicitou a MEGA-ETAPA 03 para estabilização técnica e auditoria funcional/visual profunda da Central de Telas Avançadas, com investigação objetiva da falha de build, validação prática das áreas Biblioteca/Estúdio/Referências/Preview-Publicação, correções de robustez e devolutiva crítica com riscos e próximos passos.
+
+## 2026-05-31 22:43
+**cassio-mendes:** Contexto de execução definido para a etapa: foco em estabilização (sem expansão descontrolada), investigação de causa-raiz do build (`vite:html-inline-proxy`), revisão de integridade (types/store/services/repository), validação do ciclo fim-a-fim (estúdio → exportação → biblioteca) e ajustes de coerência funcional/visual do módulo `telas_avancadas`.

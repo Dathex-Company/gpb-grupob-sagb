@@ -1,5 +1,5 @@
 import { AgentFlowEvent, DevAgent, DevFileNode, DevRun, SalaDevDomainSnapshot } from '../types/salaDev.types';
-import { DomainDecision } from '../types/salaDev.status';
+import { DomainDecision, GateStatus } from '../types/salaDev.status';
 import { RunAgentEntity } from '../types/salaDev.domain';
 
 export interface SalaDevState {
@@ -42,6 +42,69 @@ export function updateGateStatus(
           decision: decision ?? g.decision,
           approvedAt: status === 'approved' ? new Date() : g.approvedAt,
           rejectedAt: status === 'rejected' ? new Date() : g.rejectedAt
+        };
+      })
+    }
+  };
+}
+
+export function advanceBlock(state: SalaDevState, blockId: string): SalaDevState {
+  const block = state.domain.blocks.find(b => b.id === blockId);
+  if (!block) return state;
+
+  const nextBlock = state.domain.blocks.find(b => b.block === block.block + 1);
+
+  return {
+    ...state,
+    domain: {
+      ...state.domain,
+      run: {
+        ...state.domain.run,
+        currentMacroLayerId: nextBlock?.id || state.domain.run.currentMacroLayerId,
+        progress: Math.max(state.domain.run.progress, Math.min(100, block.block * 20)),
+        updatedAt: new Date()
+      },
+      blocks: state.domain.blocks.map(b => {
+        if (b.id === blockId) {
+          return { ...b, status: 'completed' as const, progress: 100, gateStatus: 'approved' as const };
+        }
+        if (nextBlock && b.id === nextBlock.id && b.status === 'pending') {
+          return { ...b, status: 'running' as const, progress: Math.max(b.progress, 10) };
+        }
+        return b;
+      })
+    },
+    run: {
+      ...state.run,
+      currentStage: nextBlock?.name || 'Auditoria Final',
+      progressPercent: Math.max(state.run.progressPercent, Math.min(100, block.block * 20))
+    }
+  };
+}
+
+export function updateBlockGateStatus(
+  state: SalaDevState,
+  blockId: string,
+  status: GateStatus,
+  decision?: DomainDecision
+): SalaDevState {
+  const blockGate = state.domain.gates.find(g => g.macroLayerId === blockId);
+
+  const stateWithGate = blockGate
+    ? updateGateStatus(state, blockGate.id, status, decision)
+    : state;
+
+  return {
+    ...stateWithGate,
+    domain: {
+      ...stateWithGate.domain,
+      blocks: stateWithGate.domain.blocks.map(b => {
+        if (b.id !== blockId) return b;
+        return {
+          ...b,
+          gateStatus: status,
+          status: status === 'approved' ? 'completed' : status === 'blocked' || status === 'rejected' ? 'blocked' : b.status,
+          progress: status === 'approved' ? 100 : b.progress
         };
       })
     }

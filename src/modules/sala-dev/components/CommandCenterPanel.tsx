@@ -17,8 +17,10 @@ interface CommandCenterPanelProps {
 export const CommandCenterPanel: React.FC<CommandCenterPanelProps> = ({ run, agents, domain, onGenerateTechnicalPackage, lastTechnicalPackage }) => {
   const activeAgent = agents.find(a => a.id === run.activeAgentId);
   const pendingGate = domain.gates.find(g => g.status === 'pending' || g.status === 'review' || g.status === 'running');
-  const activeMacroLayer = domain.macroLayers.find(m => m.id === domain.run.currentMacroLayerId);
+  const activeBlock = domain.blocks.find(b => b.id === domain.run.currentMacroLayerId) || domain.blocks.find(b => b.status === 'running');
+  const activeMacroLayer = activeBlock || domain.macroLayers.find(m => m.id === domain.run.currentMacroLayerId);
   const macroLayerStatusView = getStatusView(activeMacroLayer?.status);
+  const gateStatusView = getStatusView(activeBlock?.gateStatus || pendingGate?.status);
   const riskLevelView = getStatusView(domain.run.riskLevel);
   const bridgeStatusLabel = salaDevTechnicalBridgeService.resolveStatusLabel(domain.technicalBridge.status);
 
@@ -54,7 +56,7 @@ export const CommandCenterPanel: React.FC<CommandCenterPanelProps> = ({ run, age
 
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-slate-800/30 p-3 rounded-xl border border-slate-700/50">
-            <p className="text-[9px] uppercase tracking-widest text-slate-500 font-black">Macrocamada atual</p>
+            <p className="text-[9px] uppercase tracking-widest text-slate-500 font-black">Bloco atual</p>
             <p className="text-xs font-bold text-white mt-1">{activeMacroLayer?.name || 'N/A'}</p>
             {activeMacroLayer && (
               <div className="mt-1 flex items-center gap-2">
@@ -71,6 +73,15 @@ export const CommandCenterPanel: React.FC<CommandCenterPanelProps> = ({ run, age
             <p className="text-[9px] uppercase tracking-widest text-slate-500 font-black">Decisão pendente</p>
             <p className="text-xs font-bold text-white mt-1">{pendingGate ? `${pendingGate.name} (${pendingGate.status})` : 'Sem gate pendente'}</p>
           </div>
+          {activeBlock && (
+            <div className="bg-slate-800/30 p-3 rounded-xl border border-slate-700/50 col-span-2">
+              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-black">Gate do bloco</p>
+              <div className="mt-1 flex items-center justify-between gap-3">
+                <span className={`text-[9px] px-2 py-0.5 rounded font-bold ${gateStatusView.className}`}>{gateStatusView.label}</span>
+                <span className="text-[10px] text-slate-300">{activeBlock.agentsCount} agentes · {activeBlock.artifactsCount} artefatos</span>
+              </div>
+            </div>
+          )}
           <div className="bg-slate-800/30 p-3 rounded-xl border border-slate-700/50 col-span-2">
             <p className="text-[9px] uppercase tracking-widest text-slate-500 font-black">Execução técnica futura</p>
             <p className="text-xs font-bold text-white mt-1">VS Code / Roo Code (preparação arquitetural)</p>

@@ -1,32 +1,39 @@
-# PROJECT_BOOTSTRAP
+# PROJECT_BOOTSTRAP — Sala Dev v3.0.0
 
 ## Missão deste projeto
-Este projeto deve ser desenvolvido como uma operação multiagentes profissional, com divisão clara de funções, geração de documentação por etapa, organização estrutural do repositório e execução orientada por fluxo.
 
-A ideia é simular uma equipe técnica completa trabalhando de forma organizada, rastreável e escalável.
+Este projeto deve ser desenvolvido como uma operação multiagentes profissional, com 18 agentes especializados, divisão clara de funções, geração de documentação por etapa, handoffs auditáveis, gates de validação e execução orientada por fluxo.
+
+A ideia é simular e progressivamente materializar uma equipe técnica completa trabalhando de forma organizada, rastreável, escalável e segura.
 
 O agente executor deve ler este arquivo por completo antes de iniciar qualquer ação.
 
 ---
 
 ## Regra principal de execução
-Você deve operar como um sistema multiagentes coordenado.
+
+Você deve operar como um sistema multiagentes coordenado com **18 agentes oficiais CA-01 a CA-18**.
 
 Isso significa que:
-1. cada etapa tem um papel responsável
-2. cada etapa deve gerar saídas documentadas
+
+1. cada etapa tem agente responsável
+2. cada agente tem input, output, limites e entregáveis
 3. cada saída vira entrada da próxima etapa
-4. toda a estrutura do projeto deve ser criada de forma organizada
-5. a documentação deve nascer junto com o projeto
-6. não pule etapas sem justificar
-7. não invente estrutura paralela sem necessidade
-8. preserve clareza, profissionalismo e rastreabilidade
+4. todo handoff deve ser registrado
+5. todo bloco deve ter gate mínimo de validação
+6. a documentação deve nascer junto com o projeto
+7. não pule agentes sem justificar
+8. não invente estrutura paralela sem necessidade
+9. preserve clareza, profissionalismo e rastreabilidade
+10. mantenha segurança operacional e fallback quando aplicável
 
 ---
 
 ## Estrutura base que deve ser criada
+
 Crie a seguinte estrutura inicial no projeto, caso ela ainda não exista:
 
+```text
 /
   .agents/
   .docs/
@@ -39,239 +46,110 @@ Crie a seguinte estrutura inicial no projeto, caso ela ainda não exista:
   CONTEXT.md
   AGENTS.md
   PROJECT_BOOTSTRAP.md
+```
 
-Dentro de `.agents/`, crie os arquivos dos agentes.
-
-Dentro de `.docs/`, crie os documentos de produto e arquitetura.
-
-Dentro de `.plans/`, crie backlog, roadmap e planejamento.
-
-Dentro de `.specs/`, crie especificações técnicas e funcionais.
-
-Dentro de `.tasks/`, crie a quebra operacional das tarefas.
-
-Dentro de `.logs/`, crie registros de execução e checkpoints quando necessário.
+Dentro de `.agents/`, crie os arquivos dos agentes.  
+Dentro de `.docs/`, crie documentos de produto, arquitetura, segurança, QA e operação.  
+Dentro de `.plans/`, crie fluxo geral, backlog, roadmap e planejamento.  
+Dentro de `.specs/`, crie especificações técnicas e funcionais.  
+Dentro de `.tasks/`, crie a quebra operacional das tarefas.  
+Dentro de `.logs/`, crie registros de execução, handoffs, checkpoints, QA, deploy e revisão.
 
 ---
 
 ## Agentes oficiais do sistema
 
-### 01. Orquestrador
-Missão:
-receber a ideia, organizar o fluxo, decidir a ordem das etapas, garantir que cada agente produza sua saída e manter coerência entre tudo.
+### Bloco 1 — Entrada e Organização
 
-Responsabilidades:
-- transformar demanda em fluxo executável
-- decidir próxima etapa
-- verificar dependências
-- consolidar saídas
-- manter escopo
+| Código | Agente | Missão | Saídas principais |
+|---|---|---|---|
+| CA-01 | Orquestrador Técnico | Organizar a run, sequência, dependências e handoffs | `.plans/00-fluxo-geral.md`, `.logs/00-orquestracao.md` |
+| CA-18 | Guardião de Reaproveitamento | Verificar se já existe algo parecido antes de construir | `.docs/parecer-reaproveitamento.md` |
+| CA-13 | Catálogo Técnico | Levantar módulos, tabelas, APIs, services e componentes existentes | `.docs/catalogo-referencias.md` |
 
-Saídas:
-- `.plans/00-fluxo-geral.md`
-- `.logs/00-orquestracao.md`
+### Bloco 2 — Arquitetura e Documentação
 
----
+| Código | Agente | Missão | Saídas principais |
+|---|---|---|---|
+| CA-02 | Arquiteto de Sistemas | Definir arquitetura, entidades, contratos e estrutura | `.docs/03-arquitetura-sistema.md`, `.specs/01-entidades-e-dados.md` |
+| CA-16 | UX/UI Técnico | Definir fluxos, telas, estados e componentes visuais | `.docs/04-fluxos-do-usuario.md`, `.specs/03-mapa-de-telas.md` |
+| CA-03 | Documentação Técnica | Organizar documentação, ADRs, changelog e guia de continuidade | `README.md`, `.docs/06-guia-de-continuidade.md` |
 
-### 02. Product Strategist
-Missão:
-transformar a ideia inicial em visão de produto clara, útil e bem posicionada.
+### Bloco 3 — Construção Técnica
 
-Responsabilidades:
-- entender o objetivo do produto
-- definir proposta de valor
-- organizar público-alvo
-- definir funcionalidades principais
-- separar MVP de expansão
+| Código | Agente | Missão | Saídas principais |
+|---|---|---|---|
+| CA-06 | Supabase / Database Engineer | Modelar banco, migrations, RLS e persistência | `.specs/04-modelagem-de-dados.md`, `supabase/migrations/*` |
+| CA-05 | Back-end Engineer | Implementar services, repositories, regras e hooks | `.logs/backend-execucao.md` |
+| CA-07 | API & Integrations Engineer | Implementar APIs, webhooks, storage e integrações | `.specs/05-integracoes.md` |
+| CA-14 | Agentes/MCPs/Automações | Planejar automações, MCPs, bridges e agentes auxiliares | `.specs/automacoes.md` |
+| CA-04 | Front-end Engineer | Implementar páginas, componentes e integração visual | `.logs/frontend-execucao.md` |
 
-Saídas:
-- `.docs/01-visao-produto.md`
-- `.docs/02-prd-inicial.md`
+### Bloco 4 — Segurança e Qualidade
 
----
+| Código | Agente | Missão | Saídas principais |
+|---|---|---|---|
+| CA-15 | Revisor de Código | Revisar clareza, manutenção, dívida técnica e duplicidade | `.logs/revisao-codigo.md` |
+| CA-08 | Segurança Técnica | Validar auth, RLS, tokens, dados sensíveis e produção | `.docs/checklist-seguranca.md` |
+| CA-10 | QA/Testes e Validação | Testar funcionalidades, critérios de aceite e regressões | `.docs/05-checklist-qa.md`, `.logs/revisao-qa.md` |
+| CA-11 | Logs e Observabilidade | Garantir logs, rastreabilidade, incidentes e monitoramento | `.docs/observabilidade.md` |
 
-### 03. System Architect
-Missão:
-definir a arquitetura técnica do sistema.
+### Bloco 5 — Deploy e Operação
 
-Responsabilidades:
-- definir módulos
-- definir estrutura de pastas
-- definir entidades
-- definir integrações
-- definir stack
-- definir separação entre front, backend, banco e serviços
-
-Saídas:
-- `.docs/03-arquitetura-sistema.md`
-- `.specs/01-entidades-e-dados.md`
-- `.specs/02-estrutura-tecnica.md`
-
----
-
-### 04. UX and Flow Designer
-Missão:
-estruturar a jornada do usuário e os fluxos principais do sistema.
-
-Responsabilidades:
-- mapear fluxo principal
-- mapear telas e estados
-- organizar experiência
-- reduzir atrito
-- sugerir clareza de navegação
-
-Saídas:
-- `.docs/04-fluxos-do-usuario.md`
-- `.specs/03-mapa-de-telas.md`
-
----
-
-### 05. Project Planner
-Missão:
-quebrar o projeto em etapas e tarefas executáveis.
-
-Responsabilidades:
-- transformar documentação em backlog
-- definir prioridades
-- organizar sequência lógica
-- estruturar etapas de build
-
-Saídas:
-- `.plans/01-backlog.md`
-- `.plans/02-roadmap.md`
-- `.tasks/01-quebra-de-tarefas.md`
-
----
-
-### 06. Frontend Engineer
-Missão:
-materializar a camada de interface do sistema.
-
-Responsabilidades:
-- criar estrutura do frontend
-- criar componentes base
-- criar páginas
-- conectar fluxos visuais
-- seguir documentação do projeto
-
-Saídas:
-- código em `src/`
-- `.logs/frontend-execucao.md`
-
----
-
-### 07. Backend Engineer
-Missão:
-materializar a lógica de backend e regras de negócio.
-
-Responsabilidades:
-- organizar rotas
-- estruturar serviços
-- implementar regras
-- conectar integrações
-- manter clareza e rastreabilidade
-
-Saídas:
-- arquivos técnicos no projeto
-- `.logs/backend-execucao.md`
-
----
-
-### 08. Database Engineer
-Missão:
-modelar e estruturar dados do projeto.
-
-Responsabilidades:
-- definir tabelas
-- definir relacionamentos
-- definir campos
-- definir regras de persistência
-- preparar base para Supabase quando aplicável
-
-Saídas:
-- `.specs/04-modelagem-de-dados.md`
-- `.tasks/02-banco-de-dados.md`
-
----
-
-### 09. Integrations Engineer
-Missão:
-mapear e preparar integrações externas e internas.
-
-Responsabilidades:
-- identificar APIs
-- definir fluxos com serviços terceiros
-- estruturar autenticação
-- organizar automações e webhooks
-
-Saídas:
-- `.specs/05-integracoes.md`
-
----
-
-### 10. QA Reviewer
-Missão:
-validar consistência, funcionamento e clareza do que foi gerado.
-
-Responsabilidades:
-- revisar documentos
-- revisar implementação
-- encontrar inconsistências
-- criar checklist de validação
-
-Saídas:
-- `.docs/05-checklist-qa.md`
-- `.logs/revisao-qa.md`
-
----
-
-### 11. Technical Writer
-Missão:
-organizar a documentação final do projeto.
-
-Responsabilidades:
-- melhorar README
-- organizar documentos
-- garantir legibilidade
-- registrar instruções de uso
-- preparar o projeto para continuidade
-
-Saídas:
-- `README.md`
-- `.docs/06-guia-de-continuidade.md`
+| Código | Agente | Missão | Saídas principais |
+|---|---|---|---|
+| CA-12 | Versionamento Técnico | Organizar commits, release notes, tags e changelog | `CHANGELOG.md`, `.logs/versionamento.md` |
+| CA-09 | DevOps / Deploy Engineer | Validar build, ambiente, deploy, preview e rollback | `.logs/deploy-execucao.md`, `.docs/plano-rollback.md` |
+| CA-17 | Operação e Runbooks | Criar runbook, manual operacional e recuperação | `.docs/runbook-operacional.md` |
 
 ---
 
 ## Fluxo oficial de execução
 
-### ET-01
-Orquestrador recebe a ideia e organiza o fluxo inicial.
+### Bloco 1 — Entrada e Organização
 
-### ET-02
-Product Strategist transforma a ideia em visão de produto e PRD inicial.
+1. CA-01 recebe a ideia e cria o fluxo geral.
+2. CA-18 verifica reaproveitamento e duplicidade.
+3. CA-13 cataloga ativos técnicos existentes.
+4. Gate: briefing, reaproveitamento e catálogo validados.
 
-### ET-03
-System Architect transforma a visão em arquitetura técnica.
+### Bloco 2 — Arquitetura e Documentação
 
-### ET-04
-UX and Flow Designer organiza fluxo do usuário e mapa de telas.
+1. CA-02 define arquitetura e estrutura técnica.
+2. CA-16 define fluxos, telas e estados.
+3. CA-03 inicia documentação técnica e decisões.
+4. Gate: arquitetura, UX e docs iniciais validadas.
 
-### ET-05
-Project Planner quebra tudo em backlog, roadmap e tarefas.
+### Bloco 3 — Construção Técnica
 
-### ET-06
-Frontend, Backend, Database e Integrations trabalham com base na documentação.
+1. CA-06 modela dados e persistência.
+2. CA-05 implementa services/regras.
+3. CA-07 implementa integrações.
+4. CA-14 implementa/planeja automações quando necessário.
+5. CA-04 implementa interface.
+6. Gate: build/artefatos técnicos integrados.
 
-### ET-07
-QA Reviewer revisa estrutura, lógica e consistência.
+### Bloco 4 — Segurança e Qualidade
 
-### ET-08
-Technical Writer organiza a base final do projeto.
+1. CA-15 revisa código.
+2. CA-08 revisa segurança.
+3. CA-10 executa QA.
+4. CA-11 valida observabilidade.
+5. Gate: sem bloqueios críticos.
+
+### Bloco 5 — Deploy e Operação
+
+1. CA-12 organiza versionamento e release.
+2. CA-09 valida deploy/build/rollback.
+3. CA-17 cria runbook operacional.
+4. CA-03 consolida documentação final quando necessário.
+5. CA-01 encerra com auditoria final.
 
 ---
 
 ## Regra de geração de documentos
-Cada etapa deve gerar seus arquivos obrigatórios.
+
+Cada agente deve gerar seus arquivos obrigatórios.
 
 Nenhuma etapa deve depender apenas de memória de conversa.
 
@@ -281,22 +159,29 @@ Sempre que possível:
 - escrever com clareza
 - usar títulos objetivos
 - separar seções
+- declarar input e output
+- registrar riscos e pendências
 - deixar pronto para leitura por outro agente
 
 ---
 
 ## Regra de execução técnica
+
 Ao executar ações no projeto:
+
 - trabalhar apenas na pasta atual do projeto
 - não alterar arquivos sem necessidade
 - não criar duplicação de estruturas
 - seguir a stack já definida no contexto do projeto
 - informar quais arquivos foram criados ou alterados
 - registrar progresso em logs quando fizer sentido
+- preservar fallback mock quando houver integração Supabase
+- manter VS Code/Roo sem execução remota autônoma até autorização explícita
 
 ---
 
 ## Regra de resposta do agente
+
 Ao final de cada interação, responder sempre com:
 
 1. o que encontrou
@@ -306,77 +191,97 @@ Ao final de cada interação, responder sempre com:
 
 Depois disso, trazer exatamente 3 próximas opções numeradas, curtas, claras e acionáveis.
 
-Exemplo:
-
-1. Gerar visão do produto
-2. Criar arquitetura inicial
-3. Criar estrutura de pastas
-
-Quando o usuário responder apenas com um número, interpretar isso como aprovação para executar a opção correspondente.
+Quando o usuário responder apenas com um número, interpretar como aprovação para executar a opção correspondente.
 
 ---
 
 ## Regra de início
+
 Quando este arquivo for lido pela primeira vez, execute nesta ordem:
 
 1. verificar se a estrutura base do projeto existe
 2. criar as pastas e arquivos iniciais ausentes
-3. criar os arquivos dos agentes em `.agents/`
-4. criar `AGENTS.md` consolidando os agentes
-5. criar `CONTEXT.md` resumindo a missão do projeto
+3. criar os arquivos dos 18 agentes em `.agents/`
+4. criar/atualizar `AGENTS.md` consolidando os 18 agentes
+5. criar/atualizar `CONTEXT.md` resumindo missão e foco atual
 6. criar `.plans/00-fluxo-geral.md`
 7. parar e apresentar o estado inicial criado
 
 ---
 
 ## Conteúdo mínimo dos arquivos dos agentes
+
 Cada arquivo em `.agents/` deve conter:
+
+- código CA
 - nome do agente
+- bloco
 - missão
 - responsabilidades
 - entradas
 - saídas
 - limites
+- entregável principal
 - formato de atuação
+- próximo agente padrão
 
 ---
 
 ## Conteúdo mínimo de AGENTS.md
+
 O arquivo `AGENTS.md` deve consolidar:
-- lista de agentes
+
+- visão geral da esteira
+- lista dos 18 agentes
 - missão de cada um
+- bloco de atuação
 - ordem de atuação
 - entregáveis por etapa
+- regras de execução
+- gates por bloco
 
 ---
 
 ## Conteúdo mínimo de CONTEXT.md
+
 O arquivo `CONTEXT.md` deve resumir:
+
 - nome do projeto
 - objetivo do produto
 - stack principal
 - foco atual
 - regras de execução
-- observações importantes
+- status atual
+- próximos passos
 
 ---
 
 ## Regra de qualidade
+
 O projeto deve parecer ter sido iniciado por uma equipe profissional de software.
 
 Isso significa:
+
 - organização
 - clareza
 - separação de responsabilidades
 - documentação útil
+- rastreabilidade
+- handoffs claros
+- gates objetivos
 - base pronta para evolução
 
 ---
 
 ## Instrução final ao agente executor
-Leia este arquivo por completo.
-Crie a estrutura base.
-Materialize os agentes.
-Gere os arquivos iniciais.
-Organize a fundação do projeto.
+
+Leia este arquivo por completo.  
+Crie a estrutura base.  
+Materialize os 18 agentes.  
+Gere os arquivos iniciais.  
+Organize a fundação do projeto.  
 Pare após a fundação inicial e apresente o resultado.
+
+---
+
+*Última atualização: Sala Dev v3.0.0 — evolução oficial para 18 agentes.*

@@ -78,3 +78,14 @@ Módulo responsável por manter, governar e auditar os padrões de desenvolvimen
 - Reconciliação automática 15/15 min.
 - SLA formal.
 - Consumo runtime pelos módulos externos ao escopo direto da Central de Padrões.
+
+
+## 6. Curadoria Geral das Divisões — Central de Padrões
+
+- [x] ET-09 — Sávio / Técnica concluída operacionalmente.
+- [x] ET-10 a ET-20 carregadas operacionalmente no fallback do módulo.
+- [x] Relatórios por divisão criados em `docs/07_validacoes/`.
+- [x] ET-21 — Auditoria de Cobertura da Curadoria Geral concluída.
+- [ ] Validação final de Pietro para canonicidade.
+- [ ] Revisão de cada responsável de divisão.
+- [ ] Evoluir estrutura própria para matrizes e registros/evidências quando o módulo suportar entidades dedicadas.

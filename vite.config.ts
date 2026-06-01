@@ -17,10 +17,6 @@ export default defineConfig(({ mode }) => {
   return {
     base: basePath,
     plugins: [react()],
-    optimizeDeps: {
-      // Evita o Vite varrer entradas de triagem fora do app oficial
-      entries: ['index.html']
-    },
     server: {
       port: Number.isFinite(resolvedPort) ? resolvedPort : 7000,
       strictPort: true,
