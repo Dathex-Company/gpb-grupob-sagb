@@ -191,7 +191,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
                 <div className="mt-8 text-center px-4">
                     <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest leading-relaxed">
-                        Acesso Restrito ao Quadro de Elite.<br />
+                        Acesso Restrito ao Núcleo de Identidades.<br />
                         Contate o administrador para obter suas credenciais.
                     </p>
                 </div>

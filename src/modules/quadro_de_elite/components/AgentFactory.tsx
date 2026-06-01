@@ -18,6 +18,7 @@ import {
   parseCanonicalId,
   resolveAgentStatus,
   toCustomFieldObject,
+  validateAgentNameAvailability,
   validateDraft
 } from './agent-factory/helpers';
 import { mapImportRowToForm, parseCsvRecords } from './agent-factory/importHelpers';
@@ -144,6 +145,11 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
   const currentEditingAgent = useMemo(
     () => agents.find((agent) => agent.id === editingAgentId),
     [agents, editingAgentId]
+  );
+
+  const nameValidation = useMemo(
+    () => validateAgentNameAvailability(form.name, agents, editingAgentId),
+    [agents, editingAgentId, form.name]
   );
 
   const handleOpenNew = () => {
@@ -325,6 +331,10 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
 
   const persistAgent = async (draft: AgentFormState, originOverride?: string) => {
     validateDraft(draft);
+    const currentNameValidation = validateAgentNameAvailability(draft.name, agents, editingAgentId);
+    if (currentNameValidation.status === 'duplicate') {
+      throw new Error(currentNameValidation.message);
+    }
     validateCanonicalIntegrity(draft);
     const payload = buildAgentPayload(draft, originOverride);
 
@@ -524,6 +534,7 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
           ventures={ventures}
           mentorCandidates={mentorCandidates}
           currentEditingAgent={currentEditingAgent}
+          nameValidation={nameValidation}
           authUsersByEmail={authUsersByEmail}
           shouldRequireEmail={shouldRequireEmail}
           isSaving={isSaving}

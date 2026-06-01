@@ -85,6 +85,26 @@ export interface CentralModuleLink {
   standards: string[];
 }
 
+export interface CentralBaseModule {
+  id: string;
+  moduleId: string;
+  name: string;
+  moduleType: 'core' | 'infra' | 'ui' | 'dados' | 'seguranca' | 'automacao' | 'integracao';
+  description: string;
+  status: 'candidato' | 'revisao' | 'aprovado' | 'deprecado';
+  owner: string;
+  areaId: string;
+  dependencies: string[];
+  risks: CentralRiskLevel[];
+  recommendedUse: string;
+  reuseCriteria: string[];
+  linkedStandards: string[];
+  linkedProtocols: string[];
+  linkedChecklists: string[];
+  gateChecklistKey: string;
+  source: 'supabase' | 'catalogo_et23' | 'module_link';
+}
+
 export interface CentralAgentRun {
   id: string;
   agentCode: string;
@@ -110,6 +130,7 @@ export interface CentralRepositorySnapshot {
   checklists: CentralChecklist[];
   decisions: CentralDecision[];
   modules: CentralModuleLink[];
+  baseModules: CentralBaseModule[];
   agents: CentralAgentRun[];
   isOnline?: boolean;
 }

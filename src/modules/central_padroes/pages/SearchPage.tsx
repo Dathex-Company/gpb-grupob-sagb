@@ -1,8 +1,6 @@
 import React from 'react';
 import { CentralPageShell } from '../components/CentralPageShell';
-import { SectionPanel } from '../components/SectionPanel';
-import { StatusBadge } from '../components/StatusBadge';
-import { SearchResult, centralPadroesSearchService } from '../services/centralPadroesSearchService';
+import { SearchResult, centralPadroesSearchRoadmap, centralPadroesSearchService } from '../services/centralPadroesSearchService';
 
 const SearchPage: React.FC = () => {
   const [query, setQuery] = React.useState('');
@@ -11,7 +9,7 @@ const SearchPage: React.FC = () => {
 
   React.useEffect(() => {
     const id = window.setTimeout(() => {
-      centralPadroesSearchService.hybridSearch(query).then(setResults).catch(() => setResults([]));
+      centralPadroesSearchService.textSearch(query).then(setResults).catch(() => setResults([]));
     }, 250);
     return () => window.clearTimeout(id);
   }, [query]);
@@ -19,17 +17,45 @@ const SearchPage: React.FC = () => {
   const filtered = tab === 'all' ? results : results.filter((result) => result.entityType === tab);
 
   return (
-    <CentralPageShell title="Busca Inteligente" subtitle="Busca híbrida V1 com score de relevância, abas por entidade e fallback textual quando pgvector/embedding não estiver disponível.">
-      <SectionPanel title="Pesquisar padrões, documentos e decisões">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex: criar módulo novo, Supabase, segurança" className="mb-4 w-full rounded-2xl border border-sagb-line bg-sagb-bg-2 px-4 py-3 text-[13px] text-sagb-text outline-none" />
-        <div className="mb-4 flex flex-wrap gap-2">{(['all', 'standard', 'document', 'decision'] as const).map((item) => <button key={item} onClick={() => setTab(item)} className={`rounded-xl px-4 py-2 text-[12px] font-black ${tab === item ? 'bg-blue-600 text-white' : 'bg-sagb-bg-2 text-sagb-muted'}`}>{item}</button>)}</div>
-        <div className="space-y-3">
-          {filtered.map((result, index) => <article key={`${result.entityType}-${index}`} className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-sagb-muted">{result.entityType}</p><h3 className="font-black text-sagb-text">{'title' in result.entity ? result.entity.title : result.entityType}</h3><p className="mt-2 text-[12px] text-sagb-muted">{result.excerpt}</p></div><StatusBadge value={`score ${(result.score * 100).toFixed(0)}%`} /></div></article>)}
-          {filtered.length === 0 && <p className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4 text-[12px] text-sagb-muted">Nenhum resultado encontrado.</p>}
+    <CentralPageShell title="Busca Textual da Central" subtitle="Busca textual ampliada da ET-22. A busca semântica com embeddings, pgvector e Chat Pietro fica preparada como evolução futura, mas ainda não está ativa.">
+      <section className="cp-docs-search-hero">
+        <div>
+          <p className="cp-docs-kicker">Modo atual: {centralPadroesSearchRoadmap.currentMode}</p>
+          <h2>Pesquisar padrões, documentos e decisões</h2>
+          <p>Campos considerados: chave, título, resumo, responsável, área, status, tipo, risco, dependências, módulos relacionados e metadados disponíveis.</p>
         </div>
-      </SectionPanel>
+        <label className="cp-docs-big-search">
+          <span>⌕</span>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex: decisão com IA, rastreabilidade, deploy, criar tabela Supabase" />
+        </label>
+      </section>
+
+      <div className="cp-docs-tab-row">
+        {(['all', 'standard', 'document', 'decision'] as const).map((item) => (
+          <button key={item} type="button" onClick={() => setTab(item)} className={`cp-docs-filter ${tab === item ? 'active' : ''}`}>{item === 'all' ? 'Todos' : item}</button>
+        ))}
+      </div>
+
+      <section className="cp-docs-result-list">
+        {filtered.map((result, index) => (
+          <article key={`${result.entityType}-${index}`} className="cp-docs-result-card">
+            <div>
+              <p className="cp-docs-kicker">{result.entityType}</p>
+              <h3>{'title' in result.entity ? result.entity.title : result.entityType}</h3>
+              <p>{result.excerpt}</p>
+            </div>
+            <span className="cp-docs-score">score {(result.score * 100).toFixed(0)}%</span>
+          </article>
+        ))}
+        {filtered.length === 0 && <div className="cp-docs-empty-note">Nenhum resultado encontrado na busca textual ampliada.</div>}
+      </section>
+
+      <section className="cp-docs-panel cp-docs-roadmap-box">
+        <p className="cp-docs-kicker">Preparação futura</p>
+        <p><strong>Híbrida:</strong> {centralPadroesSearchRoadmap.futureHybrid}</p>
+        <p><strong>Semântica:</strong> {centralPadroesSearchRoadmap.futureSemantic}</p>
+      </section>
     </CentralPageShell>
   );
 };
 export default SearchPage;
-

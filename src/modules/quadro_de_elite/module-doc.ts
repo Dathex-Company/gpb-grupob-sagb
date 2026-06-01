@@ -1,8 +1,8 @@
 export const moduleDoc = {
-  nome_oficial: 'Quadro de Elite',
+  nome_oficial: 'Núcleo de Identidades',
   versao: '1.1.0',
   resumo:
-    'Módulo responsável pela gestão, cadastro e evolução dos agentes oficiais do ecossistema SagB, migrando o legado do AgentFactory para o padrão novo modular.',
+    'Módulo responsável pelo cadastro mestre estrutural de humanos, agentes e híbridos do ecossistema SagB, preservando a compatibilidade técnica do legado quadro_de_elite.',
   fontes_de_dados: {
     supabase_tabelas: ['agents', 'agent_configs', 'agent_dna_profiles', 'agent_dna_effective'],
     storage_buckets: [],
@@ -26,7 +26,7 @@ export const moduleDoc = {
     {
       item: 'Criação de tela paralela de cadastro de agentes em outro módulo',
       risco: 'Divergência de identidade e status operacional dos agentes.',
-      acao_preventiva: 'Manter gestão principal no Quadro de Elite e consumir dados via agents/agent_configs.'
+      acao_preventiva: 'Manter gestão principal no Núcleo de Identidades e consumir dados via agents/agent_configs.'
     },
     {
       item: 'Criação de IDs canônicos fora da convenção oficial',

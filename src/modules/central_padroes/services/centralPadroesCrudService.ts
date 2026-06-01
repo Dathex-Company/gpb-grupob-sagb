@@ -1,6 +1,8 @@
 import { auth, restFetch } from '../../../../services/supabase';
 import {
   CentralChecklist,
+  CentralAgentRun,
+  CentralArea,
   CentralDecision,
   CentralDocument,
   CentralModuleLink,
@@ -72,9 +74,35 @@ const mapChecklist = (row: any): CentralChecklist => ({
   items: Array.isArray(row.items) ? row.items : []
 });
 
+const mapArea = (row: any): CentralArea => ({
+  id: row.id,
+  name: row.name,
+  owner: row.owner_name || row.owner || 'Central de Padrões',
+  focus: row.focus || ''
+});
+
+const mapAgentRun = (row: any): CentralAgentRun => ({
+  id: row.id,
+  agentCode: row.agent_code,
+  agentName: row.agent_name,
+  block: row.block_name,
+  status: row.status,
+  deliverable: row.deliverable
+});
+
 const withReturn = { Prefer: 'return=representation' };
 
 export const centralPadroesCrudService = {
+  async listAreas(): Promise<CentralArea[]> {
+    const data = await restFetch('central_padroes_areas', { method: 'GET', query: q('*') });
+    return Array.isArray(data) ? data.map(mapArea) : [];
+  },
+
+  async listAgentRuns(): Promise<CentralAgentRun[]> {
+    const data = await restFetch('central_padroes_agent_runs', { method: 'GET', query: q('*') });
+    return Array.isArray(data) ? data.map(mapAgentRun) : [];
+  },
+
   async listStandards(filter?: StandardFilter): Promise<CentralStandard[]> {
     const query = q('*');
     query.set('order', 'standard_key.asc');
@@ -249,4 +277,3 @@ export const centralPadroesCrudService = {
     await restFetch('central_padroes_standard_history', { method: 'POST', body: { standard_id: standardId, action, previous_data: previousData, next_data: nextData, changed_by: currentUserLabel() } });
   }
 };
-

@@ -79,6 +79,39 @@ Este documento registra decisões arquiteturais e operacionais tomadas durante a
 
 ---
 
+## 2026-06-01
+### Renomeação conceitual para Núcleo de Identidades
+**Decisão:** Recomendar a evolução conceitual do módulo **Quadro de Elite** para **Núcleo de Identidades**, mantendo a rota e a pasta `quadro_de_elite` até existir plano técnico de migração com compatibilidade.
+
+**Justificativa:**
+- O módulo já opera como cadastro mestre de humanos, agentes e entidades híbridas, não apenas como vitrine de agentes de elite.
+- O novo nome comunica melhor fonte de verdade, governança de identidade e maturidade organizacional.
+- A leitura curta **Identidades** é forte para interface e compatível com amadurecimentos futuros.
+
+**Impactos esperados:**
+- Preparar futura renomeação de manifesto, menu, rota, `TabId` e documentação.
+- Reduzir ambiguidade entre `Quadro de Elite`, `AgentFactory` e cadastro estrutural.
+- Criar base conceitual para um sistema de criação, validação e reserva de nomes.
+
+### Base do sistema de nomes
+**Decisão:** Definir como primeira base de implementação um validador de nomes sobre a tabela `agents`, usando `name` como nome operacional e `canonicalId` como identidade técnica imutável.
+
+**Justificativa:**
+- Hoje já existe validação forte para `canonicalId`, mas não há validação formal de repetição de `name`.
+- A prevenção de nomes repetidos deve começar no cadastro e evoluir para uma área própria de exploração/criação de nomes.
+
+**Diretrizes:**
+- Normalizar nomes removendo acentos, pontuação, caixa e espaços duplicados.
+- Bloquear duplicidade exata normalizada.
+- Alertar nomes muito parecidos na primeira fase; bloquear similaridade forte em fase posterior.
+- Revalidar contra `agents` antes de persistir para reduzir risco de corrida.
+- Futuramente criar tabela de reserva de nomes com `normalized_name`, `workspace_id`, status e vínculo com `agent_id`.
+
+**Documento de referência:**
+- `src/modules/quadro_de_elite/docs/auditoria-renomeacao-sistema-nomes-2026-06-01.md`
+
+---
+
 ## Próximas decisões pendentes
 - Integração com serviços reais (Supabase) para carregamento de `agents`, `businessUnits`, `ventures`.
 - Remoção de ruídos visuais excessivos nos subcomponentes do `AgentFactory` (sombras, bordas pesadas).

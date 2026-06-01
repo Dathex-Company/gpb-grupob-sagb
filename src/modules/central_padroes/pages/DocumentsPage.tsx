@@ -19,7 +19,7 @@ const statusLabel: Record<CentralDocument['status'], string> = {
 };
 
 const DocumentsPage: React.FC = () => {
-  const { snapshot, refetch } = useCentralPadroes();
+  const { snapshot, refetch, loading, error } = useCentralPadroes();
   const [open, setOpen] = React.useState(false);
   const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [form, setForm] = React.useState({ title: '', path: '', category: 'Governança', areaId: 'pietro' });
@@ -50,6 +50,8 @@ const DocumentsPage: React.FC = () => {
 
   return (
     <CentralPageShell title="Biblioteca de Documentos" subtitle="Documentos canônicos, brutos, em revisão, legados e externos com destino normativo sugerido.">
+      {loading && <div className="cp-docs-inline-alert">Carregando documentos diretamente do Supabase...</div>}
+      {error && <div className="cp-docs-inline-alert error">Falha ao carregar Supabase: {error}</div>}
       <section className="cp-docs-panel">
         <div className="cp-docs-toolbar">
           <label className="cp-docs-subtle-search">

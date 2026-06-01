@@ -18,6 +18,7 @@ import RelationshipsPage from '../pages/RelationshipsPage';
 import ApprovalsPage from '../pages/ApprovalsPage';
 import SettingsPage from '../pages/SettingsPage';
 import CentralPadroesPage from '../pages/CentralPadroesPage';
+import { centralPadroesSeedService } from '../services/centralPadroesSeedService';
 import '../styles/centralDocs.css';
 
 type CentralPadroesView =
@@ -70,14 +71,19 @@ const navigationItems: Array<{ id: CentralPadroesView; label: string; group: str
 export const CentralPadroesLayout: React.FC = () => {
   const [currentView, setCurrentView] = useState<CentralPadroesView>('dashboard');
   const [mode, setMode] = useState<'light' | 'dark'>('light');
-
-  const groupedItems = useMemo(() => {
-    return navigationItems.reduce<Record<string, typeof navigationItems>>((acc, item) => {
-      acc[item.group] = acc[item.group] || [];
-      acc[item.group].push(item);
-      return acc;
-    }, {});
-  }, []);
+  const [seedStatus, setSeedStatus] = useState<string>('');
+  const [menuQuery, setMenuQuery] = useState('');
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    'Visão Geral': true,
+    Padrões: true,
+    Protocolos: true,
+    'Documentos-Mãe': true,
+    Checklists: true,
+    Matrizes: true,
+    Validações: true,
+    'Biblioteca de Módulos Base': true,
+    Configurações: true
+  });
 
   const renderCurrentView = () => {
     switch (currentView) {
@@ -128,30 +134,98 @@ export const CentralPadroesLayout: React.FC = () => {
     }
   };
 
-  const treeRows = [
-    { id: 'dashboard' as const, label: 'Visão Geral', icon: '⌂' },
-    { id: 'architecture' as const, label: 'Arquitetura Mestra', icon: '◇' },
-    { label: 'Documentos-Mãe', icon: '▾', disabled: true },
-    { id: 'areas' as const, label: 'Responsáveis e Áreas', icon: '◦', indent: 1, parent: true, first: true },
-    { id: 'documents' as const, label: 'Biblioteca de Documentos', icon: '📄', indent: 1, parent: true },
-    { id: 'standards' as const, label: 'Padrões Atômicos', icon: '📘', indent: 1, parent: true, last: true },
-    { label: 'Governança', icon: '▾', disabled: true },
-    { id: 'checklists' as const, label: 'Matrizes e Checklists', icon: '✓', indent: 1, parent: true, first: true },
-    { id: 'audits' as const, label: 'Auditorias e Evidências', icon: '↗', indent: 1, parent: true },
-    { id: 'decisions' as const, label: 'Decisões e Exceções', icon: '⚑', indent: 1, parent: true, last: true },
-    { label: 'Módulos e Inteligência', icon: '▾', disabled: true },
-    { id: 'base-modules' as const, label: 'Módulos Base', icon: '□', indent: 1, parent: true, first: true },
-    { id: 'modules' as const, label: 'Módulos Plugáveis', icon: '▣', indent: 1, parent: true },
-    { id: 'relationships' as const, label: 'Relacionamentos / Grafo', icon: '⟲', indent: 1, parent: true },
-    { id: 'search' as const, label: 'Busca Inteligente', icon: '⌕', indent: 1, parent: true, last: true },
-    { label: 'Operação', icon: '▾', disabled: true },
-    { id: 'approvals' as const, label: 'Aprovações e Revisões', icon: '●', indent: 1, parent: true, first: true },
-    { id: 'dev-mode' as const, label: 'Modo Dev', icon: '</>', indent: 1, parent: true },
-    { id: 'agent-mode' as const, label: 'Modo Agente', icon: '✦', indent: 1, parent: true },
-    { id: 'publisher' as const, label: 'Publicador legado', icon: '↳', indent: 1, parent: true, last: true }
+  const treeSections = [
+    {
+      label: 'Visão Geral',
+      rows: [
+        { id: 'dashboard' as const, label: 'Visão Geral', icon: '⌂' },
+        { id: 'architecture' as const, label: 'Arquitetura Mestra', icon: '◇' },
+        { id: 'areas' as const, label: 'Responsáveis e Áreas', icon: '◦' }
+      ]
+    },
+    {
+      label: 'Padrões',
+      rows: [
+        { id: 'standards' as const, label: 'Padrões', icon: '📘' },
+        { id: 'registry' as const, label: 'Registro Mestre', icon: '▤' }
+      ]
+    },
+    {
+      label: 'Protocolos',
+      rows: [
+        { id: 'decisions' as const, label: 'Decisões e Exceções', icon: '⚑' },
+        { id: 'approvals' as const, label: 'Aprovações e Revisões', icon: '●' }
+      ]
+    },
+    {
+      label: 'Documentos-Mãe',
+      rows: [
+        { id: 'documents' as const, label: 'Documentos', icon: '📄' },
+        { id: 'internal-docs' as const, label: 'Documentação Interna', icon: '⌘' },
+        { id: 'external-docs' as const, label: 'Documentação Externa', icon: '↗' },
+        { id: 'archive' as const, label: 'Arquivo / Legado', icon: '◫' }
+      ]
+    },
+    {
+      label: 'Checklists',
+      rows: [
+        { id: 'checklists' as const, label: 'Checklists Operacionais', icon: '✓' }
+      ]
+    },
+    {
+      label: 'Matrizes',
+      rows: [
+        { id: 'relationships' as const, label: 'Relacionamentos / Grafo', icon: '⟲' }
+      ]
+    },
+    {
+      label: 'Validações',
+      rows: [
+        { id: 'audits' as const, label: 'Auditorias e Evidências', icon: '↗' },
+        { id: 'search' as const, label: 'Busca Textual', icon: '⌕' },
+        { id: 'agent-mode' as const, label: 'Preparação Pietro', icon: '✦' }
+      ]
+    },
+    {
+      label: 'Biblioteca de Módulos Base',
+      rows: [
+        { id: 'base-modules' as const, label: 'Gate Modular Pré-Dev', icon: '□' },
+        { id: 'modules' as const, label: 'Módulos Plugáveis', icon: '▣' }
+      ]
+    },
+    {
+      label: 'Configurações',
+      rows: [
+        { id: 'settings' as const, label: 'Configurações', icon: '⚙' },
+        { id: 'dev-mode' as const, label: 'Modo Dev', icon: '</>' },
+        { id: 'publisher' as const, label: 'Publicador legado', icon: '↳' }
+      ]
+    }
   ];
 
+  const filteredTreeSections = useMemo(() => {
+    const term = menuQuery.trim().toLowerCase();
+    if (!term) return treeSections;
+    return treeSections
+      .map((section) => ({ ...section, rows: section.rows.filter((row) => row.label.toLowerCase().includes(term)) }))
+      .filter((section) => section.rows.length > 0);
+  }, [menuQuery]);
+
+  const toggleSection = (label: string) => {
+    setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
+
   const currentLabel = navigationItems.find((item) => item.id === currentView)?.label || 'Central de Padrões';
+
+  const seedSupabase = async () => {
+    setSeedStatus('Sincronizando fallback para Supabase...');
+    try {
+      const result = await centralPadroesSeedService.seedFallbackIntoSupabase();
+      setSeedStatus(`Seed concluído: ${result.areas} áreas, ${result.standards} padrões, ${result.documents} docs, ${result.checklists} checklists, ${result.decisions} decisões, ${result.modules} módulos, ${result.baseModules} módulos base, ${result.agents} agentes.`);
+    } catch (error) {
+      setSeedStatus(`Falha no seed Supabase: ${String((error as Error)?.message || error)}`);
+    }
+  };
 
   return (
     <div className="cp-docs-root h-full overflow-hidden" data-mode={mode}>
@@ -164,29 +238,35 @@ export const CentralPadroesLayout: React.FC = () => {
 
           <label className="cp-docs-search">
             <span>⌕</span>
-            <input placeholder="Pesquisar padrões" />
+            <input placeholder="Pesquisar na Central" value={menuQuery} onChange={(event) => setMenuQuery(event.target.value)} />
           </label>
 
           <nav className="cp-docs-tree">
-            <div className="cp-docs-tree-label">Workspace</div>
-            {treeRows.map((row, index) => {
-              if (row.disabled) return <div key={`${row.label}-${index}`} className="cp-docs-tree-label">{row.label}</div>;
-              const isActive = currentView === row.id;
-              const className = [
-                'cp-docs-tree-row',
-                isActive ? 'active' : '',
-                row.indent ? `indent-${row.indent}` : '',
-                row.parent ? 'has-parent' : '',
-                row.first ? 'is-first' : '',
-                row.last ? 'is-last' : ''
-              ].filter(Boolean).join(' ');
-              return (
-                <button key={row.id} type="button" onClick={() => setCurrentView(row.id)} className={className}>
-                  <span>{row.icon}</span>
-                  <span className="cp-docs-tree-text">{row.label}</span>
+            {filteredTreeSections.map((section) => (
+              <div key={section.label} className="cp-docs-tree-section">
+                <button type="button" className="cp-docs-tree-label cp-docs-tree-label-button" onClick={() => toggleSection(section.label)}>
+                  <span>{section.label}</span>
+                  <span>{openSections[section.label] ? '⌄' : '›'}</span>
                 </button>
-              );
-            })}
+                {(openSections[section.label] || Boolean(menuQuery.trim())) && section.rows.map((row, index) => {
+                  const isActive = currentView === row.id;
+                  const className = [
+                    'cp-docs-tree-row',
+                    isActive ? 'active' : '',
+                    'indent-1',
+                    'has-parent',
+                    index === 0 ? 'is-first' : '',
+                    index === section.rows.length - 1 ? 'is-last' : ''
+                  ].filter(Boolean).join(' ');
+                  return (
+                    <button key={row.id} type="button" onClick={() => setCurrentView(row.id)} className={className} title={row.label}>
+                      <span>{row.icon}</span>
+                      <span className="cp-docs-tree-text">{row.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
           <div className="cp-docs-sidebar-foot">
@@ -199,23 +279,24 @@ export const CentralPadroesLayout: React.FC = () => {
           <header className="cp-docs-topbar">
             <div className="cp-docs-crumbs"><span>GrupoB</span><span className="sep">›</span><span>Central de Padrões</span><span className="sep">›</span><strong>{currentLabel}</strong></div>
             <div className="cp-docs-top-actions">
-              <button className="cp-docs-top-link" type="button">Editar</button>
+              <button className="cp-docs-top-link" type="button" onClick={() => setCurrentView('search')}>Buscar</button>
               <button className="cp-docs-top-link ai" type="button">IA</button>
-              <button className="cp-docs-top-link" type="button">Compartilhar</button>
-              <button className="cp-docs-top-link primary" type="button" onClick={() => setCurrentView('documents')}>Novo</button>
-              <button className="cp-docs-icon-btn" type="button">⋯</button>
+              <button className="cp-docs-top-link" type="button" onClick={seedSupabase}>Sincronizar</button>
+              <button className="cp-docs-top-link primary" type="button" onClick={() => setCurrentView('documents')}>Registrar</button>
+              <button className="cp-docs-icon-btn" type="button" onClick={() => setCurrentView('settings')} title="Configurações">⋯</button>
             </div>
           </header>
 
           {renderCurrentView()}
+          {seedStatus && <div className="cp-docs-toast">{seedStatus}</div>}
         </main>
       </div>
 
       <nav className="cp-docs-mobile-bottom">
-        <button className="cp-docs-mobile-item active" type="button" onClick={() => setCurrentView('documents')}>📄<span>Docs</span></button>
-        <button className="cp-docs-mobile-item" type="button" onClick={() => setCurrentView('search')}>⌕<span>Busca</span></button>
-        <button className="cp-docs-mobile-item" type="button" onClick={() => setCurrentView('documents')}>+<span>Novo</span></button>
-        <button className="cp-docs-mobile-item" type="button" onClick={() => setCurrentView('settings')}>⋯<span>Mais</span></button>
+        <button className={`cp-docs-mobile-item ${currentView === 'documents' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('documents')}>📄<span>Docs</span></button>
+        <button className={`cp-docs-mobile-item ${currentView === 'search' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('search')}>⌕<span>Busca</span></button>
+        <button className={`cp-docs-mobile-item ${currentView === 'dashboard' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('dashboard')}>⌂<span>Início</span></button>
+        <button className={`cp-docs-mobile-item ${currentView === 'settings' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('settings')}>⋯<span>Mais</span></button>
       </nav>
     </div>
   );

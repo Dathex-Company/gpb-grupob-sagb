@@ -2,8 +2,8 @@ import { ModuleManifest } from '../../core/modules/module.types';
 
 export const manifest: ModuleManifest = {
   id: 'quadro_de_elite',
-  internalName: 'Quadro de Elite',
-  displayName: 'Quadro de Elite',
+  internalName: 'Núcleo de Identidades',
+  displayName: 'Núcleo de Identidades',
   baseRoute: '/quadro_de_elite',
   icon: 'UsersIcon',
   initialStatus: 'active',

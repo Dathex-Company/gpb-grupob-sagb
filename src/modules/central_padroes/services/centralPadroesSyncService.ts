@@ -1,30 +1,30 @@
-import { centralPadroesFallbackData } from '../data/fallbackData';
 import { CentralRepositorySnapshot } from '../types';
+import { centralPadroesBaseModulesService } from './centralPadroesBaseModulesService';
 import { centralPadroesCrudService } from './centralPadroesCrudService';
 
 export const centralPadroesSyncService = {
   async buildOnlineSnapshot(): Promise<CentralRepositorySnapshot> {
-    const [standards, documents, decisions, checklists, modules] = await Promise.all([
+    const [areas, standards, documents, decisions, checklists, modules, agents] = await Promise.all([
+      centralPadroesCrudService.listAreas().catch(() => []),
       centralPadroesCrudService.listStandards(),
       centralPadroesCrudService.listDocuments(),
       centralPadroesCrudService.listDecisions(),
       centralPadroesCrudService.listChecklists(),
-      centralPadroesCrudService.listModules()
+      centralPadroesCrudService.listModules(),
+      centralPadroesCrudService.listAgentRuns().catch(() => [])
     ]);
+    const baseModules = await centralPadroesBaseModulesService.buildBaseModules(modules);
 
     return {
-      ...centralPadroesFallbackData,
-      standards: standards.length ? standards : centralPadroesFallbackData.standards,
-      documents: documents.length ? documents : centralPadroesFallbackData.documents,
-      decisions: decisions.length ? decisions : centralPadroesFallbackData.decisions,
-      checklists: checklists.length ? checklists : centralPadroesFallbackData.checklists,
-      modules: modules.length ? modules : centralPadroesFallbackData.modules,
+      areas,
+      agents,
+      standards,
+      documents,
+      decisions,
+      checklists,
+      modules,
+      baseModules,
       isOnline: true
     };
-  },
-
-  fallbackSnapshot(): CentralRepositorySnapshot {
-    return { ...JSON.parse(JSON.stringify(centralPadroesFallbackData)), isOnline: false };
   }
 };
-

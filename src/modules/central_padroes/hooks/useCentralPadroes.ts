@@ -11,10 +11,14 @@ export const useCentralPadroes = () => {
   const load = async (mounted = true) => {
       try {
         setLoading(true);
+        setError(null);
         const data = await centralPadroesRepository.getSnapshot();
         if (mounted) setSnapshot(data);
       } catch (err) {
-        if (mounted) setError(String((err as Error)?.message || err));
+        if (mounted) {
+          setSnapshot(null);
+          setError(String((err as Error)?.message || err));
+        }
       } finally {
         if (mounted) setLoading(false);
       }

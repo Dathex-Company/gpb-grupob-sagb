@@ -17,8 +17,8 @@ export const AgentFactoryHeader: React.FC<AgentFactoryHeaderProps> = ({
           <BackIcon className="h-6 w-6" />
         </button>
         <div>
-          <h1 className="text-2xl font-black uppercase tracking-tight text-bitrix-nav">Quadro de Elite</h1>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400">Cadastro estrutural de humanos e agentes</p>
+          <h1 className="text-2xl font-black uppercase tracking-tight text-bitrix-nav">Núcleo de Identidades</h1>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400">Cadastro mestre de humanos, agentes e híbridos</p>
         </div>
       </div>
       <button onClick={onOpenNew} className="inline-flex items-center gap-2 rounded-xl bg-bitrix-nav px-5 py-2.5 text-[10px] font-black uppercase tracking-wider text-white shadow-lg transition hover:bg-black">

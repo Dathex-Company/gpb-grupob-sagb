@@ -21,6 +21,23 @@ export interface CanonicalIdParts {
   seq3: string;
 }
 
+export type AgentNameValidationStatus = 'empty' | 'available' | 'duplicate' | 'similar';
+
+export interface AgentNameValidationConflict {
+  agentId: string;
+  name: string;
+  canonicalId?: string;
+  score: number;
+  reason: string;
+}
+
+export interface AgentNameValidationResult {
+  status: AgentNameValidationStatus;
+  normalizedName: string;
+  conflicts: AgentNameValidationConflict[];
+  message: string;
+}
+
 export const CANONICAL_ID_REGEX = /^[a-z0-9]+(?:_[a-z0-9]+)*_[a-z0-9]{3}_[a-z0-9]{3}_[eto]_[0-9]{3}$/;
 
 export const normalizeText = (value: string) =>
@@ -29,6 +46,99 @@ export const normalizeText = (value: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .toLowerCase();
+
+export const normalizeAgentName = (value: string) =>
+  normalizeText(value)
+    .replace(/\b(dr|dra|sr|sra|prof|profa)\.?\b/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const tokenSet = (value: string) => new Set(normalizeAgentName(value).split(' ').filter(Boolean));
+
+const calculateNameSimilarity = (candidateName: string, existingName: string) => {
+  const candidateTokens = tokenSet(candidateName);
+  const existingTokens = tokenSet(existingName);
+  if (candidateTokens.size === 0 || existingTokens.size === 0) return 0;
+
+  const intersection = [...candidateTokens].filter((token) => existingTokens.has(token)).length;
+  const union = new Set([...candidateTokens, ...existingTokens]).size;
+  const tokenScore = union > 0 ? intersection / union : 0;
+  const candidateParts = [...candidateTokens];
+  const existingParts = [...existingTokens];
+  const firstNameMatch = candidateParts[0] && existingParts[0] && candidateParts[0] === existingParts[0] ? 0.15 : 0;
+  const lastNameMatch = candidateParts.at(-1) && existingParts.at(-1) && candidateParts.at(-1) === existingParts.at(-1) ? 0.25 : 0;
+
+  return Math.min(1, tokenScore + firstNameMatch + lastNameMatch);
+};
+
+export const validateAgentNameAvailability = (
+  candidateName: string,
+  agents: Agent[],
+  editingAgentId?: string | null
+): AgentNameValidationResult => {
+  const normalizedName = normalizeAgentName(candidateName);
+  if (!normalizedName) {
+    return {
+      status: 'empty',
+      normalizedName,
+      conflicts: [],
+      message: 'Informe um nome para validar disponibilidade.'
+    };
+  }
+
+  const comparableAgents = agents.filter((agent) => agent.id !== editingAgentId);
+  const exactConflicts = comparableAgents
+    .filter((agent) => normalizeAgentName(agent.name) === normalizedName)
+    .map((agent) => ({
+      agentId: agent.id,
+      name: agent.name,
+      canonicalId: agent.canonicalId,
+      score: 1,
+      reason: 'Nome idêntico já cadastrado.'
+    }));
+
+  if (exactConflicts.length > 0) {
+    return {
+      status: 'duplicate',
+      normalizedName,
+      conflicts: exactConflicts,
+      message: `Nome já utilizado por ${exactConflicts[0].name}. Escolha outro nome.`
+    };
+  }
+
+  const similarConflicts = comparableAgents
+    .map((agent) => ({
+      agent,
+      score: calculateNameSimilarity(candidateName, agent.name)
+    }))
+    .filter(({ score }) => score >= 0.78)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(({ agent, score }) => ({
+      agentId: agent.id,
+      name: agent.name,
+      canonicalId: agent.canonicalId,
+      score,
+      reason: 'Nome muito parecido com cadastro existente.'
+    }));
+
+  if (similarConflicts.length > 0) {
+    return {
+      status: 'similar',
+      normalizedName,
+      conflicts: similarConflicts,
+      message: `Nome parecido com ${similarConflicts[0].name}. Revise antes de salvar.`
+    };
+  }
+
+  return {
+    status: 'available',
+    normalizedName,
+    conflicts: [],
+    message: 'Nome disponível para cadastro.'
+  };
+};
 
 export const normalizeCanonicalIdInput = (value: string) =>
   String(value || '')

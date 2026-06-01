@@ -23,7 +23,7 @@ const QuadroDeElitePage: React.FC = () => {
   if (!activeBU) {
     return (
       <div className="p-6">
-        <p className="text-sm text-gray-500">Carregando dados do Quadro de Elite...</p>
+        <p className="text-sm text-gray-500">Carregando dados do Núcleo de Identidades...</p>
       </div>
     );
   }
@@ -31,7 +31,7 @@ const QuadroDeElitePage: React.FC = () => {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-sagb-bg font-nunito text-[12px]">
       <ModuleHeader
-        moduleName="Quadro de Elite"
+        moduleName="Núcleo de Identidades"
         ownerName="Helen Dravet"
         moduleDocPath="../module-doc.ts"
       />

@@ -1,4 +1,5 @@
 import { CentralRepositorySnapshot } from '../types';
+import { centralBaseModulesCatalog } from './baseModulesCatalog';
 
 export const centralPadroesFallbackData: CentralRepositorySnapshot = {
   areas: [
@@ -469,7 +470,7 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
       id: 'std-030',
       key: 'CP-TEC-026',
       title: 'Evidência de validação',
-      type: 'registro',
+      type: 'evidencia',
       status: 'revisao',
       areaId: 'savio',
       owner: 'Sávio Codare',
@@ -514,8 +515,8 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
       version: 1,
       agentAvailable: false,
       dependencies: ['CP-GOV-001'],
-      relatedModules: ['central_padroes'],
-      updatedAt: '2026-05-31'
+      relatedModules: ['central_padroes', 'ui_shell_core'],
+      updatedAt: '2026-06-01'
     },
 
     /* ────────────── PEDRO ────────────── */
@@ -636,18 +637,18 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
     },
     {
       id: 'std-107',
-      key: 'CP-UX-001',
+      key: 'CP-UX-007',
       title: 'Variação visual real não é troca de cor',
       type: 'principio',
-      status: 'revisao',
+      status: 'aprovado',
       areaId: 'alice',
       owner: 'Alice Montini',
       summary: 'Variação visual real não é troca de cor. Extraído da Curadoria Geral das Divisões: UX/UI, experiência e interface.',
       risk: 'alto',
       version: 1,
       agentAvailable: true,
-      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-TEC-013'],
-      relatedModules: ['central_padroes'],
+      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-UX-001', 'CP-TEC-013'],
+      relatedModules: ['central_padroes', 'ui_shell_core'],
       updatedAt: '2026-06-01'
     },
     {
@@ -655,15 +656,15 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
       key: 'CP-UX-002',
       title: 'Loze UI Standard e Design System',
       type: 'padrao',
-      status: 'revisao',
+      status: 'curadoria',
       areaId: 'alice',
       owner: 'Alice Montini',
       summary: 'Loze UI Standard e Design System. Extraído da Curadoria Geral das Divisões: UX/UI, experiência e interface.',
       risk: 'alto',
       version: 1,
       agentAvailable: true,
-      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-TEC-013'],
-      relatedModules: ['central_padroes'],
+      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-UX-001', 'CP-TEC-013'],
+      relatedModules: ['central_padroes', 'ui_shell_core'],
       updatedAt: '2026-06-01'
     },
     {
@@ -671,15 +672,15 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
       key: 'CP-UX-003',
       title: 'Gate visual de tela',
       type: 'protocolo',
-      status: 'revisao',
+      status: 'aprovado',
       areaId: 'alice',
       owner: 'Alice Montini',
       summary: 'Gate visual de tela. Extraído da Curadoria Geral das Divisões: UX/UI, experiência e interface.',
       risk: 'critico',
       version: 1,
       agentAvailable: true,
-      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-TEC-013'],
-      relatedModules: ['central_padroes'],
+      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-UX-001', 'CP-TEC-013'],
+      relatedModules: ['central_padroes', 'ui_shell_core'],
       updatedAt: '2026-06-01'
     },
     {
@@ -687,15 +688,15 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
       key: 'CP-UX-004',
       title: 'Matriz tipo de tela x padrão visual',
       type: 'matriz',
-      status: 'revisao',
+      status: 'curadoria',
       areaId: 'alice',
       owner: 'Alice Montini',
       summary: 'Matriz tipo de tela x padrão visual. Extraído da Curadoria Geral das Divisões: UX/UI, experiência e interface.',
       risk: 'critico',
       version: 1,
       agentAvailable: true,
-      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-TEC-013'],
-      relatedModules: ['central_padroes'],
+      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-UX-001', 'CP-UX-002', 'CP-UX-003', 'CP-TEC-013'],
+      relatedModules: ['central_padroes', 'ui_shell_core'],
       updatedAt: '2026-06-01'
     },
     {
@@ -703,31 +704,31 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
       key: 'CP-UX-005',
       title: 'Checklist de release visual',
       type: 'checklist',
-      status: 'revisao',
+      status: 'aprovado',
       areaId: 'alice',
       owner: 'Alice Montini',
       summary: 'Checklist de release visual. Extraído da Curadoria Geral das Divisões: UX/UI, experiência e interface.',
       risk: 'alto',
       version: 1,
       agentAvailable: true,
-      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-TEC-013'],
-      relatedModules: ['central_padroes'],
+      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-UX-001', 'CP-UX-003', 'CP-TEC-013'],
+      relatedModules: ['central_padroes', 'ui_shell_core'],
       updatedAt: '2026-06-01'
     },
     {
       id: 'std-112',
       key: 'CP-UX-006',
-      title: 'Registro de evidência visual por release',
-      type: 'registro',
-      status: 'revisao',
+      title: 'Evidência visual por release',
+      type: 'evidencia',
+      status: 'curadoria',
       areaId: 'alice',
       owner: 'Alice Montini',
-      summary: 'Registro de evidência visual por release. Extraído da Curadoria Geral das Divisões: UX/UI, experiência e interface.',
+      summary: 'Evidência visual por release. Comprova validação visual, aderência ao padrão e rastreabilidade de mudança de interface.',
       risk: 'alto',
       version: 1,
       agentAvailable: true,
-      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-TEC-013'],
-      relatedModules: ['central_padroes'],
+      dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-UX-001', 'CP-UX-005', 'CP-TEC-013'],
+      relatedModules: ['central_padroes', 'ui_shell_core'],
       updatedAt: '2026-06-01'
     },
     {
@@ -1991,11 +1992,12 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
     { id: 'dec-020', title: 'Canonicidade final — StartyB, empresas, ventures e planos', status: 'proposta', areaId: 'cesar', summary: 'Documento-mãe e itens CP-STARTYB ficam em revisão/candidato até validação final de Pietro.', impacts: ['canonicidade', 'validacao_pietro'] }
   ],
   modules: [
-    { id: 'mod-001', moduleId: 'central_padroes', moduleName: 'Central de Padrões', kind: 'plugavel', status: 'parcial', standards: ['CP-GOV-001', 'CP-TEC-001', 'CP-TEC-002', 'CP-TEC-003', 'CP-TEC-004', 'CP-TEC-005', 'CP-TEC-006', 'CP-TEC-007', 'CP-TEC-008', 'CP-TEC-009', 'CP-TEC-010', 'CP-TEC-011', 'CP-TEC-012', 'CP-TEC-013', 'CP-TEC-014', 'CP-TEC-015', 'CP-TEC-016', 'CP-TEC-017', 'CP-TEC-018', 'CP-TEC-019', 'CP-TEC-020', 'CP-TEC-021', 'CP-TEC-022', 'CP-TEC-023', 'CP-TEC-024', 'CP-TEC-025', 'CP-TEC-026', 'CP-MOD-001', 'CP-GOV-002', 'CP-GOV-003', 'CP-GOV-004', 'CP-GOV-005', 'CP-GOV-006', 'CP-GOV-007', 'CP-UX-001', 'CP-UX-002', 'CP-UX-003', 'CP-UX-004', 'CP-UX-005', 'CP-UX-006', 'CP-SEG-001', 'CP-SEG-002', 'CP-SEG-003', 'CP-SEG-004', 'CP-SEG-005', 'CP-SEG-006', 'CP-AGT-001', 'CP-AGT-002', 'CP-AGT-003', 'CP-AGT-004', 'CP-AGT-005', 'CP-AGT-006', 'CP-IA-001', 'CP-IA-002', 'CP-IA-003', 'CP-IA-004', 'CP-IA-005', 'CP-IA-006', 'CP-PROC-001', 'CP-PROC-002', 'CP-PROC-003', 'CP-PROC-004', 'CP-PROC-005', 'CP-PROC-006', 'CP-NAM-001', 'CP-NAM-002', 'CP-NAM-003', 'CP-NAM-004', 'CP-NAM-005', 'CP-NAM-006', 'CP-IDEIA-001', 'CP-IDEIA-002', 'CP-IDEIA-003', 'CP-IDEIA-004', 'CP-IDEIA-005', 'CP-IDEIA-006', 'CP-MET-001', 'CP-MET-002', 'CP-MET-003', 'CP-MET-004', 'CP-MET-005', 'CP-MET-006', 'CP-ACADB-001', 'CP-ACADB-002', 'CP-ACADB-003', 'CP-ACADB-004', 'CP-ACADB-005', 'CP-ACADB-006', 'CP-STARTYB-001', 'CP-STARTYB-002', 'CP-STARTYB-003', 'CP-STARTYB-004', 'CP-STARTYB-005', 'CP-STARTYB-006'] },
+    { id: 'mod-001', moduleId: 'central_padroes', moduleName: 'Central de Padrões', kind: 'plugavel', status: 'parcial', standards: ['CP-GOV-001', 'CP-TEC-001', 'CP-TEC-002', 'CP-TEC-003', 'CP-TEC-004', 'CP-TEC-005', 'CP-TEC-006', 'CP-TEC-007', 'CP-TEC-008', 'CP-TEC-009', 'CP-TEC-010', 'CP-TEC-011', 'CP-TEC-012', 'CP-TEC-013', 'CP-TEC-014', 'CP-TEC-015', 'CP-TEC-016', 'CP-TEC-017', 'CP-TEC-018', 'CP-TEC-019', 'CP-TEC-020', 'CP-TEC-021', 'CP-TEC-022', 'CP-TEC-023', 'CP-TEC-024', 'CP-TEC-025', 'CP-TEC-026', 'CP-MOD-001', 'CP-GOV-002', 'CP-GOV-003', 'CP-GOV-004', 'CP-GOV-005', 'CP-GOV-006', 'CP-GOV-007', 'CP-UX-001', 'CP-UX-002', 'CP-UX-003', 'CP-UX-004', 'CP-UX-005', 'CP-UX-006', 'CP-UX-007', 'CP-SEG-001', 'CP-SEG-002', 'CP-SEG-003', 'CP-SEG-004', 'CP-SEG-005', 'CP-SEG-006', 'CP-AGT-001', 'CP-AGT-002', 'CP-AGT-003', 'CP-AGT-004', 'CP-AGT-005', 'CP-AGT-006', 'CP-IA-001', 'CP-IA-002', 'CP-IA-003', 'CP-IA-004', 'CP-IA-005', 'CP-IA-006', 'CP-PROC-001', 'CP-PROC-002', 'CP-PROC-003', 'CP-PROC-004', 'CP-PROC-005', 'CP-PROC-006', 'CP-NAM-001', 'CP-NAM-002', 'CP-NAM-003', 'CP-NAM-004', 'CP-NAM-005', 'CP-NAM-006', 'CP-IDEIA-001', 'CP-IDEIA-002', 'CP-IDEIA-003', 'CP-IDEIA-004', 'CP-IDEIA-005', 'CP-IDEIA-006', 'CP-MET-001', 'CP-MET-002', 'CP-MET-003', 'CP-MET-004', 'CP-MET-005', 'CP-MET-006', 'CP-ACADB-001', 'CP-ACADB-002', 'CP-ACADB-003', 'CP-ACADB-004', 'CP-ACADB-005', 'CP-ACADB-006', 'CP-STARTYB-001', 'CP-STARTYB-002', 'CP-STARTYB-003', 'CP-STARTYB-004', 'CP-STARTYB-005', 'CP-STARTYB-006'] },
     { id: 'mod-002', moduleId: 'sala-dev', moduleName: 'Sala Dev', kind: 'plugavel', status: 'revisar', standards: ['CP-GOV-001', 'CP-TEC-001', 'CP-TEC-010', 'CP-TEC-014', 'CP-TEC-017'] },
     { id: 'mod-003', moduleId: 'auth_core', moduleName: 'Auth Core', kind: 'base_reutilizavel', status: 'sem_vinculo', standards: ['CP-SEC-001'] },
     { id: 'mod-004', moduleId: 'audit_logs_core', moduleName: 'Audit Logs Core', kind: 'base_reutilizavel', status: 'sem_vinculo', standards: ['CP-TEC-021', 'CP-TEC-022'] }
   ],
+  baseModules: centralBaseModulesCatalog,
   agents: [
     { id: 'ca-01', agentCode: 'CA-01', agentName: 'Orquestrador Técnico', block: 'Entrada e Organização', status: 'executado', deliverable: 'Plano de run e coordenação' },
     { id: 'ca-18', agentCode: 'CA-18', agentName: 'Guardião de Reaproveitamento', block: 'Entrada e Organização', status: 'executado', deliverable: 'Parecer de reaproveitamento' },

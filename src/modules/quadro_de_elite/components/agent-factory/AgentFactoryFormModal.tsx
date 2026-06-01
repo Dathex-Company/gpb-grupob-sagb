@@ -16,7 +16,7 @@ import {
 } from './constants';
 import { HelpTooltip } from './HelpTooltip';
 import { AgentFormState, EntityType, FormCustomField, OperationalActivation, OperationalClass, RoleType, StructuralStatus } from './types';
-import { toDisplayOption } from './helpers';
+import { AgentNameValidationResult, toDisplayOption } from './helpers';
 import { isHumanStructuralEntity } from '../../../../../utils/humanIdentity';
 
 const isValidHierarchyManager = (candidate: Agent): boolean => {
@@ -36,6 +36,7 @@ interface AgentFactoryFormModalProps {
   ventures: Venture[];
   mentorCandidates: Agent[];
   currentEditingAgent?: Agent;
+  nameValidation: AgentNameValidationResult;
   authUsersByEmail: Record<string, { id: string; email: string }>;
   shouldRequireEmail: boolean;
   isSaving: boolean;
@@ -59,6 +60,7 @@ export const AgentFactoryFormModal: React.FC<AgentFactoryFormModalProps> = ({
   ventures,
   mentorCandidates,
   currentEditingAgent,
+  nameValidation,
   authUsersByEmail,
   shouldRequireEmail,
   isSaving,
@@ -83,13 +85,20 @@ export const AgentFactoryFormModal: React.FC<AgentFactoryFormModalProps> = ({
     .filter(isValidHierarchyManager)
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
+  const nameValidationTone = {
+    empty: 'border-gray-200 bg-gray-50 text-gray-500',
+    available: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    duplicate: 'border-red-200 bg-red-50 text-red-700',
+    similar: 'border-amber-200 bg-amber-50 text-amber-700'
+  }[nameValidation.status];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-200">
       <div className="flex h-full max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-gray-200/70 dark:border-white/10 bg-white dark:bg-sagb-panel shadow-2xl transition-colors duration-300">
         <div className="flex items-start justify-between border-b border-gray-100 dark:border-white/10 px-8 py-6 transition-colors duration-300">
           <div>
             <h2 className="text-xl font-black uppercase tracking-tight text-bitrix-nav dark:text-sagb-text">{editingAgentId ? 'Editar cadastro' : 'Novo cadastro'}</h2>
-            <p className="mt-1 text-[11px] font-semibold text-gray-500">Quadro estrutural sem exposição de DNA, cultura ou compliance.</p>
+            <p className="mt-1 text-[11px] font-semibold text-gray-500">Identidade estrutural sem exposição de DNA, cultura ou compliance.</p>
           </div>
           <button onClick={onClose} className="rounded-xl p-2 text-gray-400 transition hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-700"><XIcon className="h-6 w-6" /></button>
         </div>
@@ -103,7 +112,19 @@ export const AgentFactoryFormModal: React.FC<AgentFactoryFormModalProps> = ({
               </label>
               <label className="space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">Nome *<HelpTooltip text="Nome principal de apresentação na plataforma" /></span>
-                <input value={form.name} onChange={(e) => onSetFormField('name', e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-sagb-bg-2 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-sagb-text outline-none focus:border-indigo-300" />
+                <input value={form.name} onChange={(e) => onSetFormField('name', e.target.value)} className={`w-full rounded-xl border bg-white dark:bg-sagb-bg-2 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-sagb-text outline-none focus:border-indigo-300 ${nameValidation.status === 'duplicate' ? 'border-red-300' : nameValidation.status === 'similar' ? 'border-amber-300' : 'border-gray-200 dark:border-white/10'}`} />
+                <div className={`rounded-xl border px-3 py-2 text-[11px] font-semibold ${nameValidationTone}`}>
+                  <p>{nameValidation.message}</p>
+                  {nameValidation.conflicts.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {nameValidation.conflicts.map((conflict) => (
+                        <li key={conflict.agentId}>
+                          {conflict.name}{conflict.canonicalId ? ` · ${conflict.canonicalId}` : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </label>
               <label className="space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-400">ID canônico *<HelpTooltip text="Chave imutável no padrão nome_empresa3_setor3_nivel1_seq3 (ex: anton_borselli_3fb_mkt_e_001)." /></span>
