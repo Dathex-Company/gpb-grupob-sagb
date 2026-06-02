@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LIS · Central de Monitoramento v4 · Leve</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;450;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+
+    :root{
+      --bg:#06182c;--bg-2:#08203b;--top:#f7f9fc;--ink:#eff7ff;--muted:#a9bdd4;--muted-2:#7f9ab8;--line:rgba(157,180,208,.18);--blue:#2f7df6;--blue-2:#55b6ff;--green:#35cf74;--yellow:#ffd05a;--orange:#ff9d37;--red:#ff5468;--purple:#7757ff;--card:#092341;--card-2:#0b2a4d;--sidebar:72px;--app-top:54px;--pad:26px;--gap:18px;--radius:18px;--card-pad:18px;--title:15px;--label:11px;--metric:23px;--small:11.5px;
+    }
+    *{box-sizing:border-box} html,body{height:100%;width:100%;margin:0;overflow:hidden;background:var(--bg);} body{font-family:"Rubik",system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);font-weight:450;} button,select{font-family:inherit} button{cursor:pointer}
+    .app{height:100vh;width:100vw;display:grid;grid-template-rows:var(--app-top) 1fr;background:radial-gradient(circle at 14% 9%,rgba(56,129,255,.22),transparent 26%),radial-gradient(circle at 82% 6%,rgba(21,201,138,.10),transparent 26%),linear-gradient(180deg,#06182c 0%,#06182c 44%,#041426 100%);}
+    .topbar{height:var(--app-top);background:var(--top);color:#162033;border-bottom:1px solid rgba(6,24,44,.08);display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:16px;}
+    .crumb{display:flex;align-items:center;gap:10px;min-width:0;font-weight:700;font-size:15px;letter-spacing:-.025em}.brand-square{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#4c8dff,#16c087);box-shadow:0 8px 18px rgba(47,125,246,.22)}.chev{color:#8a96a8;font-weight:700}.star{font-size:17px;color:#64748b;margin-left:2px}.top-actions{display:flex;align-items:center;gap:10px;white-space:nowrap;color:#1d293a;font-size:13px;font-weight:600}.top-icon{height:34px;min-width:34px;padding:0 11px;border:1px solid rgba(14,30,52,.09);border-radius:12px;background:#fff;color:#29364a;display:grid;place-items:center;box-shadow:0 4px 12px rgba(15,23,42,.04)}.avatar{width:28px;height:28px;border-radius:50%;background:#5b341f;color:white;display:grid;place-items:center;font-size:10px;font-weight:700}
+    .shell{min-height:0;display:grid;grid-template-columns:var(--sidebar) 1fr}.rail{min-height:0;background:#eef3fa;color:#42546f;border-right:1px solid rgba(6,24,44,.08);display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:18px}.rail button{width:42px;height:42px;border:0;border-radius:16px;background:transparent;color:#61728c;display:grid;place-items:center;font-size:17px;font-weight:700}.rail button.active{background:#2f7df6;color:#fff;box-shadow:0 12px 24px rgba(47,125,246,.24)}.rail .spacer{flex:1}
+    .main{min-width:0;min-height:0;padding:var(--pad);display:flex;flex-direction:column;gap:16px;position:relative}.main::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.035),transparent 35%,rgba(37,112,255,.04));pointer-events:none}.main>*{position:relative;z-index:1}.head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;min-height:70px}.head-left{display:flex;align-items:flex-start;gap:14px;min-width:0}.module-icon{width:36px;height:36px;border-radius:14px;background:linear-gradient(135deg,#2f7df6,#53b4ff);display:grid;place-items:center;box-shadow:0 14px 26px rgba(47,125,246,.22);font-weight:700;flex:0 0 auto}h1{margin:0;font-size:33px;line-height:1.02;letter-spacing:-.06em;font-weight:700;text-shadow:0 2px 18px rgba(85,182,255,.12)}.subtitle{margin:8px 0 0;color:#b6c7dc;font-size:14px;line-height:1.35;font-weight:450;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.live-dot{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;background:rgba(53,207,116,.12);color:#65e995;font-size:11px;font-weight:700}.live-dot::before{content:"";width:7px;height:7px;border-radius:50%;background:#35cf74;box-shadow:0 0 0 4px rgba(53,207,116,.12)}
+    .controls{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}.btn,.select{height:42px;border-radius:13px;border:1px solid rgba(150,178,212,.22);background:rgba(10,33,61,.76);color:#e9f3ff;font-weight:650;font-size:12.5px;padding:0 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06);outline:none}.btn.primary{background:#2f72ff;border-color:#2f72ff;box-shadow:0 14px 28px rgba(47,114,255,.20)}.select{appearance:none;padding-right:34px;background-image:linear-gradient(45deg,transparent 50%,#b9c8dc 50%),linear-gradient(135deg,#b9c8dc 50%,transparent 50%);background-position:calc(100% - 16px) 17px,calc(100% - 11px) 17px;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+    .grid-wrap{min-height:0;flex:1;display:flex;flex-direction:column}.grid{min-height:0;flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:var(--gap)}.card{min-width:0;min-height:0;height:100%;overflow:hidden;border-radius:var(--radius);border:1px solid rgba(127,161,205,.18);background:linear-gradient(180deg,rgba(13,47,84,.90),rgba(8,32,59,.96));box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 16px 35px rgba(0,0,0,.10);padding:var(--card-pad);display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:12px;position:relative}.card::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 12% 0%,rgba(47,125,246,.12),transparent 38%);pointer-events:none}.card>*{position:relative;z-index:1}.card-head{display:flex;align-items:center;gap:10px;min-width:0;padding-bottom:10px;border-bottom:1px solid rgba(157,180,208,.13)}.num{width:28px;height:28px;border-radius:50%;background:#2f7df6;color:white;display:grid;place-items:center;font-weight:700;font-size:13px;flex:0 0 auto;box-shadow:0 10px 18px rgba(47,125,246,.22)}.card-title{font-size:var(--title);font-weight:700;letter-spacing:-.028em;line-height:1.12;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;min-width:0}.status{margin-left:auto;flex:0 0 auto;border-radius:999px;padding:6px 10px;font-size:10.5px;font-weight:700}.ok{background:rgba(53,207,116,.12);color:#5af08f}.warn{background:rgba(255,208,90,.13);color:#ffd05a}.bad{background:rgba(255,84,104,.12);color:#ff7586}.info{background:rgba(84,151,255,.13);color:#80b7ff}
+    .metric-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.metric{min-width:0;padding-right:8px;border-right:1px solid rgba(157,180,208,.12)}.metric:last-child{border-right:0;padding-right:0}.metric .label{font-size:var(--label);color:#a9bdd4;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.metric .value{font-size:var(--metric);line-height:1;font-weight:700;letter-spacing:-.035em;color:#f3f9ff;white-space:nowrap}.metric .delta{font-size:10px;font-weight:700;color:#38d777;margin-left:4px}.delta.down{color:#ff7586}.delta.warn{color:#ffd05a}
+    .visual{min-height:0;border-radius:14px;background:rgba(7,27,51,.58);border:1px solid rgba(157,180,208,.08);padding:10px;display:grid;grid-template-columns:1.15fr .85fr;gap:10px;overflow:hidden}.viz-box{min-height:0}.chart{height:100%;display:flex;align-items:flex-end;gap:5px;overflow:hidden}.bar{flex:1;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#2f7df6,#53d67d);min-width:3px;opacity:.92}.bar.b2{background:linear-gradient(180deg,#7757ff,#2f7df6)}.line{width:100%;height:100%;min-height:58px}.line polyline{fill:none;stroke:#2f8dff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.line .area{fill:rgba(47,125,246,.12);stroke:none}.side-mini{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:7px}.mini-kv{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:var(--small);color:#c4d6eb}.mini-kv strong{font-weight:700;color:#fff;white-space:nowrap}.meter{height:6px;border-radius:999px;background:rgba(157,180,208,.15);overflow:hidden}.meter span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#2f7df6,#34d77d)}.gauge{height:100%;display:grid;place-items:center;position:relative}.gauge svg{width:min(90px,100%);height:min(90px,100%);transform:rotate(-90deg)}.gauge circle{fill:none;stroke-width:10;stroke-linecap:round}.g-base{stroke:rgba(157,180,208,.15)}.g-val{stroke:#35cf74;path-length:100}.gauge div{position:absolute;text-align:center}.gauge strong{display:block;font-size:22px;font-weight:700}.gauge span{display:block;font-size:10px;color:#a9bdd4}
+    .alerts{border-top:1px solid rgba(157,180,208,.13);padding-top:10px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;min-height:0}.alert-list{display:flex;flex-direction:column;gap:5px;min-width:0}.alert-line{display:flex;align-items:center;gap:7px;color:#c4d6eb;font-size:var(--small);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.severity{width:7px;height:7px;border-radius:50%;background:#55b6ff;flex:0 0 auto}.severity.red{background:#ff5468}.severity.yellow{background:#ffd05a}.severity.orange{background:#ff9d37}.severity.green{background:#35cf74}.open-detail{align-self:end;border:0;background:transparent;color:#78aefe;font-size:12px;font-weight:700;padding:0;white-space:nowrap}
+    .utility{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:8px;padding:8px;border-radius:16px;background:rgba(5,17,33,.78);border:1px solid rgba(157,180,208,.19);box-shadow:0 20px 45px rgba(0,0,0,.26);backdrop-filter:blur(14px);z-index:5}.utility .btn,.utility .select{height:34px;font-size:11.5px;border-radius:11px;padding:0 12px;background:rgba(255,255,255,.07)}
+    .drawer{position:fixed;right:18px;top:72px;bottom:18px;width:min(440px,calc(100vw - 36px));background:#081c34;border:1px solid rgba(157,180,208,.22);border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.38);z-index:20;transform:translateX(calc(100% + 28px));transition:transform .22s ease;overflow:hidden;display:flex;flex-direction:column}.drawer.open{transform:translateX(0)}.drawer-head{padding:18px;border-bottom:1px solid rgba(157,180,208,.15);display:flex;align-items:start;gap:12px}.drawer-head h2{margin:0;font-size:21px;letter-spacing:-.04em;font-weight:700}.drawer-head p{margin:6px 0 0;color:#aac0d7;font-size:12px;line-height:1.35}.drawer-close{margin-left:auto;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.10);border-radius:12px;width:34px;height:34px}.drawer-body{padding:18px;overflow:auto;color:#dbeaff}.drawer-section{margin-bottom:18px}.drawer-section h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#88a4c4;font-weight:700}.drawer-section p{margin:0;color:#bfd0e4;font-size:13px;line-height:1.5}.definition{display:grid;grid-template-columns:120px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid rgba(157,180,208,.10);font-size:12.5px}.definition strong{color:#fff;font-weight:700}.definition span{color:#b8c9dd}.log-item{display:flex;gap:8px;align-items:center;font-size:12.5px;padding:8px 0;border-bottom:1px solid rgba(157,180,208,.10);color:#c9d9eb}.time{margin-left:auto;color:#7e98b6}
+    .tv-exit{position:fixed;right:22px;bottom:22px;z-index:50;height:42px;padding:0 16px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(5,17,33,.64);color:#fff;font-size:12px;font-weight:700;box-shadow:0 18px 40px rgba(0,0,0,.28);backdrop-filter:blur(10px);display:none}.tv-badge{position:fixed;left:22px;bottom:22px;z-index:50;color:rgba(223,237,255,.52);font-size:11px;font-weight:600;display:none}
+    .panels-4{--gap:18px;--card-pad:20px;--title:16px;--metric:25px;--label:11.5px;--small:12px}.panels-8{--gap:18px;--card-pad:18px;--title:15px;--metric:23px;--label:11px;--small:11.5px}.panels-12{--gap:13px;--card-pad:13px;--title:13px;--metric:18px;--label:9.5px;--small:10.2px}.panels-16{--gap:10px;--card-pad:10px;--title:11.5px;--metric:15.5px;--label:8.5px;--small:9px}.panels-12 .head{min-height:58px}.panels-16 .head{min-height:52px}.panels-12 h1{font-size:29px}.panels-16 h1{font-size:25px}.panels-12 .subtitle,.panels-16 .subtitle{font-size:12px;margin-top:5px}.panels-16 .visual{padding:7px;gap:7px;border-radius:12px}.panels-16 .metric-row{gap:6px}.panels-16 .card-head{padding-bottom:7px}.panels-16 .alerts{padding-top:7px}.panels-16 .status{padding:4px 7px;font-size:8px}.panels-16 .num{width:22px;height:22px;font-size:10px}.panels-16 .open-detail{font-size:9px}.density-compact{--gap:12px;--card-pad:13px}.density-max{--gap:8px;--card-pad:10px}.density-max .head,.density-max .utility{display:none}
+    .tv-mode{grid-template-rows:1fr;background:#06182c}.tv-mode .topbar,.tv-mode .rail{display:none!important}.tv-mode .shell{grid-template-columns:1fr}.tv-mode .main{padding:22px 26px 24px;gap:14px}.tv-mode .drawer{top:18px;bottom:18px}.tv-mode .tv-exit,.tv-mode .tv-badge{display:block}.tv-mode .utility{display:none}.tv-mode .controls .btn:not(.primary),.tv-mode .controls .select{display:none}.tv-mode .head{min-height:52px;align-items:center}.tv-mode h1{font-size:32px}.tv-mode .subtitle{margin-top:5px}.tv-mode.panels-12 h1{font-size:26px}.tv-mode.panels-16 h1{font-size:22px}.tv-mode.panels-16 .head{min-height:42px}.tv-mode.panels-16 .controls{display:none}
+    .light-theme{--bg:#eef4fb;--ink:#102033;--muted:#53677e}.light-theme.app{background:linear-gradient(180deg,#f7fbff 0%,#edf5ff 55%,#e8f0fb 100%)}.light-theme .main::before{background:radial-gradient(circle at 12% 5%,rgba(47,125,246,.10),transparent 28%)}.light-theme .card{background:rgba(255,255,255,.82);border-color:rgba(19,42,70,.10);box-shadow:0 16px 34px rgba(17,31,52,.08);color:#102033}.light-theme .card::before{background:radial-gradient(circle at 12% 0%,rgba(47,125,246,.10),transparent 38%)}.light-theme h1{color:#102033;text-shadow:none}.light-theme .subtitle,.light-theme .metric .label,.light-theme .mini-kv,.light-theme .alert-line,.light-theme .gauge span{color:#53677e}.light-theme .metric .value,.light-theme .mini-kv strong,.light-theme .gauge strong{color:#102033}.light-theme .visual{background:rgba(235,243,252,.75);border-color:rgba(19,42,70,.08)}.light-theme .card-head,.light-theme .alerts,.light-theme .metric{border-color:rgba(19,42,70,.09)}.light-theme .btn,.light-theme .select{background:rgba(255,255,255,.78);color:#12243a;border-color:rgba(19,42,70,.12)}.light-theme .btn.primary{background:#2f72ff;color:#fff}.light-theme .utility{background:rgba(255,255,255,.86);border-color:rgba(19,42,70,.12)}.light-theme .drawer{background:#fff;color:#102033;border-color:rgba(19,42,70,.14)}.light-theme .drawer-head h2,.light-theme .definition strong{color:#102033}.light-theme .drawer-head p,.light-theme .definition span,.light-theme .drawer-section p,.light-theme .log-item{color:#53677e}
+    @media(max-width:1200px){.top-actions .hide-small{display:none}.main{--pad:18px}.head{min-height:64px}h1{font-size:28px}.controls{gap:7px}.btn,.select{height:38px;padding:0 10px;font-size:11px}.grid{gap:12px}.card{padding:12px}.visual{grid-template-columns:1fr}.side-mini{display:none}.metric .value{font-size:18px}.card-title{font-size:13px}}@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.shell{grid-template-columns:54px 1fr}.rail button{width:36px;height:36px;border-radius:13px}.topbar{padding:0 10px}.crumb{font-size:13px}.head{display:block}.controls{justify-content:flex-start;margin-top:10px}.metric-row{grid-template-columns:repeat(3,1fr)}}
+
+  </style>
+</head>
+<body>
+  <div class="app panels-8" id="app">
+    <header class="topbar">
+      <div class="crumb"><span class="brand-square"></span><span>GrupoB</span><span class="chev">›</span><span>Central de Monitoramento</span><span class="star">☆</span></div>
+      <div class="top-actions"><button class="top-icon">?</button><button class="top-icon">🔔</button><button class="top-icon">⚙</button><span class="avatar">DR</span><span class="hide-small">Douglas Rodrigues</span><span>⌄</span></div>
+    </header>
+    <div class="shell">
+      <aside class="rail" aria-label="Navegação lateral compacta">
+        <button>⌂</button><button class="active">▦</button><button>□</button><button>☑</button><button>⚙</button><button>♡</button><button>◎</button><button>⌁</button><div class="spacer"></div><button>›</button>
+      </aside>
+      <main class="main">
+        <section class="head">
+          <div class="head-left"><div class="module-icon">▣</div><div><h1>Central de Monitoramento</h1><div class="subtitle">Visão em tempo real da operação, sistemas e serviços do GrupoB. <span class="live-dot">Atualizado agora</span></div></div></div>
+          <div class="controls">
+            <button class="btn" id="themeBtn">☼ Modo claro</button>
+            <button class="btn">⚙ Personalizar</button>
+            <select class="select"><option>Últimos 5 minutos</option><option>Últimos 15 minutos</option><option>Última hora</option><option>Hoje</option></select>
+            <select class="select" id="panelSelect"><option value="4">4 painéis</option><option value="8" selected>8 painéis</option><option value="12">12 painéis</option><option value="16">16 painéis</option></select>
+            <button class="btn primary" id="refreshBtn">↻ Atualizar</button>
+            <button class="btn primary" id="tvBtn">⛶ Modo TV</button>
+          </div>
+        </section>
+        <section class="grid-wrap"><div class="grid" id="grid"></div></section>
+        <div class="utility" id="utilityBar">
+          <button class="btn" id="cleanBtn">Tela cheia</button>
+          <select class="select" id="utilityPanelSelect"><option value="4">4 painéis</option><option value="8" selected>8 painéis</option><option value="12">12 painéis</option><option value="16">16 painéis</option></select>
+          <select class="select" id="densitySelect"><option value="normal">Densidade normal</option><option value="compact">Densidade compacta</option><option value="max">Densidade máxima</option></select>
+        </div>
+      </main>
+    </div>
+    <button class="tv-exit" id="tvExit">Sair do modo TV</button>
+    <div class="tv-badge">Modo TV ativo · clique em “Sair do modo TV” ou pressione ESC</div>
+  </div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head"><div class="num" id="drawerNum">1</div><div><h2 id="drawerTitle">Detalhes</h2><p id="drawerDesc">Descrição do monitoramento.</p></div><button class="drawer-close" id="drawerClose">×</button></div>
+    <div class="drawer-body"><div class="drawer-section"><h3>Métricas do painel</h3><div id="drawerMetrics"></div></div><div class="drawer-section"><h3>Alertas deste monitoramento</h3><div id="drawerAlerts"></div></div><div class="drawer-section"><h3>Leitura operacional</h3><p id="drawerReading"></p></div></div>
+  </aside>
+  <script>
+const monitors = [
+      {title:'Acesso à Internet', status:'Online', tone:'ok', desc:'Conectividade geral da operação: qualidade da internet, ping, jitter, perda de pacotes e disponibilidade.', metrics:[['Ping','14 ms','↓ 2'],['Jitter','3 ms','↓ 1'],['Qualidade','95/100','']], alerts:[['green','Conexão estável'],['yellow','Oscilação leve às 15:21']], reading:'Painel de referência para saber se a operação está realmente conectada. Ao abrir detalhes, deve mostrar provedores, failover, últimos eventos, latência por região e histórico de quedas.', bars:[35,45,42,43,34,39,44,52,46,53], side:[['Uptime','100%'],['Perda','0,0%'],['Failover','Pronto']]},
+      {title:'Terminais em Execução', status:'Operacional', tone:'info', desc:'Acompanha terminais, sessões ativas, filas de jobs, processos em execução e gargalos de operação local.', metrics:[['Terminais','128','↑ 8'],['Sessões','256','↑ 12'],['Fila','3','↓ 7']], alerts:[['green','Jobs críticos rodando'],['yellow','1 terminal com uso alto']], reading:'Serve para entender se há automações, scripts e serviços locais em execução, além de indicar processos travados ou excesso de fila.', bars:[25,55,45,58,42,68,48,78,55,66], side:[['Programas','432'],['Falhas','1'],['CPU média','38%']]},
+      {title:'Segurança do Sistema', status:'Protegido', tone:'ok', desc:'Monitora agentes de segurança, varreduras, ameaças bloqueadas, arquivos verificados e eventos suspeitos.', metrics:[['Status','Seguro',''],['Ameaças','23','↓ 4'],['Arquivos','12.845','↑ 243']], alerts:[['green','Agentes ativos'],['yellow','2 eventos em observação']], reading:'Indica se o sistema está protegido e se existem sinais de invasão, comportamento anômalo, credenciais expostas ou alertas pendentes.', bars:[40,45,43,46,50,52,49,56,55,58], side:[['Varredura','Agora'],['Bloqueios','23'],['Risco','Baixo']]},
+      {title:'Saúde da Infraestrutura', status:'Saudável', tone:'ok', desc:'Mede CPU, memória, disco, carga, temperatura lógica e disponibilidade da infraestrutura.', metrics:[['CPU','32%',''],['Memória','58%',''],['Carga','0,74','']], alerts:[['green','Uso dentro do limite'],['yellow','Memória acima de 55%']], reading:'Mostra a capacidade real da infraestrutura e ajuda a antecipar gargalos antes que virem indisponibilidade.', bars:[30,42,38,40,29,35,44,51,46,56], side:[['Disco','41%'],['Núcleos','8'],['Média','Normal']]},
+      {title:'Serviços e APIs', status:'Todos Online', tone:'ok', desc:'Acompanha serviços internos, APIs, autenticação, WebSocket, documentação, relatórios e notificações.', metrics:[['Online','6/6',''],['SLA','99,9%',''],['Erros','0','']], alerts:[['green','APIs principais online'],['yellow','Relatórios com latência leve']], reading:'Permite ver rapidamente se algum serviço de base caiu e se a falha afeta usuários, módulos ou integrações.', bars:[80,80,79,80,77,80,80,79,80,80], side:[['Auth','100%'],['API Loze','100%'],['WebSocket','100%']]},
+      {title:'Banco de Dados / Supabase', status:'Conectado', tone:'ok', desc:'Monitora conexões ativas, latência, queries por minuto, sincronização, uso de banco e eventos de dados.', metrics:[['Conexões','42','↑ 5'],['Latência','9 ms','↑ 1'],['Queries','1.245','↓ 112']], alerts:[['green','Sincronização 100%'],['yellow','Pico de queries às 15:18']], reading:'Avisa se o banco está respondendo bem, se há lentidão, excesso de queries, risco de estouro de limite ou falha de sincronização.', bars:[22,45,36,48,40,55,49,60,45,52], side:[['Uso','2,8 GB'],['Sync','100%'],['Pool','OK']]},
+      {title:'Atividade dos Agentes', status:'Ativo', tone:'ok', desc:'Acompanha agentes online, jobs em execução, filas, ações concluídas, pausas, erros e orquestração.', metrics:[['Agentes','186','↑ 96%'],['Jobs','24','↑ 3'],['Fila','12','↓ 2']], alerts:[['green','Fila sob controle'],['yellow','2 agentes aguardando revisão']], reading:'Mostra como os agentes estão trabalhando, se a orquestração está saudável e onde existe necessidade de revisão humana.', bars:[55,48,62,70,58,80,66,76,72,85], side:[['Concluídas','402'],['Em execução','74'],['Com falha','16']]},
+      {title:'Alertas e Incidentes', status:'Atenção', tone:'warn', desc:'Centraliza críticos, alertas, avisos, incidentes não tratados e eventos que exigem decisão.', metrics:[['Críticos','2',''],['Alertas','7',''],['Avisos','14','']], alerts:[['red','Falha no serviço de relatórios'],['yellow','Memória acima de 85%'],['orange','Agente offline: PC-LAB-27']], reading:'Painel de prioridade. Deve permitir abrir alerta, ver dono, severidade, origem, impacto, prazo e status de tratamento.', bars:[8,18,10,22,15,30,24,28,18,25], side:[['Não tratados','23'],['SLA risco','2'],['Info','1']]},
+      {title:'Central de Padrões', status:'Auditando', tone:'info', desc:'Monitora padrões, documentos canônicos, checklists, matrizes, validações e pendências normativas.', metrics:[['Padrões','48','↑ 4'],['Pendências','6','↓ 1'],['Cobertura','71%','↑ 8']], alerts:[['yellow','3 padrões sem validação'],['green','Auditoria rodando']], reading:'Ajuda Pietro e responsáveis a acompanhar avanço da Central de Padrões, lacunas, decisões e validações pendentes.', bars:[20,25,28,31,35,39,44,51,60,71], side:[['Docs','92'],['Checklists','18'],['Matrizes','11']]},
+      {title:'TaskZei / Tarefas', status:'Fila ativa', tone:'info', desc:'Monitora tarefas, responsáveis, atrasos, bloqueios, itens críticos e cadência de execução.', metrics:[['Abertas','214','↑ 18'],['Críticas','9',''],['Atrasadas','17','↓ 3']], alerts:[['yellow','9 tarefas críticas'],['orange','17 atrasadas']], reading:'Mostra se a operação está andando ou acumulando pendências. Deve abrir por responsável, projeto, prioridade e vencimento.', bars:[45,52,58,49,62,68,55,70,64,72], side:[['Hoje','31'],['Semana','86'],['Bloqueadas','5']]},
+      {title:'Integrações e Bridges', status:'Estável', tone:'ok', desc:'Monitora pontes entre módulos, webhooks, MCPs técnicos, conectores, filas e sincronizações.', metrics:[['Bridges','18',''],['Webhooks','1.090','↑ 44'],['Falhas','2','']], alerts:[['green','Sincronização estável'],['yellow','2 webhooks com retry']], reading:'Mostra se integrações do ecossistema estão transmitindo eventos corretamente entre módulos e serviços.', bars:[62,66,70,64,75,78,68,82,79,84], side:[['Retry','2'],['Sync','99,7%'],['MCPs','6']]},
+      {title:'Fila de Aprovações', status:'Pendente', tone:'warn', desc:'Acompanha aprovações humanas, revisões de agente, exceções, decisões e itens aguardando validação.', metrics:[['Pendentes','11','↑ 2'],['Críticas','3',''],['SLA','82%','']], alerts:[['yellow','3 aprovações críticas'],['orange','1 decisão fora do SLA']], reading:'Indica o que precisa de decisão humana antes de execução, publicação, alteração sensível ou validação normativa.', bars:[35,30,44,40,52,48,56,61,58,64], side:[['Pietro','4'],['Pedro','2'],['Sávio','3']]},
+      {title:'Logs de Segurança', status:'Observando', tone:'warn', desc:'Acompanha eventos de acesso, tentativas suspeitas, bloqueios, auditoria e trilhas sensíveis.', metrics:[['Eventos','1.842','↑ 61'],['Bloqueios','19','↑ 4'],['Risco','Médio','']], alerts:[['yellow','Aumento de tentativas'],['red','1 origem bloqueada']], reading:'Diferente do log técnico, este painel destaca eventos que podem afetar proteção, acesso, privacidade ou risco operacional.', bars:[20,25,28,36,40,60,55,72,68,74], side:[['IPs novos','7'],['Falhas login','19'],['RLS','OK']]},
+      {title:'Documentos e Loze Docs', status:'Sincronizado', tone:'ok', desc:'Monitora documentos, importações, indexação, versões, canonicidade e erros de sincronização.', metrics:[['Docs','1.284','↑ 12'],['Indexados','96%',''],['Falhas','4','']], alerts:[['green','Indexação ativa'],['yellow','4 documentos com erro']], reading:'Permite acompanhar saúde documental, importações e base que alimenta agentes, padrões e histórico.', bars:[50,54,58,61,66,70,74,80,88,96], side:[['Canônicos','132'],['Rascunhos','41'],['Legado','23']]},
+      {title:'Custos e Consumo', status:'Controlado', tone:'ok', desc:'Monitora consumo de APIs, IA, infraestrutura, armazenamento, automações e limite de custos.', metrics:[['Hoje','R$ 84',''],['Mês','R$ 2.180','↑ 4%'],['Limite','62%','']], alerts:[['green','Dentro do limite'],['yellow','IA com pico às 14:40']], reading:'Mostra impacto financeiro da operação tecnológica e ajuda a evitar surpresas de custo.', bars:[20,24,30,28,36,41,48,54,58,62], side:[['IA','41%'],['Infra','33%'],['Storage','9%']]},
+      {title:'Backup e Recuperação', status:'Pronto', tone:'ok', desc:'Acompanha backups, restauração, última execução, integridade e plano de recuperação.', metrics:[['Último','15:10',''],['Sucesso','100%',''],['RPO','10 min','']], alerts:[['green','Backup diário concluído'],['green','Teste de restauração OK']], reading:'Painel essencial para saber se a operação consegue recuperar dados e serviços em caso de queda, erro ou incidente.', bars:[70,70,70,72,74,76,78,80,84,86], side:[['DR','Ativo'],['Cópias','3'],['Falhas','0']]}
+    ];
+
+    const app = document.getElementById('app');
+    const grid = document.getElementById('grid');
+    const panelSelect = document.getElementById('panelSelect');
+    const utilityPanelSelect = document.getElementById('utilityPanelSelect');
+    const densitySelect = document.getElementById('densitySelect');
+    const tvBtn = document.getElementById('tvBtn');
+    const tvExit = document.getElementById('tvExit');
+    const cleanBtn = document.getElementById('cleanBtn');
+    const drawer = document.getElementById('drawer');
+    const drawerClose = document.getElementById('drawerClose');
+    const themeBtn = document.getElementById('themeBtn');
+
+    let panelCount = 8;
+    let isLight = false;
+
+    function lineSvg(values){
+      const pts = values.map((v,i)=>`${i*(100/(values.length-1))},${82-v*.68}`).join(' ');
+      const area = `0,100 ${pts} 100,100`;
+      return `<svg class="line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon class="area" points="${area}"></polygon><polyline points="${pts}"></polyline></svg>`;
+    }
+
+    function bars(values){
+      return `<div class="chart">${values.map((v,i)=>`<span class="bar ${i%3===0?'b2':''}" style="height:${Math.max(12,v)}%"></span>`).join('')}</div>`;
+    }
+
+    function gauge(value,label){
+      const n = Number(String(value).replace(/[^0-9]/g,'')) || 64;
+      return `<div class="gauge"><svg viewBox="0 0 92 92"><circle cx="46" cy="46" r="38" class="g-base"/><circle cx="46" cy="46" r="38" class="g-val" style="stroke-dasharray:${Math.min(100,n)} 100"/></svg><div><strong>${value}</strong><span>${label}</span></div></div>`;
+    }
+
+    function render(){
+      app.classList.remove('panels-4','panels-8','panels-12','panels-16');
+      app.classList.add(`panels-${panelCount}`);
+      const visible = monitors.slice(0,panelCount);
+      grid.innerHTML = visible.map((m,idx)=>{
+        const viz = idx % 3 === 0 ? lineSvg(m.bars) : idx % 3 === 1 ? bars(m.bars) : gauge(m.metrics[0][1], m.metrics[0][0]);
+        const side = `<div class="side-mini">${m.side.map((s,i)=>`<div class="mini-block"><div class="mini-kv"><span>${s[0]}</span><strong>${s[1]}</strong></div><div class="meter"><span style="width:${meterWidth(s[1],idx)}%"></span></div></div>`).join('')}</div>`;
+        return `<article class="card" tabindex="0" onclick="openDrawer(${idx})" onkeydown="if(event.key==='Enter')openDrawer(${idx})">
+          <div class="card-head"><div class="num">${idx+1}</div><div class="card-title">${m.title}</div><div class="status ${m.tone}">${m.status}</div></div>
+          <div class="metric-row">${m.metrics.map(me=>`<div class="metric"><div class="label">${me[0]}</div><div class="value">${me[1]}${me[2]?`<span class="delta ${me[2].includes('↑')?'':me[2].includes('Médio')?'warn':'down'}">${me[2]}</span>`:''}</div></div>`).join('')}</div>
+          <div class="visual"><div class="viz-box">${viz}</div>${side}</div>
+          <div class="alerts"><div class="alert-list">${m.alerts.slice(0,3).map(a=>`<div class="alert-line"><span class="severity ${a[0]}"></span><span>${a[1]}</span></div>`).join('')}</div><button class="open-detail" onclick="event.stopPropagation();openDrawer(${idx})">Detalhes ›</button></div>
+        </article>`;
+      }).join('');
+    }
+
+    function meterWidth(v,idx){
+      if(String(v).includes('%')) return Math.min(100, Math.max(8, Number(String(v).replace('%',''))));
+      if(String(v).includes('GB')) return 42 + (idx % 4)*10;
+      if(String(v).toLowerCase().includes('ok') || String(v).toLowerCase().includes('ativo') || String(v).toLowerCase().includes('pronto')) return 92;
+      return Math.min(94, 44 + idx*3);
+    }
+
+    function setPanels(n){
+      const allowed = [4,8,12,16];
+      panelCount = allowed.includes(Number(n)) ? Number(n) : 8;
+      panelSelect.value = String(panelCount);
+      utilityPanelSelect.value = String(panelCount);
+      render();
+    }
+
+    function setDensity(value){
+      app.classList.remove('density-compact','density-max');
+      if(value === 'compact') app.classList.add('density-compact');
+      if(value === 'max') app.classList.add('density-max');
+    }
+
+    function toggleTheme(){
+      isLight = !isLight;
+      app.classList.toggle('light-theme', isLight);
+      themeBtn.textContent = isLight ? '☾ Modo escuro' : '☼ Modo claro';
+    }
+
+    function openDrawer(idx){
+      const m = monitors[idx];
+      document.getElementById('drawerNum').textContent = idx + 1;
+      document.getElementById('drawerTitle').textContent = m.title;
+      document.getElementById('drawerDesc').textContent = m.desc;
+      document.getElementById('drawerMetrics').innerHTML = m.metrics.map(x=>`<div class="definition"><strong>${x[0]}</strong><span>${metricMeaning(x[0],m.title)}</span></div>`).join('');
+      document.getElementById('drawerAlerts').innerHTML = m.alerts.map((a,i)=>`<div class="log-item"><span class="severity ${a[0]}"></span><span>${a[1]}</span><span class="time">15:${String(24-i*4).padStart(2,'0')}</span></div>`).join('');
+      document.getElementById('drawerReading').textContent = m.reading;
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden','false');
+    }
+
+    function metricMeaning(label,title){
+      const dict = {
+        'Ping':'Tempo de resposta da conexão. Quanto menor, melhor.',
+        'Jitter':'Variação da latência. Alto jitter indica instabilidade.',
+        'Qualidade':'Nota consolidada de conexão considerando estabilidade, ping e perdas.',
+        'Terminais':'Quantidade de terminais ou rotinas locais em execução.',
+        'Sessões':'Sessões ativas ligadas a jobs, usuários ou automações.',
+        'Fila':'Itens aguardando execução ou revisão.',
+        'Status':'Estado operacional principal do monitoramento.',
+        'Ameaças':'Eventos bloqueados, suspeitos ou neutralizados.',
+        'Arquivos':'Arquivos verificados por rotinas de segurança.',
+        'CPU':'Uso atual de processamento.',
+        'Memória':'Uso atual de memória operacional.',
+        'Carga':'Carga média da infraestrutura.',
+        'Online':'Serviços disponíveis no momento.',
+        'SLA':'Percentual de disponibilidade dentro do período filtrado.',
+        'Erros':'Falhas detectadas no período.',
+        'Conexões':'Conexões ativas com banco ou serviço.',
+        'Latência':'Tempo de resposta do banco ou serviço.',
+        'Queries':'Consultas executadas por minuto.',
+        'Agentes':'Agentes ativos ou disponíveis.',
+        'Jobs':'Trabalhos sendo executados agora.',
+        'Críticos':'Eventos que exigem resposta imediata.',
+        'Alertas':'Eventos relevantes ainda não tratados.',
+        'Avisos':'Sinais de atenção de menor severidade.',
+        'Padrões':'Padrões registrados ou monitorados.',
+        'Pendências':'Itens aguardando validação ou ação.',
+        'Cobertura':'Percentual de área/documentos já cobertos.',
+        'Abertas':'Tarefas abertas no período.',
+        'Atrasadas':'Tarefas fora do prazo.',
+        'Bridges':'Pontes ativas entre módulos ou serviços.',
+        'Webhooks':'Eventos transmitidos entre sistemas.',
+        'Falhas':'Execuções com erro ou retry.',
+        'Eventos':'Registros capturados no período.',
+        'Bloqueios':'Acessos ou ações bloqueadas.',
+        'Risco':'Classificação consolidada de risco.',
+        'Docs':'Documentos monitorados.',
+        'Indexados':'Percentual já pronto para busca/uso.',
+        'Hoje':'Consumo financeiro estimado no dia.',
+        'Mês':'Consumo acumulado do mês.',
+        'Limite':'Percentual de limite orçamentário consumido.',
+        'Último':'Último backup ou execução bem sucedida.',
+        'Sucesso':'Percentual de rotinas concluídas sem erro.',
+        'RPO':'Janela máxima esperada de perda de dados.'
+      };
+      return dict[label] || `Métrica principal do painel ${title}, usada para leitura operacional rápida.`;
+    }
+
+    function enterTv(){
+      app.classList.add('tv-mode');
+      if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
+    }
+    function exitTv(){
+      app.classList.remove('tv-mode');
+      if(document.fullscreenElement && document.exitFullscreen){document.exitFullscreen().catch(()=>{});}
+    }
+
+    panelSelect.addEventListener('change',e=>setPanels(e.target.value));
+    utilityPanelSelect.addEventListener('change',e=>setPanels(e.target.value));
+    densitySelect.addEventListener('change',e=>setDensity(e.target.value));
+    tvBtn.addEventListener('click',enterTv);
+    tvExit.addEventListener('click',exitTv);
+    cleanBtn.addEventListener('click',enterTv);
+    themeBtn.addEventListener('click',toggleTheme);
+    drawerClose.addEventListener('click',()=>{drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true');});
+    document.getElementById('refreshBtn').addEventListener('click',()=>{render();});
+    document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement) app.classList.remove('tv-mode'); });
+    document.addEventListener('keydown',e=>{ if(e.key === 'Escape') exitTv(); });
+    render();
+
+  </script>
+</body>
+</html>

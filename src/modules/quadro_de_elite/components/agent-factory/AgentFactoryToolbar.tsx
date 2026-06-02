@@ -12,6 +12,7 @@ interface AgentFactoryToolbarProps {
   ventures: Venture[];
   batchInputRef: React.RefObject<HTMLInputElement>;
   onBatchFile: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onDownloadTemplate: () => void;
   isImporting: boolean;
   showAdvancedColumns: boolean;
   onToggleAdvancedColumns: () => void;
@@ -28,6 +29,7 @@ export const AgentFactoryToolbar: React.FC<AgentFactoryToolbarProps> = ({
   ventures,
   batchInputRef,
   onBatchFile,
+  onDownloadTemplate,
   isImporting,
   showAdvancedColumns,
   onToggleAdvancedColumns,
@@ -54,7 +56,10 @@ export const AgentFactoryToolbar: React.FC<AgentFactoryToolbarProps> = ({
         <input ref={batchInputRef} type="file" accept=".csv,.json" className="hidden" onChange={onBatchFile} />
         <button onClick={() => batchInputRef.current?.click()} disabled={isImporting} className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50">
           <CloudUploadIcon className="h-4 w-4" />
-          {isImporting ? 'Importando...' : 'Importar lote'}
+          {isImporting ? 'Validando...' : 'Selecionar lote'}
+        </button>
+        <button onClick={onDownloadTemplate} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 transition hover:bg-emerald-100">
+          Template CSV
         </button>
         <button
           onClick={onToggleAdvancedColumns}

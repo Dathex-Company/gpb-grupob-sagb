@@ -7,7 +7,14 @@ import { AgentFactoryHeader } from './agent-factory/AgentFactoryHeader';
 import { AgentFactoryToolbar } from './agent-factory/AgentFactoryToolbar';
 import { AgentFactoryTable } from './agent-factory/AgentFactoryTable';
 import { AgentFactoryFormModal } from './agent-factory/AgentFactoryFormModal';
+import { NameCreatorPanel } from './agent-factory/NameCreatorPanel';
 import { DEFAULT_WORKSPACE_ID } from './agent-factory/constants';
+import {
+  BatchPreviewRow,
+  buildOfficialImportTemplateCsv,
+  parseBatchImportRows,
+  validateBatchImportRows
+} from './agent-factory/batchImportValidator';
 import {
   agentToForm,
   createEmptyForm,
@@ -21,7 +28,6 @@ import {
   validateAgentNameAvailability,
   validateDraft
 } from './agent-factory/helpers';
-import { mapImportRowToForm, parseCsvRecords } from './agent-factory/importHelpers';
 import { AgentFormState, EntityType, FormCustomField } from './agent-factory/types';
 
 interface AgentFactoryProps {
@@ -63,6 +69,8 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
   const [batchOrigin, setBatchOrigin] = useState('Importacao StartyB');
   const [batchVentureId, setBatchVentureId] = useState('');
   const [importFeedback, setImportFeedback] = useState('');
+  const [batchPreview, setBatchPreview] = useState<BatchPreviewRow[]>([]);
+  const [pendingBatchOrigin, setPendingBatchOrigin] = useState('');
   const [isLoadingAuthPermissions, setIsLoadingAuthPermissions] = useState(false);
   const [authAdminPermissions, setAuthAdminPermissions] = useState({
     inviteUser: false,
@@ -155,6 +163,15 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
   const handleOpenNew = () => {
     setEditingAgentId(null);
     setForm(createEmptyForm(activeBU, ventures));
+    setIsFormOpen(true);
+  };
+
+  const handleUseGeneratedName = (name: string) => {
+    setEditingAgentId(null);
+    setForm({
+      ...createEmptyForm(activeBU, ventures),
+      name
+    });
     setIsFormOpen(true);
   };
 
@@ -437,65 +454,66 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
     }
   };
 
+  const hasBatchErrors = batchPreview.some((row) => row.errors.length > 0);
+
+  const handleDownloadTemplate = () => {
+    const blob = new Blob([buildOfficialImportTemplateCsv()], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'template_importacao_nucleo_identidades.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleBatchFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
     setIsImporting(true);
-    setImportFeedback('Processando lote...');
+    setImportFeedback('Validando lote antes de importar...');
     try {
       const content = await file.text();
-      let rows: Array<Record<string, string>> = [];
-      if (file.name.toLowerCase().endsWith('.json')) {
-        const parsed = JSON.parse(content);
-        if (!Array.isArray(parsed)) throw new Error('JSON de importacao precisa ser um array de objetos.');
-        rows = parsed.map((item) => {
-          const row: Record<string, string> = {};
-          Object.entries(item || {}).forEach(([key, value]) => {
-            row[normalizeText(key)] = String(value ?? '');
-          });
-          return row;
-        });
-      } else {
-        rows = parseCsvRecords(content);
-      }
+      const rows = parseBatchImportRows(file.name, content);
       if (rows.length === 0) throw new Error('Arquivo sem registros validos para importar.');
-
-      let successCount = 0;
-      let failCount = 0;
-      for (const row of rows) {
-        try {
-          const draft = mapImportRowToForm({
-            row,
-            activeBU,
-            ventures,
-            batchOrigin,
-            batchVentureId
-          });
-          if (!draft.name) {
-            failCount += 1;
-            continue;
-          }
-          const originLabel = `${batchOrigin} (Lote ${new Date().toISOString()})`;
-          await persistAgent(draft, originLabel);
-          successCount += 1;
-        } catch (error) {
-          console.warn('Falha ao importar linha:', error);
-          failCount += 1;
-        }
-      }
-      setImportFeedback(`Lote finalizado: ${successCount} importado(s), ${failCount} com falha.`);
+      const preview = validateBatchImportRows({ rows, agents, activeBU, ventures, batchOrigin, batchVentureId });
+      setBatchPreview(preview);
+      setPendingBatchOrigin(`${batchOrigin} (Lote ${new Date().toISOString()})`);
+      const errorCount = preview.filter((row) => row.errors.length > 0).length;
+      const warningCount = preview.filter((row) => row.warnings.length > 0).length;
+      setImportFeedback(`Pré-validação concluída: ${preview.length} linha(s), ${errorCount} com erro(s), ${warningCount} com alerta(s).`);
     } catch (error: any) {
       console.error('Erro na importacao em lote:', error);
-      setImportFeedback(`Falha na importacao: ${error?.message || 'erro desconhecido'}`);
+      setImportFeedback(`Falha na pré-validação: ${error?.message || 'erro desconhecido'}`);
     } finally {
       setIsImporting(false);
     }
   };
 
+  const handleConfirmBatchImport = async () => {
+    if (batchPreview.length === 0 || hasBatchErrors || isImporting) return;
+    setIsImporting(true);
+    setImportFeedback('Importando lote validado...');
+    let successCount = 0;
+    let failCount = 0;
+    for (const previewRow of batchPreview) {
+      try {
+        await persistAgent(previewRow.draft, pendingBatchOrigin || batchOrigin);
+        successCount += 1;
+      } catch (error) {
+        console.warn('Falha ao importar linha validada:', error);
+        failCount += 1;
+      }
+    }
+    setImportFeedback(`Lote finalizado: ${successCount} importado(s), ${failCount} com falha.`);
+    setBatchPreview([]);
+    setIsImporting(false);
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-gray-50 dark:bg-sagb-bg font-nunito transition-colors duration-300">
       <AgentFactoryHeader onNavigateToEcosystem={onNavigateToEcosystem} onOpenNew={handleOpenNew} />
+      <NameCreatorPanel agents={agents} onUseName={handleUseGeneratedName} />
 
       <div className="grid flex-1 gap-0 overflow-hidden grid-cols-1">
         <section className="flex min-w-0 flex-col overflow-hidden bg-white dark:bg-sagb-panel transition-colors duration-300">
@@ -509,11 +527,46 @@ const AgentFactory: React.FC<AgentFactoryProps> = ({
             ventures={ventures}
             batchInputRef={batchInputRef}
             onBatchFile={handleBatchFile}
+            onDownloadTemplate={handleDownloadTemplate}
             isImporting={isImporting}
             showAdvancedColumns={showAdvancedColumns}
             onToggleAdvancedColumns={() => setShowAdvancedColumns((prev) => !prev)}
             importFeedback={importFeedback}
           />
+
+          {batchPreview.length > 0 && (
+            <div className="border-b border-gray-100 bg-white px-6 py-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">Prévia do lote</p>
+                  <p className="text-[11px] font-semibold text-gray-500">Revise erros e alertas antes de salvar qualquer registro.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setBatchPreview([])} className="rounded-lg border border-gray-200 px-3 py-2 text-[10px] font-black uppercase text-gray-600">Cancelar</button>
+                  <button onClick={handleConfirmBatchImport} disabled={hasBatchErrors || isImporting} className="rounded-lg bg-indigo-600 px-3 py-2 text-[10px] font-black uppercase text-white disabled:cursor-not-allowed disabled:opacity-50">Confirmar importação</button>
+                </div>
+              </div>
+              <div className="max-h-72 overflow-auto rounded-xl border border-gray-200">
+                <table className="w-full min-w-[920px] border-collapse text-left text-[11px]">
+                  <thead className="sticky top-0 bg-gray-50 text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">
+                    <tr><th className="px-3 py-2">Linha</th><th className="px-3 py-2">Nome</th><th className="px-3 py-2">Tipo</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Erros</th><th className="px-3 py-2">Alertas</th></tr>
+                  </thead>
+                  <tbody>
+                    {batchPreview.map((row) => (
+                      <tr key={row.line} className="border-t border-gray-100">
+                        <td className="px-3 py-2 font-bold text-gray-500">{row.line}</td>
+                        <td className="px-3 py-2 font-bold text-gray-800">{row.name || '-'}</td>
+                        <td className="px-3 py-2">{row.entityType || '-'}</td>
+                        <td className="px-3 py-2"><span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${row.status === 'error' ? 'bg-red-100 text-red-700' : row.status === 'warning' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{row.status === 'error' ? 'Erro' : row.status === 'warning' ? 'Alerta' : 'OK'}</span></td>
+                        <td className="px-3 py-2 text-red-600">{row.errors.join(' | ') || '-'}</td>
+                        <td className="px-3 py-2 text-amber-600">{row.warnings.join(' | ') || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           <AgentFactoryTable
             filteredAgents={filteredAgents}

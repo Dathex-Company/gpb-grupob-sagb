@@ -148,6 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   // --------------------------------------------------------------------------
   const coreMenuItems: MenuItem[] = [
     { id: 'home', label: 'Início', source: 'core', visibility: 'always' },
+    { id: 'ecosystem', label: 'Ecossistema Master', source: 'core', visibility: 'always' },
     { id: 'nucleo-conversacional', label: 'Conversas', source: 'core', visibility: 'always' },
     { id: 'nic', label: 'NIC', source: 'core', visibility: 'always' },
     { id: 'intelligence-flow', label: 'Fluxo de Inteligência', source: 'core', visibility: 'always' },

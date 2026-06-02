@@ -2,7 +2,7 @@ import { BusinessUnit, ModelProvider, Venture } from '../../types';
 import { AgentFormState, DnaStatus, EntityType, StructuralStatus } from './types';
 import { createEmptyForm, normalizeModelValue, normalizeText } from './helpers';
 
-export const parseCsvLine = (line: string) => {
+export const parseCsvLine = (line: string, delimiter = ',') => {
   const out: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -20,7 +20,7 @@ export const parseCsvLine = (line: string) => {
       continue;
     }
 
-    if (char === ',' && !inQuotes) {
+    if (char === delimiter && !inQuotes) {
       out.push(current);
       current = '';
       continue;
@@ -41,10 +41,11 @@ export const parseCsvRecords = (content: string) => {
 
   if (lines.length < 2) return [] as Array<Record<string, string>>;
 
-  const headers = parseCsvLine(lines[0]).map((header) => normalizeText(header));
+  const delimiter = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length ? ';' : ',';
+  const headers = parseCsvLine(lines[0], delimiter).map((header) => normalizeText(header));
 
   return lines.slice(1).map((line) => {
-    const values = parseCsvLine(line);
+    const values = parseCsvLine(line, delimiter);
     return headers.reduce<Record<string, string>>((acc, header, index) => {
       acc[header] = values[index] ?? '';
       return acc;
@@ -182,8 +183,8 @@ export const mapImportRowToForm = ({
           : 'BALANCEADA',
     allowedStacks: parsedStacks.length > 0 ? parsedStacks : draft.allowedStacks,
     preferredModel: preferredModel || (parsedStacks[0] || draft.preferredModel),
-    aiMentor: readByAliases(row, ['mentor ia', 'ai_mentor']),
-    humanOwner: readByAliases(row, ['responsavel humano', 'human_owner']),
+    aiMentor: readByAliases(row, ['mentor ia', 'mentor dai', 'mentor_dai', 'ai_mentor']),
+    humanOwner: readByAliases(row, ['responsavel humano', 'gestor direto', 'gestor_direto', 'human_owner']),
     projectId: readByAliases(row, ['projeto', 'project_id']),
     customFields: []
   };

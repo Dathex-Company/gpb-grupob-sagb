@@ -33,13 +33,22 @@ export const moduleDoc: ModuleDoc = {
       'Sistema de alertas (críticos, altos, incidentes)',
       'Registro de eventos (reinícios, falhas, deploys)',
       'Monitoramento de ideias e produção (conversão em ativos)',
-      'Ação inteligente (agentes responsáveis, encaminhamento)'
+      'Ação inteligente (agentes responsáveis, encaminhamento)',
+      'Conformidade com Padrões',
+      'Saúde da Esteira',
+      'Reaproveitamento Modular',
+      'Qualidade Decisória',
+      'Fadiga de Alertas',
+      'Base tipada do Contrato de Observabilidade do SagB'
     ],
     fora: [
       'Execução direta de workflows (responsabilidade do n8n)',
       'Gestão de usuários e permissões (responsabilidade do auth)',
       'Orquestração de módulos (responsabilidade da orquestração principal)',
-      'Governança documental (responsabilidade da central de padrões)'
+      'Governança documental (responsabilidade da central de padrões)',
+      'Persistência de logs brutos infinitos dentro da Central de Monitoramento',
+      'Criação direta de tarefas corretivas fora do TaskZei',
+      'Execução de ações destrutivas, deploys ou alterações de banco'
     ]
   },
 
@@ -70,7 +79,8 @@ export const moduleDoc: ModuleDoc = {
     'Componente AlertBadge',
     'Serviço de coleta de métricas',
     'Serviço de agregação de alertas',
-    'Dashboard de monitoramento executivo'
+    'Dashboard de monitoramento executivo',
+    'Contrato de Observabilidade tipado em types/index.ts'
   ],
 
   riscos_duplicacao: [

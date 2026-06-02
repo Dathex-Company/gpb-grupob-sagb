@@ -219,5 +219,112 @@ export const monitoramentoSubmodulos: MonitoramentoSubmodulo[] = [
       'Encaminhar para responsável',
       'Histórico da decisão'
     ]
+  },
+  {
+    id: 'conformidade-padroes',
+    label: 'Conformidade com Padrões',
+    slug: 'conformidade-padroes',
+    items: [
+      'Padrões vencidos',
+      'Padrões sem revisão',
+      'Documentos sem responsável',
+      'Módulos sem padrão vinculado',
+      'Deploy sem checklist',
+      'Deploy sem evidência',
+      'Decisão sem registro',
+      'Exceções vencidas',
+      'Padrões em conflito',
+      'Módulos com versão obsoleta',
+      'Agentes sem documento canônico',
+      'RLS fora do padrão',
+      'Permissões fora do padrão',
+      'Tarefas sem origem',
+      'Tarefas sem rastreabilidade'
+    ]
+  },
+  {
+    id: 'saude-esteira',
+    label: 'Saúde da Esteira',
+    slug: 'saude-esteira',
+    items: [
+      'CID',
+      'NICO',
+      'NAGI',
+      'AJUP',
+      'Biblioteca de Módulos',
+      'Central de Padrões',
+      'Sala Dev',
+      'Tempo por etapa',
+      'Gargalos por etapa',
+      'Etapas puladas',
+      'Demandas sem gate',
+      'Retrabalho por etapa',
+      'Demandas paradas',
+      'Demandas sem responsável',
+      'Demandas sem próximo passo'
+    ]
+  },
+  {
+    id: 'reaproveitamento-modular',
+    label: 'Reaproveitamento Modular',
+    slug: 'reaproveitamento-modular',
+    items: [
+      'Módulos base usados',
+      'Módulos mais reutilizados',
+      'Módulos duplicados',
+      'Módulos criados sem justificativa',
+      'Módulos com erro recorrente',
+      'Módulos em refatoração',
+      'Módulos sem dono',
+      'Presets reutilizados',
+      'Templates reutilizados',
+      'Submódulos reaproveitados',
+      'Componentes duplicados',
+      'Services duplicados',
+      'Helpers duplicados',
+      'Oportunidades de padronização'
+    ]
+  },
+  {
+    id: 'qualidade-decisoria',
+    label: 'Qualidade Decisória',
+    slug: 'qualidade-decisoria',
+    items: [
+      'Decisões sem responsável',
+      'Decisões sem prazo',
+      'Decisões sem tarefa',
+      'Decisões contraditórias',
+      'Decisões reabertas',
+      'Decisões sem registro',
+      'Decisões sem evidência',
+      'Decisões sem impacto definido',
+      'Decisões sem módulo vinculado',
+      'Decisões sem dono',
+      'Decisões pendentes',
+      'Decisões vencidas',
+      'Decisões críticas',
+      'Retrabalho por decisão'
+    ]
+  },
+  {
+    id: 'fadiga-alertas',
+    label: 'Fadiga de Alertas',
+    slug: 'fadiga-alertas',
+    items: [
+      'Alertas irrelevantes',
+      'Alertas repetidos',
+      'Alertas sem ação',
+      'Alertas sem responsável',
+      'Alertas ignorados',
+      'Alertas recorrentes',
+      'Alertas falsos positivos',
+      'Excesso de alertas por módulo',
+      'Excesso de alertas por agente',
+      'Alertas sem severidade',
+      'Alertas sem origem',
+      'Alertas sem fechamento',
+      'Alertas sem encaminhamento',
+      'Ruído operacional'
+    ]
   }
 ];

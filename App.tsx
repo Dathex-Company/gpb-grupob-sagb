@@ -1707,8 +1707,8 @@ const asDate = (v: any): Date | undefined => {
     } finally { setIsLoading(false); }
   };
 
-  const hideSidebar = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia' || activeTab === 'mentorias' || activeTab === 'metodologias' || activeTab === 'agenda' || activeTab === 'central_padroes';
-  const hideHeader = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home';
+  const hideSidebar = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia' || activeTab === 'mentorias' || activeTab === 'metodologias' || activeTab === 'agenda' || activeTab === 'central_padroes' || activeTab === 'monitoramento';
+  const hideHeader = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'monitoramento';
 
   const tabAliases: Partial<Record<TabId, TabId>> = {
     hub: 'ecosystem'

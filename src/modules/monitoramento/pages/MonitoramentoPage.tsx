@@ -1,27 +1,75 @@
-import React, { useMemo, useState } from 'react';
-import { MonitoramentoInternalMenu } from '../components';
+import React, { useEffect, useMemo, useState } from 'react';
+import { MonitoramentoInternalMenu, MonitoramentoInternalSection, MonitoramentoSidebar } from '../components';
 import { monitoramentoSubmodulos } from '../services';
+import MonitoramentoDashboardPage from './MonitoramentoDashboardPage';
+import MonitoramentoHomePage from './MonitoramentoHomePage';
+import MonitoramentoSupabasePage from './MonitoramentoSupabasePage';
+
+const getSlugFromPath = () => {
+  if (typeof window === 'undefined') return '';
+  return window.location.pathname.split('/').filter(Boolean)[1] || '';
+};
 
 const MonitoramentoPage: React.FC = () => {
   const firstSlug = monitoramentoSubmodulos[0]?.slug || 'infraestrutura';
-  const [activeSlug, setActiveSlug] = useState(firstSlug);
+  const pathSlug = getSlugFromPath();
+  const initialSlug = monitoramentoSubmodulos.some((submodulo) => submodulo.slug === pathSlug)
+    ? pathSlug
+    : firstSlug;
+  const [activeSlug, setActiveSlug] = useState(initialSlug);
+  const [activeSection, setActiveSection] = useState<MonitoramentoInternalSection>(pathSlug ? 'submodulos' : 'inicio');
 
   const activeSubmodulo = useMemo(
     () => monitoramentoSubmodulos.find((submodulo) => submodulo.slug === activeSlug) || monitoramentoSubmodulos[0],
     [activeSlug]
   );
 
+  useEffect(() => {
+    const currentPathSlug = getSlugFromPath();
+    if (currentPathSlug && monitoramentoSubmodulos.some((submodulo) => submodulo.slug === currentPathSlug)) {
+      setActiveSlug(currentPathSlug);
+    }
+  }, []);
+
+  const handleSelectSubmodulo = (slug: string) => {
+    setActiveSlug(slug);
+
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `/monitoramento/${slug}`);
+    }
+  };
+
   if (!activeSubmodulo) return null;
 
   return (
-    <section className="flex-1 h-full overflow-y-auto bg-[#F8FAFC] dark:bg-[#0B0F19] custom-scrollbar">
-      <div className="max-w-[1600px] mx-auto px-6 md:px-10 py-8 space-y-8">
-        <header className="rounded-[32px] border border-white/80 bg-slate-950 text-white shadow-[0_30px_80px_rgba(15,23,42,0.22)] overflow-hidden relative">
+    <section className="flex-1 h-full overflow-hidden bg-[#EDF3FA] dark:bg-[#07111F] custom-scrollbar">
+      <div className="h-full">
+        <div className="grid h-full grid-cols-1 xl:grid-cols-[260px_1fr] overflow-hidden">
+          <MonitoramentoSidebar activeSection={activeSection} onSelect={setActiveSection} />
+          <main className="min-w-0 h-full overflow-y-auto p-4 md:p-5 custom-scrollbar">
+            {activeSection === 'inicio' && <MonitoramentoHomePage onNavigate={setActiveSection} />}
+            {activeSection === 'dashboard' && <MonitoramentoDashboardPage />}
+            {activeSection === 'supabase' && <MonitoramentoSupabasePage />}
+            {activeSection === 'alertas' && (
+              <section className="rounded-[24px] border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0F172A] p-6 shadow-sm">
+                <span className="text-[9px] font-black uppercase tracking-[0.34em] text-red-500">Preparado</span>
+                <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Alertas e Incidentes</h1>
+                <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">Tela dedicada futura. Hoje os alertas seguem no Dashboard Operacional e no War Room.</p>
+              </section>
+            )}
+            {activeSection === 'configuracoes' && (
+              <section className="rounded-[24px] border border-slate-200 dark:border-white/10 bg-white dark:bg-[#0F172A] p-6 shadow-sm">
+                <span className="text-[9px] font-black uppercase tracking-[0.34em] text-slate-500">Preparado</span>
+                <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">Configurações do Monitoramento</h1>
+                <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">Área futura para persistência de layout, fontes reais e preferências da Central.</p>
+              </section>
+            )}
+            {activeSection === 'submodulos' && <><header className="rounded-[24px] border border-white/80 bg-slate-950 text-white shadow-[0_18px_54px_rgba(15,23,42,0.18)] overflow-hidden relative">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.15),_transparent_40%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.12),_transparent_40%)]" />
-          <div className="relative px-8 md:px-10 py-10 flex flex-col gap-4">
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-400">QG · Comando</span>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight">Monitoramento</h1>
-            <p className="text-sm md:text-base text-slate-300 font-medium">Submódulo ativo: {activeSubmodulo.label}</p>
+          <div className="relative px-6 py-6 flex flex-col gap-2">
+            <span className="text-[9px] font-black uppercase tracking-[0.34em] text-cyan-400">Catálogo Interno</span>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight">Submódulos</h1>
+            <p className="text-xs text-slate-300 font-medium">Submódulo ativo: {activeSubmodulo.label}</p>
           </div>
         </header>
 
@@ -29,7 +77,7 @@ const MonitoramentoPage: React.FC = () => {
           <MonitoramentoInternalMenu
             submodulos={monitoramentoSubmodulos}
             ativoSlug={activeSubmodulo.slug}
-            onSelect={setActiveSlug}
+            onSelect={handleSelectSubmodulo}
           />
 
           <section className="rounded-3xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#0F172A] p-6 md:p-8 shadow-sm space-y-6">
@@ -51,6 +99,9 @@ const MonitoramentoPage: React.FC = () => {
               ))}
             </div>
           </section>
+        </div>
+        </>}
+          </main>
         </div>
       </div>
     </section>
