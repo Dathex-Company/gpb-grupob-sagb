@@ -1,7 +1,7 @@
 import React from 'react';
 import { MetricCard } from '../../../../../components/MetricCard';
 import { BookIcon, ClockIcon, PlusIcon, ArrowRightIcon, CodeIcon } from '../../../../../components/Icon';
-import { mentoriasManifest } from '../manifest';
+import { mentoriasManifest } from '../domain-manifest';
 
 interface MentoriasDashboardPageProps {
   onNavigate: (view: 'library' | 'detail', id?: string) => void;
