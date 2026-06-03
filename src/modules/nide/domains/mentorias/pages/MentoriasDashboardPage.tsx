@@ -1,7 +1,7 @@
 import React from 'react';
 import { MetricCard } from '../../../../../../components/MetricCard';
 import { BookIcon, ClockIcon, PlusIcon, ArrowRightIcon, CodeIcon } from '../../../../../../components/Icon';
-import { mentoriasManifest } from '../domain-manifest';
+import { mentoriasDomainManifest } from '../domain-manifest';
 
 interface MentoriasDashboardPageProps {
   onNavigate: (view: 'library' | 'detail', id?: string) => void;
@@ -36,7 +36,7 @@ export const MentoriasDashboardPage: React.FC<MentoriasDashboardPageProps> = ({ 
           <div className="mt-2 text-[12px] text-sagb-muted">
             Responsável:{' '}
             <span className="font-semibold text-sagb-text">
-              {mentoriasManifest.owner?.displayName || 'A definir'}
+              {mentoriasDomainManifest.owner?.displayName || 'A definir'}
             </span>
           </div>
         </div>
