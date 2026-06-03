@@ -10,7 +10,7 @@ import {
   where,
   orderBy,
   Timestamp
-} from '../../../../../services/supabase';
+} from '../../../../../../services/supabase';
 import { ATIVO_METODOLOGICO_RELACAO_TIPOS } from '../types';
 import type {
   AtivoCanonico,

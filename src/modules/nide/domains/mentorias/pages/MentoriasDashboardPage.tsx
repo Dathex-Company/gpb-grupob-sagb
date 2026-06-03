@@ -1,6 +1,6 @@
 import React from 'react';
-import { MetricCard } from '../../../../../components/MetricCard';
-import { BookIcon, ClockIcon, PlusIcon, ArrowRightIcon, CodeIcon } from '../../../../../components/Icon';
+import { MetricCard } from '../../../../../../components/MetricCard';
+import { BookIcon, ClockIcon, PlusIcon, ArrowRightIcon, CodeIcon } from '../../../../../../components/Icon';
 import { mentoriasManifest } from '../domain-manifest';
 
 interface MentoriasDashboardPageProps {

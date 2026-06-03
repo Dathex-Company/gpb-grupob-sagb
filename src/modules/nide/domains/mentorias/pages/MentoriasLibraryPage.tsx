@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mentoria } from '../types/mentorias.types';
 import { useMentorias } from '../hooks/useMentorias';
-import { SearchIcon, FilterIcon, BookIcon, ArrowRightIcon } from '../../../../../components/Icon';
+import { SearchIcon, FilterIcon, BookIcon, ArrowRightIcon } from '../../../../../../components/Icon';
 
 interface MentoriasLibraryPageProps {
   onNavigate: (view: 'dashboard' | 'detail', id?: string) => void;

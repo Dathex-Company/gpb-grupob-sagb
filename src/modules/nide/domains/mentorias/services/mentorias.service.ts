@@ -11,7 +11,7 @@ import {
   orderBy,
   limit as queryLimit,
   Timestamp
-} from '../../../../../services/supabase';
+} from '../../../../../../services/supabase';
 import { Mentoria, MentoriaBloco, MentoriaMaterial, MentoriaSessao, MentoriaVersao, MentoriaAgente, MentoriaHistorico, MentoriaStatus, MentoriaType, MaterialType } from '../types/mentorias.types';
 
 const MENTORIAS_TABLE = 'mentorias';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMentoriaDetail } from '../hooks/useMentoriaDetail';
-import { BookIcon, ClockIcon, FileTextIcon, BackIcon, CheckIcon } from '../../../../../components/Icon';
+import { BookIcon, ClockIcon, FileTextIcon, BackIcon, CheckIcon } from '../../../../../../components/Icon';
 
 interface MentoriaDetailPageProps {
   id?: string;
