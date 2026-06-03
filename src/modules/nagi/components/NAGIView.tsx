@@ -9,31 +9,35 @@ import {
 } from '../services/nagiService';
 import { getEligibleForPromotion, refreshEligibility } from '../services/nagiPromotionService';
 import { receiveFromNic, NicOutputPayload } from '../services/nagiNicBridge';
-import { NagiItem, NagiItemType, ITEM_TYPE_LABELS } from '../domain/types';
+import { getIngestionDocuments } from '../services/nagiIngestionService';
+import { NagiIngestionDocument, NagiItem, NagiItemType, ITEM_TYPE_LABELS } from '../domain/types';
 import CatalogSection from './CatalogSection';
 import TriageSection from './TriageSection';
+import IngestionSection from './IngestionSection';
 
 interface NAGIViewProps {
   onBack?: () => void;
   onOpenTab?: (tab: TabId) => void;
 }
 
-type NagiTab = 'catalogo' | 'triagem';
+type NagiTab = 'ingestao' | 'catalogo' | 'triagem';
 
 const NAGIView: React.FC<NAGIViewProps> = ({ onBack, onOpenTab }) => {
-  const [activeTab, setActiveTab] = useState<NagiTab>('triagem');
+  const [activeTab, setActiveTab] = useState<NagiTab>('ingestao');
   const [refreshKey, setRefreshKey] = useState(0);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showNicForm, setShowNicForm] = useState(false);
 
   const [catalogItems, setCatalogItems] = useState<NagiItem[]>([]);
   const [triageItems, setTriageItems] = useState<NagiItem[]>([]);
+  const [ingestionDocs, setIngestionDocs] = useState<NagiIngestionDocument[]>([]);
   const [eligibleCount, setEligibleCount] = useState(0);
 
   const refresh = useCallback(() => {
     refreshEligibility();
     setCatalogItems(getCatalogItems());
     setTriageItems(getTriageItems());
+    setIngestionDocs(getIngestionDocuments());
     setEligibleCount(getEligibleForPromotion().length);
     setRefreshKey((k) => k + 1);
   }, []);
@@ -66,6 +70,8 @@ const NAGIView: React.FC<NAGIViewProps> = ({ onBack, onOpenTab }) => {
 
   const totalCatalogo = catalogItems.length;
   const totalTriagem = triageItems.length;
+  const totalIngestao = ingestionDocs.length;
+  const totalRevisao = ingestionDocs.filter((doc) => doc.reviewStatus === 'em_revisao').length;
 
   return (
     <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-[#F8F6F4]">
@@ -88,13 +94,17 @@ const NAGIView: React.FC<NAGIViewProps> = ({ onBack, onOpenTab }) => {
                   Central de Ideias
                 </h1>
                 <p className="text-[13px] leading-6 text-slate-500 mt-2 max-w-xl">
-                  Receba, organize, avalie e direcione ideias para os módulos especialistas do ecossistema.
-                  Aqui você decide o que segue adiante e o que merece virar item oficial.
+                  Receba documentos, transforme conteúdo em itens organizados e decida rápido o que entra na Triagem ou no Catálogo.
+                  O NAGI não guarda bruto: ele governa o que merece virar estrutura.
                 </p>
               </div>
 
               {/* Métricas — Alice UI: metric-card compacto */}
-              <div className="grid grid-cols-3 gap-2 min-w-[200px]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 min-w-[260px]">
+                <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3">
+                  <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Docs</span>
+                  <strong className="text-[24px] font-bold text-cyan-600">{totalIngestao}</strong>
+                </div>
                 <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3">
                   <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Catálogo</span>
                   <strong className="text-[24px] font-bold text-slate-950">{totalCatalogo}</strong>
@@ -104,8 +114,8 @@ const NAGIView: React.FC<NAGIViewProps> = ({ onBack, onOpenTab }) => {
                   <strong className="text-[24px] font-bold text-slate-950">{totalTriagem}</strong>
                 </div>
                 <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3">
-                  <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Elegíveis</span>
-                  <strong className="text-[24px] font-bold text-emerald-600">{eligibleCount}</strong>
+                  <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Revisão</span>
+                  <strong className="text-[24px] font-bold text-amber-600">{totalRevisao}</strong>
                 </div>
               </div>
             </div>
@@ -115,6 +125,10 @@ const NAGIView: React.FC<NAGIViewProps> = ({ onBack, onOpenTab }) => {
         {/* Navegação + Ações — Alice UI: tabs clean */}
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
           <div className="flex gap-1.5">
+            <TabBtn active={activeTab === 'ingestao'} onClick={() => setActiveTab('ingestao')}>
+              Documentos
+              <span className="ml-1.5 opacity-60">{totalIngestao}</span>
+            </TabBtn>
             <TabBtn active={activeTab === 'triagem'} onClick={() => setActiveTab('triagem')}>
               Ideias em análise
               <span className="ml-1.5 opacity-60">{totalTriagem}</span>
@@ -131,7 +145,7 @@ const NAGIView: React.FC<NAGIViewProps> = ({ onBack, onOpenTab }) => {
           </div>
 
           <div className="flex gap-2">
-            {activeTab === 'triagem' && (
+            {(activeTab === 'triagem' || activeTab === 'ingestao') && (
               <>
                 <button onClick={() => setShowNicForm(true)}
                   className="h-[37px] px-4 rounded-[14px] bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold uppercase tracking-[0.06em] hover:bg-blue-100 transition-colors">
@@ -151,6 +165,21 @@ const NAGIView: React.FC<NAGIViewProps> = ({ onBack, onOpenTab }) => {
         </div>
 
         {/* Conteúdo */}
+        {activeTab === 'ingestao' && (
+          <div className="space-y-2">
+            <p className="text-[11px] text-slate-400 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              Entrada governada: documentos entram como candidatos, recebem sugestão, passam por revisão e viram evidência de itens do NAGI.
+            </p>
+            <IngestionSection
+              key={`ing-${refreshKey}`}
+              documents={ingestionDocs}
+              catalogItems={catalogItems}
+              onRefresh={refresh}
+            />
+          </div>
+        )}
+
         {activeTab === 'catalogo' && (
           <div className="space-y-2">
             <p className="text-[11px] text-slate-400 flex items-center gap-2">
@@ -174,9 +203,9 @@ const NAGIView: React.FC<NAGIViewProps> = ({ onBack, onOpenTab }) => {
         {/* Rodapé — Alice UI: sutil */}
         <footer className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white/70 px-5 py-4 text-center">
           <span className="text-[9px] uppercase tracking-[0.15em] font-semibold text-slate-400">
-            CID + RAI → NIC → NAGI → Módulos Especialistas
+            CID + RAI → NICO → NAGI → NIDE → SADEV
           </span>
-          <p className="text-[10px] text-slate-400 mt-1">O NAGI governa. Os especialistas executam.</p>
+          <p className="text-[10px] text-slate-400 mt-1">O documento entra, o NAGI organiza, a governança decide.</p>
         </footer>
       </div>
 

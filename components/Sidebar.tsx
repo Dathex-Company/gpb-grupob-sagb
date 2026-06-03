@@ -119,6 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       'configuracoes-sistema': <PencilIcon className="w-4 h-4" />,
       '_orquestracao-principal': <NetworkIcon className="w-4 h-4" />,
       'crm-ziplia': <BriefcaseIcon className="w-4 h-4" />,
+      'nide': <LayoutIcon className="w-4 h-4" />,
     };
     return iconMap[id] || <FolderIcon className="w-4 h-4" />;
   };
@@ -193,11 +194,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Regras:
   // - ignora IDs já existentes no menu fixo
   // - ignora labels duplicados com a lista fixa
+  // - oculta módulos que foram migrados como domains internos do NIDE
+  //   (missions → NIDE core, metodologias → NIDE domain, mentorias → NIDE domain)
   // --------------------------------------------------------------------------
+  const NIDE_MIGRATED_MODULE_IDS = new Set(['missions', 'metodologias', 'mentorias']);
+
   const dynamicModules: MenuItem[] = useMemo(() => {
     const modules = getRegisteredModules()
       .filter((mod) => !staticItemIds.has(mod.manifest.id))
       .filter((mod) => !staticLabelSet.has(normalizeLabel(mod.manifest.displayName)))
+      .filter((mod) => !NIDE_MIGRATED_MODULE_IDS.has(mod.manifest.id))
       .map((mod) => ({
         id: mod.manifest.id,
         label: mod.manifest.displayName,

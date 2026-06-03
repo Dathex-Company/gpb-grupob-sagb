@@ -3,7 +3,7 @@ export const moduleDoc = {
   objetivo:
     'Governar o pipeline completo de recepção, classificação, qualificação, priorização, decisão e encaminhamento de ideias e itens estratégicos do ecossistema SagB, atuando como hub central entre as camadas de preparação (CID, RAI, NIC) e os módulos especialistas.',
   responsavelTecnico: 'Cássio Mendes',
-  status: 'V2 — Ativo (repo + promoção + handoff + Alice UI)',
+  status: 'V3 — Ativo (ingestão governada + lote + classificação heurística)',
   tipo: 'Módulo Oficial — Núcleo de Governança',
 
   divisoesInternas: {
@@ -11,6 +11,8 @@ export const moduleDoc = {
       'Itens oficiais e reconhecidos do ecossistema: empresas, ventures, metodologias, programas, frameworks, planos, iniciativas consolidadas e estruturas oficiais. Cada item possui score, responsável, handoffRecord com status de recebimento, vínculo com especialista e trilha de governança.',
     triagemIdeias:
       'Itens em qualificação: ideias avulsas, saídas do NIC, hipóteses, propostas e frentes em análise. Cada item percorre estágios de maturidade (entrada → classificação → qualificação → priorização → decisão → encaminhada/catalogada) com score, evidências, promotionStatus e histórico de decisão.',
+    ingestaoGovernada:
+      'Frente de entrada de documentos relevantes. O documento não vira depósito bruto: ele é lido, classificado por heurísticas, revisado por pessoa e salvo como item em Catálogo ou Triagem, mantendo snapshot e evidência vinculada.',
   },
 
   tipoCentral: {
@@ -34,17 +36,18 @@ export const moduleDoc = {
   },
 
   fluxoArquitetural: 'CID + RAI → NIC → NAGI → Módulos Especialistas',
+  fluxoArquiteturalAtualizado: 'CID + RAI → NICO → NAGI → NIDE → SADEV',
 
   descricaoFluxo: [
     '1. CID prepara material documental interno.',
     '2. RAI observa e capta sinais externos.',
-    '3. NIC cruza, interpreta e amadurece leituras estratégicas.',
-    '4. NAGI recebe ideias maduras (via NicBridge) e avulsas, governa, organiza, qualifica, prioriza e decide.',
-    '5. Módulos especialistas formalizam e executam as iniciativas encaminhadas.',
+    '3. NICO cruza, interpreta e amadurece leituras estratégicas.',
+    '4. NAGI recebe ideias maduras, documentos relevantes e entradas avulsas; classifica, organiza, governa e decide.',
+    '5. NIDE e SADEV formalizam, desenvolvem e operacionalizam as iniciativas encaminhadas.',
   ],
 
   tabelasSupabase: [
-    'Nenhuma migração ativa. Dados V2 operam via LocalStorageNagiRepository com interface INagiRepository preparada para swap futuro para Supabase.',
+    'Nenhuma migração ativa. Itens usam LocalStorageNagiRepository e documentos de ingestão usam LocalStorageNagiIngestionRepository, ambos preparados para swap futuro para Supabase.',
   ],
 
   bucketsStorage: [
@@ -59,16 +62,21 @@ export const moduleDoc = {
     'Hub de Ventures (gestão de ventures)',
     'Governança (políticas e decisões)',
     'Módulos especialistas (destino de encaminhamento com handoff tracking)',
+    'Ingestão manual/lote (documentos relevantes transformados em candidatos governáveis)',
   ],
 
   estruturasExclusivas: [
-    'src/modules/nagi/domain/types.ts (NagiItem + enums V2 com promotionStatus, handoffRecord)',
+    'src/modules/nagi/domain/types.ts (NagiItem + NagiIngestionDocument + enums V3)',
     'src/modules/nagi/repository/nagi.repository.ts (INagiRepository + LocalStorageNagiRepository)',
+    'src/modules/nagi/repository/nagiIngestion.repository.ts (INagiIngestionRepository + LocalStorageNagiIngestionRepository)',
     'src/modules/nagi/services/nagiService.ts (CRUD + governança V2 com repo pattern)',
+    'src/modules/nagi/services/nagiIngestionClassifier.ts (heurísticas de classificação inicial, vínculo e duplicidade)',
+    'src/modules/nagi/services/nagiIngestionService.ts (entrada manual/lote, revisão, criação de item, vínculo e evidência)',
     'src/modules/nagi/services/nagiPromotionService.ts (regra de promoção triagem → catálogo)',
     'src/modules/nagi/services/nagiNicBridge.ts (recepção de saídas do NIC)',
     'src/modules/nagi/services/nagiHandoffService.ts (tracking de handoff para especialistas)',
-    'src/modules/nagi/components/NAGIView.tsx (hub orquestrador com abas, criação, import NIC)',
+    'src/modules/nagi/components/NAGIView.tsx (hub orquestrador com abas: Documentos, Triagem e Catálogo)',
+    'src/modules/nagi/components/IngestionSection.tsx (entrada, lote, revisão, vínculo, salvamento e histórico)',
     'src/modules/nagi/components/CatalogSection.tsx (catálogo governado — Alice UI)',
     'src/modules/nagi/components/TriageSection.tsx (triagem com pipeline visual — Alice UI)',
     'src/modules/nagi/components/NagiItemDetail.tsx (detalhe + ações de governança, promoção, handoff)',
@@ -79,23 +87,22 @@ export const moduleDoc = {
   ],
 
   fluxosPrincipais: [
-    '1. Visualizar Catálogo Governado com filtros por tipo, status operacional e busca.',
-    '2. Visualizar Triagem com filtros por origem, estágio, prioridade, governança e busca.',
-    '3. Pipeline visual por colunas de maturidade (7 estágios) com indicador ★ Elegível para catálogo.',
-    '4. Criar ideia avulsa — entra em triagem com maturityStage=entrada e governanceStatus=em_triagem.',
-    '5. Importar do NIC — formulário com title, summary, originRefId, snapshot, tipo e categoria.',
-    '6. Classificar item — definir itemType, categoria e tags.',
-    '7. Qualificar item — preencher score de impacto, esforço, risco e alinhamento com cálculo de final.',
-    '8. Priorizar item — toggle cíclico alta/média/baixa.',
-    '9. Decidir — aprovar, rejeitar, incubar ou arquivar com justificativa.',
-    '10. Promover para catálogo — item aprovado com score ≥ 50 e tipo ≠ ideia.',
-    '11. Encaminhar para especialista — selecionar módulo destino, registrar motivo obrigatório.',
-    '12. Handoff tracking — atualizar status (recebido → processado → finalizado) no detalhe.',
-    '13. Navegar para módulo especialista via botão no detalhe do item encaminhado.',
+    '1. Inserir documento por texto colado ou arquivos em lote (txt/md/csv/json na V1).',
+    '2. Classificar automaticamente por heurísticas: tipo, categoria, tags, sinais, destino e vínculo com catálogo.',
+    '3. Revisar o documento antes de salvar, ajustando título, resumo, tipo, categoria, tags, destino e vínculo.',
+    '4. Vincular documento a item existente do catálogo quando houver forte aderência.',
+    '5. Criar item novo no Catálogo quando for estrutura oficial consolidada.',
+    '6. Criar item novo em Triagem quando for ideia, oportunidade ou item ainda não consolidado.',
+    '7. Manter snapshot do conteúdo e evidência `nagi-ingestion://docId` no item criado/vinculado.',
+    '8. Executar ações em lote: selecionar documentos e mandar rapidamente para Catálogo ou Triagem.',
+    '9. Visualizar histórico da ingestão: recebido, revisado, salvo ou descartado.',
+    '10. Continuar usando Catálogo, Triagem, score, governança, promoção e handoff existentes.',
   ],
 
   pendenciasPrincipais: [
     'Persistência real (SupabaseNagiRepository) em vez de localStorage.',
+    'SupabaseNagiIngestionRepository para persistência real dos documentos recebidos.',
+    'Leitura robusta de PDF/DOCX via backend ou serviço de extração dedicado.',
     'Integração viva com NIC para recebimento automático de saídas (webhook/RxJS).',
     'Integração viva com RAI para captura de sinais externos.',
     'Automação de recomendação de score via IA.',

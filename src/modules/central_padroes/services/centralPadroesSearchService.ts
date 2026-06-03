@@ -1,18 +1,13 @@
 import { centralPadroesRepository } from './centralPadroesRepository';
-import { CentralDecision, CentralDocument, CentralStandard } from '../types';
-
-export interface SearchResult {
-  entityType: 'standard' | 'document' | 'decision';
-  entity: CentralStandard | CentralDocument | CentralDecision;
-  score: number;
-  excerpt: string;
-}
+import { CentralAgentRun, CentralBaseModule, CentralDecision, CentralDocument, CentralStandard, SearchResult, SearchResultEntityType } from '../types';
 
 export const centralPadroesSearchRoadmap = {
   currentMode: 'textual' as const,
   futureHybrid: 'Busca textual + filtros estruturados + reranking por embedding.',
   futureSemantic: 'Busca semântica com embeddings, pgvector e RAG para o agente Pietro Carbone.'
 };
+
+export type { SearchResult }; // re-export
 
 const normalize = (value: unknown) => String(value ?? '')
   .normalize('NFD')
@@ -41,7 +36,8 @@ const standardText = (item: CentralStandard) => flattenText([
   item.risk,
   item.dependencies,
   item.relatedModules,
-  item.updatedAt
+  item.updatedAt,
+  item.canonicalLevel || ''
 ]);
 
 const documentText = (item: CentralDocument) => flattenText([
@@ -59,6 +55,28 @@ const decisionText = (item: CentralDecision) => flattenText([
   item.areaId,
   item.status,
   item.impacts
+]);
+
+const baseModuleText = (item: CentralBaseModule) => flattenText([
+  item.name,
+  item.moduleId,
+  item.description,
+  item.owner,
+  item.areaId,
+  item.status,
+  item.moduleType,
+  item.recommendedUse,
+  item.reuseCriteria,
+  item.linkedStandards,
+  item.linkedProtocols
+]);
+
+const agentRunText = (item: CentralAgentRun) => flattenText([
+  item.agentCode,
+  item.agentName,
+  item.block,
+  item.status,
+  item.deliverable
 ]);
 
 const byScoreThenTitle = (a: SearchResult, b: SearchResult) => {
@@ -81,20 +99,34 @@ export const centralPadroesSearchService = {
   async hybridSearch(query: string, limit = 20): Promise<SearchResult[]> {
     const snapshot = await centralPadroesRepository.getSnapshot();
     const results: SearchResult[] = [];
+    const hasQuery = Boolean(query.trim());
+    
     snapshot.standards.forEach((item) => {
       const text = standardText(item);
       const score = scoreText(text, query);
-      if (score > 0 || !query) results.push({ entityType: 'standard', entity: item, score, excerpt: `${item.key} • ${item.type} • ${item.status} • ${item.summary}` });
+      if (score > 0 || !hasQuery) results.push({ entityType: 'standard', entity: item, score, excerpt: `${item.key} • ${item.type} • ${item.status} • ${item.summary}` });
     });
     snapshot.documents.forEach((item) => {
       const text = documentText(item);
       const score = scoreText(text, query);
-      if (score > 0 || !query) results.push({ entityType: 'document', entity: item, score, excerpt: `${item.category} • ${item.status} • ${item.path}` });
+      if (score > 0 || !hasQuery) results.push({ entityType: 'document', entity: item, score, excerpt: `${item.category} • ${item.status} • ${item.path}` });
     });
     snapshot.decisions.forEach((item) => {
       const text = decisionText(item);
       const score = scoreText(text, query);
-      if (score > 0 || !query) results.push({ entityType: 'decision', entity: item, score, excerpt: `${item.status} • ${item.impacts.join(', ')} • ${item.summary}` });
+      if (score > 0 || !hasQuery) results.push({ entityType: 'decision', entity: item, score, excerpt: `${item.status} • ${item.impacts.join(', ')} • ${item.summary}` });
+    });
+    // Busca expandida: BaseModule
+    snapshot.baseModules.forEach((item) => {
+      const text = baseModuleText(item);
+      const score = scoreText(text, query);
+      if (score > 0 || !hasQuery) results.push({ entityType: 'baseModule', entity: item, score, excerpt: `${item.name} • ${item.moduleType} • ${item.status} • ${item.description}` });
+    });
+    // Busca expandida: AgentRun
+    snapshot.agents.forEach((item) => {
+      const text = agentRunText(item);
+      const score = scoreText(text, query);
+      if (score > 0 || !hasQuery) results.push({ entityType: 'agentRun', entity: item, score, excerpt: `${item.agentName} • ${item.block} • ${item.status} • ${item.deliverable}` });
     });
     return results.sort(byScoreThenTitle).slice(0, limit);
   },

@@ -18,16 +18,19 @@ import RelationshipsPage from '../pages/RelationshipsPage';
 import ApprovalsPage from '../pages/ApprovalsPage';
 import SettingsPage from '../pages/SettingsPage';
 import CentralPadroesPage from '../pages/CentralPadroesPage';
+import ChatPietroPage from '../pages/ChatPietroPage';
+import GovernancePanelPage from '../pages/GovernancePanelPage';
 import { centralPadroesSeedService } from '../services/centralPadroesSeedService';
+import { sidebarSections, getViewLabel, breadcrumbLabels } from '../data/sidebarConfig';
 import '../styles/centralDocs.css';
 
 type CentralPadroesView =
   | 'dashboard'
-  | 'architecture'
+  | 'chat-pietro'
+  | 'governance-panel'
   | 'areas'
   | 'standards'
   | 'documents'
-  | 'registry'
   | 'base-modules'
   | 'modules'
   | 'checklists'
@@ -42,31 +45,10 @@ type CentralPadroesView =
   | 'relationships'
   | 'approvals'
   | 'settings'
-  | 'publisher';
-
-const navigationItems: Array<{ id: CentralPadroesView; label: string; group: string }> = [
-  { id: 'dashboard', label: 'Visão Geral', group: 'Portal' },
-  { id: 'architecture', label: 'Arquitetura Mestra', group: 'Portal' },
-  { id: 'areas', label: 'Responsáveis e Áreas', group: 'Portal' },
-  { id: 'standards', label: 'Biblioteca de Padrões', group: 'Bibliotecas' },
-  { id: 'documents', label: 'Biblioteca de Documentos', group: 'Bibliotecas' },
-  { id: 'registry', label: 'Registro Mestre', group: 'Bibliotecas' },
-  { id: 'base-modules', label: 'Módulos Base', group: 'Módulos' },
-  { id: 'modules', label: 'Módulos Plugáveis', group: 'Módulos' },
-  { id: 'checklists', label: 'Matrizes e Checklists', group: 'Governança' },
-  { id: 'audits', label: 'Auditorias e Evidências', group: 'Governança' },
-  { id: 'decisions', label: 'Decisões e Exceções', group: 'Governança' },
-  { id: 'internal-docs', label: 'Documentação Interna', group: 'Documentação' },
-  { id: 'external-docs', label: 'Documentação Externa', group: 'Documentação' },
-  { id: 'archive', label: 'Arquivo Morto / Legado', group: 'Documentação' },
-  { id: 'dev-mode', label: 'Modo Dev', group: 'Modos' },
-  { id: 'agent-mode', label: 'Modo Agente', group: 'Modos' },
-  { id: 'search', label: 'Busca Inteligente', group: 'Inteligência' },
-  { id: 'relationships', label: 'Relacionamentos / Grafo', group: 'Inteligência' },
-  { id: 'approvals', label: 'Aprovações e Revisões', group: 'Operação' },
-  { id: 'settings', label: 'Configurações', group: 'Operação' },
-  { id: 'publisher', label: 'Publicador legado', group: 'Operação' }
-];
+  | 'publisher'
+  | 'tags'
+  | 'ingestion'
+  | 'evidence';
 
 export const CentralPadroesLayout: React.FC = () => {
   const [currentView, setCurrentView] = useState<CentralPadroesView>('dashboard');
@@ -74,31 +56,28 @@ export const CentralPadroesLayout: React.FC = () => {
   const [seedStatus, setSeedStatus] = useState<string>('');
   const [menuQuery, setMenuQuery] = useState('');
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    'Visão Geral': true,
+    Central: true,
     Padrões: true,
-    Protocolos: true,
-    'Documentos-Mãe': true,
-    Checklists: true,
-    Matrizes: true,
-    Validações: true,
-    'Biblioteca de Módulos Base': true,
-    Configurações: true
+    'Documentos e Decisões': true,
+    Módulos: true,
+    Curadoria: false,
+    Relacionamentos: false
   });
 
   const renderCurrentView = () => {
     switch (currentView) {
       case 'dashboard':
         return <DashboardPage />;
-      case 'architecture':
-        return <StandardsPage />;
+      case 'chat-pietro':
+        return <ChatPietroPage />;
+      case 'governance-panel':
+        return <GovernancePanelPage />;
       case 'areas':
         return <AreasPage />;
       case 'standards':
         return <StandardsPage />;
       case 'documents':
         return <DocumentsPage />;
-      case 'registry':
-        return <RelationshipsPage />;
       case 'base-modules':
         return <BaseModulesPage />;
       case 'modules':
@@ -129,84 +108,21 @@ export const CentralPadroesLayout: React.FC = () => {
         return <SettingsPage />;
       case 'publisher':
         return <CentralPadroesPage />;
+      case 'tags':
+        return <div className="cp-docs-empty"><h2>Tags</h2><p>Gerenciamento de tags — em desenvolvimento.</p></div>;
+      case 'ingestion':
+        return <div className="cp-docs-empty"><h2>Triagem e Ingestão</h2><p>Fila de ingestão de documentos — em desenvolvimento.</p></div>;
+      case 'evidence':
+        return <div className="cp-docs-empty"><h2>Evidências</h2><p>Registro de evidências — em desenvolvimento.</p></div>;
       default:
         return <DashboardPage />;
     }
   };
 
-  const treeSections = [
-    {
-      label: 'Visão Geral',
-      rows: [
-        { id: 'dashboard' as const, label: 'Visão Geral', icon: '⌂' },
-        { id: 'architecture' as const, label: 'Arquitetura Mestra', icon: '◇' },
-        { id: 'areas' as const, label: 'Responsáveis e Áreas', icon: '◦' }
-      ]
-    },
-    {
-      label: 'Padrões',
-      rows: [
-        { id: 'standards' as const, label: 'Padrões', icon: '📘' },
-        { id: 'registry' as const, label: 'Registro Mestre', icon: '▤' }
-      ]
-    },
-    {
-      label: 'Protocolos',
-      rows: [
-        { id: 'decisions' as const, label: 'Decisões e Exceções', icon: '⚑' },
-        { id: 'approvals' as const, label: 'Aprovações e Revisões', icon: '●' }
-      ]
-    },
-    {
-      label: 'Documentos-Mãe',
-      rows: [
-        { id: 'documents' as const, label: 'Documentos', icon: '📄' },
-        { id: 'internal-docs' as const, label: 'Documentação Interna', icon: '⌘' },
-        { id: 'external-docs' as const, label: 'Documentação Externa', icon: '↗' },
-        { id: 'archive' as const, label: 'Arquivo / Legado', icon: '◫' }
-      ]
-    },
-    {
-      label: 'Checklists',
-      rows: [
-        { id: 'checklists' as const, label: 'Checklists Operacionais', icon: '✓' }
-      ]
-    },
-    {
-      label: 'Matrizes',
-      rows: [
-        { id: 'relationships' as const, label: 'Relacionamentos / Grafo', icon: '⟲' }
-      ]
-    },
-    {
-      label: 'Validações',
-      rows: [
-        { id: 'audits' as const, label: 'Auditorias e Evidências', icon: '↗' },
-        { id: 'search' as const, label: 'Busca Textual', icon: '⌕' },
-        { id: 'agent-mode' as const, label: 'Preparação Pietro', icon: '✦' }
-      ]
-    },
-    {
-      label: 'Biblioteca de Módulos Base',
-      rows: [
-        { id: 'base-modules' as const, label: 'Gate Modular Pré-Dev', icon: '□' },
-        { id: 'modules' as const, label: 'Módulos Plugáveis', icon: '▣' }
-      ]
-    },
-    {
-      label: 'Configurações',
-      rows: [
-        { id: 'settings' as const, label: 'Configurações', icon: '⚙' },
-        { id: 'dev-mode' as const, label: 'Modo Dev', icon: '</>' },
-        { id: 'publisher' as const, label: 'Publicador legado', icon: '↳' }
-      ]
-    }
-  ];
-
   const filteredTreeSections = useMemo(() => {
     const term = menuQuery.trim().toLowerCase();
-    if (!term) return treeSections;
-    return treeSections
+    if (!term) return sidebarSections;
+    return sidebarSections
       .map((section) => ({ ...section, rows: section.rows.filter((row) => row.label.toLowerCase().includes(term)) }))
       .filter((section) => section.rows.length > 0);
   }, [menuQuery]);
@@ -215,7 +131,7 @@ export const CentralPadroesLayout: React.FC = () => {
     setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
-  const currentLabel = navigationItems.find((item) => item.id === currentView)?.label || 'Central de Padrões';
+  const currentLabel = getViewLabel(currentView as string);
 
   const seedSupabase = async () => {
     setSeedStatus('Sincronizando fallback para Supabase...');
@@ -259,7 +175,7 @@ export const CentralPadroesLayout: React.FC = () => {
                     index === section.rows.length - 1 ? 'is-last' : ''
                   ].filter(Boolean).join(' ');
                   return (
-                    <button key={row.id} type="button" onClick={() => setCurrentView(row.id)} className={className} title={row.label}>
+                    <button key={row.id} type="button" onClick={() => setCurrentView(row.id as CentralPadroesView)} className={className} title={row.label}>
                       <span>{row.icon}</span>
                       <span className="cp-docs-tree-text">{row.label}</span>
                     </button>
@@ -280,7 +196,7 @@ export const CentralPadroesLayout: React.FC = () => {
             <div className="cp-docs-crumbs"><span>GrupoB</span><span className="sep">›</span><span>Central de Padrões</span><span className="sep">›</span><strong>{currentLabel}</strong></div>
             <div className="cp-docs-top-actions">
               <button className="cp-docs-top-link" type="button" onClick={() => setCurrentView('search')}>Buscar</button>
-              <button className="cp-docs-top-link ai" type="button">IA</button>
+              <button className="cp-docs-top-link ai" type="button" onClick={() => setCurrentView('chat-pietro')}>Pietro IA</button>
               <button className="cp-docs-top-link" type="button" onClick={seedSupabase}>Sincronizar</button>
               <button className="cp-docs-top-link primary" type="button" onClick={() => setCurrentView('documents')}>Registrar</button>
               <button className="cp-docs-icon-btn" type="button" onClick={() => setCurrentView('settings')} title="Configurações">⋯</button>
@@ -293,9 +209,10 @@ export const CentralPadroesLayout: React.FC = () => {
       </div>
 
       <nav className="cp-docs-mobile-bottom">
-        <button className={`cp-docs-mobile-item ${currentView === 'documents' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('documents')}>📄<span>Docs</span></button>
-        <button className={`cp-docs-mobile-item ${currentView === 'search' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('search')}>⌕<span>Busca</span></button>
         <button className={`cp-docs-mobile-item ${currentView === 'dashboard' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('dashboard')}>⌂<span>Início</span></button>
+        <button className={`cp-docs-mobile-item ${currentView === 'chat-pietro' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('chat-pietro')}>💬<span>Pietro</span></button>
+        <button className={`cp-docs-mobile-item ${currentView === 'search' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('search')}>⌕<span>Busca</span></button>
+        <button className={`cp-docs-mobile-item ${currentView === 'governance-panel' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('governance-panel')}>📊<span>Gov</span></button>
         <button className={`cp-docs-mobile-item ${currentView === 'settings' ? 'active' : ''}`} type="button" onClick={() => setCurrentView('settings')}>⋯<span>Mais</span></button>
       </nav>
     </div>

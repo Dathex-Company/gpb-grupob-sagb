@@ -1,0 +1,1 @@
+export { MissionsCorePage } from './MissionsCorePage';

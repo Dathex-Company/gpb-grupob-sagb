@@ -78,7 +78,8 @@ export type TabId =
   | 'agentes_comerciais'
   | '_orquestracao-principal'
   | 'sala-dev'
-  | 'videos-ia';
+  | 'videos-ia'
+  | 'nide';
 
 export type BUType = 'CORE' | 'VENTURY' | 'PERSONAL' | 'METHODOLOGY';
 

@@ -14,7 +14,8 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
     { id: 'dante', name: 'Exploração de Ideias', owner: 'Dante Montoya', focus: 'Triagem e incubação inicial' },
     { id: 'nilo', name: 'Metodologias', owner: 'Nilo Barret', focus: 'Frameworks e propriedade intelectual' },
     { id: 'julio', name: 'AcadB', owner: 'Júlio Mosqueira', focus: 'Cursos, trilhas e mentorias' },
-    { id: 'cesar', name: 'Ventures', owner: 'César Tulli', focus: 'Negócios, planos e empresas B' }
+    { id: 'cesar', name: 'Ventures', owner: 'César Tulli', focus: 'Negócios, planos e empresas B' },
+    { id: 'tales', name: 'RI e Capital', owner: 'Tales Inozi', focus: 'Relação com investidores, captação e capital' }
   ],
   standards: [
     /* ────────────── GOVERNAÑÇA GERAL ────────────── */
@@ -1594,6 +1595,57 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
       dependencies: ['CP-GOV-001', 'CP-GOV-003', 'CP-IDEIA-003', 'CP-NAM-003', 'CP-MET-003'],
       relatedModules: ['central_padroes'],
       updatedAt: '2026-06-01'
+    },
+
+    /* ────────────── TALES — RI E CAPITAL ────────────── */
+    /* CP-RI-001: Política — Relação com Investidores (RI) */
+    {
+      id: 'std-167',
+      key: 'CP-RI-001',
+      title: 'Política de Relação com Investidores',
+      type: 'politica',
+      status: 'rascunho',
+      areaId: 'tales',
+      owner: 'Tales Inozi',
+      summary: 'Define as regras de comunicação, disclosure e governança para relação com investidores do GrupoB.',
+      risk: 'alto',
+      version: 1,
+      agentAvailable: false,
+      dependencies: ['CP-GOV-001'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-02'
+    },
+    {
+      id: 'std-168',
+      key: 'CP-RI-002',
+      title: 'Processo de Captação e Capital',
+      type: 'processo',
+      status: 'rascunho',
+      areaId: 'tales',
+      owner: 'Tales Inozi',
+      summary: 'Processo de captação de recursos, valuation, due diligence e fechamento de rodadas de investimento.',
+      risk: 'critico',
+      version: 1,
+      agentAvailable: false,
+      dependencies: ['CP-RI-001', 'CP-GOV-003'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-02'
+    },
+    {
+      id: 'std-169',
+      key: 'CP-RI-003',
+      title: 'Registro de Decisões de Capital',
+      type: 'registro',
+      status: 'bruto',
+      areaId: 'tales',
+      owner: 'Tales Inozi',
+      summary: 'Registro obrigatório de todas as decisões envolvendo alocação de capital, investimentos e desinvestimentos.',
+      risk: 'critico',
+      version: 1,
+      agentAvailable: false,
+      dependencies: ['CP-RI-001', 'CP-RI-002'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-02'
     },
   ],
   documents: [

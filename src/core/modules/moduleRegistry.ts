@@ -150,6 +150,10 @@ export const moduleRegistry: PluggableModule[] = [
   {
     manifest: fluxobManifest,
     routes: fluxobRoutes
+  },
+  {
+    manifest: nideManifest,
+    routes: nideRoutes
   }
 ];
 

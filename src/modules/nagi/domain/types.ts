@@ -16,7 +16,12 @@ export type NagiItemType =
   | 'framework'
   | 'plano'
   | 'iniciativa'
-  | 'ideia';
+  | 'ideia'
+  | 'treinamento'
+  | 'mentoria'
+  | 'produto'
+  | 'sistema'
+  | 'outro';
 
 /* Estágio de maturidade dentro do pipeline NAGI */
 export type NagiMaturityStage =
@@ -131,6 +136,75 @@ export interface NagiHandoffRecord {
   receivedAt?: string;
   processedAt?: string;
   specialistNote?: string;
+}
+
+/* ── Ingestão de documentos ───────────────────── */
+
+export type NagiIngestionSourceType = 'upload' | 'texto_colado' | 'nic' | 'catalogo' | 'outro';
+
+export type NagiIngestionClassificationStatus =
+  | 'aguardando'
+  | 'classificado'
+  | 'baixa_clareza'
+  | 'duplicata_possivel'
+  | 'vinculo_sugerido'
+  | 'descartado';
+
+export type NagiIngestionReviewStatus =
+  | 'em_revisao'
+  | 'pronto_para_salvar'
+  | 'salvo'
+  | 'descartado';
+
+export type NagiIngestionDestination = 'catalogo' | 'triagem' | 'revisao_manual';
+
+export type NagiIngestionInterpretation =
+  | 'item_existente_catalogo'
+  | 'nova_ideia_triagem'
+  | 'expansao_item_existente'
+  | 'sem_clareza_suficiente'
+  | 'duplicata_provavel'
+  | 'documento_de_apoio';
+
+export interface NagiRelatedCatalogCandidate {
+  itemId: string;
+  title: string;
+  reason: string;
+  confidence: number;
+}
+
+export interface NagiIngestionHistoryEntry {
+  id: string;
+  at: string;
+  by: string;
+  action: string;
+  note: string;
+}
+
+export interface NagiIngestionDocument {
+  id: string;
+  sourceType: NagiIngestionSourceType;
+  sourceLabel: string;
+  fileName?: string;
+  originalText: string;
+  extractedTitle: string;
+  extractedSummary: string;
+  extractedTags: string[];
+  extractedSignals: string[];
+  extractedTypeSuggestion: NagiItemType;
+  extractedCategorySuggestion: string;
+  relatedCatalogCandidates: NagiRelatedCatalogCandidate[];
+  classificationStatus: NagiIngestionClassificationStatus;
+  reviewStatus: NagiIngestionReviewStatus;
+  interpretation: NagiIngestionInterpretation;
+  suggestedDestination: NagiIngestionDestination;
+  chosenDestination?: Exclude<NagiIngestionDestination, 'revisao_manual'>;
+  selectedCatalogItemId?: string;
+  createdItemId?: string;
+  confidence: number;
+  createdAt: string;
+  updatedAt: string;
+  history: NagiIngestionHistoryEntry[];
 }
 
 /* ── Item central ─────────────────────────────── */
@@ -261,6 +335,11 @@ export const ITEM_TYPE_LABELS: Record<NagiItemType, string> = {
   plano: 'Plano',
   iniciativa: 'Iniciativa',
   ideia: 'Ideia',
+  treinamento: 'Treinamento',
+  mentoria: 'Mentoria',
+  produto: 'Produto',
+  sistema: 'Sistema',
+  outro: 'Outro',
 };
 
 export const ORIGIN_LABELS: Record<NagiOriginType, string> = {
@@ -288,6 +367,36 @@ export const HANDOFF_STATUS_LABELS: Record<NagiHandoffStatus, string> = {
   recebido: 'Recebido pelo especialista',
   processado: 'Em processo',
   finalizado: 'Finalizado',
+};
+
+export const INGESTION_SOURCE_LABELS: Record<NagiIngestionSourceType, string> = {
+  upload: 'Arquivo',
+  texto_colado: 'Texto colado',
+  nic: 'NIC',
+  catalogo: 'Catálogo',
+  outro: 'Outro',
+};
+
+export const INGESTION_CLASSIFICATION_LABELS: Record<NagiIngestionClassificationStatus, string> = {
+  aguardando: 'Aguardando leitura',
+  classificado: 'Com sugestão',
+  baixa_clareza: 'Precisa de revisão',
+  duplicata_possivel: 'Possível duplicata',
+  vinculo_sugerido: 'Vínculo sugerido',
+  descartado: 'Descartado',
+};
+
+export const INGESTION_REVIEW_LABELS: Record<NagiIngestionReviewStatus, string> = {
+  em_revisao: 'Em revisão',
+  pronto_para_salvar: 'Pronto para salvar',
+  salvo: 'Salvo',
+  descartado: 'Descartado',
+};
+
+export const INGESTION_DESTINATION_LABELS: Record<NagiIngestionDestination, string> = {
+  catalogo: 'Catálogo',
+  triagem: 'Triagem',
+  revisao_manual: 'Revisão manual',
 };
 
 /* Função utilitária para recalcular score final */

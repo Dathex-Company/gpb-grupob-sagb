@@ -5,12 +5,16 @@ import MonitoramentoDashboardPage from './MonitoramentoDashboardPage';
 import MonitoramentoHomePage from './MonitoramentoHomePage';
 import MonitoramentoSupabasePage from './MonitoramentoSupabasePage';
 
+interface MonitoramentoPageProps {
+  onBackToHub?: () => void;
+}
+
 const getSlugFromPath = () => {
   if (typeof window === 'undefined') return '';
   return window.location.pathname.split('/').filter(Boolean)[1] || '';
 };
 
-const MonitoramentoPage: React.FC = () => {
+const MonitoramentoPage: React.FC<MonitoramentoPageProps> = ({ onBackToHub }) => {
   const firstSlug = monitoramentoSubmodulos[0]?.slug || 'infraestrutura';
   const pathSlug = getSlugFromPath();
   const initialSlug = monitoramentoSubmodulos.some((submodulo) => submodulo.slug === pathSlug)
@@ -39,13 +43,19 @@ const MonitoramentoPage: React.FC = () => {
     }
   };
 
+  const handleBackToHub = onBackToHub || (() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: 'ecosystem' }));
+    }
+  });
+
   if (!activeSubmodulo) return null;
 
   return (
     <section className="flex-1 h-full overflow-hidden bg-[#EDF3FA] dark:bg-[#07111F] custom-scrollbar">
       <div className="h-full">
         <div className="grid h-full grid-cols-1 xl:grid-cols-[260px_1fr] overflow-hidden">
-          <MonitoramentoSidebar activeSection={activeSection} onSelect={setActiveSection} />
+          <MonitoramentoSidebar activeSection={activeSection} onSelect={setActiveSection} onBackToHub={handleBackToHub} />
           <main className="min-w-0 h-full overflow-y-auto p-4 md:p-5 custom-scrollbar">
             {activeSection === 'inicio' && <MonitoramentoHomePage onNavigate={setActiveSection} />}
             {activeSection === 'dashboard' && <MonitoramentoDashboardPage />}

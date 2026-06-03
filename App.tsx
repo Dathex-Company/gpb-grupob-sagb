@@ -31,6 +31,7 @@ import { getModuleRoutes } from './src/core/modules/moduleRegistry';
 import { readModuleToggles, isModuleEnabled as isModuleEnabledByToggle } from './src/core/modules/moduleActivation';
 import SalaDevPage from './src/modules/sala-dev/pages/SalaDevPage';
 import { setQuadroDeEliteRuntimeContext } from './src/modules/quadro_de_elite/store';
+import { setNideRuntimeContext } from './src/modules/nide/store';
 import { Message, Sender, TabId, Agent, Topic, Venture, BusinessUnit, BusinessBlueprint, Task, UserProfile, GovernanceCulture, ComplianceRule, VaultItem, KnowledgeNode, WorkspaceMember, AgentQualityEvent, AgentDnaProfile, AgentDnaEffective, AppUiPrefs } from './types';
 import { useTheme } from './src/core/context/ThemeContext';
 import {
@@ -1707,11 +1708,17 @@ const asDate = (v: any): Date | undefined => {
     } finally { setIsLoading(false); }
   };
 
-  const hideSidebar = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia' || activeTab === 'mentorias' || activeTab === 'metodologias' || activeTab === 'agenda' || activeTab === 'central_padroes' || activeTab === 'monitoramento';
-  const hideHeader = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'monitoramento';
+  const hideSidebar = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia' || activeTab === 'mentorias' || activeTab === 'metodologias' || activeTab === 'missions' || activeTab === 'agenda' || activeTab === 'central_padroes' || activeTab === 'monitoramento' || activeTab === 'nide';
+  const hideHeader = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'monitoramento' || activeTab === 'nide';
 
   const tabAliases: Partial<Record<TabId, TabId>> = {
-    hub: 'ecosystem'
+    hub: 'ecosystem',
+    // Aliases de migração: rotas legadas de módulos absorvidos pelo NIDE
+    // Missões (id: 'missions'), Metodologias e Mentorias agora vivem dentro do NIDE
+    // A ET 09/10 ocultou esses módulos do sidebar; a ET 10/10 adiciona os redirects
+    'missions': 'nide',
+    'metodologias': 'nide',
+    'mentorias': 'nide'
   };
 
   const resolvedActiveTab = tabAliases[activeTab] || activeTab;
@@ -1778,6 +1785,16 @@ const asDate = (v: any): Date | undefined => {
           setGovernanceTargetId(agent.id);
           setActiveTab('governance');
         }
+      });
+    }
+
+    // Injetar runtime context para o NIDE (core funcional originado de Missões)
+    if (resolvedActiveTab === 'nide') {
+      setNideRuntimeContext({
+        workspaceId: activeWorkspaceId,
+        ownerUserId: ownerUserId,
+        agents: operationalAgents,
+        onBack: () => setActiveTab('ecosystem')
       });
     }
 

@@ -14,16 +14,17 @@ const items: Array<{ id: MonitoramentoInternalSection; label: string; hint: stri
 interface MonitoramentoSidebarProps {
   activeSection: MonitoramentoInternalSection;
   onSelect: (section: MonitoramentoInternalSection) => void;
+  onBackToHub?: () => void;
 }
 
-export const MonitoramentoSidebar: React.FC<MonitoramentoSidebarProps> = ({ activeSection, onSelect }) => (
-  <aside className="h-full min-h-0 border-r border-slate-200/80 dark:border-white/10 bg-[#F7FAFE] dark:bg-[#091525] text-slate-950 dark:text-white px-3 py-4">
+export const MonitoramentoSidebar: React.FC<MonitoramentoSidebarProps> = ({ activeSection, onSelect, onBackToHub }) => (
+  <aside className="h-full min-h-0 border-r border-slate-200/80 dark:border-white/10 bg-[#F7FAFE] dark:bg-[#091525] text-slate-950 dark:text-white px-3 py-4 flex flex-col">
     <div className="mb-4 px-2">
       <span className="text-[8px] font-black uppercase tracking-[0.28em] text-blue-500">SagB · LIS V4</span>
       <h2 className="mt-1.5 text-base font-black tracking-tight">Monitoramento</h2>
       <p className="mt-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">Central imersiva.</p>
     </div>
-    <nav className="space-y-1.5" aria-label="Navegação interna do Monitoramento">
+    <nav className="flex-1 space-y-1.5 overflow-y-auto custom-scrollbar" aria-label="Navegação interna do Monitoramento">
       {items.map((item) => {
         const active = item.id === activeSection;
         return (
@@ -39,5 +40,15 @@ export const MonitoramentoSidebar: React.FC<MonitoramentoSidebarProps> = ({ acti
         );
       })}
     </nav>
+    <footer className="mt-3 pt-3 border-t border-slate-200 dark:border-white/10 px-2">
+      <button
+        type="button"
+        onClick={onBackToHub}
+        className="w-full rounded-xl border border-slate-300 dark:border-white/15 bg-white/80 dark:bg-white/5 px-3 py-2.5 text-left transition-all hover:border-blue-300/60 hover:bg-blue-500/10 active:scale-[0.98]"
+      >
+        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">← Voltar ao SagB</span>
+        <span className="mt-0.5 block text-[8px] font-semibold text-slate-400 dark:text-slate-500">Hub do ecossistema</span>
+      </button>
+    </footer>
   </aside>
 );

@@ -30,7 +30,8 @@ export type SagbNavigateDestination =
   | 'configuracoes-sistema'
   | '_orquestracao-principal'
   | 'crm-ziplia'
-  | 'metodologias';
+  | 'metodologias'
+  | 'nide';
 
 export const dispatchNavigate = (destination: SagbNavigateDestination): void => {
   window.dispatchEvent(new CustomEvent<SagbNavigateDestination>('sagb:navigate', { detail: destination }));

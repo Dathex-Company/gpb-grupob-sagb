@@ -106,3 +106,36 @@ Registro de mudanças técnicas, decisões de arquitetura e evolução do módul
 - Notificações e SLA de governança
 - Modo escuro Alice UI
 - Testes unitários (Vitest)
+
+---
+
+## [v3.0.0-mega-etapa-03-ingestao-governada] - 2026-06-02
+
+### Adicionado
+- `domain/types.ts` recebeu `NagiIngestionDocument`, status de classificação, status de revisão, destinos de ingestão, interpretação sugerida, candidatos de catálogo e histórico de ingestão.
+- `NagiItemType` expandido com `treinamento`, `mentoria`, `produto`, `sistema` e `outro` para atender documentos reais do ecossistema.
+- `repository/nagiIngestion.repository.ts` com `INagiIngestionRepository` e `LocalStorageNagiIngestionRepository`.
+- `services/nagiIngestionClassifier.ts` com classificação heurística inicial: título, resumo, tags, sinais, tipo, categoria, destino, possível duplicata e vínculo com catálogo.
+- `services/nagiIngestionService.ts` com entrada manual, lote, revisão, descarte, criação de item, vínculo com catálogo e evidência preservada.
+- `components/IngestionSection.tsx` com interface Alice UI para Entrada, Em revisão, Prontos para salvar e Histórico.
+
+### Alterado
+- `components/NAGIView.tsx` agora abre em `Documentos`, com abas `Documentos`, `Ideias em análise` e `Catálogo`.
+- Header do NAGI passou a destacar documentos, catálogo, triagem e revisão.
+- Fluxo visual atualizado para `CID + RAI → NICO → NAGI → NIDE → SADEV`.
+- `module-doc.ts` atualizado para V3 com a capacidade de ingestão governada.
+- `services/index.ts` e `repository/index.ts` exportam a nova camada de ingestão.
+
+### Regras implementadas
+- Documento com forte aderência ao catálogo sugere vínculo ou possível duplicata.
+- Documento curto ou pouco claro exige revisão manual.
+- Documento com sinais de ideia/oportunidade sugere Triagem.
+- Documento com sinais oficiais/consolidados sugere Catálogo.
+- Documento salvo como item mantém snapshot, evidência e histórico.
+- Documento vinculado ao catálogo vira evidência do item existente.
+
+### Limites da V1
+- Leitura direta de arquivos funciona melhor com `.txt`, `.md`, `.csv` e `.json`.
+- PDF/DOCX ainda exigem extração externa futura.
+- Classificação usa heurísticas locais, sem IA avançada obrigatória.
+- Persistência ainda é localStorage, com interface pronta para Supabase.
