@@ -31,6 +31,7 @@ import { hubIntegracaoManifest, hubIntegracaoRoutes } from '../../modules/hub-in
 import { sagbBridgeManifest, sagbBridgeRoutes } from '../../modules/sagb_bridge';
 import { mcpSagbManifest, mcpSagbRoutes } from '../../modules/mcp_sagb';
 import { fluxobManifest, fluxobRoutes } from '../../modules/fluxob';
+import { nideManifest, nideRoutes } from '../../modules/nide';
 
 // Aqui definimos o registry central. Novos módulos devem ser registrados nesta array.
 
