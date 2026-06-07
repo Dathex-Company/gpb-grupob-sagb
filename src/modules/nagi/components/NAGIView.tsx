@@ -10,11 +10,12 @@ import CatalogSection from './CatalogSection';
 import TriageSection from './TriageSection';
 import IngestionSection from './IngestionSection';
 import EmptyState from './EmptyState';
+import PublishedLinksSection from './PublishedLinksSection';
 import '../styles/nagi-tokens.css';
 
 /* ── Tipos ──────────────────────────────────────────── */
 
-export type NagiSection = 'dashboard' | 'documentos' | 'ideias' | 'catalogo' | 'governanca';
+export type NagiSection = 'dashboard' | 'documentos' | 'ideias' | 'catalogo' | 'links' | 'governanca';
 
 interface NAGIViewProps {
   section: NagiSection;
@@ -61,6 +62,7 @@ const SECTION_CONFIG: Record<NagiSection, SectionConfig> = {
   documentos: { title: 'Documentos', description: 'Documentos entram, o NAGI sugere, você revisa e decide.', dotColor: 'var(--nagi-brand)' },
   ideias: { title: 'Ideias em análise', description: 'Ideias em análise — aguardando sua avaliação. Itens elegíveis podem ser promovidos ao catálogo.', dotColor: 'var(--nagi-warning)' },
   catalogo: { title: 'Catálogo', description: 'Itens oficiais do ecossistema — prontos, catalogados e vinculados.', dotColor: 'var(--nagi-success)' },
+  links: { title: 'Links publicados', description: 'Apps publicados no Netlify, separados por empresa e prontos para sincronização.', dotColor: 'var(--nagi-info)' },
   governanca: { title: 'Governança', description: 'Acompanhamento de decisões, auditoria e controle do pipeline.', dotColor: 'var(--nagi-accent)' },
 };
 
@@ -143,7 +145,7 @@ const NAGIView: React.FC<NAGIViewProps> = ({
       )}
 
       {/* ── Header + Actions ──────────────────── */}
-      {section !== 'dashboard' && section !== 'governanca' && (
+      {section !== 'dashboard' && section !== 'governanca' && section !== 'links' && (
         <div style={{ marginBottom: 16 }}>
           <div
             style={{
@@ -328,6 +330,10 @@ const NAGIView: React.FC<NAGIViewProps> = ({
           onRefresh={onRefresh}
           onNavigate={handleNavigate}
         />
+      )}
+
+      {section === 'links' && (
+        <PublishedLinksSection />
       )}
 
       {section === 'governanca' && (

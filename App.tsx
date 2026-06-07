@@ -164,7 +164,12 @@ const App: React.FC = () => {
   // State for Business Units (now dynamic)
   const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>(INITIAL_BUSINESS_UNITS);
 
-  const [activeTab, setActiveTab] = useState<TabId>('home'); // DEFAULT: HOME
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/nagi')) {
+      return 'nagi';
+    }
+    return 'home';
+  }); // DEFAULT: HOME
   const [activeBU, setActiveBU] = useState<BusinessUnit>(INITIAL_BUSINESS_UNITS[0]);
   const [moduleToggles, setModuleToggles] = useState<Record<string, boolean>>({});
 
@@ -1869,6 +1874,7 @@ const asDate = (v: any): Date | undefined => {
           <NAGIPage
             onBack={() => setActiveTab('ecosystem')}
             onOpenTab={(tab) => setActiveTab(tab)}
+            initialSection={typeof window !== 'undefined' && window.location.pathname.replace(/\/$/, '') === '/nagi/links' ? 'links' : undefined}
           />
         );
       case 'nic':

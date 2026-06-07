@@ -10,6 +10,7 @@ import {
 import { getEligibleForPromotion, refreshEligibility } from '../services/nagiPromotionService';
 import { getIngestionDocuments } from '../services/nagiIngestionService';
 import { NagiIngestionDocument, NagiItem } from '../domain/types';
+import { PUBLISHED_APP_LINKS } from '../data/publishedLinks';
 import '../styles/nagi-tokens.css';
 
 /* ── Props ──────────────────────────────────────────── */
@@ -17,12 +18,21 @@ import '../styles/nagi-tokens.css';
 interface NagiShellProps {
   onBack: () => void;
   onOpenTab?: (tab: TabId) => void;
+  initialSection?: NagiSection;
 }
 
 /* ── Componente principal ───────────────────────────── */
 
-const NagiShell: React.FC<NagiShellProps> = ({ onBack, onOpenTab }) => {
-  const [activeSection, setActiveSection] = useState<NagiSection>('dashboard');
+const resolveInitialSection = (initialSection?: NagiSection): NagiSection => {
+  if (initialSection) return initialSection;
+  if (typeof window !== 'undefined' && window.location.pathname.replace(/\/$/, '') === '/nagi/links') {
+    return 'links';
+  }
+  return 'dashboard';
+};
+
+const NagiShell: React.FC<NagiShellProps> = ({ onBack, onOpenTab, initialSection }) => {
+  const [activeSection, setActiveSection] = useState<NagiSection>(() => resolveInitialSection(initialSection));
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [catalogItems, setCatalogItems] = useState<NagiItem[]>([]);
@@ -42,8 +52,14 @@ const NagiShell: React.FC<NagiShellProps> = ({ onBack, onOpenTab }) => {
   useEffect(() => { refresh(); }, [refresh]);
 
   const handleNavigate = useCallback((section: string) => {
-    if (section === 'dashboard' || section === 'documentos' || section === 'ideias' || section === 'catalogo' || section === 'governanca') {
+    if (section === 'dashboard' || section === 'documentos' || section === 'ideias' || section === 'catalogo' || section === 'links' || section === 'governanca') {
       setActiveSection(section);
+      if (typeof window !== 'undefined') {
+        const nextPath = section === 'links' ? '/nagi/links' : '/';
+        if (window.location.pathname !== nextPath) {
+          window.history.pushState({ nagiSection: section }, '', nextPath);
+        }
+      }
     }
   }, []);
 
@@ -56,6 +72,7 @@ const NagiShell: React.FC<NagiShellProps> = ({ onBack, onOpenTab }) => {
     documentos: ingestionDocs.length,
     ideias: triageItems.length,
     catalogo: catalogItems.length,
+    links: PUBLISHED_APP_LINKS.length,
     governanca: 0,
   };
 
