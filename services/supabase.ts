@@ -780,6 +780,70 @@ const normalizeRecordForTable = (table: string, record: Record<string, any>) => 
     };
   }
 
+  if (table === 'cid_prompts') {
+    return {
+      id: String(r.id),
+      workspaceId: r.workspace_id,
+      title: String(r.title ?? ''),
+      description: r.description ?? undefined,
+      systemPrompt: String(r.system_prompt ?? ''),
+      userPromptTemplate: String(r.user_prompt_template ?? ''),
+      promptType: r.prompt_type ?? 'extract',
+      outputFormat: r.output_format ?? 'plain_text',
+      executionMode: String(r.execution_mode ?? 'single'),
+      isActive: Boolean(r.is_active),
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt')) ?? new Date(),
+      updatedAt: asJsDate(pick(r, 'updated_at', 'updatedAt')) ?? new Date(),
+      createdBy: r.created_by ?? undefined
+    };
+  }
+
+  if (table === 'cid_prompt_runs') {
+    return {
+      id: String(r.id),
+      workspaceId: r.workspace_id,
+      promptId: r.prompt_id ?? undefined,
+      executionScope: r.execution_scope ?? 'single',
+      status: String(r.status ?? 'pending'),
+      promptSnapshot: r.prompt_snapshot ?? {},
+      promptSnapshotVersion: Number(r.prompt_snapshot_version ?? 1),
+      sourceTotalChars: r.source_total_chars !== null ? Number(r.source_total_chars) : undefined,
+      sourceProcessedChars: r.source_processed_chars !== null ? Number(r.source_processed_chars) : undefined,
+      wasTruncated: Boolean(r.was_truncated),
+      warningMessage: r.warning_message ?? undefined,
+      resultText: r.result_text ?? undefined,
+      resultJson: r.result_json ?? undefined,
+      errorMessage: r.error_message ?? undefined,
+      modelUsed: r.model_used ?? undefined,
+      tokensIn: r.tokens_in !== null ? Number(r.tokens_in) : undefined,
+      tokensOut: r.tokens_out !== null ? Number(r.tokens_out) : undefined,
+      estimatedCostUsd: r.estimated_cost_usd !== null ? Number(r.estimated_cost_usd) : undefined,
+      latencyMs: r.latency_ms !== null ? Number(r.latency_ms) : undefined,
+      retryCount: Number(r.retry_count ?? 0),
+      startedAt: asJsDate(pick(r, 'started_at', 'startedAt')),
+      completedAt: asJsDate(pick(r, 'completed_at', 'completedAt')),
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt')) ?? new Date(),
+      createdBy: r.created_by ?? undefined
+    };
+  }
+
+  if (table === 'cid_prompt_run_items') {
+    return {
+      id: String(r.id),
+      runId: String(r.run_id ?? ''),
+      assetId: String(r.asset_id ?? ''),
+      sequenceOrder: Number(r.sequence_order ?? 0),
+      status: String(r.status ?? 'pending'),
+      sourceTextExcerpt: r.source_text_excerpt ?? undefined,
+      sourceTotalChars: r.source_total_chars !== null ? Number(r.source_total_chars) : undefined,
+      sourceProcessedChars: r.source_processed_chars !== null ? Number(r.source_processed_chars) : undefined,
+      resultText: r.result_text ?? undefined,
+      errorMessage: r.error_message ?? undefined,
+      createdAt: asJsDate(pick(r, 'created_at', 'createdAt')) ?? new Date(),
+      payload: r.payload ?? undefined
+    };
+  }
+
   if (table === 'continuous_memory_sessions') {
     return {
       id: String(r.id),
@@ -1938,6 +2002,60 @@ const normalizePayloadForTable = (table: string, payload: Record<string, any>) =
     if (p.linkType !== undefined) { p.link_type = p.linkType; delete p.linkType; }
     if (p.linkedId !== undefined) { p.linked_id = p.linkedId; delete p.linkedId; }
     if (p.linkedLabel !== undefined) { p.linked_label = p.linkedLabel; delete p.linkedLabel; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    delete p.createdAt;
+  }
+
+  if (table === 'cid_prompts') {
+    if (p.workspaceId !== undefined) { p.workspace_id = p.workspaceId; delete p.workspaceId; }
+    if (p.systemPrompt !== undefined) { p.system_prompt = p.systemPrompt; delete p.systemPrompt; }
+    if (p.userPromptTemplate !== undefined) { p.user_prompt_template = p.userPromptTemplate; delete p.userPromptTemplate; }
+    if (p.promptType !== undefined) { p.prompt_type = p.promptType; delete p.promptType; }
+    if (p.outputFormat !== undefined) { p.output_format = p.outputFormat; delete p.outputFormat; }
+    if (p.executionMode !== undefined) { p.execution_mode = p.executionMode; delete p.executionMode; }
+    if (p.isActive !== undefined) { p.is_active = p.isActive; delete p.isActive; }
+    if (p.createdBy !== undefined) { p.created_by = p.createdBy; delete p.createdBy; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    if (p.updatedAt !== undefined && p.updated_at === undefined) { p.updated_at = p.updatedAt; }
+    delete p.createdAt;
+    delete p.updatedAt;
+  }
+
+  if (table === 'cid_prompt_runs') {
+    if (p.workspaceId !== undefined) { p.workspace_id = p.workspaceId; delete p.workspaceId; }
+    if (p.promptId !== undefined) { p.prompt_id = p.promptId; delete p.promptId; }
+    if (p.executionScope !== undefined) { p.execution_scope = p.executionScope; delete p.executionScope; }
+    if (p.promptSnapshot !== undefined) { p.prompt_snapshot = p.promptSnapshot; delete p.promptSnapshot; }
+    if (p.promptSnapshotVersion !== undefined) { p.prompt_snapshot_version = p.promptSnapshotVersion; delete p.promptSnapshotVersion; }
+    if (p.sourceTotalChars !== undefined) { p.source_total_chars = p.sourceTotalChars; delete p.sourceTotalChars; }
+    if (p.sourceProcessedChars !== undefined) { p.source_processed_chars = p.sourceProcessedChars; delete p.sourceProcessedChars; }
+    if (p.wasTruncated !== undefined) { p.was_truncated = p.wasTruncated; delete p.wasTruncated; }
+    if (p.warningMessage !== undefined) { p.warning_message = p.warningMessage; delete p.warningMessage; }
+    if (p.resultText !== undefined) { p.result_text = p.resultText; delete p.resultText; }
+    if (p.resultJson !== undefined) { p.result_json = p.resultJson; delete p.resultJson; }
+    if (p.errorMessage !== undefined) { p.error_message = p.errorMessage; delete p.errorMessage; }
+    if (p.modelUsed !== undefined) { p.model_used = p.modelUsed; delete p.modelUsed; }
+    if (p.tokensIn !== undefined) { p.tokens_in = p.tokensIn; delete p.tokensIn; }
+    if (p.tokensOut !== undefined) { p.tokens_out = p.tokensOut; delete p.tokensOut; }
+    if (p.estimatedCostUsd !== undefined) { p.estimated_cost_usd = p.estimatedCostUsd; delete p.estimatedCostUsd; }
+    if (p.latencyMs !== undefined) { p.latency_ms = p.latencyMs; delete p.latencyMs; }
+    if (p.retryCount !== undefined) { p.retry_count = p.retryCount; delete p.retryCount; }
+    if (p.startedAt !== undefined) { p.started_at = p.startedAt; delete p.startedAt; }
+    if (p.completedAt !== undefined) { p.completed_at = p.completedAt; delete p.completedAt; }
+    if (p.createdBy !== undefined) { p.created_by = p.createdBy; delete p.createdBy; }
+    if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
+    delete p.createdAt;
+  }
+
+  if (table === 'cid_prompt_run_items') {
+    if (p.runId !== undefined) { p.run_id = p.runId; delete p.runId; }
+    if (p.assetId !== undefined) { p.asset_id = p.assetId; delete p.assetId; }
+    if (p.sequenceOrder !== undefined) { p.sequence_order = p.sequenceOrder; delete p.sequenceOrder; }
+    if (p.sourceTextExcerpt !== undefined) { p.source_text_excerpt = p.sourceTextExcerpt; delete p.sourceTextExcerpt; }
+    if (p.sourceTotalChars !== undefined) { p.source_total_chars = p.sourceTotalChars; delete p.sourceTotalChars; }
+    if (p.sourceProcessedChars !== undefined) { p.source_processed_chars = p.sourceProcessedChars; delete p.sourceProcessedChars; }
+    if (p.resultText !== undefined) { p.result_text = p.resultText; delete p.resultText; }
+    if (p.errorMessage !== undefined) { p.error_message = p.errorMessage; delete p.errorMessage; }
     if (p.createdAt !== undefined && p.created_at === undefined) { p.created_at = p.createdAt; }
     delete p.createdAt;
   }

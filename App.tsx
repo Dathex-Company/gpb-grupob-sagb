@@ -22,7 +22,7 @@ import AgentMissionsView from './components/AgentMissionsView';
 import CIDView from './components/CIDView';
 import ContinuousMemoryView from './components/ContinuousMemoryView';
 import MonitoramentoView from './components/MonitoramentoView';
-import NAGIView from './components/NAGIView';
+import NAGIPage from './src/modules/nagi/pages/NAGIPage';
 import UnitView from './components/UnitView';
 import ConversationsView from './src/modules/nucleo-conversacional/pages/ConversationsView';
 import { setDbProvider, createSupabaseDbProvider } from './src/modules/nucleo-conversacional/services/ncDb';
@@ -1708,8 +1708,8 @@ const asDate = (v: any): Date | undefined => {
     } finally { setIsLoading(false); }
   };
 
-  const hideSidebar = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia' || activeTab === 'mentorias' || activeTab === 'metodologias' || activeTab === 'missions' || activeTab === 'agenda' || activeTab === 'central_padroes' || activeTab === 'monitoramento' || activeTab === 'nide';
-  const hideHeader = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'monitoramento' || activeTab === 'nide';
+  const hideSidebar = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia' || activeTab === 'mentorias' || activeTab === 'metodologias' || activeTab === 'missions' || activeTab === 'agenda' || activeTab === 'central_padroes' || activeTab === 'monitoramento' || activeTab === 'nide' || activeTab === 'nagi' || activeTab === 'cid';
+  const hideHeader = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'monitoramento' || activeTab === 'nide' || activeTab === 'nagi' || activeTab === 'cid';
 
   const tabAliases: Partial<Record<TabId, TabId>> = {
     hub: 'ecosystem',
@@ -1799,8 +1799,9 @@ const asDate = (v: any): Date | undefined => {
     }
 
     // Módulos Registrados Dinamicamente
+    // Exceção: NAGI é gerenciado pelo switch case abaixo para receber onBack/onOpenTab
     const moduleRoutes = getModuleRoutes();
-    if (moduleRoutes[resolvedActiveTab] && isModuleEnabledByToggle(resolvedActiveTab, moduleToggles)) {
+    if (moduleRoutes[resolvedActiveTab] && isModuleEnabledByToggle(resolvedActiveTab, moduleToggles) && resolvedActiveTab !== 'nagi') {
       return moduleRoutes[resolvedActiveTab].element;
     }
 
@@ -1865,7 +1866,7 @@ const asDate = (v: any): Date | undefined => {
         );
       case 'nagi':
         return (
-          <NAGIView
+          <NAGIPage
             onBack={() => setActiveTab('ecosystem')}
             onOpenTab={(tab) => setActiveTab(tab)}
           />

@@ -51,6 +51,38 @@ A identidade estrutural (ID) de um agente do GrupoB deve seguir rigorosamente a 
 *   Uma vez que o ID estrutural é gerado e registrado no SagB, ele **não pode ser alterado**.
 *   O Nome Visual/Humano (ex: "Pedro Nassar | CEO GrupoB") e metadados adicionais do agente podem mudar de acordo com o crescimento ou necessidades do negócio, porém, a chave primária (`agent_id`) manterá seu código gerado até a desativação ou obsolescência desse agente.
 
+### 3.1.1. Código Curto Operacional
+
+Além do ID canônico estrutural, cada colaborador deve possuir um **Código Curto Operacional** para uso em sistema, cadastro, CRM, dashboards, planilhas, filtros e interfaces visuais.
+
+O código curto não substitui o ID canônico. Ele é uma identificação auxiliar, mais curta e legível.
+
+Sintaxe oficial:
+
+`<VENTURE>-<TIPO>-<SETOR>-<SEQ3>`
+
+Onde:
+
+*   **`<VENTURE>`**: código da venture/unidade operacional. Exemplos: `GRB`, `3FB`, `DAT`, `ZIP`, `ACB`, `INS`, `PAP`, `STB`, `ACL`.
+*   **`<TIPO>`**: tipo de colaborador.
+    *   `CA` = Colaborador Agente.
+    *   `CH` = Colaborador Humano.
+*   **`<SETOR>`**: setor em letras maiúsculas, derivado do `<setor3>` do ID canônico. Exemplos: `MKT`, `VND`, `OPS`, `QG3`, `MTD`, `ENG`, `CRM`.
+*   **`<SEQ3>`**: mesmo sequencial de 3 dígitos do ID canônico.
+
+Exemplos:
+
+| ID Canônico | Código Curto Operacional | Tipo |
+|---|---|---|
+| `anton_borselli_grb_mkt_e_032` | `3FB-CA-MKT-032` | Colaborador Agente |
+| `max_guerra_grb_vnd_e_054` | `3FB-CA-VND-054` | Colaborador Agente |
+| `zara_bittencourt_grb_qg3_e_018` | `3FB-CA-QG3-018` | Colaborador Agente |
+| `douglas_rodrigues_grb_mkt_e_090` | `3FB-CH-MKT-090` | Colaborador Humano |
+
+**Regra importante:** `CA` e `CH` não entram no ID canônico estrutural para evitar quebra de padrão, renomeação de pastas e perda de rastreabilidade. Eles devem ser armazenados como campo de cadastro e refletidos no Código Curto Operacional.
+
+Documento canônico específico: [`codigo_curto_colaboradores_grupob.md`](codigo_curto_colaboradores_grupob.md).
+
 ### 3.2. Governança do Sequencial Global
 *   O sequencial `<seq3>` (de `001` a `999`) é emitido globalmente por GrupoB, e **NÃO** por setor. 
 *   Se o último agente emitido do GrupoB foi o `015` de um QG, o próximo agente de outro QG receberá obrigatoriamente o código `016`.

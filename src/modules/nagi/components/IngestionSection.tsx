@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import EmptyState from './EmptyState';
 import {
   INGESTION_CLASSIFICATION_LABELS,
   INGESTION_DESTINATION_LABELS,
@@ -29,10 +30,10 @@ interface IngestionSectionProps {
 
 type IngestionView = 'entrada' | 'revisao' | 'prontos' | 'historico';
 
-const destinationTone: Record<NagiIngestionDestination, string> = {
-  catalogo: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  triagem: 'bg-amber-50 text-amber-700 border-amber-200',
-  revisao_manual: 'bg-slate-50 text-slate-600 border-slate-200',
+const destinationStyles: Record<NagiIngestionDestination, { bg: string; text: string; border: string }> = {
+  catalogo: { bg: 'var(--nagi-success-soft)', text: 'var(--nagi-success)', border: 'var(--nagi-success-line)' },
+  triagem: { bg: 'var(--nagi-warning-soft)', text: 'var(--nagi-warning)', border: 'var(--nagi-warning-line)' },
+  revisao_manual: { bg: 'var(--nagi-neutral-soft)', text: 'var(--nagi-neutral)', border: 'var(--nagi-neutral-line)' },
 };
 
 const IngestionSection: React.FC<IngestionSectionProps> = ({ documents, catalogItems, onRefresh }) => {
@@ -97,16 +98,13 @@ const IngestionSection: React.FC<IngestionSectionProps> = ({ documents, catalogI
       {view === 'entrada' && <EntryPanel onCreated={onRefresh} />}
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(360px,520px)_1fr] gap-4">
-        <div className="rounded-[22px] border border-[rgba(102,91,83,0.11)] bg-white p-4 shadow-sm space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-[0.08em] font-semibold text-slate-400">Documentos</span>
-            <span className="text-[10px] text-slate-400">{visibleDocs.length}</span>
+        <div style={{ borderRadius: 'var(--nagi-radius-xl)', border: `1px solid var(--nagi-line)`, backgroundColor: 'var(--nagi-surface)', padding: 16, boxShadow: 'var(--nagi-shadow-sm)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-semibold uppercase tracking-[0.08em]" style={{ fontSize: 'var(--nagi-micro)', color: 'var(--nagi-muted)' }}>Documentos</span>
+            <span style={{ fontSize: 'var(--nagi-muted-size)', color: 'var(--nagi-muted)' }}>{visibleDocs.length}</span>
           </div>
           {visibleDocs.length === 0 && (
-            <div className="rounded-[18px] border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-              <p className="text-sm font-semibold text-slate-600">Nada nesta etapa agora.</p>
-              <p className="text-[11px] text-slate-400 mt-1">Use a entrada para colar textos ou subir vários documentos.</p>
-            </div>
+            <EmptyState title="Nada nesta etapa agora." description="Use a entrada para colar textos ou subir vários documentos." compact />
           )}
           <div className="space-y-1.5 max-h-[620px] overflow-y-auto custom-scrollbar pr-1">
             {visibleDocs.map((doc) => (
@@ -126,10 +124,11 @@ const IngestionSection: React.FC<IngestionSectionProps> = ({ documents, catalogI
           {selected ? (
             <ReviewPanel doc={selected} catalogItems={catalogItems} onRefresh={onRefresh} />
           ) : (
-            <div className="rounded-[22px] border border-dashed border-slate-200 bg-white p-10 text-center">
-              <p className="text-sm font-semibold text-slate-600">Selecione um documento</p>
-              <p className="text-[11px] text-slate-400 mt-1">Aqui aparece a sugestão, os vínculos e a decisão final.</p>
-            </div>
+            <EmptyState
+              title="Selecione um documento"
+              description="Aqui aparece a sugestão, os vínculos e a decisão final."
+              compact
+            />
           )}
         </div>
       </div>
@@ -226,7 +225,13 @@ const DocumentRow: React.FC<{ doc: NagiIngestionDocument; active: boolean; selec
       <button onClick={onSelect} className="text-left flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <h4 className="text-[12px] font-semibold text-slate-950 line-clamp-2">{doc.extractedTitle}</h4>
-          <span className={`shrink-0 h-5 px-1.5 rounded-[6px] border text-[9px] font-semibold uppercase tracking-[0.04em] flex items-center ${destinationTone[doc.suggestedDestination]}`}>
+          <span className="shrink-0 h-5 px-1.5 rounded-[6px] font-semibold uppercase tracking-[0.04em] flex items-center"
+            style={{
+              fontSize: 9,
+              backgroundColor: destinationStyles[doc.suggestedDestination].bg,
+              color: destinationStyles[doc.suggestedDestination].text,
+              border: `1px solid ${destinationStyles[doc.suggestedDestination].border}`,
+            }}>
             {INGESTION_DESTINATION_LABELS[doc.suggestedDestination]}
           </span>
         </div>
@@ -280,11 +285,16 @@ const ReviewPanel: React.FC<{ doc: NagiIngestionDocument; catalogItems: NagiItem
     <section className="rounded-[22px] border border-[rgba(102,91,83,0.11)] bg-white p-5 shadow-sm space-y-4">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
         <div>
-          <span className="text-[10px] uppercase tracking-[0.08em] font-semibold text-slate-400">Revisão do documento</span>
-          <h3 className="text-[18px] font-semibold tracking-[-0.01em] text-slate-950 mt-1">{doc.extractedTitle}</h3>
-          <p className="text-[11px] text-slate-500 mt-1">{INGESTION_REVIEW_LABELS[doc.reviewStatus]} · {doc.confidence}% de segurança</p>
+          <span className="text-[10px] uppercase tracking-[0.08em] font-semibold" style={{ color: 'var(--nagi-muted)' }}>Revisão do documento</span>
+          <h3 className="text-[18px] font-semibold tracking-[-0.01em] mt-1" style={{ color: 'var(--nagi-text)' }}>{doc.extractedTitle}</h3>
+          <p className="text-[11px] mt-1" style={{ color: 'var(--nagi-muted)' }}>{INGESTION_REVIEW_LABELS[doc.reviewStatus]} · {doc.confidence}% de segurança</p>
         </div>
-        <span className={`h-6 px-2 rounded-[8px] border text-[10px] font-semibold uppercase tracking-[0.04em] flex items-center ${destinationTone[doc.suggestedDestination]}`}>
+        <span className="h-6 px-2 rounded-[8px] text-[10px] font-semibold uppercase tracking-[0.04em] flex items-center"
+          style={{
+            backgroundColor: destinationStyles[doc.suggestedDestination].bg,
+            color: destinationStyles[doc.suggestedDestination].text,
+            border: `1px solid ${destinationStyles[doc.suggestedDestination].border}`,
+          }}>
           Sugestão: {INGESTION_DESTINATION_LABELS[doc.suggestedDestination]}
         </span>
       </div>
@@ -341,35 +351,64 @@ const ReviewPanel: React.FC<{ doc: NagiIngestionDocument; catalogItems: NagiItem
   );
 };
 
-const Metric: React.FC<{ label: string; value: number; tone?: 'emerald' | 'amber' | 'rose' }> = ({ label, value, tone }) => (
-  <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3 shadow-sm">
-    <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">{label}</span>
-    <strong className={`text-[24px] font-bold ${tone === 'emerald' ? 'text-emerald-600' : tone === 'amber' ? 'text-amber-600' : tone === 'rose' ? 'text-rose-600' : 'text-slate-950'}`}>{value}</strong>
-  </div>
-);
+const Metric: React.FC<{ label: string; value: number; tone?: 'emerald' | 'amber' | 'rose' }> = ({ label, value, tone }) => {
+  const toneColor = tone === 'emerald' ? 'var(--nagi-success)'
+    : tone === 'amber' ? 'var(--nagi-warning)'
+    : tone === 'rose' ? 'var(--nagi-danger)'
+    : 'var(--nagi-text)';
+  return (
+    <div style={{ borderRadius: 'var(--nagi-radius-xl)', border: `1px solid var(--nagi-line-soft)`, backgroundColor: 'var(--nagi-surface)', padding: '12px 16px', boxShadow: 'var(--nagi-shadow-sm)' }}>
+      <span className="font-bold uppercase tracking-[0.12em] block mb-0.5" style={{ fontSize: 8, color: 'var(--nagi-muted)' }}>{label}</span>
+      <strong style={{ fontSize: 24, color: toneColor }}>{value}</strong>
+    </div>
+  );
+};
 
 const MiniTab: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
-  <button onClick={onClick} className={`h-[37px] px-4 rounded-[14px] text-[11px] font-semibold uppercase tracking-[0.06em] transition-all ${active ? 'bg-slate-950 text-white shadow-sm' : 'bg-white text-slate-500 border border-[rgba(102,91,83,0.11)] hover:bg-slate-50'}`}>{children}</button>
+  <button onClick={onClick}
+    className="font-semibold uppercase tracking-[0.06em] transition-all"
+    style={{
+      height: 37,
+      padding: '0 14px',
+      borderRadius: 'var(--nagi-radius-md)',
+      fontSize: 'var(--nagi-micro)',
+      backgroundColor: active ? 'var(--nagi-primary)' : 'var(--nagi-surface)',
+      color: active ? '#FFFFFF' : 'var(--nagi-muted)',
+      border: active ? 'none' : `1px solid var(--nagi-line)`,
+      boxShadow: active ? 'var(--nagi-shadow-sm)' : 'none',
+    }}
+  >{children}</button>
 );
 
 const Input: React.FC<{ label: string; value: string; onChange: (value: string) => void; placeholder?: string }> = ({ label, value, onChange, placeholder }) => (
   <div>
-    <label className="text-[10px] uppercase tracking-[0.06em] font-semibold text-slate-500 block mb-1">{label}</label>
-    <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full h-[42px] rounded-[15px] border border-[rgba(102,91,83,0.11)] bg-[#FDFBFA] px-3 text-sm outline-none focus:border-slate-400" />
+    <label className="font-semibold uppercase tracking-[0.06em] block mb-1" style={{ fontSize: 'var(--nagi-micro)', color: 'var(--nagi-muted)' }}>{label}</label>
+    <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+      style={{ width: '100%', height: 42, borderRadius: 'var(--nagi-radius-md)', border: `1px solid var(--nagi-line)`, backgroundColor: 'var(--nagi-surface-soft)', padding: '0 12px', fontSize: 'var(--nagi-body)', outline: 'none', color: 'var(--nagi-text)' }}
+      onFocus={(e) => { e.target.style.borderColor = 'var(--nagi-brand)'; }}
+      onBlur={(e) => { e.target.style.borderColor = 'var(--nagi-line)'; }}
+    />
   </div>
 );
 
 const Textarea: React.FC<{ label: string; value: string; onChange: (value: string) => void; placeholder?: string; rows?: number }> = ({ label, value, onChange, placeholder, rows = 3 }) => (
   <div>
-    <label className="text-[10px] uppercase tracking-[0.06em] font-semibold text-slate-500 block mb-1">{label}</label>
-    <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full px-3 py-2.5 rounded-[15px] border border-[rgba(102,91,83,0.11)] bg-[#FDFBFA] text-sm resize-none outline-none focus:border-slate-400" />
+    <label className="font-semibold uppercase tracking-[0.06em] block mb-1" style={{ fontSize: 'var(--nagi-micro)', color: 'var(--nagi-muted)' }}>{label}</label>
+    <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+      style={{ width: '100%', padding: '10px 12px', borderRadius: 'var(--nagi-radius-md)', border: `1px solid var(--nagi-line)`, backgroundColor: 'var(--nagi-surface-soft)', fontSize: 'var(--nagi-body)', resize: 'none', outline: 'none', color: 'var(--nagi-text)' }}
+      onFocus={(e) => { e.target.style.borderColor = 'var(--nagi-brand)'; }}
+      onBlur={(e) => { e.target.style.borderColor = 'var(--nagi-line)'; }}
+    />
   </div>
 );
 
 const Select: React.FC<{ label: string; value: string; onChange: (value: string) => void; options: [string, string][] }> = ({ label, value, onChange, options }) => (
   <div>
-    <label className="text-[10px] uppercase tracking-[0.06em] font-semibold text-slate-500 block mb-1">{label}</label>
-    <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full h-[42px] rounded-[15px] border border-[rgba(102,91,83,0.11)] bg-[#FDFBFA] px-3 text-sm outline-none focus:border-slate-400">
+    <label className="font-semibold uppercase tracking-[0.06em] block mb-1" style={{ fontSize: 'var(--nagi-micro)', color: 'var(--nagi-muted)' }}>{label}</label>
+    <select value={value} onChange={(e) => onChange(e.target.value)}
+      style={{ width: '100%', height: 42, borderRadius: 'var(--nagi-radius-md)', border: `1px solid var(--nagi-line)`, backgroundColor: 'var(--nagi-surface-soft)', padding: '0 12px', fontSize: 'var(--nagi-body)', outline: 'none', color: 'var(--nagi-text)' }}
+      onFocus={(e) => { e.target.style.borderColor = 'var(--nagi-brand)'; }}
+      onBlur={(e) => { e.target.style.borderColor = 'var(--nagi-line)'; }}>
       {options.map(([key, labelValue]) => <option key={key} value={key}>{labelValue}</option>)}
     </select>
   </div>

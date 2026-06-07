@@ -1,0 +1,153 @@
+/* ============================================================
+ * NAGI — Núcleo Avançado de Gestão de Ideias
+ * Tokens de identidade visual do módulo
+ * Base: Alice UI Standard v1.0 | GrupoB UI Standard
+ * ============================================================ */
+
+/* ── Light mode ──────────────────────────────────────── */
+
+:root {
+  /* ── Base herdada do Alice UI ── */
+  --nagi-bg: #F8F6F4;
+  --nagi-shell: #FFFFFF;
+  --nagi-surface: #FFFFFF;
+  --nagi-surface-soft: #FDFBFA;
+  --nagi-surface-muted: #F7F1ED;
+  --nagi-line: rgba(102, 91, 83, 0.11);
+  --nagi-line-soft: rgba(102, 91, 83, 0.07);
+
+  /* ── Texto ── */
+  --nagi-text: #1E1B1A;
+  --nagi-text-secondary: #4B4744;
+  --nagi-muted: #8A7F78;
+  --nagi-muted-light: #B0A8A2;
+  --nagi-text-inverse: #FFFFFF;
+
+  /* ── Identidade do módulo (brand) ── */
+  --nagi-brand: #0E7C7B;
+  --nagi-brand-light: #14A8A6;
+  --nagi-brand-soft: #E8F5F5;
+  --nagi-brand-lighter: #F0FAFA;
+
+  /* ── Cores semânticas — Alice UI Standard ── */
+  --nagi-success: #059669;
+  --nagi-success-soft: #ECFDF5;
+  --nagi-success-line: #A7F3D0;
+
+  --nagi-warning: #D97706;
+  --nagi-warning-soft: #FFFBEB;
+  --nagi-warning-line: #FDE68A;
+
+  --nagi-danger: #DC2626;
+  --nagi-danger-soft: #FEF2F2;
+  --nagi-danger-line: #FECACA;
+
+  --nagi-info: #0E7C7B;
+  --nagi-info-soft: #E8F5F5;
+  --nagi-info-line: #99F6E4;
+
+  --nagi-neutral: #555555;
+  --nagi-neutral-soft: #F5F5F5;
+  --nagi-neutral-line: #E5E5E5;
+
+  /* ── Primário (GrupoB) ── */
+  --nagi-primary: #555555;
+  --nagi-primary-soft: #EEEEEE;
+
+  /* ── Accent (roxo Alice) ── */
+  --nagi-accent: #7C3AED;
+  --nagi-accent-soft: #F3E8FF;
+
+  /* ── Escala tipográfica — Alice UI ── */
+  --nagi-page-title: 31px;
+  --nagi-page-title-weight: 850;
+  --nagi-page-title-spacing: -0.04em;
+
+  --nagi-screen-title: 23px;
+  --nagi-screen-title-weight: 800;
+  --nagi-screen-title-spacing: -0.028em;
+
+  --nagi-module-title: 20px;
+  --nagi-module-title-weight: 720;
+  --nagi-module-title-spacing: -0.02em;
+
+  --nagi-body: 12px;
+  --nagi-body-weight: 400;
+
+  --nagi-muted-size: 11px;
+  --nagi-muted-weight: 400;
+
+  --nagi-micro: 10px;
+  --nagi-micro-weight: 600;
+  --nagi-micro-spacing: 0.06em;
+
+  /* ── Radius ── */
+  --nagi-radius-sm: 8px;
+  --nagi-radius-md: 14px;
+  --nagi-radius-lg: 18px;
+  --nagi-radius-xl: 22px;
+  --nagi-radius-2xl: 24px;
+
+  /* ── Shadows ── */
+  --nagi-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --nagi-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.06);
+  --nagi-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08);
+
+  /* ── Transitions ── */
+  --nagi-transition-fast: 0.15s ease;
+  --nagi-transition-base: 0.2s ease;
+  --nagi-transition-slow: 0.3s ease;
+}
+
+/* ── Dark mode ──────────────────────────────────────── */
+
+body[data-mode="dark"] {
+  --nagi-bg: #0B0F14;
+  --nagi-shell: #10161D;
+  --nagi-surface: #151C24;
+  --nagi-surface-soft: #111821;
+  --nagi-surface-muted: #1B2530;
+  --nagi-line: rgba(229, 231, 235, 0.10);
+  --nagi-line-soft: rgba(229, 231, 235, 0.065);
+
+  --nagi-text: #E5E7EB;
+  --nagi-text-secondary: #C8CCD1;
+  --nagi-muted: #A5AFBA;
+  --nagi-muted-light: #74808B;
+  --nagi-text-inverse: #0C1117;
+
+  --nagi-brand: #14A8A6;
+  --nagi-brand-light: #2DD4BF;
+  --nagi-brand-soft: #1A2E35;
+  --nagi-brand-lighter: #1C3A3A;
+
+  --nagi-success: #34D399;
+  --nagi-success-soft: #064E3B;
+  --nagi-success-line: #065F46;
+
+  --nagi-warning: #FBBF24;
+  --nagi-warning-soft: #78350F;
+  --nagi-warning-line: #92400E;
+
+  --nagi-danger: #FB7185;
+  --nagi-danger-soft: #450A0A;
+  --nagi-danger-line: #7F1D1D;
+
+  --nagi-info: #2DD4BF;
+  --nagi-info-soft: #134E4A;
+  --nagi-info-line: #115E59;
+
+  --nagi-neutral: #9CA3AF;
+  --nagi-neutral-soft: #1F2937;
+  --nagi-neutral-line: #374151;
+
+  --nagi-primary: #9CA3AF;
+  --nagi-primary-soft: #1F2937;
+
+  --nagi-accent: #A78BFA;
+  --nagi-accent-soft: #2E1B45;
+
+  --nagi-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --nagi-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --nagi-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+}

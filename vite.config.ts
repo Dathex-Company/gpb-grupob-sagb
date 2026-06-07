@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { localBridgePlugin } from './vite-plugin-local-bridge'
 
 export default defineConfig(({ mode }) => {
   // Carrega somente variáveis VITE_ do .env conforme o modo
@@ -16,7 +17,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: basePath,
-    plugins: [react()],
+    plugins: [
+      react(),
+      // Plugin de bridge local para acesso ao filesystem Z:\
+      // Ativo apenas em desenvolvimento (configureServer só roda em dev)
+      ...(mode !== 'production' ? [localBridgePlugin()] : []),
+    ],
     server: {
       port: Number.isFinite(resolvedPort) ? resolvedPort : 7000,
       strictPort: true,

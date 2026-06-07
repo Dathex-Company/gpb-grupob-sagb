@@ -1,263 +1,467 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { TabId } from '../../../../types';
-import { BackIcon } from '../../../../components/Icon';
 import {
-  getCatalogItems,
-  getTriageItems,
   createAvulso,
   resetToBlueprint,
 } from '../services/nagiService';
-import { getEligibleForPromotion, refreshEligibility } from '../services/nagiPromotionService';
 import { receiveFromNic, NicOutputPayload } from '../services/nagiNicBridge';
-import { getIngestionDocuments } from '../services/nagiIngestionService';
-import { NagiIngestionDocument, NagiItem, NagiItemType, ITEM_TYPE_LABELS } from '../domain/types';
+import { NagiItem, NagiItemType, NagiIngestionDocument, ITEM_TYPE_LABELS } from '../domain/types';
 import CatalogSection from './CatalogSection';
 import TriageSection from './TriageSection';
 import IngestionSection from './IngestionSection';
+import EmptyState from './EmptyState';
+import '../styles/nagi-tokens.css';
+
+/* ── Tipos ──────────────────────────────────────────── */
+
+export type NagiSection = 'dashboard' | 'documentos' | 'ideias' | 'catalogo' | 'governanca';
 
 interface NAGIViewProps {
-  onBack?: () => void;
-  onOpenTab?: (tab: TabId) => void;
+  section: NagiSection;
+  catalogItems: NagiItem[];
+  triageItems: NagiItem[];
+  ingestionDocs: NagiIngestionDocument[];
+  eligibleCount: number;
+  refreshKey: number;
+  onRefresh: () => void;
+  onNavigate: (section: string) => void;
 }
 
-type NagiTab = 'ingestao' | 'catalogo' | 'triagem';
+/* ── SVG Icons ──────────────────────────────────────── */
 
-const NAGIView: React.FC<NAGIViewProps> = ({ onBack, onOpenTab }) => {
-  const [activeTab, setActiveTab] = useState<NagiTab>('ingestao');
-  const [refreshKey, setRefreshKey] = useState(0);
+const CheckIconSVG: React.FC = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const PlusIconSVG: React.FC = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+
+const ShieldIcon: React.FC = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
+/* ── Section config ─────────────────────────────────── */
+
+interface SectionConfig {
+  title: string;
+  description: string;
+  dotColor: string;
+}
+
+const SECTION_CONFIG: Record<NagiSection, SectionConfig> = {
+  dashboard: { title: 'Dashboard', description: 'Visão geral do Núcleo Avançado de Gestão de Ideias', dotColor: 'var(--nagi-brand)' },
+  documentos: { title: 'Documentos', description: 'Documentos entram, o NAGI sugere, você revisa e decide.', dotColor: 'var(--nagi-brand)' },
+  ideias: { title: 'Ideias em análise', description: 'Ideias em análise — aguardando sua avaliação. Itens elegíveis podem ser promovidos ao catálogo.', dotColor: 'var(--nagi-warning)' },
+  catalogo: { title: 'Catálogo', description: 'Itens oficiais do ecossistema — prontos, catalogados e vinculados.', dotColor: 'var(--nagi-success)' },
+  governanca: { title: 'Governança', description: 'Acompanhamento de decisões, auditoria e controle do pipeline.', dotColor: 'var(--nagi-accent)' },
+};
+
+/* ── Componente ─────────────────────────────────────── */
+
+const NAGIView: React.FC<NAGIViewProps> = ({
+  section,
+  catalogItems,
+  triageItems,
+  ingestionDocs,
+  eligibleCount,
+  refreshKey,
+  onRefresh,
+  onNavigate,
+}) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showNicForm, setShowNicForm] = useState(false);
+  const [toast, setToast] = useState<{ type: 'ok' | 'error'; text: string } | null>(null);
 
-  const [catalogItems, setCatalogItems] = useState<NagiItem[]>([]);
-  const [triageItems, setTriageItems] = useState<NagiItem[]>([]);
-  const [ingestionDocs, setIngestionDocs] = useState<NagiIngestionDocument[]>([]);
-  const [eligibleCount, setEligibleCount] = useState(0);
-
-  const refresh = useCallback(() => {
-    refreshEligibility();
-    setCatalogItems(getCatalogItems());
-    setTriageItems(getTriageItems());
-    setIngestionDocs(getIngestionDocuments());
-    setEligibleCount(getEligibleForPromotion().length);
-    setRefreshKey((k) => k + 1);
-  }, []);
-
-  useEffect(() => { refresh(); }, [refresh]);
+  const showToast = (type: 'ok' | 'error', text: string) => {
+    setToast({ type, text });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleNavigate = useCallback((tab: string) => {
-    if (onOpenTab) onOpenTab(tab as TabId);
-  }, [onOpenTab]);
+    onNavigate(tab);
+  }, [onNavigate]);
 
-  /* Criar ideia avulsa */
   const handleCreateAvulso = useCallback(
     (title: string, summary: string, itemType: NagiItemType, category: string) => {
       createAvulso({ title, summary, itemType, category });
       setShowCreateForm(false);
-      refresh();
+      showToast('ok', 'Ideia criada com sucesso!');
+      onRefresh();
     },
-    [refresh],
+    [onRefresh],
   );
 
-  /* Importar do NIC */
   const handleReceiveFromNic = useCallback(
     (payload: NicOutputPayload) => {
       receiveFromNic(payload);
       setShowNicForm(false);
-      refresh();
+      showToast('ok', 'Importado do NIC para triagem.');
+      onRefresh();
     },
-    [refresh],
+    [onRefresh],
   );
 
-  const totalCatalogo = catalogItems.length;
-  const totalTriagem = triageItems.length;
-  const totalIngestao = ingestionDocs.length;
-  const totalRevisao = ingestionDocs.filter((doc) => doc.reviewStatus === 'em_revisao').length;
+  const handleReset = useCallback(() => {
+    resetToBlueprint();
+    showToast('ok', 'Base restaurada com dados de exemplo.');
+    onRefresh();
+  }, [onRefresh]);
+
+  const showActionButtons = section === 'ideias' || section === 'documentos';
+  const config = SECTION_CONFIG[section];
 
   return (
-    <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-[#F8F6F4]">
-      <div className="max-w-[1500px] mx-auto px-6 md:px-10 py-8 space-y-6">
+    <>
+      {/* ── Toast ─────────────────────────────── */}
+      {toast && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 18px',
+            borderRadius: 'var(--nagi-radius-md)',
+            fontSize: 'var(--nagi-body)',
+            fontWeight: 600,
+            backgroundColor: toast.type === 'ok' ? 'var(--nagi-success-soft)' : 'var(--nagi-danger-soft)',
+            color: toast.type === 'ok' ? 'var(--nagi-success)' : 'var(--nagi-danger)',
+            border: `1px solid ${toast.type === 'ok' ? 'var(--nagi-success-line)' : 'var(--nagi-danger-line)'}`,
+            marginBottom: 16,
+          }}
+        >
+          {toast.type === 'ok' && <CheckIconSVG />}
+          {toast.text}
+        </div>
+      )}
 
-        {/* Header — Alice UI: surface branco, sem dark */}
-        <header className="rounded-[24px] border border-[rgba(102,91,83,0.11)] bg-white shadow-sm">
-          <div className="px-6 md:px-8 py-6">
-            <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
-              <div className="max-w-2xl">
-                {onBack && (
-                  <button onClick={onBack} className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.1em] font-semibold text-cyan-600 mb-3">
-                    <BackIcon className="w-3.5 h-3.5" /> Voltar
+      {/* ── Header + Actions ──────────────────── */}
+      {section !== 'dashboard' && section !== 'governanca' && (
+        <div style={{ marginBottom: 16 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 10,
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    display: 'inline-block',
+                    backgroundColor: config.dotColor,
+                  }}
+                />
+                <h2
+                  style={{
+                    fontSize: 'var(--nagi-screen-title)',
+                    fontWeight: 'var(--nagi-screen-title-weight)',
+                    letterSpacing: 'var(--nagi-screen-title-spacing)',
+                    color: 'var(--nagi-text)',
+                    margin: 0,
+                  }}
+                >
+                  {config.title}
+                </h2>
+              </div>
+              <p
+                style={{
+                  fontSize: 'var(--nagi-muted-size)',
+                  color: 'var(--nagi-muted)',
+                  margin: '2px 0 0 16px',
+                }}
+              >
+                {config.description}
+              </p>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {showActionButtons && (
+                <>
+                  <button
+                    onClick={() => setShowNicForm(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      height: 36,
+                      padding: '0 14px',
+                      borderRadius: 'var(--nagi-radius-md)',
+                      border: `1px solid var(--nagi-info-line)`,
+                      backgroundColor: 'var(--nagi-info-soft)',
+                      color: 'var(--nagi-info)',
+                      fontSize: 'var(--nagi-micro)',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      cursor: 'pointer',
+                      transition: 'opacity var(--nagi-transition-base)',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                  >
+                    <PlusIconSVG />
+                    Do NIC
                   </button>
-                )}
-                <span className="text-[10px] uppercase tracking-[0.15em] font-semibold text-cyan-600 block mb-2">
-                  NAGI — Núcleo de Gestão de Ideias
-                </span>
-                <h1 className="text-[31px] font-extrabold tracking-[-0.04em] text-slate-950">
-                  Central de Ideias
-                </h1>
-                <p className="text-[13px] leading-6 text-slate-500 mt-2 max-w-xl">
-                  Receba documentos, transforme conteúdo em itens organizados e decida rápido o que entra na Triagem ou no Catálogo.
-                  O NAGI não guarda bruto: ele governa o que merece virar estrutura.
-                </p>
-              </div>
-
-              {/* Métricas — Alice UI: metric-card compacto */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 min-w-[260px]">
-                <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3">
-                  <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Docs</span>
-                  <strong className="text-[24px] font-bold text-cyan-600">{totalIngestao}</strong>
-                </div>
-                <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3">
-                  <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Catálogo</span>
-                  <strong className="text-[24px] font-bold text-slate-950">{totalCatalogo}</strong>
-                </div>
-                <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3">
-                  <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Triagem</span>
-                  <strong className="text-[24px] font-bold text-slate-950">{totalTriagem}</strong>
-                </div>
-                <div className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white px-4 py-3">
-                  <span className="text-[8px] uppercase tracking-[0.12em] font-bold text-slate-400 block mb-0.5">Revisão</span>
-                  <strong className="text-[24px] font-bold text-amber-600">{totalRevisao}</strong>
-                </div>
-              </div>
+                  <button
+                    onClick={() => setShowCreateForm(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      height: 36,
+                      padding: '0 14px',
+                      borderRadius: 'var(--nagi-radius-md)',
+                      border: 'none',
+                      backgroundColor: 'var(--nagi-brand)',
+                      color: '#FFFFFF',
+                      fontSize: 'var(--nagi-micro)',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      cursor: 'pointer',
+                      transition: 'opacity var(--nagi-transition-base)',
+                      boxShadow: 'var(--nagi-shadow-sm)',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                  >
+                    <PlusIconSVG />
+                    Nova ideia
+                  </button>
+                </>
+              )}
+              <button
+                onClick={handleReset}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  height: 36,
+                  padding: '0 12px',
+                  borderRadius: 'var(--nagi-radius-md)',
+                  border: `1px solid var(--nagi-line)`,
+                  backgroundColor: 'var(--nagi-surface)',
+                  color: 'var(--nagi-muted)',
+                  fontSize: 'var(--nagi-micro)',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  cursor: 'pointer',
+                  transition: 'opacity var(--nagi-transition-base)',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+                Restaurar
+              </button>
             </div>
           </div>
-        </header>
 
-        {/* Navegação + Ações — Alice UI: tabs clean */}
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
-          <div className="flex gap-1.5">
-            <TabBtn active={activeTab === 'ingestao'} onClick={() => setActiveTab('ingestao')}>
-              Documentos
-              <span className="ml-1.5 opacity-60">{totalIngestao}</span>
-            </TabBtn>
-            <TabBtn active={activeTab === 'triagem'} onClick={() => setActiveTab('triagem')}>
-              Ideias em análise
-              <span className="ml-1.5 opacity-60">{totalTriagem}</span>
-            </TabBtn>
-            <TabBtn active={activeTab === 'catalogo'} onClick={() => setActiveTab('catalogo')}>
-              Catálogo
-              <span className="ml-1.5 opacity-60">{totalCatalogo}</span>
-            </TabBtn>
-            {eligibleCount > 0 && activeTab === 'triagem' && (
-              <span className="h-[37px] flex items-center px-3 rounded-[14px] bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold uppercase tracking-[0.05em]">
-                ★ {eligibleCount} prontos para catálogo
-              </span>
-            )}
-          </div>
-
-          <div className="flex gap-2">
-            {(activeTab === 'triagem' || activeTab === 'ingestao') && (
-              <>
-                <button onClick={() => setShowNicForm(true)}
-                  className="h-[37px] px-4 rounded-[14px] bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold uppercase tracking-[0.06em] hover:bg-blue-100 transition-colors">
-                  + Do NIC
-                </button>
-                <button onClick={() => setShowCreateForm(true)}
-                  className="h-[37px] px-4 rounded-[14px] bg-slate-950 text-white text-[11px] font-semibold uppercase tracking-[0.06em] hover:bg-slate-800 transition-colors">
-                  + Nova ideia
-                </button>
-              </>
-            )}
-            <button onClick={() => { resetToBlueprint(); refresh(); }}
-              className="h-[37px] px-3 rounded-[14px] border border-[rgba(102,91,83,0.11)] bg-white text-slate-400 text-[10px] font-semibold uppercase tracking-[0.06em] hover:bg-slate-50">
-              ↺ Resetar
-            </button>
-          </div>
+          {/* Eligible badge */}
+          {section === 'ideias' && eligibleCount > 0 && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '3px 12px',
+                borderRadius: 'var(--nagi-radius-md)',
+                backgroundColor: 'var(--nagi-success-soft)',
+                color: 'var(--nagi-success)',
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                border: `1px solid var(--nagi-success-line)`,
+                marginTop: 6,
+              }}
+            >
+              <CheckIconSVG />
+              {eligibleCount} pronto(s) para catálogo
+            </div>
+          )}
         </div>
+      )}
 
-        {/* Conteúdo */}
-        {activeTab === 'ingestao' && (
-          <div className="space-y-2">
-            <p className="text-[11px] text-slate-400 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-              Entrada governada: documentos entram como candidatos, recebem sugestão, passam por revisão e viram evidência de itens do NAGI.
+      {/* ── Section content ───────────────────── */}
+      {section === 'documentos' && (
+        <IngestionSection
+          key={`ing-${refreshKey}`}
+          documents={ingestionDocs}
+          catalogItems={catalogItems}
+          onRefresh={onRefresh}
+        />
+      )}
+
+      {section === 'ideias' && (
+        <TriageSection
+          key={`tri-${refreshKey}`}
+          items={triageItems}
+          onRefresh={onRefresh}
+          onNavigate={handleNavigate}
+        />
+      )}
+
+      {section === 'catalogo' && (
+        <CatalogSection
+          key={`cat-${refreshKey}`}
+          items={catalogItems}
+          onRefresh={onRefresh}
+          onNavigate={handleNavigate}
+        />
+      )}
+
+      {section === 'governanca' && (
+        <div style={{ maxWidth: 800 }}>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  display: 'inline-block',
+                  backgroundColor: config.dotColor,
+                }}
+              />
+              <h2
+                style={{
+                  fontSize: 'var(--nagi-screen-title)',
+                  fontWeight: 'var(--nagi-screen-title-weight)',
+                  letterSpacing: 'var(--nagi-screen-title-spacing)',
+                  color: 'var(--nagi-text)',
+                  margin: 0,
+                }}
+              >
+                {config.title}
+              </h2>
+            </div>
+            <p
+              style={{
+                fontSize: 'var(--nagi-muted-size)',
+                color: 'var(--nagi-muted)',
+                margin: '2px 0 0 16px',
+              }}
+            >
+              {config.description}
             </p>
-            <IngestionSection
-              key={`ing-${refreshKey}`}
-              documents={ingestionDocs}
-              catalogItems={catalogItems}
-              onRefresh={refresh}
-            />
           </div>
-        )}
+          <EmptyState
+            title="Governança em construção"
+            description="Aqui você poderá acompanhar decisões, auditoria e controle do pipeline NAGI."
+            icon={<ShieldIcon />}
+          />
+        </div>
+      )}
 
-        {activeTab === 'catalogo' && (
-          <div className="space-y-2">
-            <p className="text-[11px] text-slate-400 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Itens oficiais e reconhecidos do ecossistema — prontos, catalogados e vinculados a módulos especialistas.
-            </p>
-            <CatalogSection key={`cat-${refreshKey}`} items={catalogItems} onRefresh={refresh} onNavigate={handleNavigate} />
-          </div>
-        )}
-
-        {activeTab === 'triagem' && (
-          <div className="space-y-2">
-            <p className="text-[11px] text-slate-400 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              Ideias em análise, aguardando classificação, qualificação ou decisão. Itens com <strong className="text-emerald-600 font-semibold">★ Elegível</strong> podem ser promovidos ao catálogo.
-            </p>
-            <TriageSection key={`tri-${refreshKey}`} items={triageItems} onRefresh={refresh} onNavigate={handleNavigate} />
-          </div>
-        )}
-
-        {/* Rodapé — Alice UI: sutil */}
-        <footer className="rounded-[22px] border border-[rgba(102,91,83,0.07)] bg-white/70 px-5 py-4 text-center">
-          <span className="text-[9px] uppercase tracking-[0.15em] font-semibold text-slate-400">
-            CID + RAI → NICO → NAGI → NIDE → SADEV
-          </span>
-          <p className="text-[10px] text-slate-400 mt-1">O documento entra, o NAGI organiza, a governança decide.</p>
-        </footer>
-      </div>
-
-      {/* Modal: Nova ideia avulsa */}
+      {/* ── Modais ────────────────────────────── */}
       {showCreateForm && (
         <ModalShell title="Nova ideia" onClose={() => setShowCreateForm(false)}>
           <CreateAvulsoForm onSubmit={handleCreateAvulso} />
         </ModalShell>
       )}
 
-      {/* Modal: Importar do NIC */}
       {showNicForm && (
         <ModalShell title="Importar do NIC" onClose={() => setShowNicForm(false)}>
           <NicImportForm onSubmit={handleReceiveFromNic} />
         </ModalShell>
       )}
-    </div>
+    </>
   );
 };
 
-/* ── Tab Button ────────────────────────────────── */
-
-const TabBtn: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({
-  active, onClick, children,
-}) => (
-  <button
-    onClick={onClick}
-    className={`h-[37px] px-4 rounded-[14px] text-[11px] font-semibold uppercase tracking-[0.06em] transition-all ${
-      active ? 'bg-slate-950 text-white shadow-sm' : 'bg-white text-slate-500 border border-[rgba(102,91,83,0.11)] hover:bg-slate-50'
-    }`}
-  >
-    {children}
-  </button>
-);
-
-/* ── Modal Shell ───────────────────────────────── */
+/* ── Modal Shell ───────────────────────────────────── */
 
 const ModalShell: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({
   title, onClose, children,
 }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
-    <div className="bg-white rounded-[24px] shadow-lg max-w-lg w-full mx-4 p-6 space-y-5" onClick={(e) => e.stopPropagation()}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-[17px] font-semibold tracking-[-0.01em] text-slate-950">{title}</h3>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+  <div
+    style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 50,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.25)',
+      backdropFilter: 'blur(4px)',
+    }}
+    onClick={onClose}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        margin: '0 16px',
+        backgroundColor: 'var(--nagi-surface)',
+        borderRadius: 'var(--nagi-radius-2xl)',
+        boxShadow: 'var(--nagi-shadow-lg)',
+        maxWidth: 480,
+        width: '100%',
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 16,
+        }}
+      >
+        <h3
+          style={{
+            fontSize: 'var(--nagi-module-title)',
+            fontWeight: 'var(--nagi-module-title-weight)',
+            letterSpacing: 'var(--nagi-module-title-spacing)',
+            color: 'var(--nagi-text)',
+            margin: 0,
+          }}
+        >
+          {title}
+        </h3>
+        <button
+          onClick={onClose}
+          style={{
+            color: 'var(--nagi-muted)',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 4,
+            display: 'flex',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
       {children}
     </div>
   </div>
 );
 
-/* ── CreateAvulsoForm ──────────────────────────── */
+/* ── CreateAvulsoForm ──────────────────────────────── */
 
 const CreateAvulsoForm: React.FC<{
   onSubmit: (title: string, summary: string, itemType: NagiItemType, category: string) => void;
@@ -276,22 +480,43 @@ const CreateAvulsoForm: React.FC<{
   ];
 
   return (
-    <div className="space-y-3">
-      <Input label="Título" value={title} onChange={setTitle} placeholder="Nome da ideia…" />
-      <Textarea label="Descrição" value={summary} onChange={setSummary} placeholder="Resumo da ideia…" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <Input label="Título" value={title} onChange={setTitle} placeholder="Nome da ideia..." />
+      <Textarea label="Descrição" value={summary} onChange={setSummary} placeholder="Resumo da ideia..." />
       <Select label="Tipo" value={itemType} onChange={(v) => setItemType(v as NagiItemType)} options={Object.entries(ITEM_TYPE_LABELS) as [string, string][]} />
-      <Select label="Categoria" value={category} onChange={setCategory} options={categoryOptions.map((c) => [c, c])} placeholder="Selecione…" />
+      <Select label="Categoria" value={category} onChange={setCategory} options={categoryOptions.map((c) => [c, c])} placeholder="Selecione..." />
       <button
         onClick={() => { if (title.trim() && summary.trim() && category) onSubmit(title.trim(), summary.trim(), itemType, category); }}
         disabled={!title.trim() || !summary.trim() || !category}
-        className="w-full h-[37px] rounded-[14px] bg-slate-950 text-white text-[11px] font-semibold uppercase tracking-[0.06em] hover:bg-slate-800 transition-colors disabled:opacity-40">
+        style={{
+          width: '100%',
+          height: 37,
+          borderRadius: 'var(--nagi-radius-md)',
+          fontSize: 'var(--nagi-micro)',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          backgroundColor: 'var(--nagi-brand)',
+          color: '#FFFFFF',
+          border: 'none',
+          cursor: 'pointer',
+          transition: 'opacity var(--nagi-transition-base)',
+          opacity: (!title.trim() || !summary.trim() || !category) ? 0.4 : 1,
+        }}
+        onMouseEnter={(e) => {
+          if (title.trim() && summary.trim() && category) e.currentTarget.style.opacity = '0.9';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = (!title.trim() || !summary.trim() || !category) ? '0.4' : '1';
+        }}
+      >
         Criar ideia
       </button>
     </div>
   );
 };
 
-/* ── NicImportForm ─────────────────────────────── */
+/* ── NicImportForm ─────────────────────────────────── */
 
 const NicImportForm: React.FC<{
   onSubmit: (payload: NicOutputPayload) => void;
@@ -304,11 +529,11 @@ const NicImportForm: React.FC<{
   const [originSnapshot, setOriginSnapshot] = useState('');
 
   return (
-    <div className="space-y-3">
-      <Input label="Título (do NIC)" value={title} onChange={setTitle} placeholder="Nome da saída do NIC…" />
-      <Textarea label="Resumo" value={summary} onChange={setSummary} placeholder="Resumo da inteligência gerada…" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <Input label="Título (do NIC)" value={title} onChange={setTitle} placeholder="Nome da saída do NIC..." />
+      <Textarea label="Resumo" value={summary} onChange={setSummary} placeholder="Resumo da inteligência gerada..." />
       <Input label="ID de referência NIC" value={originRefId} onChange={setOriginRefId} placeholder="nic-output-003" />
-      <Textarea label="Snapshot (cópia do conteúdo NIC)" value={originSnapshot} onChange={setOriginSnapshot} placeholder="Cole aqui a saída original do NIC para referência…" />
+      <Textarea label="Conteúdo original (NIC)" value={originSnapshot} onChange={setOriginSnapshot} placeholder="Cole aqui a saída original do NIC para referência..." />
       <Select label="Tipo" value={itemType} onChange={(v) => setItemType(v as NagiItemType)} options={Object.entries(ITEM_TYPE_LABELS) as [string, string][]} />
       <Input label="Categoria" value={category} onChange={setCategory} placeholder="Ex: Organização Estratégica" />
       <button
@@ -324,22 +549,72 @@ const NicImportForm: React.FC<{
           }
         }}
         disabled={!title.trim() || !summary.trim() || !originRefId.trim() || !category.trim()}
-        className="w-full h-[37px] rounded-[14px] bg-blue-600 text-white text-[11px] font-semibold uppercase tracking-[0.06em] hover:bg-blue-700 transition-colors disabled:opacity-40">
-        Importar do NIC para triagem
+        style={{
+          width: '100%',
+          height: 37,
+          borderRadius: 'var(--nagi-radius-md)',
+          fontSize: 'var(--nagi-micro)',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          backgroundColor: 'var(--nagi-brand)',
+          color: '#FFFFFF',
+          border: 'none',
+          cursor: 'pointer',
+          transition: 'opacity var(--nagi-transition-base)',
+          opacity: (!title.trim() || !summary.trim() || !originRefId.trim() || !category.trim()) ? 0.4 : 1,
+        }}
+        onMouseEnter={(e) => {
+          if (title.trim() && summary.trim() && originRefId.trim() && category.trim()) e.currentTarget.style.opacity = '0.9';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = (!title.trim() || !summary.trim() || !originRefId.trim() || !category.trim()) ? '0.4' : '1';
+        }}
+      >
+        Importar para triagem
       </button>
     </div>
   );
 };
 
-/* ── Field helpers ────────────────────────────── */
+/* ── Field helpers ────────────────────────────────── */
 
 const Input: React.FC<{ label: string; value: string; onChange: (v: string) => void; placeholder?: string }> = ({
   label, value, onChange, placeholder,
 }) => (
   <div>
-    <label className="text-[10px] uppercase tracking-[0.06em] font-semibold text-slate-500 block mb-1">{label}</label>
-    <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-      className="w-full h-[42px] rounded-[15px] border border-[rgba(102,91,83,0.11)] bg-[#FDFBFA] px-3 text-sm outline-none focus:border-slate-400" />
+    <label
+      style={{
+        fontSize: 'var(--nagi-micro)',
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: 'var(--nagi-muted)',
+        display: 'block',
+        marginBottom: 4,
+      }}
+    >
+      {label}
+    </label>
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      style={{
+        width: '100%',
+        height: 42,
+        borderRadius: 'var(--nagi-radius-md)',
+        border: `1px solid var(--nagi-line)`,
+        backgroundColor: 'var(--nagi-surface-soft)',
+        padding: '0 12px',
+        fontSize: 'var(--nagi-body)',
+        outline: 'none',
+        color: 'var(--nagi-text)',
+        boxSizing: 'border-box',
+      }}
+      onFocus={(e) => { e.target.style.borderColor = 'var(--nagi-brand)'; }}
+      onBlur={(e) => { e.target.style.borderColor = 'var(--nagi-line)'; }}
+    />
   </div>
 );
 
@@ -347,9 +622,39 @@ const Textarea: React.FC<{ label: string; value: string; onChange: (v: string) =
   label, value, onChange, placeholder,
 }) => (
   <div>
-    <label className="text-[10px] uppercase tracking-[0.06em] font-semibold text-slate-500 block mb-1">{label}</label>
-    <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} placeholder={placeholder}
-      className="w-full px-3 py-2.5 rounded-[15px] border border-[rgba(102,91,83,0.11)] bg-[#FDFBFA] text-sm resize-none outline-none focus:border-slate-400" />
+    <label
+      style={{
+        fontSize: 'var(--nagi-micro)',
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: 'var(--nagi-muted)',
+        display: 'block',
+        marginBottom: 4,
+      }}
+    >
+      {label}
+    </label>
+    <textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      rows={3}
+      placeholder={placeholder}
+      style={{
+        width: '100%',
+        padding: '10px 12px',
+        borderRadius: 'var(--nagi-radius-md)',
+        border: `1px solid var(--nagi-line)`,
+        backgroundColor: 'var(--nagi-surface-soft)',
+        fontSize: 'var(--nagi-body)',
+        resize: 'none',
+        outline: 'none',
+        color: 'var(--nagi-text)',
+        boxSizing: 'border-box',
+      }}
+      onFocus={(e) => { e.target.style.borderColor = 'var(--nagi-brand)'; }}
+      onBlur={(e) => { e.target.style.borderColor = 'var(--nagi-line)'; }}
+    />
   </div>
 );
 
@@ -357,9 +662,37 @@ const Select: React.FC<{ label: string; value: string; onChange: (v: string) => 
   label, value, onChange, options, placeholder,
 }) => (
   <div>
-    <label className="text-[10px] uppercase tracking-[0.06em] font-semibold text-slate-500 block mb-1">{label}</label>
-    <select value={value} onChange={(e) => onChange(e.target.value)}
-      className="w-full h-[42px] rounded-[15px] border border-[rgba(102,91,83,0.11)] bg-[#FDFBFA] px-3 text-sm outline-none focus:border-slate-400">
+    <label
+      style={{
+        fontSize: 'var(--nagi-micro)',
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: 'var(--nagi-muted)',
+        display: 'block',
+        marginBottom: 4,
+      }}
+    >
+      {label}
+    </label>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        width: '100%',
+        height: 42,
+        borderRadius: 'var(--nagi-radius-md)',
+        border: `1px solid var(--nagi-line)`,
+        backgroundColor: 'var(--nagi-surface-soft)',
+        padding: '0 12px',
+        fontSize: 'var(--nagi-body)',
+        outline: 'none',
+        color: 'var(--nagi-text)',
+        boxSizing: 'border-box',
+      }}
+      onFocus={(e) => { e.target.style.borderColor = 'var(--nagi-brand)'; }}
+      onBlur={(e) => { e.target.style.borderColor = 'var(--nagi-line)'; }}
+    >
       {placeholder && <option value="">{placeholder}</option>}
       {options.map(([k, v]) => (<option key={k} value={k}>{v}</option>))}
     </select>
