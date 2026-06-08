@@ -1713,7 +1713,7 @@ const asDate = (v: any): Date | undefined => {
     } finally { setIsLoading(false); }
   };
 
-  const hideSidebar = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia' || activeTab === 'mentorias' || activeTab === 'metodologias' || activeTab === 'missions' || activeTab === 'agenda' || activeTab === 'central_padroes' || activeTab === 'monitoramento' || activeTab === 'nide' || activeTab === 'nagi' || activeTab === 'cid';
+  const hideSidebar = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'gestao-financeira' || activeTab === 'crm-ziplia' || activeTab === 'mentorias' || activeTab === 'metodologias' || activeTab === 'agenda' || activeTab === 'central_padroes' || activeTab === 'monitoramento' || activeTab === 'nide' || activeTab === 'nagi' || activeTab === 'cid';
   const hideHeader = activeBU && activeBU.id === 'audacus' && activeTab === 'audacus-home' || activeTab === 'monitoramento' || activeTab === 'nide' || activeTab === 'nagi' || activeTab === 'cid';
 
   const tabAliases: Partial<Record<TabId, TabId>> = {
@@ -1859,15 +1859,6 @@ const asDate = (v: any): Date | undefined => {
         return (
           <IntelligenceFlowView
             workspaceId={activeWorkspaceId}
-            onBack={() => setActiveTab('ecosystem')}
-          />
-        );
-      case 'missions':
-        return (
-          <AgentMissionsView
-            workspaceId={activeWorkspaceId}
-            ownerUserId={ownerUserId}
-            agents={operationalAgents}
             onBack={() => setActiveTab('ecosystem')}
           />
         );

@@ -26,7 +26,7 @@ export const domainRegistry: NideDomainManifest[] = [
   // ─── Core ───────────────────────────────────────────────
   {
     id: 'missoes',
-    displayName: 'Missões',
+    displayName: 'NIDE Core',
     description: 'Core funcional do NIDE. Gerencia missões, etapas, handoffs e artefatos.',
     icon: 'PlayIcon',
     basePath: '/nide',
