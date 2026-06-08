@@ -1,5 +1,18 @@
 # changelog — mcp-sagb
 
+## 07/06/2026 — MEGA-ETAPA 01: LOZE-MCP-OPS V1 — Operações, Ambientes e Segredos (v2.0.0)
+- **NOVO PADRÃO**: `LOZE-MCP-OPS | Operações, Ambientes e Segredos` — camada de governança operacional segura.
+- **NOVO**: `docs/loze-mcp-ops-ambientes.md` — Arquitetura completa da V1: definição, fluxo obrigatório, camadas, travas.
+- **NOVO**: `docs/mapa-ambiente-segredos.md` — Mapa de ambientes, variáveis e segredos (sem valores reais).
+- **NOVO**: `docs/registro-operacoes-mcp.md` — Modelo obrigatório de registro operacional com correlation_id.
+- **NOVO**: `docs/checklist-seguranca-ambiente-mcp.md` — Checklist de segurança por ambiente (local, preview, produção).
+- **NOVO**: `docs/matriz-permissoes-mcp.md` — Matriz de permissões: 8 ferramentas permitidas, 2 protegidas, 11 bloqueadas.
+- **NOVO**: `.env.example` — Template com valores falsos, 3 grupos de variáveis.
+- **DECISÃO**: LOZE-MCP-OPS não é novo módulo — é camada de governança sobre o MCP SagB existente.
+- **DECISÃO**: O MCP não expõe segredos — opera ações com credencial protegida.
+- **DECISÃO**: Produção tem trava mais rígida — ações críticas bloqueadas por padrão.
+- **ESCOPO**: Ações bloqueadas na V1: alterar-variavel-producao, deploy-producao, alterar-rls, migration, reset-banco, force-push, entre outras.
+
 ## 04/05/2026 — Mega Batch 2: SDK MCP real + Server Node.js + Bridge Contracts (v1.1.0)
 - **NOVO**: Dependência `@modelcontextprotocol/sdk` v1.29.0 instalada.
 - **NOVO**: `server/mcpServer.ts` — Servidor MCP usando `McpServer` + `StdioServerTransport` do SDK oficial.
