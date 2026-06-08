@@ -68,6 +68,10 @@ const StandardsPage: React.FC = () => {
     }
   };
 
+  const filteredStandards = (snapshot?.standards || []).filter(
+    (s) => s.type !== 'documentacao_tecnica' && s.type !== 'relatorio'
+  );
+
   return (
     <CentralPageShell title="Biblioteca de Padrões" subtitle="Padrões, regras, políticas, protocolos e contratos que formam o sistema nervoso normativo do SagB.">
       {loading && <p className="text-[12px] text-sagb-muted">Carregando padrões...</p>}
@@ -77,7 +81,7 @@ const StandardsPage: React.FC = () => {
           <div className="mb-4 flex flex-wrap gap-2">
             <button onClick={openCreate} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Novo Padrão</button>
           </div>
-          <StandardTable standards={snapshot.standards} onEdit={openEdit} onDelete={setDeleteId} onRequestApproval={requestApproval} />
+          <StandardTable standards={filteredStandards} onEdit={openEdit} onDelete={setDeleteId} onRequestApproval={requestApproval} />
         </SectionPanel>
       )}
       <CrudModal title={editingId ? 'Editar Padrão' : 'Novo Padrão'} open={modalOpen} onClose={() => setModalOpen(false)} footer={<button onClick={submit} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Salvar</button>}>

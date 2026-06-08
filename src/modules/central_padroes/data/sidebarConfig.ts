@@ -66,6 +66,16 @@ export const sidebarSections: SidebarSection[] = [
     ]
   },
   {
+    label: 'Acervo MD',
+    icon: '📚',
+    rows: [
+      { id: 'documentos-mestres', label: 'Documentos Mestres', icon: '📄' },
+      { id: 'documento-base-99', label: 'Documento-base 99', icon: '📋' },
+      { id: 'relatorios', label: 'Relatórios de Curadoria', icon: '📊' },
+      { id: 'subdocumentos-previstos', label: 'Subdocumentos Previstos', icon: '📝' }
+    ]
+  },
+  {
     label: 'Relacionamentos',
     icon: '🔀',
     rows: [
@@ -96,7 +106,11 @@ export const breadcrumbLabels: Record<string, string> = {
   evidence: 'Evidências',
   relationships: 'Dependências',
   tags: 'Tags',
-  settings: 'Configurações'
+  settings: 'Configurações',
+  'documentos-mestres': 'Documentos Mestres',
+  'documento-base-99': 'Documento-base 99',
+  relatorios: 'Relatórios de Curadoria',
+  'subdocumentos-previstos': 'Subdocumentos Previstos'
 };
 
 /**

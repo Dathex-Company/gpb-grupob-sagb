@@ -20,6 +20,10 @@ import SettingsPage from '../pages/SettingsPage';
 import CentralPadroesPage from '../pages/CentralPadroesPage';
 import ChatPietroPage from '../pages/ChatPietroPage';
 import GovernancePanelPage from '../pages/GovernancePanelPage';
+import DocumentosMestresPage from '../pages/DocumentosMestresPage';
+import DocumentoBasePage from '../pages/DocumentoBasePage';
+import RelatoriosPage from '../pages/RelatoriosPage';
+import SubdocumentosPrevistosPage from '../pages/SubdocumentosPrevistosPage';
 import { centralPadroesSeedService } from '../services/centralPadroesSeedService';
 import { sidebarSections, getViewLabel, breadcrumbLabels } from '../data/sidebarConfig';
 import '../styles/centralDocs.css';
@@ -48,7 +52,11 @@ type CentralPadroesView =
   | 'publisher'
   | 'tags'
   | 'ingestion'
-  | 'evidence';
+  | 'evidence'
+  | 'documentos-mestres'
+  | 'documento-base-99'
+  | 'relatorios'
+  | 'subdocumentos-previstos';
 
 export const CentralPadroesLayout: React.FC = () => {
   const [currentView, setCurrentView] = useState<CentralPadroesView>('dashboard');
@@ -61,6 +69,7 @@ export const CentralPadroesLayout: React.FC = () => {
     'Documentos e Decisões': true,
     Módulos: true,
     Curadoria: false,
+    'Acervo MD': true,
     Relacionamentos: false
   });
 
@@ -114,6 +123,14 @@ export const CentralPadroesLayout: React.FC = () => {
         return <div className="cp-docs-empty"><h2>Triagem e Ingestão</h2><p>Fila de ingestão de documentos — em desenvolvimento.</p></div>;
       case 'evidence':
         return <div className="cp-docs-empty"><h2>Evidências</h2><p>Registro de evidências — em desenvolvimento.</p></div>;
+      case 'documentos-mestres':
+        return <DocumentosMestresPage />;
+      case 'documento-base-99':
+        return <DocumentoBasePage />;
+      case 'relatorios':
+        return <RelatoriosPage />;
+      case 'subdocumentos-previstos':
+        return <SubdocumentosPrevistosPage />;
       default:
         return <DashboardPage />;
     }

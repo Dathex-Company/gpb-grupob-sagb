@@ -14,7 +14,9 @@ export type CentralStandardStatus =
   | 'publicado'
   | 'obsoleto'
   | 'arquivado'
-  | 'bloqueado';
+  | 'bloqueado'
+  | 'previsto'
+  | 'registro';
 
 // ——— Perfis da Central (7 papéis) ———
 export type CentralProfileRole =
@@ -154,7 +156,7 @@ export interface CentralDocument {
   id: string;
   title: string;
   path: string;
-  status: 'canonico' | 'revisao' | 'bruto' | 'legado' | 'externo';
+  status: 'canonico' | 'revisao' | 'bruto' | 'legado' | 'externo' | 'registro';
   category: string;
   areaId: string;
   shouldBecome: 'padrao' | 'checklist' | 'matriz' | 'registro' | 'apoio' | 'arquivo_morto';
@@ -471,6 +473,8 @@ export const CENTRAL_STATUS_LABELS: Record<CentralStandardStatus, string> = {
   obsoleto: 'Obsoleto',
   arquivado: 'Arquivado',
   bloqueado: 'Bloqueado',
+  previsto: 'Previsto',
+  registro: 'Registro',
 };
 
 // ============================================================
@@ -489,4 +493,6 @@ export const CENTRAL_STATUS_COLORS: Record<CentralStandardStatus, string> = {
   obsoleto: '#757575',
   arquivado: '#616161',
   bloqueado: '#d32f2f',
+  previsto: '#03a9f4',
+  registro: '#00bcd4',
 };

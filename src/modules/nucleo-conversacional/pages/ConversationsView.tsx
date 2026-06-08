@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Agent } from '../types';
 import { AlertTriangleIcon, BotIcon, ChevronRightIcon, SearchIcon, XIcon } from '../components/ui/Icon';
@@ -37,6 +36,20 @@ interface SessionRowData {
   };
 }
 
+/** Converte valor de timestamp para número seguro, com fallback */
+const safeTimestamp = (value: Date | string | number | undefined | null, fallback: number = Date.now()): number => {
+  if (value == null) return fallback;
+  if (value instanceof Date) {
+    const ms = value.getTime();
+    return Number.isNaN(ms) ? fallback : ms;
+  }
+  if (typeof value === 'number') return Number.isFinite(value) ? value : fallback;
+  // string
+  const parsed = new Date(value);
+  const ms = parsed.getTime();
+  return Number.isNaN(ms) ? fallback : ms;
+};
+
 const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOpenChat, onOpenSession, activeWorkspaceId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
@@ -50,6 +63,13 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
     setError(null);
     const scopedWorkspaceId = resolveWorkspaceId(activeWorkspaceId);
     const startedAt = Date.now();
+
+    ncLog.info('conversations.mount', {
+      activeWorkspaceId: activeWorkspaceId ?? '(null)',
+      resolvedWorkspaceId: scopedWorkspaceId,
+      agentCount: agents.length,
+      agentIds: agents.map((a) => a.id)
+    });
 
     let db: ReturnType<typeof getDbProvider>;
     try {
@@ -104,38 +124,55 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
       cancelled = true;
       if (unsubRef) unsubRef();
     };
+    // agents não entra como dep porque queremos reagir apenas a mudanças de workspace
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWorkspaceId]);
 
   useEffect(() => {
-    const allSessions: ChatSessionSummary[] = Object.entries(sessionsById)
-      .map(([sessionId, sessionData]) => {
-        const agentId = String(sessionData.agentId || '');
-        const agent = agents.find((a) => a.id === agentId);
-        if (!agent) return null;
+    const rawCount = Object.keys(sessionsById).length;
+    const built: ChatSessionSummary[] = [];
 
-        const lastMessageAt = sessionData.lastMessageAt instanceof Date
-          ? sessionData.lastMessageAt.getTime()
-          : new Date(sessionData.lastMessageAt || sessionData.updatedAt || sessionData.createdAt || Date.now()).getTime();
+    Object.entries(sessionsById).forEach(([sessionId, sessionData]) => {
+      const agentId = String(sessionData.agentId || '');
 
-        return {
-          sessionId,
-          agentId: agent.id,
-          agentName: agent.name,
-          agentRole: agent.officialRole,
-          agentAvatar: agent.avatarUrl,
-          lastMessageAt,
-          title: String(sessionData.title || 'Conversa sem título'),
-          preview: (() => {
-            const raw = String(sessionData.payload?.latestMessageText || '').trim();
-            if (!raw) return 'Nova conversa iniciada...';
-            return raw.length > 60 ? `${raw.slice(0, 60)}...` : raw;
-          })()
-        } as ChatSessionSummary;
-      })
-      .filter((session): session is ChatSessionSummary => Boolean(session));
+      // 🔧 CORREÇÃO: não filtra sessões sem agente encontrado
+      // Mostra "Agente removido" em vez de ocultar a conversa
+      const agent = agents.find((a) => a.id === agentId);
+      const agentName = agent?.name || `Agente removido (${agentId.slice(0, 8)}…)`;
+      const agentRole = agent?.officialRole || '—';
+      const agentAvatar = agent?.avatarUrl;
 
-    allSessions.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
-    setSessions(allSessions);
+      const lastMessageAt = safeTimestamp(
+        sessionData.lastMessageAt ?? sessionData.updatedAt ?? sessionData.createdAt,
+        Date.now()
+      );
+
+      built.push({
+        sessionId,
+        agentId,
+        agentName,
+        agentRole,
+        agentAvatar,
+        lastMessageAt,
+        title: String(sessionData.title || 'Conversa sem título'),
+        preview: (() => {
+          const raw = String(sessionData.payload?.latestMessageText || '').trim();
+          if (!raw) return 'Nova conversa iniciada…';
+          return raw.length > 60 ? `${raw.slice(0, 60)}…` : raw;
+        })()
+      });
+    });
+
+    built.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+
+    ncLog.debug('conversations.processed', {
+      rawSessions: rawCount,
+      renderedSessions: built.length,
+      agentsAvailable: agents.length,
+      estimatedMissing: rawCount - built.length // sempre 0 agora, mas mantido para auditoria futura
+    });
+
+    setSessions(built);
   }, [agents, sessionsById]);
 
   const filteredSessions = sessions.filter(s => 
@@ -166,8 +203,15 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
             
             <div className="flex items-center gap-4">
                 <div className="flex flex-col items-end mr-4">
-                    <span className="text-[11px] font-bold text-bitrix-nav dark:text-sagb-text">{sessions.length} conversas ativas</span>
-                    <span className="text-[10px] text-gray-400 dark:text-sagb-muted">{agents.length} agentes disponíveis</span>
+                    <span className="text-[11px] font-bold text-bitrix-nav dark:text-sagb-text">
+                      {sessions.length} {sessions.length === 1 ? 'conversa ativa' : 'conversas ativas'}
+                    </span>
+                    <span className="text-[10px] text-gray-400 dark:text-sagb-muted">{agents.length} {agents.length === 1 ? 'agente disponível' : 'agentes disponíveis'}</span>
+                    {sessions.length !== Object.keys(sessionsById).length && (
+                      <span className="text-[9px] text-amber-500 dark:text-amber-400">
+                        {Object.keys(sessionsById).length - sessions.length} oculta{(Object.keys(sessionsById).length - sessions.length) !== 1 ? 's' : ''}
+                      </span>
+                    )}
                 </div>
 
                 <button
@@ -185,7 +229,7 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
                 <SearchIcon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
-                  placeholder="Buscar por agente ou conversa..."
+                  placeholder="Buscar por agente ou conversa…"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="ml-3 flex-1 bg-transparent text-sm text-bitrix-nav dark:text-sagb-text placeholder-gray-400 dark:placeholder-gray-500 outline-none font-medium"
@@ -203,7 +247,7 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 opacity-40">
                     <BotIcon className="w-16 h-16 text-gray-300 mb-4 animate-pulse" />
-                    <p className="text-sm font-bold text-gray-400">Carregando conversas...</p>
+                    <p className="text-sm font-bold text-gray-400">Carregando conversas…</p>
                 </div>
             ) : error ? (
                 <div className="flex flex-col items-center justify-center py-20 opacity-50 text-red-500">
@@ -213,7 +257,14 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
             ) : filteredSessions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 opacity-40">
                     <BotIcon className="w-16 h-16 text-gray-300 mb-4" />
-                    <p className="text-sm font-bold text-gray-400">Nenhuma conversa encontrada.</p>
+                    <p className="text-sm font-bold text-gray-400">
+                      {searchTerm ? 'Nenhuma conversa encontrada para esta busca.' : 'Nenhuma conversa encontrada.'}
+                    </p>
+                    {sessions.length === 0 && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        As conversas são criadas automaticamente ao interagir com um agente no chat principal.
+                      </p>
+                    )}
                 </div>
             ) : (
                 filteredSessions.map(session => (
@@ -228,13 +279,23 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
                         {/* Avatar */}
                         <div className="relative shrink-0">
                             <Avatar name={session.agentName} url={session.agentAvatar} className="w-12 h-12 rounded-xl" />
-                            <div className={`absolute -bottom-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-white dark:border-[#111827]`}></div>
+                            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-[#111827] ${
+                              session.agentName.startsWith('Agente removido')
+                                ? 'bg-gray-400'
+                                : 'bg-green-500'
+                            }`}></div>
                         </div>
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                                <h3 className="font-black text-sm text-bitrix-nav dark:text-sagb-text truncate">{session.agentName}</h3>
+                                <h3 className={`font-black text-sm truncate ${
+                                  session.agentName.startsWith('Agente removido')
+                                    ? 'text-gray-400 dark:text-gray-500 italic'
+                                    : 'text-bitrix-nav dark:text-sagb-text'
+                                }`}>
+                                  {session.agentName}
+                                </h3>
                                 <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{formatTime(session.lastMessageAt)}</span>
                             </div>
                             <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 mt-0.5">{session.agentRole}</p>
@@ -273,15 +334,15 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gray-50 dark:bg-sagb-bg-2 rounded-2xl p-4">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome</span>
-                      <p className="text-sm font-bold text-bitrix-nav dark:text-sagb-text mt-1">{moduleDoc.nome}</p>
+                      <p className="text-sm font-bold text-bitrix-nav dark:text-sagb-text mt-1">{moduleDoc.nomeOficial}</p>
                     </div>
                     <div className="bg-gray-50 dark:bg-sagb-bg-2 rounded-2xl p-4">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Versão</span>
-                      <p className="text-sm font-bold text-bitrix-nav dark:text-sagb-text mt-1">{moduleDoc.versao}</p>
+                      <p className="text-sm font-bold text-bitrix-nav dark:text-sagb-text mt-1">{moduleDoc.status}</p>
                     </div>
                     <div className="bg-gray-50 dark:bg-sagb-bg-2 rounded-2xl p-4 col-span-2">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Descrição</span>
-                      <p className="text-sm font-bold text-bitrix-nav dark:text-sagb-text mt-1">{moduleDoc.descricao}</p>
+                      <p className="text-sm font-bold text-bitrix-nav dark:text-sagb-text mt-1">{moduleDoc.objetivo}</p>
                     </div>
                     {moduleDoc.objetivosProduto && moduleDoc.objetivosProduto.length > 0 && (
                       <div className="bg-gray-50 dark:bg-sagb-bg-2 rounded-2xl p-4 col-span-2">
@@ -299,22 +360,29 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
                   </div>
                 </section>
 
+                {/* Fluxos */}
+                <section>
+                  <h3 className="text-sm font-black text-bitrix-nav dark:text-sagb-text uppercase tracking-wider mb-3">🔄 Fluxos Principais</h3>
+                  <div className="space-y-2">
+                    {moduleDoc.fluxosPrincipais.map((fluxo, i) => (
+                      <div key={i} className="flex items-start gap-3 bg-gray-50 dark:bg-sagb-bg-2 rounded-2xl p-3">
+                        <span className="w-5 h-5 rounded-full bg-bitrix-nav dark:bg-white text-white dark:text-gray-900 text-[10px] font-black flex items-center justify-center shrink-0">
+                          {i + 1}
+                        </span>
+                        <p className="text-[12px] text-gray-600 dark:text-gray-300">{fluxo}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
                 {/* Tabelas */}
                 <section>
                   <h3 className="text-sm font-black text-bitrix-nav dark:text-sagb-text uppercase tracking-wider mb-3">🗄️ Tabelas no Supabase</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-wrap gap-2">
                     {moduleDoc.tabelasSupabase.map((t, i) => (
-                      <div key={i} className="bg-gray-50 dark:bg-sagb-bg-2 rounded-2xl p-4">
-                        <code className="text-[11px] font-bold text-bitrix-nav dark:text-sagb-text bg-white dark:bg-sagb-bg px-2 py-1 rounded-lg">{t.nome}</code>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">{t.descricao}</p>
-                        {t.campos && t.campos.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {t.campos.map((campo, j) => (
-                              <span key={j} className="text-[9px] font-bold text-gray-400 bg-white dark:bg-sagb-bg px-1.5 py-0.5 rounded-md">{campo}</span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <span key={i} className="text-[10px] font-bold text-bitrix-nav dark:text-sagb-text bg-gray-50 dark:bg-sagb-bg-2 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-white/5">
+                        {typeof t === 'string' ? t : t.nome}
+                      </span>
                     ))}
                   </div>
                 </section>
@@ -322,11 +390,30 @@ const ConversationsView: React.FC<ConversationsViewProps> = ({ agents = [], onOp
                 {/* Integrações */}
                 <section>
                   <h3 className="text-sm font-black text-bitrix-nav dark:text-sagb-text uppercase tracking-wider mb-3">🔗 Integrações</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-wrap gap-2">
                     {moduleDoc.integracoes.map((int, i) => (
-                      <div key={i} className="bg-gray-50 dark:bg-sagb-bg-2 rounded-2xl p-4">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{int.tipo}</span>
-                        <p className="text-[12px] text-gray-600 dark:text-gray-300 mt-1">{int.descricao}</p>
+                      <span key={i} className="text-[10px] font-bold text-bitrix-nav dark:text-sagb-text bg-gray-50 dark:bg-sagb-bg-2 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-white/5">
+                        {typeof int === 'string' ? int : int.descricao || int.tipo}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Módulos Relacionados */}
+                <section>
+                  <h3 className="text-sm font-black text-bitrix-nav dark:text-sagb-text uppercase tracking-wider mb-3">🧩 Módulos Relacionados</h3>
+                  <div className="space-y-3">
+                    {[
+                      { nome: 'Núcleo de Agentes', relacao: 'Fonte de memória, DNA, documentos e contexto cognitivo dos agentes' },
+                      { nome: 'Núcleo de Identidades (Quadro de Elite)', relacao: 'Fonte única de identidade, status e prompt efetivo dos agentes' },
+                      { nome: 'CID (Centro de Ingestão Documental)', relacao: 'Documentos preparados usados como evidência no turno' },
+                      { nome: 'NAGI', relacao: 'Destino de ideias, decisões e oportunidades que viram pipeline governado' },
+                      { nome: 'Central de Padrões', relacao: 'Regras de governança aplicáveis e registro de evidências' },
+                      { nome: 'Cadastro de Empresas', relacao: 'Contexto empresarial da conversa (workspace, venture, BU)' }
+                    ].map((mod, i) => (
+                      <div key={i} className="bg-gray-50 dark:bg-sagb-bg-2 rounded-2xl p-3">
+                        <p className="text-[11px] font-black text-bitrix-nav dark:text-sagb-text">{mod.nome}</p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{mod.relacao}</p>
                       </div>
                     ))}
                   </div>

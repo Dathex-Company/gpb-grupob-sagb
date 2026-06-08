@@ -30,7 +30,7 @@ import Auth from './components/Auth'; // NOVA IMPORTAÇÃO
 import { getModuleRoutes } from './src/core/modules/moduleRegistry';
 import { readModuleToggles, isModuleEnabled as isModuleEnabledByToggle } from './src/core/modules/moduleActivation';
 import SalaDevPage from './src/modules/sala-dev/pages/SalaDevPage';
-import { setQuadroDeEliteRuntimeContext } from './src/modules/quadro_de_elite/store';
+import { setNucleoDeAgentesRuntimeContext } from './src/modules/nucleo_de_agentes/store';
 import { setNideRuntimeContext } from './src/modules/nide/store';
 import { Message, Sender, TabId, Agent, Topic, Venture, BusinessUnit, BusinessBlueprint, Task, UserProfile, GovernanceCulture, ComplianceRule, VaultItem, KnowledgeNode, WorkspaceMember, AgentQualityEvent, AgentDnaProfile, AgentDnaEffective, AppUiPrefs } from './types';
 import { useTheme } from './src/core/context/ThemeContext';
@@ -1723,7 +1723,9 @@ const asDate = (v: any): Date | undefined => {
     // A ET 09/10 ocultou esses módulos do sidebar; a ET 10/10 adiciona os redirects
     'missions': 'nide',
     'metodologias': 'nide',
-    'mentorias': 'nide'
+    'mentorias': 'nide',
+    // Fusão: Quadro de Elite → Núcleo de Agentes (Decisão Arquitetural 07.07.2026)
+    'quadro_de_elite': 'nucleo_de_agentes'
   };
 
   const resolvedActiveTab = tabAliases[activeTab] || activeTab;
@@ -1772,9 +1774,9 @@ const asDate = (v: any): Date | undefined => {
       return <SalaDevPage agents={operationalAgents} />;
     }
 
-    // Injetar runtime context para módulos que usam bridge (ex: quadro_de_elite)
-    if (resolvedActiveTab === 'quadro_de_elite') {
-      setQuadroDeEliteRuntimeContext({
+    // Injetar runtime context para módulos que usam bridge (ex: nucleo_de_agentes)
+    if (resolvedActiveTab === 'nucleo_de_agentes') {
+      setNucleoDeAgentesRuntimeContext({
         workspaceId: activeWorkspaceId,
         agents: activatedAgents,
         businessUnits,

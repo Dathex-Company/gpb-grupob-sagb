@@ -1,3 +1,4 @@
 export { manifest } from './manifest';
-export { routes } from './routes';
+export { routes, quadroDeEliteRedirect } from './routes';
 export { moduleDoc } from './module-doc';
+export { setNucleoDeAgentesRuntimeContext, getNucleoDeAgentesRuntimeContext, getAgentRuntimeProfile } from './store';

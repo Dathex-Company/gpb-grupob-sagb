@@ -13,7 +13,7 @@ import { karaokeManifest, karaokeRoutes } from '../../modules/karaoke';
 import { manifest as telasAvancadasManifest, routes as telasAvancadasRoutes } from '../../modules/telas_avancadas';
 import { videosIaManifest, videosIaRoutes } from '../../modules/videos-ia';
 import { focoTotalManifest, focoTotalRoutes } from '../../modules/foco_total';
-import { nucleoConversacionalManifest, nucleoConversacionalRoutes } from '../../modules/nucleo-conversacional';
+import { nucleoConversacionalManifest } from '../../modules/nucleo-conversacional';
 import { manifest as nucleoDeAgentesManifest, routes as nucleoDeAgentesRoutes } from '../../modules/nucleo_de_agentes';
 import { centralPadroesManifest, centralPadroesRoutes } from '../../modules/central_padroes';
 import { monitoramentoManifest, monitoramentoRoutes } from '../../modules/monitoramento';
@@ -22,7 +22,6 @@ import { nicManifest, nicRoutes } from '../../modules/nic';
 import { mentoriasManifest, mentoriasRoutes } from '../../modules/mentorias';
 import { metodologiasManifest, metodologiasRoutes } from '../../modules/metodologias';
 import { missoesManifest, missoesRoutes } from '../../modules/missoes';
-import { manifest as quadroDeEliteManifest, routes as quadroDeEliteRoutes } from '../../modules/quadro_de_elite';
 import { raiManifest, raiRoutes } from '../../modules/rai';
 import { salaDevManifest, salaDevRoutes } from '../../modules/sala-dev';
 import { manifest as configuracoesAmbienteManifest, routes as configuracoesAmbienteRoutes } from '../../modules/configuracoes-ambiente';
@@ -54,7 +53,7 @@ export const moduleRegistry: PluggableModule[] = [
   },
   {
     manifest: nucleoConversacionalManifest,
-    routes: nucleoConversacionalRoutes
+    routes: { path: '/nucleo-conversacional', element: null }
   },
   {
     manifest: nucleoDeAgentesManifest,
@@ -75,10 +74,6 @@ export const moduleRegistry: PluggableModule[] = [
   {
     manifest: nicManifest,
     routes: nicRoutes
-  },
-  {
-    manifest: quadroDeEliteManifest,
-    routes: quadroDeEliteRoutes
   },
   {
     manifest: salaDevManifest,

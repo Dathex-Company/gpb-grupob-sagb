@@ -1647,6 +1647,237 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
       relatedModules: ['central_padroes'],
       updatedAt: '2026-06-02'
     },
+
+    /* ════════════════════════════════════════════════════
+       12 DOCUMENTOS MESTRES v3.0 — subidos de MD-central-de-padroes
+       Status: em_curadoria (nada é canonico_oficial)
+       ════════════════════════════════════════════════════ */
+
+    /* DM-00-GOV — Governança */
+    {
+      id: 'std-dm-00-gov',
+      key: 'DM-00-GOV',
+      title: 'Documento Mestre de Governança da Central de Padrões v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'pietro',
+      owner: 'Pietro Carboni',
+      summary: 'Governa a Central de Padrões: política de canonicidade, matriz de classificação normativa, protocolos de aprovação/rejeição/publicação, regras de versionamento, diferença entre acervo documental e fonte operacional, relação com Supabase e módulo executor.',
+      risk: 'critico',
+      version: 3,
+      agentAvailable: true,
+      dependencies: [],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-01-TEC-LOZE — Padrões Técnicos da Loze */
+    {
+      id: 'std-dm-01-tec-loze',
+      key: 'DM-01-TEC-LOZE',
+      title: 'Documento Mestre de Padrões Técnicos da Loze v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'savio',
+      owner: 'Sávio Codare',
+      summary: 'Padrões técnicos da Loze: módulo plugável, RPC para ações críticas, Supabase/RLS, deploy/ambientes, manifesto de módulo, documentação técnica, estrutura de repositório, API/integrações, rollback, matriz de reaproveitamento, checklists pré-dev e de segurança aplicada.',
+      risk: 'critico',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-00-GOV', 'DM-03-SEG', 'DM-04-UX'],
+      relatedModules: ['central_padroes', 'sala-dev'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-02-PROC — Processos, Execução e Registros Operacionais */
+    {
+      id: 'std-dm-02-proc',
+      key: 'DM-02-PROC',
+      title: 'Documento Mestre de Processos, Execução e Registros Operacionais v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'yuri',
+      owner: 'Yuri Sague',
+      summary: 'Processos operacionais: execução de tarefas, handoff com aceite, evidência por entrega, critério de pronto, bloqueio operacional, reabertura e registros obrigatórios.',
+      risk: 'alto',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-00-GOV', 'DM-01-TEC-LOZE'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-03-SEG — Segurança Digital, Risco e Proteção */
+    {
+      id: 'std-dm-03-seg',
+      key: 'DM-03-SEG',
+      title: 'Documento Mestre de Segurança Digital, Risco e Proteção v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'pedro',
+      owner: 'Pedro Gazan',
+      summary: 'Segurança digital: cofre de credenciais, MFA, menor privilégio, classificação de dados, dados sensíveis, incidentes, evidências, RLS, bloqueios por risco crítico e relação com agentes e IA.',
+      risk: 'critico',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-00-GOV', 'DM-01-TEC-LOZE', 'DM-05-AGT', 'DM-06-IA'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-04-UX — UX/UI, Experiência e Interface */
+    {
+      id: 'std-dm-04-ux',
+      key: 'DM-04-UX',
+      title: 'Documento Mestre de UX/UI, Experiência e Interface v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'alice',
+      owner: 'Alice Montini',
+      summary: 'Experiência e interface: tokens centralizados, estado vazio/erro/sucesso obrigatórios, confirmação para ação destrutiva, microcopy operacional, evidência visual e checklist UX.',
+      risk: 'medio',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-01-TEC-LOZE', 'DM-03-SEG'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-05-AGT — Agentes Autônomos, IA e Orquestração */
+    {
+      id: 'std-dm-05-agt',
+      key: 'DM-05-AGT',
+      title: 'Documento Mestre de Agentes Autônomos, IA e Orquestração v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'pierre',
+      owner: 'Pierre Zanulli',
+      summary: 'Agentes autônomos: comportamento, autonomia, tool use, logs obrigatórios, handoff estruturado, matriz de autonomia por agente, bloqueio de autoaprovação e orquestração de agentes.',
+      risk: 'alto',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-00-GOV', 'DM-03-SEG', 'DM-06-IA'],
+      relatedModules: ['central_padroes', 'sala-dev'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-06-IA — Modelos de IA, Radar Tecnológico e Governança de IA */
+    {
+      id: 'std-dm-06-ia',
+      key: 'DM-06-IA',
+      title: 'Documento Mestre de Modelos de IA, Radar Tecnológico e Governança de IA v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'klaus',
+      owner: 'Klaus Wagen',
+      summary: 'Modelos de IA: fornecedores, avaliação, benchmark, custo, risco, RAI (IA Responsável), radar tecnológico, troca de modelo em produção, classificação de uso crítico e relação com agentes e segurança.',
+      risk: 'alto',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-00-GOV', 'DM-03-SEG', 'DM-05-AGT'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-07-NAM — Naming, Disponibilidade e Banco de Marcas */
+    {
+      id: 'std-dm-07-nam',
+      key: 'DM-07-NAM',
+      title: 'Documento Mestre de Naming, Disponibilidade e Banco de Marcas v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'noah',
+      owner: 'Noah Verdili',
+      summary: 'Naming e marcas: banco de marcas, status de nome, alerta de duplicidade, registro de uso pretendido, matriz de conflito de nome, registro de decisão de naming e checklist de validação.',
+      risk: 'medio',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-08-IDE', 'DM-11-NEG'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-08-IDE — Exploração e Classificação Inicial de Ideias */
+    {
+      id: 'std-dm-08-ide',
+      key: 'DM-08-IDE',
+      title: 'Documento Mestre de Exploração e Classificação Inicial de Ideias v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'dante',
+      owner: 'Dante Montoya',
+      summary: 'Exploração de ideias: cadastro, classificação por destino, maturidade da ideia, handoff para domínio, matriz de destino, registro de dependências iniciais e checklist de ideia pronta para avaliação.',
+      risk: 'medio',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-07-NAM', 'DM-11-NEG', 'DM-09-MET', 'DM-10-EDU'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-09-MET — Metodologias, Frameworks e Estruturas Intelectuais */
+    {
+      id: 'std-dm-09-met',
+      key: 'DM-09-MET',
+      title: 'Documento Mestre de Metodologias, Frameworks e Estruturas Intelectuais v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'nilo',
+      owner: 'Nilo Barret',
+      summary: 'Metodologias e frameworks: estrutura intelectual, autoria, classificação de método, matriz de aplicação, registro de fala autoral, registro de interpretação de IA, checklist de aplicabilidade e relação com educação.',
+      risk: 'medio',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-10-EDU', 'DM-11-NEG', 'DM-00-GOV'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-10-EDU — Educação, Mentorias, Cursos, Trilhas e Programas de Formação */
+    {
+      id: 'std-dm-10-edu',
+      key: 'DM-10-EDU',
+      title: 'Documento Mestre de Educação, Mentorias, Cursos, Trilhas e Programas de Formação v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'julio',
+      owner: 'Júlio Mosqueira',
+      summary: 'Educação e formação: cadastro de curso, trilha com módulos, evidência de conclusão, roteiro de mentoria, matriz de progresso do aluno, evidência de aprendizagem e relação com metodologias.',
+      risk: 'medio',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-09-MET', 'DM-04-UX', 'DM-02-PROC'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
+    /* DM-11-NEG — Marcas, Empresas, Ventures e Planos de Negócio */
+    {
+      id: 'std-dm-11-neg',
+      key: 'DM-11-NEG',
+      title: 'Documento Mestre de Marcas, Empresas, Ventures e Planos de Negócio v3.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'cesar',
+      owner: 'César Tulli',
+      summary: 'Negócios e ventures: ficha de venture, matriz de decisão go/no-go, handoff para execução, registro de hipótese de negócio, registro de validação de proposta, matriz de risco de venture e checklist de venture pronta para execução.',
+      risk: 'alto',
+      version: 3,
+      agentAvailable: true,
+      dependencies: ['DM-08-IDE', 'DM-07-NAM', 'DM-01-TEC-LOZE', 'DM-02-PROC'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
+
+    /* ════════════════════════════════════════════════════
+       DOCUMENTO-BASE 99 — Padrão-base documental
+       Status: em_curadoria
+       ════════════════════════════════════════════════════ */
+    {
+      id: 'std-dm-base-99',
+      key: 'GOV-PAD-002',
+      title: 'Documento-base Padrão para Criação de Documentos Mestres v1.0',
+      type: 'documentacao_tecnica',
+      status: 'em_curadoria',
+      areaId: 'pietro',
+      owner: 'Pietro Carboni',
+      summary: 'Padrão-base documental para orientar a criação de Documentos Mestres na Central de Padrões. Estrutura de 30 seções, metadados, regras de versionamento e status.',
+      risk: 'alto',
+      version: 1,
+      agentAvailable: true,
+      dependencies: ['DM-00-GOV'],
+      relatedModules: ['central_padroes'],
+      updatedAt: '2026-06-07'
+    },
   ],
   documents: [
     /* Documentos existentes */
@@ -1677,7 +1908,13 @@ export const centralPadroesFallbackData: CentralRepositorySnapshot = {
     { id: 'doc-017', title: 'Documento Geral — Exploração, lapidação e classificação inicial de ideias', path: '02_documentos_atuais/Arquitetura Mestra e Governança da Central de Padrões v1/08_dante_montoya_divisao_exploracao_classificacao_inicial_ideias_documento_geral_v1.0.md', status: 'revisao', category: 'Exploração, lapidação e classificação inicial de ideias', areaId: 'dante', shouldBecome: 'padrao' },
     { id: 'doc-018', title: 'Documento Geral — Metodologias, frameworks e estruturas intelectuais', path: '02_documentos_atuais/Arquitetura Mestra e Governança da Central de Padrões v1/09_nilo_barret_divisao_metodologias_frameworks_estruturas_intelectuais_documento_geral_v1.0.md', status: 'revisao', category: 'Metodologias, frameworks e estruturas intelectuais', areaId: 'nilo', shouldBecome: 'padrao' },
     { id: 'doc-019', title: 'Documento Geral — AcadB, mentorias, cursos e trilhas', path: '02_documentos_atuais/Arquitetura Mestra e Governança da Central de Padrões v1/10_julio_mosqueira_divisao_acadb_mentorias_cursos_trilhas_documento_geral_v1.0.md', status: 'revisao', category: 'AcadB, mentorias, cursos e trilhas', areaId: 'julio', shouldBecome: 'padrao' },
-    { id: 'doc-020', title: 'Documento Geral — StartyB, empresas, ventures e planos', path: '02_documentos_atuais/Arquitetura Mestra e Governança da Central de Padrões v1/11_cesar_tulli_divisao_startyb_marcas_empresas_ventures_documento_geral_v1.0.md', status: 'revisao', category: 'StartyB, empresas, ventures e planos', areaId: 'cesar', shouldBecome: 'padrao' }
+    { id: 'doc-020', title: 'Documento Geral — StartyB, empresas, ventures e planos', path: '02_documentos_atuais/Arquitetura Mestra e Governança da Central de Padrões v1/11_cesar_tulli_divisao_startyb_marcas_empresas_ventures_documento_geral_v1.0.md', status: 'revisao', category: 'StartyB, empresas, ventures e planos', areaId: 'cesar', shouldBecome: 'padrao' },
+
+    /* Relatórios de Curadoria — 98.0 a 98.3 (subidos de MD-central-de-padroes) */
+    { id: 'doc-021', title: '98.0 — Plano de Geração de Documentos Mestres v3.0', path: 'MD-central-de-padroes/98.0-plano-geracao-documentos-mestres-v3.0-07-06-2026.md', status: 'registro', category: 'Curadoria', areaId: 'pietro', shouldBecome: 'registro' },
+    { id: 'doc-022', title: '98.1 — Relatório de Auditoria e Enriquecimento de Documentos Mestres v3.0', path: 'MD-central-de-padroes/98.1-relatorio-auditoria-enriquecimento-documentos-mestres-v3.0-07-06-2026.md', status: 'registro', category: 'Curadoria', areaId: 'pietro', shouldBecome: 'registro' },
+    { id: 'doc-023', title: '98.2 — Relatório de Curadoria Profunda Linha a Linha de Documentos Mestres v3.0', path: 'MD-central-de-padroes/98.2-relatorio-curadoria-profunda-linha-a-linha-documentos-mestres-v3.0-07-06-2026.md', status: 'registro', category: 'Curadoria', areaId: 'pietro', shouldBecome: 'registro' },
+    { id: 'doc-024', title: '98.3 — Relatório de Curadoria Final Máxima de Documentos Mestres v3.0', path: 'MD-central-de-padroes/98.3-relatorio-curadoria-final-maxima-documentos-mestres-v3.0-07-06-2026.md', status: 'registro', category: 'Curadoria', areaId: 'pietro', shouldBecome: 'registro' }
   ],
   checklists: [
     /* Checklists existentes */

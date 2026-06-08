@@ -8,7 +8,7 @@
  */
 
 // ── Manifest + Routes (registro no moduleRegistry) ────
-export { nucleoConversacionalManifest } from './manifest';
+export { manifest as nucleoConversacionalManifest } from './manifest';
 export { routes as nucleoConversacionalRoutes } from './routes';
 
 // ── Tipos ──────────────────────────────────────────────

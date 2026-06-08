@@ -10,6 +10,7 @@ import { salaDevTechnicalBridgeService } from '../services/salaDevTechnicalBridg
 import { GeneratedInitialBriefing, NewProjectBriefingForm } from '../components/NewProjectEntryPanel';
 import { BlockNumber } from '../types/salaDev.agentConstants';
 import { createSalaDevLlmService } from '../services/SalaDevLlmService';
+import { quadroDeEliteConnector } from '../services/quadroDeEliteConnector';
 
 interface UseSalaDevRunOptions {
   officialAgents?: Agent[];
@@ -107,6 +108,13 @@ export function useSalaDevRun(options: UseSalaDevRunOptions = {}) {
     const load = async () => {
       const repository = SalaDevRepositoryAdapter.getProvider();
       const payload = await repository.getInitialRunPayload();
+
+      // Log da origem dos agentes: QE (real) vs mock
+      const salaDevQeAgents = quadroDeEliteConnector.filterSalaDevAgents(officialAgents);
+      const sourceLabel = salaDevQeAgents.length > 0
+        ? `Quadro de Elite (${salaDevQeAgents.length} agentes CA-01 a CA-18)`
+        : 'Mock local (constantes CA-01 a CA-18 da AGENT_18_MAP)';
+      console.log(`[sala-dev] Origem dos agentes: ${sourceLabel}`);
 
       const availableAgents = salaDevAgentCatalogAdapter.adaptFromOfficial(officialAgents);
       const statePayload = {

@@ -1,0 +1,4156 @@
+
+
+
+Bryan Luck:
+Antes de entrar na análise, um aviso de postura: você pediu profundidade, contraponto e contribuição real. Vou entregar isso. Em vários pontos vou discordar da forma como o Loze Dev está sendo desenhado hoje, principalmente no excesso de agentes, na pressa em parecer “vivo” antes de ser sólido, e na ambiguidade entre “produto vendável” e “demo impressionante”. Não é resistência, é proteção da qualidade da decisão.
+Segue a análise completa, em um único bloco copiável, na estrutura que você pediu.
+
+Loze Dev | Esteira Autônoma Visual de Agentes
+Análise estratégica — Bryan Luck (visão Claude / Anthropic)
+
+1. O que entendi do projeto
+O Loze Dev é proposto como uma esteira operacional visual de agentes, onde:
+
+O usuário insere uma ideia bruta (projeto, sistema, app, metodologia, automação, produto digital).
+O sistema cria uma RUN — uma execução rastreável dessa ideia.
+A run percorre uma sequência (ou grafo) de agentes especializados, cada um com função clara, entrada, saída, entregável e handoff para o próximo.
+A experiência tem três camadas simultâneas:
+
+Camada operacional — agentes realmente fazendo trabalho (mockado no início, real depois).
+Camada visual — sala viva, conectores, handoffs animados, painéis de agente ativo, logs em tempo real.
+Camada de governança — gates humanos, modos de autonomia, decisões registradas.
+
+
+A ambição final é virar produto Loze: um motor que transforma ideias em entregas (briefing, MVP, arquitetura, UX, backlog, documentação, runbooks).
+
+A leitura que faço é que o Loze Dev é, na prática, três produtos sobrepostos que ainda não foram separados conscientemente:
+
+Produto A: um demo institucional da Loze (vitrine de capacidade, marketing técnico, encantamento comercial).
+Produto B: uma ferramenta interna de pré-produção de projetos (briefing → arquitetura → backlog) para a própria Loze e GrupoB.
+Produto C: uma plataforma vendável de orquestração de agentes para terceiros.
+
+Esses três produtos têm requisitos muito diferentes. Tratar como se fossem um só é o primeiro risco da iniciativa. Volto nisso na seção 2 e 13.
+
+2. Leitura estratégica
+2.1 O que está forte na visão
+
+Conceito de RUN como entidade central está correto. Run é a unidade auditável. Sem isso, vira chat.
+Separação por agentes especializados com escopo, entrada e saída está alinhada com boas práticas de sistemas multiagentes.
+Gates humanos explícitos estão corretos — esse é o ponto que mais protege a Loze de cair em “autonomia performática”.
+Modos de autonomia (manual, semiautônomo, demo, futuro real) é uma boa separação. Mas precisa ser refinada (volto na seção 8).
+Catálogo e Guardião de Reaproveitamento é provavelmente o agente mais valioso da lista — e curiosamente o menos comentado na descrição. Volto nele.
+
+2.2 Onde eu teria cautela
+
+18 agentes é muito. Não pela complexidade técnica de instanciar, mas pela complexidade de manter coerência cultural, de linguagem e de contexto entre eles. Cada agente novo é um vetor de:
+
+alucinação,
+drift comportamental,
+violação de escopo,
+mistura de contexto,
+custo,
+latência,
+dificuldade de auditoria.
+
+Vários desses 18 deveriam ser Capacidades Reutilizáveis chamadas por agentes maiores, não agentes próprios.
+A esteira está sendo desenhada como pipeline linear, mas o trabalho real de desenvolvimento de produto não é linear. É iterativo, com voltas, descobertas, refatorações de briefing. Se o Loze Dev forçar linearidade, vira teatro.
+A palavra “automação profunda” está sendo usada de forma perigosa. “Profunda” aqui não pode significar “sem revisão”. Precisa significar “encadeada, rastreável, auditável e governada”.
+O risco de parecer certo estando errado é altíssimo. Um sistema que gera briefing, arquitetura, backlog e runbooks com aparência profissional, em segundos, é um sistema que será confundido com verdade. Isso é o pior tipo de risco em agentes: aparência de competência sem validação.
+Confusão entre demo e produto. Modo demo é legítimo (vende, mostra, encanta). Mas se a arquitetura nasce orientada ao demo, a parte real nasce frágil. Já vi isso quebrar projetos sérios.
+Não está claro quem é o dono humano de cada agente dentro do Loze Dev. Isso viola a base 1 da Loze: todo agente precisa ter responsável humano. Em um produto com 18 agentes, isso vira problema rapidamente.
+Não está claro o isolamento por cliente/projeto. Se o Loze Dev for usado para múltiplos clientes (Produto C), o catálogo, a memória e o reaproveitamento precisam ter namespace rígido. Não pode haver vazamento de ideia de um cliente para o catálogo de outro.
+
+2.3 Tese central da minha leitura
+
+O Loze Dev só vira produto sério se a Loze tratar a RUN e o ARTEFATO como entidades primárias, e o AGENTE como entidade secundária a serviço delas. Hoje a descrição está centrada no agente, e isso leva a um sistema bonito por fora e bagunçado por dentro.
+
+
+3. Arquitetura recomendada
+Proponho uma arquitetura em 5 camadas funcionais, abaixo da camada de UI. Isso não é a arquitetura de código, é a arquitetura conceitual que o código precisa refletir.
+Camada 1 — Núcleo de Run (Run Core)
+Responsável por:
+
+criar runs,
+versionar runs,
+manter estado da run,
+registrar eventos da run,
+expor a run para a UI e para auditoria.
+
+Essa camada não conhece agentes. Ela conhece etapas, eventos, artefatos e decisões. Isso é fundamental para garantir que a run sobreviva à troca de agentes, modelos e provedores.
+Camada 2 — Orquestrador (Orchestrator)
+Responsável por:
+
+decidir qual etapa roda agora,
+decidir se a etapa roda em modo agente, capacidade ou humano,
+aplicar política de autonomia,
+aplicar gates,
+empilhar/desempilhar etapas em caso de retorno,
+lidar com paralelismo controlado.
+
+O Orquestrador é a única peça que conhece o grafo da esteira. Os agentes não sabem da esteira inteira — isso é segurança e isolamento.
+Camada 3 — Catálogo de Agentes e Capacidades
+Responsável por:
+
+guardar ficha oficial de cada agente,
+guardar capacidades reutilizáveis,
+versionar prompts, comportamentos e schemas,
+expor metadados (autonomia, dono, escopo, gates exigidos),
+permitir trocar implementação sem quebrar a esteira.
+
+Sem esse catálogo, vocês não conseguem evoluir agentes sem quebrar runs antigas.
+Camada 4 — Tool Layer (MCPs, Bridges, Integrações)
+Responsável por:
+
+expor ferramentas com schema,
+aplicar permissões,
+aplicar gates de tool use,
+registrar logs por chamada,
+isolar por cliente/unidade/projeto.
+
+Todo tool use passa por aqui. Nenhum agente fala direto com Supabase, GitHub, Stripe, etc. — fala via Tool Layer.
+Camada 5 — Governança e Observabilidade
+Responsável por:
+
+logs estruturados,
+métricas,
+evals,
+detecção de drift,
+detecção de violação de escopo,
+pausa de agente,
+incidentes,
+rastreamento de aprendizado candidato (Protocolo de Aprendizado Revisado).
+
+Diagrama lógico (textual)
+[ UI Loze Dev ]
+      |
+[ API Gateway ]
+      |
+[ Run Core ] <----> [ Catálogo de Agentes e Capacidades ]
+      |
+[ Orquestrador ] <----> [ Política de Autonomia + Gates ]
+      |
+[ Executores de Agente ]  ----> [ Tool Layer (MCPs/Bridges) ]
+      |                                |
+      +-----> [ Memória ] <------------+
+      |
+[ Governança e Observabilidade (logs, evals, incidentes) ]
+
+4. Módulos necessários
+Recomendo organizar o Loze Dev em 12 módulos. Nada de “app monolítico”.
+
+Módulo Run — criação, versionamento, estado, eventos.
+Módulo Briefing — captura e estruturação da ideia bruta.
+Módulo Catálogo — agentes, capacidades, componentes, padrões reutilizáveis.
+Módulo Orquestração — grafo da esteira, política de execução.
+Módulo Agentes — execução, prompts versionados, fichas.
+Módulo Tool Use / MCPs — portas governadas para ferramentas.
+Módulo Memória — contextos, RAG, episódica, procedural, namespaces.
+Módulo Gates e Aprovações — decisões humanas, justificativas, histórico.
+Módulo Artefatos — geração, versionamento, assinatura, exportação.
+Módulo Observabilidade — logs, métricas, dashboards, alertas.
+Módulo Governança — donos, autonomia, incidentes, aprendizado revisado.
+Módulo Demo / Apresentação — modo cinematográfico, isolado dos demais.
+
+Observação crítica: o módulo Demo precisa ser separado. Não pode contaminar o núcleo. Ele lê do Run Core e renderiza com mais drama visual, mas não muda comportamento de agentes. Se misturar, o produto vira teatro permanente.
+
+5. Estrutura dos agentes
+5.1 Crítica direta à lista de 18
+Vou ser franco: a lista de 18 agentes parece um organograma de empresa de software colado dentro de um sistema de IA. Isso é um erro comum. Empresa tem cargos porque pessoas precisam de identidade profissional. Agente não precisa. Agente precisa de função discreta, escopo curto e responsabilidade clara.
+Minha recomendação é reduzir para 8 a 10 agentes reais e transformar o resto em Capacidades Reutilizáveis ou Etapas do Orquestrador.
+5.2 Reorganização proposta
+Agentes (mantidos como agentes reais):
+
+Orquestrador Técnico — coordena a run, não produz conteúdo.
+Analista de Briefing e Produto — junta “entendimento da ideia” + “analista de produto/MVP”.
+Guardião de Reaproveitamento e Catálogo — junta “guardião” + “catálogo técnico”. Esse é o agente mais estratégico do sistema.
+Arquiteto de Sistemas — arquitetura, dados, integrações, segurança em nível alto.
+Designer Técnico (UX/UI) — fluxos, telas, microcopy.
+Engenheiro de Implementação — junta front, back e database em um agente com capacidades reutilizáveis por camada. Discordo de ter 3–4 agentes separados aqui na fase inicial; vira ruído.
+Engenheiro de Agentes, MCPs e Automações — específico da Loze, faz sentido.
+Guardião de Segurança e Governança — junta “segurança técnica” + “logs/observabilidade” + “versionamento” em uma camada de governança.
+QA e Revisor Final — junta “QA” + “revisor final” + “runbooks”.
+
+Capacidades Reutilizáveis (não são agentes):
+
+gerar documentação técnica,
+gerar backlog,
+gerar runbook,
+classificar risco,
+detectar fora de escopo,
+gerar diagrama,
+extrair entidades de dados,
+validar formato de artefato,
+gerar checklist,
+gerar resumo executivo,
+gerar ata da run.
+
+Essas funções não precisam de identidade. Precisam de schema, entrada e saída. Transformá-las em agentes é o que faz a esteira virar bagunça.
+5.3 Ficha oficial por agente (obrigatória)
+Cada agente precisa ter ficha com:
+
+id,
+nome,
+versão,
+responsável humano,
+escopo,
+não escopo,
+entradas aceitas,
+saídas produzidas,
+capacidades reutilizáveis usadas,
+ferramentas autorizadas,
+nível de autonomia (A0–A6),
+gates obrigatórios,
+política de erro,
+política de escalonamento,
+critérios de qualidade,
+tom de voz,
+palavras proibidas,
+forma de recusar,
+forma de discordar,
+forma de escalar.
+
+Sem ficha, agente não entra na esteira. Essa regra precisa ser dura.
+
+6. Fluxo ideal da esteira
+Discordo de tratar como pipeline linear de 18 etapas. Recomendo um grafo com fases, onde dentro de cada fase pode haver paralelismo controlado.
+Fases propostas (6 fases)
+Fase 1 — Entendimento
+
+Captura da ideia bruta.
+Estruturação em briefing.
+GATE-00: aprovar entendimento.
+
+Fase 2 — Reaproveitamento e Viabilidade
+
+Consulta ao catálogo.
+Identificação de módulos/componentes/padrões já existentes.
+Análise de viabilidade.
+Recomendação de MVP.
+GATE-01: aprovar briefing + plano de MVP.
+
+Fase 3 — Desenho
+
+Em paralelo (mas com cross-check final):
+
+Arquitetura,
+UX/Fluxos,
+Dados e integrações,
+Segurança.
+
+
+Consolidação por Arquiteto + Guardião de Segurança.
+GATE-02: aprovar arquitetura + dados + segurança.
+
+Fase 4 — Plano de Implementação
+
+Backlog,
+Documentação técnica,
+Runbooks iniciais,
+Estimativas de risco e complexidade (sem cronograma).
+GATE-03: aprovar plano.
+
+Fase 5 — Execução (futuro real)
+
+Implementação assistida (ainda com gates).
+Pode ser pulada no MVP.
+
+Fase 6 — Entrega e Encerramento
+
+Consolidação de artefatos,
+Relatório final,
+Catalogação de aprendizados candidatos,
+GATE-FINAL.
+
+Esse desenho:
+
+evita a falsa linearidade,
+permite paralelismo onde faz sentido,
+mantém auditoria,
+reduz o número de gates de 7 para 5, o que é mais realista para uso recorrente.
+
+
+7. Handoffs, gates e aprovações
+7.1 Handoff
+Handoff não é “passar a bola”. Handoff é contrato.
+Cada handoff precisa ter:
+
+run_id,
+from_agent,
+to_agent,
+input_payload (estruturado, com schema),
+artefatos referenciados (por id e versão),
+decisões anteriores referenciadas,
+contexto explícito (não implícito),
+critérios de aceite,
+timestamp,
+assinatura digital interna (hash do payload).
+
+Importante: handoff não deve transportar a conversa inteira. Deve transportar artefato + decisão + contexto mínimo necessário. Senão você empilha contexto sujo e o agente seguinte alucina por excesso de input.
+7.2 Gates
+Estrutura mínima de um gate:
+
+gate_id,
+run_id,
+fase,
+responsável humano designado,
+artefatos a revisar,
+perguntas obrigatórias (checklist),
+decisões possíveis: aprovar, aprovar com observações, pedir revisão, voltar etapa, bloquear,
+justificativa obrigatória quando bloquear ou voltar,
+prazo (sem cronograma de projeto, mas com SLA de gate, ex.: gate aberto há X tempo gera alerta),
+log da decisão,
+versão do artefato no momento da decisão.
+
+Discordo do desenho original de 7 gates (GATE-00 a GATE-06). É demais para uso real. Vira fadiga de aprovação. Recomendo 5 gates como na fase 6.
+7.3 Aprovação
+Toda aprovação precisa registrar:
+
+quem aprovou,
+em qual versão do artefato,
+com qual justificativa,
+com qual contexto visível na hora,
+e gerar um hash imutável da decisão.
+
+Isso é o que transforma o Loze Dev em sistema auditável de verdade.
+
+8. Automação e níveis de autonomia
+A proposta original tem 4 modos. Recomendo refinar usando a matriz A0–A6 da Loze, aplicada por etapa, não por sistema inteiro.
+8.1 Modos do sistema
+
+Modo Manual (default). Tudo gera rascunho, humano aprova cada etapa.
+Modo Assistido. Etapas de baixo risco avançam sozinhas (A3); etapas de risco médio param em gate (A4); etapas críticas exigem aprovação especial (A6).
+Modo Demo. Roda automaticamente para apresentação, com dados sintéticos marcados, sem tocar em catálogo real, sem persistir aprendizado, sem chamar ferramentas externas.
+Modo Execução Real (futuro). Agentes executam com permissões controladas, sempre com Tool Layer governada.
+
+8.2 Regra dura que recomendo
+
+Nenhum agente do Loze Dev opera acima de A4 sem aprovação explícita do dono humano daquele agente + revisão de Pedro Gazan (segurança).
+
+8.3 Risco que preciso sinalizar
+O Modo Demo é necessário comercialmente, mas é o vetor de risco mais subestimado:
+
+vende uma capacidade que o sistema real não tem ainda,
+cria expectativa,
+contamina decisão interna (“já está funcionando”),
+pode ser confundido com produção.
+
+Recomendação: toda tela do modo demo precisa exibir um selo visível “MODO DEMO — DADOS SINTÉTICOS”. Sem exceção. E o modo demo precisa ser tecnicamente impedido de chamar ferramentas reais, gravar no catálogo real ou persistir aprendizado. Isolamento por design.
+
+9. UI/UX e experiência visual
+9.1 Princípio de design que recomendo
+
+A UI deve mostrar o que o sistema sabe, não o que o sistema parece estar fazendo. Animação serve à clareza, não ao espetáculo.
+
+A sensação de “sala viva” é boa. Mas ela tem que vir da veracidade da operação, não de efeitos visuais sobre nada. Sistema que parece muito mais inteligente do que é = perda de confiança quando o cliente percebe.
+9.2 Estrutura de telas proposta
+
+Tela de Entrada da Ideia (Capture)
+
+Campo livre + perguntas guiadas opcionais.
+Indicador de o que o sistema vai fazer com a ideia.
+Seleção de modo (Manual / Assistido / Demo).
+
+
+Tela da Run (Sala Operacional)
+
+Mapa do grafo da esteira (não linha reta).
+Agentes como nós, conectores entre eles.
+Estado da run no topo (fase atual, próximo gate).
+Painel lateral do agente ativo.
+Painel inferior de eventos (log em tempo real, filtrado).
+Painel direito de artefatos gerados.
+
+
+Tela do Agente Ativo
+
+Ficha do agente,
+Entrada recebida,
+Saída em progresso,
+Ferramentas acionadas,
+Decisões tomadas,
+Capacidades usadas.
+
+
+Tela de Gate
+
+Artefatos a revisar lado a lado,
+Checklist de aprovação,
+Botões: aprovar / aprovar com observação / pedir revisão / voltar etapa / bloquear,
+Campo de justificativa.
+
+
+Tela de Artefatos da Run
+
+Lista versionada,
+Diff entre versões,
+Exportação.
+
+
+Tela de Decisões
+
+Linha do tempo de decisões humanas,
+Quem, quando, por quê.
+
+
+Tela de Catálogo
+
+Agentes, capacidades, componentes, padrões.
+Filtros, busca, versão.
+
+
+Tela de Observabilidade
+
+Métricas da run,
+Custo,
+Latência,
+Erros,
+Violações de escopo.
+
+
+Tela de Modo Demo
+
+Mesma tela da Run, mas com selo de demo, roteiro de apresentação, controles de “play/pause/skip”.
+
+
+Tela de Governança
+
+Donos humanos,
+Status de agentes (ativo, pausado, em revisão),
+Incidentes,
+Aprendizados candidatos pendentes de revisão.
+
+
+
+9.3 Microcopy (área da Alice Montini)
+Recomendo definir desde o MVP:
+
+como o agente recusa,
+como o agente discorda,
+como o agente pede ajuda humana,
+como o agente avisa “não tenho certeza”,
+como o sistema avisa que está em modo demo,
+como o sistema avisa que um gate está aberto.
+
+Microcopy fraca é o que faz produto de IA parecer amador. Não pode ser deixada para depois.
+
+10. Dados, logs, artefatos e auditoria
+10.1 Entidades principais
+Proponho as seguintes entidades centrais (nível conceitual, não SQL final):
+
+Run — execução de uma ideia.
+RunEvent — qualquer evento dentro da run (handoff, decisão, erro, gate).
+Idea — ideia bruta original (separada da run para permitir reuso).
+Briefing — versão estruturada da ideia.
+Agent — definição de agente (ficha).
+AgentVersion — versão imutável da ficha/prompt.
+AgentRun — execução de um agente dentro de uma run.
+Capability — capacidade reutilizável.
+CapabilityRun — execução de uma capacidade.
+Tool — ferramenta exposta via Tool Layer.
+ToolCall — chamada registrada de ferramenta.
+Artifact — artefato gerado (briefing, arquitetura, backlog, etc.).
+ArtifactVersion — versão do artefato.
+Handoff — contrato entre agentes.
+Gate — ponto de aprovação humana.
+Decision — decisão humana registrada.
+MemoryItem — item de memória, com tipo e namespace.
+LearningCandidate — aprendizado candidato (não vira verdade automaticamente).
+Incident — incidente operacional ou de segurança.
+User — usuário humano.
+Owner — dono humano de agente/capacidade/tool.
+Client / Unit / Project — namespaces de isolamento.
+Permission — permissão por escopo.
+
+10.2 Esboço de banco (Supabase / Postgres) — futuro
+Apenas direção, não DDL final:
+runs (id, idea_id, mode, status, phase, created_by, client_id, unit_id, project_id, created_at, updated_at)
+run_events (id, run_id, type, payload_jsonb, agent_run_id, created_at)
+ideas (id, raw_text, source, client_id, unit_id, project_id, created_by, created_at)
+briefings (id, run_id, version, content_jsonb, status, created_at)
+agents (id, name, owner_user_id, scope, non_scope, autonomy_level, status)
+agent_versions (id, agent_id, version, prompt_ref, schema_jsonb, created_at, frozen_bool)
+agent_runs (id, run_id, agent_version_id, input_jsonb, output_jsonb, status, started_at, finished_at)
+capabilities (id, name, owner_user_id, schema_jsonb, version)
+capability_runs (id, agent_run_id, capability_id, input_jsonb, output_jsonb, status)
+tools (id, name, owner_user_id, schema_jsonb, scopes, autonomy_required)
+tool_calls (id, agent_run_id, tool_id, input_jsonb, output_jsonb, status, risk_level, approved_by, created_at)
+artifacts (id, run_id, type, current_version_id, status)
+artifact_versions (id, artifact_id, version, content_jsonb, hash, created_by, created_at)
+handoffs (id, run_id, from_agent_run_id, to_agent_id, payload_jsonb, hash, created_at)
+gates (id, run_id, code, phase, status, opened_at, closed_at, responsible_user_id)
+decisions (id, gate_id, decision, justification, approver_user_id, artifact_version_id, hash, created_at)
+memory_items (id, type, namespace, content_jsonb, source, scope, permissions_jsonb, created_at)
+learning_candidates (id, run_id, agent_run_id, content_jsonb, status, reviewer_user_id, decision, created_at)
+incidents (id, run_id, severity, type, description, owner_user_id, status, created_at)
+owners (user_id, entity_type, entity_id)
+permissions (id, user_id, scope, action, granted_by, created_at)
+clients, units, projects (namespaces de isolamento)
+Pontos críticos:
+
+agent_versions congeladas garantem que uma run antiga pode ser reexecutada com a mesma versão de prompt.
+hash em artefatos, handoffs e decisões garante imutabilidade.
+namespaces (client_id, unit_id, project_id) presentes em quase tudo.
+memory_items com permissions_jsonb é o que evita vazamento entre clientes.
+
+10.3 Estados da run
+Recomendo um estado-máquina simples e explícito:
+draft → captured → briefing_in_progress → gate_briefing →
+reuse_check → planning → gate_plan →
+design → gate_design →
+implementation_plan → gate_impl →
+(execução real opcional) →
+final_review → gate_final →
+delivered | archived | aborted | paused | failed
+E status de agente dentro de uma run:
+idle → assigned → running → waiting_tool → waiting_gate →
+completed | escalated | errored | aborted
+10.4 Logs estruturados (já definidos pela Loze, reforço)
+Todo log de execução de agente deve conter:
+
+trace_id, run_id, agent_run_id, agent_id, agent_version, user_id, client_id, unit_id, project_id, conversation_id, tool_name, input_summary, output_summary, decision, approval_status, risk_level, error_type, timestamp, version.
+
+10.5 Auditoria
+Auditoria precisa permitir responder em qualquer momento:
+
+Quem iniciou essa run?
+Quais agentes (e em que versão) participaram?
+Quais ferramentas foram chamadas?
+Quais decisões humanas foram tomadas, por quem, com qual justificativa?
+Quais artefatos foram gerados e em que versão foram aprovados?
+Quais aprendizados candidatos surgiram dela e o que aconteceu com eles?
+Houve incidente? Houve violação de escopo? Houve pausa de agente?
+
+Se o sistema não responde isso em segundos, não está auditável.
+
+11. MVP recomendado
+Vou discordar fortemente de qualquer tentativa de fazer MVP com 18 agentes, automação profunda, modo demo cinematográfico e execução real ao mesmo tempo. Isso não é MVP, é demo confundido com produto.
+11.1 MVP enxuto (recomendação)
+Objetivo do MVP: provar que uma ideia bruta pode atravessar uma esteira governada de agentes, com gates humanos, gerando artefatos versionados e logs auditáveis — para uso interno da Loze primeiro.
+Escopo do MVP:
+
+1 modo apenas: Assistido.
+5 agentes apenas:
+
+Analista de Briefing e Produto,
+Guardião de Reaproveitamento e Catálogo,
+Arquiteto de Sistemas,
+Designer Técnico,
+QA e Revisor Final.
+
+
+Orquestrador implícito (ainda não é agente, é serviço).
+3 gates apenas: briefing, design, final.
+4 artefatos:
+
+Briefing estruturado,
+Plano de MVP,
+Arquitetura + UX,
+Backlog inicial.
+
+
+Tool Layer ainda sem ferramentas externas — apenas leitura do catálogo interno.
+Logs estruturados completos desde o dia 1.
+UI com 4 telas: Captura, Run, Gate, Artefatos.
+Catálogo com 5–10 itens reais para testar reaproveitamento.
+Modo Demo fora do MVP. Entra na fase seguinte, isolado.
+
+11.2 O que não entra no MVP
+
+Execução real,
+MCPs externos,
+Salas de reunião com agentes,
+RAI/módulo de IA,
+Memória reflexiva,
+Aprendizado revisado automatizado (entra como “registro manual de aprendizado candidato” apenas).
+
+Isso aqui é o que protege o produto de nascer inflado.
+
+12. Fases de evolução
+Sem cronograma, apenas sequência lógica:
+Fase 1 — Núcleo Governado (MVP interno)
+
+Run Core, Orquestrador, 5 agentes, 3 gates, artefatos, logs, catálogo básico.
+
+Fase 2 — Visualização Viva
+
+Mapa de grafo, painéis vivos, animações de handoff, painel de eventos.
+Modo Demo isolado.
+
+Fase 3 — Catálogo Profundo
+
+Guardião de Reaproveitamento ganha força real.
+Componentes, padrões e módulos reaproveitáveis indexados.
+RAG com namespaces rígidos.
+
+Fase 4 — Tool Layer Real
+
+MCPs e bridges com gates de tool use.
+Integrações com GitHub, Supabase, Notion, Figma etc.
+Logs por ferramenta.
+
+Fase 5 — Execução Assistida
+
+Agentes começam a executar tarefas reais com aprovação.
+Runbooks vivos.
+
+Fase 6 — Multiagente em Sala
+
+Salas de reunião com agentes do SagB.
+Decisões colegiadas registradas.
+
+Fase 7 — Aprendizado Revisado
+
+Protocolo formalizado.
+Aprendizados candidatos viram padrão só após revisão humana.
+
+Fase 8 — Produto Vendável
+
+Multi-tenant real,
+Isolamento por cliente,
+Painel de governança,
+SLA,
+Termos de uso,
+Auditoria externa.
+
+A Loze precisa decidir conscientemente em qual fase quer parar de “provar o conceito” e começar a “endurecer o produto”. Isso é decisão de Kane Zas / Rodrigues, não da engenharia.
+
+13. Riscos e cuidados
+Vou listar 14 riscos que vejo, ordenados por gravidade na minha leitura.
+
+Inflação de agentes. 18 agentes no MVP destrói coerência. Recomendo 5.
+Aparência de competência sem validação. Artefatos bonitos enganam usuários. Microcopy de incerteza é obrigatória.
+Confusão entre demo e produção. Risco de vender o que não existe. Isolamento técnico do modo demo é obrigatório.
+Falta de dono humano por agente. Viola base 1 da Loze. Cada agente precisa ter nome de responsável no MVP.
+Mistura de contexto entre clientes/projetos. Namespaces precisam estar no schema desde o dia 1.
+Memória virando verdade sem revisão. Aprendizado revisado precisa estar previsto desde o início, mesmo que manualmente.
+Tool Layer permissiva. Se MCPs entrarem sem gate, qualquer agente vira risco operacional.
+Pipeline linear forçado. A esteira precisa permitir voltas. Sem isso, vira processo cosmético.
+Logs criados depois. Adicionar log depois é caro e incompleto. Tem que nascer com log.
+Catálogo subestimado. O Guardião de Reaproveitamento é o agente mais valioso e está sendo tratado como acessório.
+Excesso de gates. 7 gates fadigam o aprovador. 5 é mais saudável.
+Ambiguidade entre produto interno e produto vendável. Decisão estratégica precisa ser feita antes da arquitetura final.
+Drift comportamental dos agentes. Sem evals, não há como medir. Evals precisam existir, mesmo simples.
+Risco de Loze Dev competir com o próprio SagB. Precisa ficar claro que Loze Dev é uma esteira específica dentro do ecossistema, não um produto que conflita com SagB.
+
+
+14. O que está faltando
+Pontos que a descrição original não cobre e que considero essenciais:
+
+Definição clara de quem é o usuário primário do MVP. Loze interna? GrupoB? Cliente? Sem isso, o MVP nasce confuso.
+Critérios de qualidade por artefato. O que é um briefing aprovável? O que é uma arquitetura aprovável? Sem isso, gate vira chute.
+Política de erro e fallback. O que acontece quando o agente falha? Quem é chamado? Quanto tempo até escalar?
+Política de custo. Cada run tem custo de tokens, tool calls, etc. Sem limite, vira buraco financeiro.
+Evals. Como saber que o Analista de Briefing está bom? Precisa ter conjunto de runs avaliadas.
+Versionamento de prompts. Não é detalhe técnico, é governança. Prompt mudou? Vira nova versão de agente.
+Protocolo de aprendizado revisado. Precisa estar previsto desde o início, ainda que manual.
+Catálogo Loze inicial. Sem catálogo populado, o Guardião de Reaproveitamento não tem o que reaproveitar e o sistema vira só geração.
+Definição de namespaces. Quem é cliente, unidade, projeto? Como se aninham?
+Política de retenção de dados. Run dura para sempre? Briefing pode ser apagado? LGPD pede isso.
+Roles e permissões humanas. Quem pode aprovar gate? Quem pode pausar agente? Quem pode alterar ficha?
+Plano de incidentes. O que vira incidente, quem é avisado, como se documenta.
+
+
+15. Sugestões diferentes que eu adicionaria
+Algumas ideias que não estão na proposta e que recomendo considerar:
+
+Run Diff. Capacidade de comparar duas runs (ex.: duas versões da mesma ideia, ou duas ideias parecidas). Vira recurso comercial enorme.
+Replay de Run. Reexecutar uma run com versões congeladas de agentes e ver o que muda com nova versão de agente. Isso é evals na prática.
+Selo de Confiança por Artefato. Cada artefato carrega um selo: gerado por agente versão X, revisado por humano Y, baseado em catálogo versão Z. Isso vira confiança auditável.
+Indicador de Incerteza Explícito. O agente precisa marcar trechos do artefato como “alta confiança”, “média confiança”, “requer validação humana”. Isso muda o jogo de credibilidade.
+Modo Crítico Adversarial. Um agente cuja única função é tentar quebrar os outros. Ex.: receber a arquitetura e listar 10 formas de ela falhar. É a postura Anthropic clássica e protege a qualidade.
+Painel de Aprendizados Candidatos. Local separado para o humano revisar o que os agentes “acharam” durante a run, sem que isso vire verdade automaticamente.
+Trilha de Decisão Imutável. Toda decisão humana gera hash + linha do tempo cronológica que não pode ser reescrita. Isso vira diferencial comercial para clientes regulados.
+Política de “não saber é resposta válida”. Agente pode (e deve) recusar quando o input é insuficiente. Recusar bem é qualidade.
+Camada de “Sanity Check” pré-gate. Antes do humano ver o gate, um agente revisor verifica consistência interna dos artefatos. Evita gate cheio de bobagem.
+Exportação dos artefatos em formato governado. Markdown + JSON + PDF assinado. Não deixar o usuário copiar e colar à mão.
+
+
+16. Recomendação final
+Minha recomendação final, em postura direta:
+
+Reposicionar o Loze Dev como esteira governada, não como demo viva. A “sala viva” é consequência da operação real, não o produto. Se o produto nasce como demo, ele morre como demo.
+Reduzir agentes para 5 no MVP. Transformar o resto em capacidades reutilizáveis e etapas do orquestrador. Crescer agentes só quando houver evidência operacional de necessidade.
+Tratar Run, Artefato, Handoff e Decisão como cidadãos primários. Agente é cidadão secundário. Isso muda a arquitetura inteira para melhor.
+Isolar o Modo Demo por design. Selo visível, impedimento técnico de tocar em catálogo real, dados sintéticos. Sem exceção.
+Implementar logs estruturados, namespaces e ficha oficial de agente desde o dia 1. Isso não é “fase 2”. É fase zero.
+Definir o usuário primário do MVP antes de qualquer linha de código de produto. Eu recomendo: Loze interna primeiro, depois GrupoB, depois mercado.
+Investir no Guardião de Reaproveitamento e no Catálogo desde cedo. É o que diferencia Loze Dev de “mais um gerador de briefing com IA”.
+Adicionar agente adversarial e indicador de incerteza explícito. É o que protege a Loze de vender artefato bonito que está errado.
+Separar conscientemente as três faces do Loze Dev (demo institucional, ferramenta interna, produto vendável) e decidir qual está sendo construída agora. Sem essa decisão, o time vai brigar sem saber por quê.
+Validações obrigatórias antes de avançar para construção:
+
+Pietro Carboni — padrão, classificação de agentes vs. capacidades, gates, ficha oficial.
+Sávio Codare — arquitetura técnica, Supabase, Tool Layer, MCPs, versionamento de prompts.
+Pedro Gazan — segurança, namespaces, permissões, isolamento do modo demo, logs de segurança.
+Alice Montini — microcopy de recusa, alertas, gate, demo, indicadores de incerteza.
+Kane Zas / Rodrigues — decisão estratégica entre as três faces do produto.
+Pierre Zanulli — orquestração com a mesa técnica e com o SagB para evitar sobreposição.
+
+
+Próxima ação concreta (mais simples e mais segura): escrever uma Ficha Oficial do Loze Dev (v0.1) com:
+
+definição do produto,
+usuário primário do MVP,
+escopo e não escopo,
+lista final de agentes do MVP (não mais que 5),
+lista de capacidades reutilizáveis associadas,
+3 gates do MVP,
+4 artefatos do MVP,
+matriz de autonomia por etapa,
+donos humanos,
+critérios de qualidade por artefato,
+política de erro e escalonamento.
+
+Essa ficha vai a Pietro para canetada. Só depois dela aprovada é que o desenho técnico começa.
+
+
+Resumo em uma frase, para fechar:
+
+O Loze Dev pode virar um produto sério da Loze, mas só se a Loze resistir à tentação de fazer dele um espetáculo antes de fazer dele uma esteira governada. Sala viva é o resultado, não a meta.
+
+Fim da análise. Disponível para abrir qualquer um desses 16 pontos em profundidade — em especial o item 5 (estrutura dos agentes), o item 10 (dados, logs e auditoria) e o item 13 (riscos), que considero os mais críticos para a próxima rodada da mesa técnica.
+
+
+
+**1. O que entendi do projeto**
+O Loze Dev é uma plataforma visual que orquestra uma sala de agentes especializados para transformar uma ideia bruta de produto digital em uma documentação completa e pronta para execução — briefings, arquitetura, UX, backlog, infraestrutura, segurança etc. A metáfora não é uma conversa nem um formulário, mas uma “esteira viva”, onde o usuário assiste, em tempo real, agentes se passando contexto, gerando artefatos e parando em portões de aprovação. A visão final é um sistema híbrido: automação profunda com controles de autonomia, rastreabilidade total e uma experiência que impressiona comercialmente.
+
+**2. Leitura estratégica**
+O projeto ataca uma dor real: o vazio entre a ideia bruta e o primeiro backlog executável. Ele transforma um processo caótico de consultoria/Discovery em um produto digital repetível. O maior trunfo é a **tangibilidade visual** — o cliente vê o trabalho acontecer, o que gera confiança e justifica valor. O maior risco é a complexidade de coordenação e a expectativa de que os agentes “pensem bem” sem supervisão constante. Estrategicamente, o Loze Dev não é um gerador de código, é um **pré-executor e documentador de decisões técnicas**, o que o torna vendável agora mesmo que os entregáveis finais ainda precisem de implementação humana.
+
+**3. Arquitetura recomendada**
+Uma arquitetura orientada a eventos, com um **Orquestrador Central** que gerencia o estado da Run, e agentes desacoplados que escutam eventos e emitem eventos de conclusão. O front-end consome um stream de eventos (WebSockets/SSE) para animar a sala visual.
+- **Core Engine:** Máquina de estados da Run, gestor de handoffs, avaliador de regras de autonomia.
+- **Agent Runtime:** Cada agente é um worker que recebe contexto, processa (LLM, script ou mock) e devolve artefato + log.
+- **Catalog Service:** Serviço de catálogo de módulos, padrões e runs passadas (busca semântica).
+- **Gate Manager:** Fila de decisões pendentes, lógica de timeout, overrides.
+- **Event Bus:** Kafka/RabbitMQ (produção) ou Redis Streams (MVP). Eventos imutáveis alimentam logs, UI e auditoria.
+
+**4. Módulos necessários**
+- **Entrypoint:** Input da ideia, templates de briefing, upload de contexto.
+- **Esteira Visual:** Canvas dos agentes, conectores, status em tempo real.
+- **Agents Engine:** Execução individual de cada especialidade.
+- **Catalog & Reuse:** Indexação de artefatos passados, detecção de similaridade.
+- **Gate Center:** Central de aprovações com comentários e diff visual.
+- **Artifact Viewer:** Documentos, diagramas, markdown, mermaid renders.
+- **Logs & Trace:** Linha do tempo de eventos, nível debug para o usuário técnico.
+- **Run Manager:** Histórico de runs, branching, retomada de etapa.
+- **Settings:** Níveis de autonomia, integrações futuras (repo, CI/CD).
+- **Presentation Mode:** Modo demo com timings automáticos e highlights.
+
+**5. Estrutura dos agentes**
+Cada agente é definido por um contrato:
+```json
+{
+  "id": "architect",
+  "name": "Arquiteto de Sistemas",
+  "avatar": "🧱",
+  "input": ["briefing", "mvp_plan"],
+  "output": "architecture_doc",
+  "depends_on": ["analyst"],
+  "triggers": "auto | on_approval",
+  "model": "gpt-4o | claude-sonnet | mock",
+  "prompt_base": "...",
+  "tools": ["diagram_gen", "catalog_search"],
+  "timeout": 120
+}
+```
+Agentes são stateless — recebem o contexto completo e devolvem um artefato com metadados (versão, confiança, avisos). O Orquestrador é o único que persiste estado entre eles.
+
+**6. Fluxo ideal da esteira**
+1. **Ideia Input** → gera `briefing_raw`
+2. **Gate-00:** Aprova entendimento → `briefing_final`
+3. **Analista** + **Guardião** (paralelo) → `mvp_plan` + `reuse_suggestions`
+4. **Gate-01/02:** Aprova plano MVP e reuso
+5. **Arquiteto** → `architecture_doc`
+6. **Gate-03:** Aprova arquitetura
+7. **UX Técnico** + **Dados/Integrações** + **Segurança** (paralelo) → docs específicos
+8. **Gate-04:** Aprova dados, integrações, segurança
+9. **Backlog Agent** consolida → `backlog`
+10. **DevOps/Deploy** + **QA/Logs** → infra e plano de testes
+11. **Documentação** + **Versionamento** + **Catálogo** → docs finais
+12. **Revisor Final** → `final_report`, `runbook`
+13. **Gate-05/06:** Aprovação final
+
+Cada bloco gera handoff estruturado e atualiza a UI com status `processing → done → waiting_gate`.
+
+**7. Handoffs, gates e aprovações**
+Handoff é um objeto imutável assinado pelo agente:
+```json
+{
+  "from": "architect",
+  "to": "ux_tech",
+  "artifacts": ["arch_v1.md", "arch_diagram.mermaid"],
+  "context_summary": "Arquitetura baseada em microsserviços com API Gateway...",
+  "caveats": ["Alta latência no serviço de busca - revisar caching"],
+  "confidence": 0.85,
+  "suggested_questions": ["Rateio de recursos entre serviços?"]
+}
+```
+Gates são nós no grafo. O motor pausa a esteira e notifica o usuário. O usuário pode aprovar com carimbo, pedir re-run parcial, ou bifurcar a run para explorar alternativas. Cada gate gera um evento `decision_made` imutável.
+
+**8. Automação e níveis de autonomia**
+Níveis definidos por permissões:
+- **Manual:** Todos os gates ativos. Agentes só sugerem.
+- **Semiautônomo:** Gates críticos (00,03,04) pausam; gates de documentação e logs rodam automático.
+- **Demo:** Esteira inteira roda com timers, mock decisions, ideal para apresentação.
+- **Execução Real (futuro):** Agentes com permissão para criar PRs, editar schemas, subir preview — sempre com `rollback_plan` registrado.
+
+Regra de segurança: qualquer ação com side-effect externo (deploy, write em repo) exige confirmação em modo real, independente do nível.
+
+**9. UI/UX e experiência visual**
+A tela principal é um **canvas em grafo** (estilo n8n ou LangGraph visual). Nodes são agentes com avatar, status glow (pulsando, verde, laranja pausado). Conexões mostram handoffs fluindo. Painéis laterais:
+- Direita: propriedades do agente selecionado, entrada/saída, logs.
+- Esquerda: timeline da run, árvore de artefatos.
+- Inferior: console de eventos ao vivo.
+Em modo demo, spotlight automático nos agentes trabalhando, com narração em tooltip. A sensação de “vida” vem de microinterações: barras de progresso, digitação simulada, agentes “pensando” (ícone de loading com frases de raciocínio).
+
+**10. Dados, logs, artefatos e auditoria**
+- **Run:** `id, idea, status, autonomy_level, created_at, current_gate, tags`
+- **AgentExecution:** `id, run_id, agent_id, status, input_context, output_artifacts, handoff, logs[], started_at, finished_at`
+- **Artifact:** `id, run_id, agent_id, type (doc/diagram/json), content, version, parent_id`
+- **Gate:** `id, run_id, name, required, status, decision, comment, decided_at`
+- **LogEntry:** `id, run_id, agent_id, level, message, timestamp` (stream via WebSocket)
+- **CatalogEntry:** `id, embedding, type, tags, source_run_id, reusable_module`
+Event Sourcing: cada transição de estado é um evento imutável. O estado atual da run é projeção da stream de eventos.
+
+**11. MVP recomendado**
+Objetivo: impressionar comercialmente com o mínimo de complexidade real.
+- **Mock Engine:** Agentes são LLMs com prompts fixos, rodando sequencialmente, sem execução real de código. O Orquestrador apenas encadeia chamadas e salva resultados.
+- **UI Canvas:** Implementação estática ou com biblioteca de fluxo (React Flow) consumindo dados mockados que transitam com animações CSS.
+- **Gates simulados:** Pop-ups estilizados com opções de aprovação.
+- **Demo Mode como padrão:** Vender a visão antes de construir a execução real.
+Entregáveis do MVP: Uma run completa do fluxo de 18 agentes para um projeto-exemplo, gerando documentos em markdown e diagramas mermaid que pareçam coesos e de alto valor.
+
+**12. Fases de evolução**
+- **Fase 1 — Vitrine Interativa (agora):** UI completa, agentes mock, fluxo rígido mas visualmente espetacular. Usado em pitchs e captação.
+- **Fase 2 — Motor Híbrido (3-6 meses):** Substituir mocks por LLMs reais, adicionar busca em catálogo simples (RAG), modo semiautônomo real, exportação de artefatos.
+- **Fase 3 — Plataforma Colaborativa (6-12 meses):** Usuários reais criando runs, múltiplos projetos, customização de agentes, integração com GitHub e Supabase para criar repos e schemas reais (modo execução controlada).
+- **Fase 4 — Agentes Autônomos com Sandbox (12+ meses):** Ambiente de execução isolado, agentes que geram e testam código, integração com MCP tools, licenciamento por run/agente.
+
+**13. Riscos e cuidados**
+- **Expectativa irreal:** Cliente achar que o output é um sistema pronto, não uma documentação executável. Mitigação: nomenclatura clara (“Blueprint”, não “App pronto”).
+- **Alucinação de LLM:** Agentes podem sugerir arquiteturas incoerentes. Mitigação: validação entre agentes, revisão humana obrigatória em gates críticos, confidence score visível.
+- **Complexidade do motor de estado:** Risco de bugs de concorrência e deadlocks nos gates. Mitigação: máquina de estados formal e testada, event sourcing para replay.
+- **Custo de tokens:** Uma run completa pode consumir muitos tokens. Mitigação: cache de contexto, uso de modelos menores para tarefas simples, modo demo gratuito limitado.
+
+**14. O que está faltando**
+- **Onboarding do usuário:** Como ele descreve a ideia para maximizar a qualidade? Templates de perguntas? Exemplos?
+- **Tratamento de ambiguidade:** Um agente “Clarificador” antes do briefing, que faz até N perguntas de volta se a ideia for muito vaga.
+- **Estimativa de custo e tempo:** Um agente “PM/Estimador” que, com base no backlog gerado, sugere esforço e custos de execução.
+- **Versionamento de agentes:** Se um agente é atualizado, como re-executar runs antigas? Lógica de “agentes imutáveis por run” e reprodutibilidade.
+- **Curadoria humana para o catálogo:** O reuso automático pode sugerir besteira; precisa de curadoria inicial e feedback de utilidade.
+
+**15. Sugestões diferentes que você adicionaria**
+- **Agente “Clarificador Inicial”:** Roda antes de tudo, faz três perguntas-chave ao usuário e refina a ideia antes do Gate-00.
+- **Agente “Riscos e Trade-offs”:** Após arquitetura, avalia riscos (single point of failure, lock-in, complexidade) e sugere alternativas.
+- **Agente “Diário de Bordo Narrativo”:** Gera um resumo em linguagem natural de toda a run, como um storyteller, para stakeholders não técnicos.
+- **Removeria duplicidade:** Juntaria “Documentação Técnica” com “Revisor Final e Runbooks”, e “Versionamento Técnico” com “Catálogo Técnico”.
+- **Módulo de “Preflight de Requisitos”:** Antes de liberar a esteira, verifica se a ideia tem informações mínimas (audiência, plataforma, restrições) e bloqueia se necessário.
+
+**16. Recomendação final**
+O Loze Dev é um produto de posicionamento único: **”Sua ideia bruta entra, um time de agentes especialistas sai com um plano de execução completo.”** O diferencial não é a IA em si, mas a **experiência teatral de transparência e confiança**. Aconselho fortemente a construir o MVP como uma peça de demonstração altamente polida, com foco na sensação de progresso e qualidade dos artefatos, mesmo que tudo seja roteirizado com LLMs. Isso valida a demanda e financia a construção da engine real. Depois, evolua com execução controlada, tornando-se uma plataforma de “Discovery as a Service”. Mantenha o usuário no centro do ciclo de decisão e cobre por run ou por assinatura com limite de agentes — é uma entrega de valor clara e precificável.
+
+---
+Estruturas solicitadas (anexas ao raciocínio):
+- **Telas:** Landing → Dashboard de Runs → Canvas da Esteira (com painéis colapsáveis) → Gate Modal → Artefato Viewer fullscreen.
+- **Entidades DB:** `users, runs, run_states, agents, run_agent_executions, artifacts, handoffs, gates, log_events, catalog_items`.
+- **Estados da Run:** `idea_received, clarifying, briefing, planning, designing, awaiting_gate, documenting, finishing, completed, failed`.
+- **Status do Agente:** `idle, queued, processing, waiting_gate, done, error`.
+- **Permissões:** Nível de autonomia dita quais gates são obrigatórios e se agentes podem acessar ferramentas externas.
+- **Handoff:** Evento `HANDOFF_COMPLETED` com payload de contexto resumido e links para artefatos.
+- **Integração futura:** Webhooks pós-run para enviar artefatos para GitHub, Notion, Linear ou Supabase, e MCP servers como ferramentas dos agentes.
+
+Relatório de Análise Estratégica e Arquitetural: Projeto Loze Dev
+1. O que entendi do projeto
+A análise pormenorizada da visão proposta para o projeto "Loze Dev" revela uma iniciativa ambiciosa que visa transcender os paradigmas atuais de interação com Inteligência Artificial. O projeto afasta-se de interfaces conversacionais estáticas, formulários rígidos ou meros geradores de tarefas, propondo a criação de uma "Esteira Autônoma Visual de Agentes". A premissa central consiste em oferecer uma sala de operações digital e observável, onde uma ideia bruta submetida por um utilizador é ingerida, processada e transformada num produto digital através do trabalho coreografado de múltiplos agentes especializados em engenharia de software e produto.
+
+O sistema foi concebido para gerar uma sensação de imersão e delegação executiva. A experiência do utilizador ("Coloquei uma ideia e agora um time inteiro de agentes está trabalhando nela") foca-se na transparência algorítmica. O utilizador deve conseguir visualizar o fluxo de trabalho em tempo real, observando a passagem de contexto entre agentes com funções estritamente delineadas, desde o planeamento inicial e arquitetura até à escrita de código, testes e infraestrutura.
+
+Além da execução autónoma, o projeto introduz a necessidade crítica de controlo humano através de gates de aprovação (Human-in-the-Loop). Este mecanismo garante que o sistema não atue como uma caixa negra incontrolável, mas sim como uma linha de montagem interativa que requer validação estratégica em pontos de inflexão, como a aprovação de arquitetura, segurança e planos de Produto Mínimo Viável (MVP). A visão final é a de um produto que não apenas simula uma equipa de desenvolvimento, mas que efetivamente conduz processos e materializa artefatos tecnológicos de forma auditável e gerível.
+
+2. Leitura estratégica
+No ecossistema atual de Inteligência Artificial generativa, as organizações estão a transitar rapidamente da prototipagem de chatbots de turno único para a implementação de sistemas multiagente capazes de executar tarefas de longo horizonte. A maioria das ferramentas existentes foca-se na geração de código isolado (assistentes de IDE) ou em sistemas de gestão de tarefas onde o ser humano faz todo o planeamento. O Loze Dev posiciona-se estrategicamente no vazio entre a gestão de produto e a engenharia de software automatizada.   
+
+A verdadeira proposta de valor do Loze Dev não reside apenas na capacidade dos Modelos de Linguagem de Grande Escala (LLMs) gerarem código, mas na arquitetura de orquestração observável. Em ambientes empresariais, a adoção de IA para tarefas complexas esbarra frequentemente na falta de confiança, originada pela opacidade dos modelos e pelo risco de alucinações em fluxos contínuos. Ao transformar o raciocínio oculto da máquina num processo visual, sequencial e ancorado em artefatos tangíveis, o Loze Dev converte a IA de um "oráculo imprevisível" num "departamento de engenharia auditável".
+
+A leitura estratégica indica que o projeto responde a três dores latentes do mercado de desenvolvimento de software:
+Primeiro, a fadiga da coordenação; a necessidade de redigir especificações exaustivas para que a IA funcione é substituída por uma esteira que ingere ideias brutas e gera as próprias especificações iterativamente. Segundo, a gestão de contexto; modelos falham quando o contexto cresce descontroladamente, e a divisão do trabalho em agentes hiper-especializados resolve o estrangulamento da janela de contexto. Terceiro, a governação e segurança; a inclusão de gates de aprovação e níveis de autonomia transforma o sistema numa plataforma apta para adoção empresarial, onde a responsabilidade executiva permanece do lado humano, enquanto a carga cognitiva da execução é transferida para os agentes.   
+
+3. Arquitetura recomendada
+Para suportar fluxos de trabalho que podem estender-se por dias e envolver interrupções assíncronas para aprovação humana, a arquitetura clássica baseada em pedidos e respostas HTTP síncronos é fundamentalmente inadequada. A arquitetura ideal para o Loze Dev deve ser um sistema de Orquestração de Grafos Dirigidos a Eventos com Máquina de Estados Persistente.
+
+A fundação do backend deve assentar em frameworks de baixo nível orientadas a multiagentes, como LangGraph ou o Agent Development Kit (ADK), que permitem o desenho de fluxos de controlo expressivos (ciclos, ramificações, fan-out/fan-in). O sistema não deve ser gerido por um único prompt gigantesco, mas por um Grafo Acíclico Dirigido (DAG) onde cada nó representa um agente especializado ou uma ferramenta, e as arestas representam a lógica condicional de transição de estado.   
+
+A arquitetura deve adotar o princípio de separação entre o armazenamento e a apresentação do contexto. O contexto não deve ser um longo histórico de chat mutável, mas uma visão compilada sobre um sistema de estado mais rico, dividido em Sessões, Memória e Artefatos. A persistência é gerida por checkpointers (ex.: SQLite ou PostgreSQL acoplado ao LangGraph), que guardam o estado global da execução ("Run") em cada transição, permitindo que a infraestrutura computacional hiberne enquanto aguarda aprovação humana e retome a execução instantaneamente sem perda de dados.   
+
+No que concerne à integração com o mundo exterior, a arquitetura deve ser desenhada em torno do Model Context Protocol (MCP). Em vez de construir integrações rígidas (APIs REST acopladas) para aceder a bases de dados, repositórios de código ou ferramentas de infraestrutura, o Loze Dev funcionará como um MCP Host. Os agentes atuarão como clientes padronizados, conectando-se a servidores MCP que expõem ferramentas semânticas, garantindo segurança corporativa, tipagem rigorosa e preservação de contexto ao longo da comunicação via Server-Sent Events (SSE).   
+
+4. Módulos necessários
+A construção de um sistema desta magnitude exige uma abordagem modular rigorosa. O monólito deve ser evitado a favor de serviços independentes que cooperam na execução da Run. A tabela seguinte detalha os módulos essenciais que o produto necessita para operar em ambiente de produção:
+
+Módulo do Sistema	Responsabilidade Funcional e Arquitetural
+Visual Node Engine	
+Motor de renderização front-end (baseado em React Flow / xyflow) responsável por mapear o estado do backend num canvas interativo espacial, gerindo a disposição de nós, arestas, animações de telemetria e o estado visual da operação.
+
+State Orchestration Engine	
+O núcleo do backend (utilizando LangGraph ou ADK Workflow). Executa a máquina de estados, efetua o roteamento entre agentes, gere as tentativas de recuperação de erro e atualiza a base de dados centralizada após cada transição de nó.
+
+Context & Memory Manager	
+Sistema dedicado à engenharia de contexto. Trata a compressão dinâmica de longo histórico, impede o inchaço de tokens (token bloat) e assegura que cada agente receba apenas as instruções, ferramentas e memórias estritamente necessárias para a sua janela de execução.
+
+HITL Gateway (Human-in-the-Loop)	
+Módulo de interrupção e suspensão de processos. Interceta a execução do motor de estados ao detetar um Gate, persiste o checkpoint num armazenamento durável e gere os webhooks que irão acordar o sistema após a submissão da decisão humana.
+
+Artifact Vault	
+Repositório central (BLOB/S3 Storage) que isola a gestão de ficheiros pesados (código, documentos UML). Os agentes recebem identificadores leves destes documentos no seu contexto, descarregando o texto completo apenas quando explicitamente invocado por uma ferramenta.
+
+MCP Integration Hub	
+Gateway padronizado de comunicação externa que implementa o Model Context Protocol. Gere a descoberta dinâmica de ferramentas, o roteamento de mensagens entre os agentes internos e os serviços corporativos externos, mantendo registos de auditoria e segurança de acessos.
+
+  
+5. Estrutura dos agentes
+A visão original propõe uma lista exaustiva de 18 agentes que atuam sequencialmente na esteira. No entanto, o desenho arquitetural de sistemas de IA aponta para riscos elevados na passagem linear de estado através de tantas entidades independentes, resultando em latência profunda e degradação de sinal. Recomenda-se a reestruturação dos agentes num modelo hierárquico de "Agentes Supervisores" que delegam tarefas a "Agentes Especialistas" (Sub-agentes) operando em paralelo.   
+
+Os agentes estruturais como o Orquestrador Técnico, o Analista de Produto e o Arquiteto de Sistemas operam na cadeia primária. Quando a execução chega à fase de engenharia, o Arquiteto atua como router, invocando simultaneamente o Front-end Engineer, Back-end Engineer e Supabase Engineer. Cada um destes sub-agentes recebe um escopo isolado de informações e devolve os seus resultados ao nó orquestrador, prevenindo a sobreposição de responsabilidades.   
+
+Para manter o rigor e a padronização, a identidade e as competências de cada agente devem ser modeladas através de um esquema rigoroso de atributos e geridas através de uma lógica de status bem definida, conforme demonstrado na tabela de propriedades abaixo:
+
+Propriedade do Agente	Descrição da Implementação
+Perfil Visual	Avatar iconográfico, Nome (ex: Arquiteto de Sistemas), Cor de destaque para o canvas visual.
+System Instruction	
+A delimitação de competências injetada no LLM. Define o tom, as regras de negócio e a interdição de execução de tarefas fora do seu domínio específico.
+
+Tool Bindings	
+O catálogo de ferramentas MCP às quais o agente tem acesso. O DevOps Agent terá ferramentas de deploy, enquanto o Analista apenas acede a pesquisa semântica.
+
+Schema In/Out	Contratos de interface tipados (Pydantic ou JSON Schema) que forçam o agente a devolver dados estruturados no final do seu raciocínio, prevenindo que um agente envie texto não formatado para o seguinte.
+  
+Lógica de Status dos Agentes
+O motor visual deve reagir de forma fluida ao estado interno do LLM para providenciar a ilusão de "vida". A lógica de status deve mapear diretamente para o estado computacional:
+
+Status do Agente	Acionador (Trigger)	Comportamento Visual no Canvas
+Idle (Inativo)	Nó instanciado, aguardando que a sua dependência anterior seja concluída.	Opacidade reduzida, estático, sem animações ativas.
+Analyzing (Pensando)	Invocação da inferência do LLM iniciada; consumo da janela de contexto.	Borda pulsante, anel circular de carregamento, log de terminal a exibir "Reading context...".
+Executing (Atuando)	
+O LLM decidiu usar uma ferramenta (Tool Call) do sistema MCP.
+
+Conectores para nós de infraestrutura iluminam-se, logs mostram as variáveis submetidas à ferramenta.
+Blocked_HITL	
+Agente requer permissão externa para avançar um Gate ou ferramenta sensível.
+
+Ícone de cadeado amarelo ou painel de alerta, emissão de notificação para a interface do utilizador.
+Handoff (Passando o bastão)	
+O Schema Out foi validado e enviado para o motor de estados (State Delta).
+
+Animação de envio de pacote ao longo da aresta para o próximo agente da cadeia.
+Done (Concluído)	O agente cumpriu o seu propósito e hibernou.	Ícone de check verde, libertação de memória, atualização do painel lateral de entregáveis.
+  
+6. Fluxo ideal da esteira
+O processamento contínuo de uma Run no Loze Dev não é uma simples sequência de prompts, mas sim uma orquestração de transições de estado que asseguram o alinhamento arquitetural do software em conceção. O fluxo inicia-se com a inserção da ideia bruta, momento em que a entidade Run é gerada na base de dados. O Orquestrador Técnico é despertado, recebendo o input e analisando a taxonomia da proposta. Este agente não constrói o sistema; ele funciona como um roteador de intenções, passando imediatamente a bola para o Guardião de Reaproveitamento e o Catálogo Técnico. Estes agentes paralelos analisam a ideia contra bases de dados vetoriais corporativas para evitar redundâncias, injetando componentes pré-existentes na memória da Run.   
+
+Posteriormente, o estado consolidado flui para o Analista de Produto, que sintetiza o Briefing estruturado, expandindo a ideia num plano de MVP. Ocorre então a primeira paragem obrigatória no GATE-01, submetendo os pressupostos à aprovação humana. Com a autorização, a esteira liberta o Arquiteto de Sistemas e a Documentação Técnica para definirem as fundações. Esta separação assegura que, antes de escrever qualquer código, o sistema possui plantas rigorosas armazenadas no Artifact Vault, estabelecendo a verdade (Ground Truth) para a fase de engenharia.   
+
+O coração executivo ativa-se na fase de delegação técnica. O Arquiteto transmite a planta a um sub-grafo focado, onde o Front-end Engineer, o Back-end Engineer e o Supabase Engineer começam a codificar iterativamente através do protocolo MCP, gerando commits, fluxos de integração de APIs e configurações de segurança. A execução só culmina com a passagem pelo QA / Testes e pelo Revisor Final, que compila os diários de bordo e encerra a jornada no GATE-06.   
+
+Lógica de Estados da Run
+A gestão do estado macro do projeto deve ser dissociada do estado micro de cada agente. A lógica de estados da Run dita o comportamento global do sistema perante falhas e interrupções:
+
+Estado da Run	Condição Sistémica	Implicação de Backend
+Inception	Criação inicial; o Orquestrador está a classificar a viabilidade da ideia bruta submetida.	Inicialização da sessão e alocação de armazenamento no Vault.
+Planning_Active	A cadeia analítica (Produto, UX, Arquitetura) encontra-se em inferência no motor LangGraph.	Alto consumo de inferência; monitorização contínua contra limites orçamentais de tokens.
+Pending_Approval	
+O fluxo intersetou um Gate de aprovação e encontra-se congelado num checkpointer.
+
+A Run dorme. Nenhum recurso computacional (GPU/CPU) é retido no servidor para este processo.
+Execution_Active	O sub-grafo de Engenharia encontra-se a invocar ferramentas MCP para a geração concreta de artefactos técnicos.	Múltiplos fios assíncronos a reportar telemetria para a interface visual. Risco elevado de falhas em ferramentas externas.
+Reverting	
+O humano num Gate pediu a revisão de uma etapa ou rejeitou uma entrega.
+
+O sistema aplica um State Delta inverso, recuando o histórico da memória e despertando agentes do passado com as novas restrições.
+
+Completed	Todos os agentes terminaram e o Gate final de entrega foi assinado e validado.	Geração de relatório de auditoria, consolidação final do Artifact Vault e encerramento imutável da sessão.
+  
+7. Handoffs, gates e aprovações
+Em workflows onde os erros da Inteligência Artificial podem implicar falhas sistémicas ou custos desnecessários em ambiente de produção, a intervenção humana não é uma funcionalidade opcional, mas uma fundação do desenho. O Loze Dev exige a transição fluida entre ação autónoma e delegação de controlo humano.
+
+Lógica de Handoff (Passagem de Bastão)
+O handoff entre agentes nunca deve transferir a totalidade do histórico conversacional cru (prompt pollution). Quando o "Analista de Produto" conclui a sua etapa, o motor LangGraph extrai apenas as variáveis validadas do estado global, estrutura-as segundo um esquema específico, e aplica uma técnica de "Tradução Narrativa". A passagem de estado mascara as interações passadas como contexto diretivo, eliminando os aspetos conversacionais e entregando ao "Arquiteto de Sistemas" um pacote contendo estritamente as restrições, o acesso de leitura ao artefacto e os objetivos arquiteturais imediatos, garantindo uma redução dramática de alucinações e de consumo de tokens.   
+
+Lógica de Gates e Auditoria Human-in-the-Loop (HITL)
+O funcionamento tradicional de paragem numa thread bloqueia os recursos da aplicação, impossibilitando a escala. O Loze Dev deve utilizar a arquitetura de Checkpoint-based Pause & Resume suportada por bibliotecas modernas. Sempre que o sistema deteta a aproximação de um nó do tipo ApprovalGate (ex: GATE-02 — Aprovar plano do MVP):   
+
+O sistema sinaliza um evento de interrupção formal (Interrupt) ao final do processamento do agente anterior.
+
+O estado atual da memória, os ponteiros de contexto e o histórico de invocações são serializados para uma base de dados durável, encapsulando tudo num objeto Checkpoint associado a uma Thread ID.   
+
+A execução no servidor termina, permitindo escalar a infraestrutura para zero caso o utilizador demore dias a responder. Na UI, a barra lateral apresenta o artefacto pendente com controlos de decisão.   
+
+O utilizador delibera. Caso decida "Aprovar", um webhook aciona o reinício da máquina de estados, hidratando o estado persistido em memória e continuando para o próximo nó como se o tempo não tivesse passado.
+
+Caso o utilizador decida "Pedir Revisão", este insere o texto instrucional com o feedback. O motor incorpora o feedback como uma sobreposição de estado condicional (State Delta), ordenando ao grafo que retorne ao nó originador para re-execução, gerando assim um ciclo de correção seguro antes de aprovar novo handoff.   
+
+8. Automação e níveis de autonomia
+Sistemas agênticos corporativos operam frequentemente ao longo de um espetro de autonomia, consoante o grau de maturidade da equipa e o risco financeiro inerente à tarefa. O Loze Dev deverá suportar esta transição através de uma parametrização ao nível da Run.
+
+Lógica de Automação e Configuração de Execução
+As modalidades de operação controlam a tolerância do motor do LangGraph para evitar paragens:
+
+Modo Manual: Todo o Handoff entre agentes gera implicitamente um Gate. Funciona como um depurador (debugger) visual total para fluxos ultrassensíveis.
+
+Modo Semiautónomo: O grafo só interrompe a execução em nós marcados como críticos (arquitetura, modificação de bases de dados externas ou injeção de dependências), permitindo que agentes de leitura ou analíticos (pesquisa de padrões, revisão de documentos) passem contexto livremente em sequência contínua.   
+
+Modo Demo: Ignora totalmente as interrupções de estado, assumindo validação por defeito, com tempos de atraso artificiais (delays) injetados entre as transições para permitir ao utilizador acompanhar visualmente a formação da narrativa durante uma apresentação de produto.
+
+Lógica de Permissões e Segurança
+A gestão de quem pode interagir com os agentes nos Gates e aprovar a manipulação de ferramentas do MCP requer o mapeamento preciso de funções (Roles) humanas para ações do sistema.
+
+Nível de Permissão Humana	Direitos de Visualização na UI	Autoridade Executiva sobre o Grafo
+Espectador (Viewer)	Acede ao canvas, observa as transições, lê os artefactos no Vault e a telemetria, mas não interage com fluxos.	Nenhuma. Modificações de estado restritas.
+Revisor de Produto	Visualização completa. Capacidade de agir exclusivamente sobre os Gates iniciais (GATE-00, GATE-01, GATE-02).	Pode aprovar, rejeitar ou introduzir alterações nos planos e resumos, mas não pode ignorar ou intervir nos Gates técnicos.
+Lead Técnico / Arquiteto	Acesso ao ciclo completo. Intervenção em Gates arquiteturais e de implementação (GATE-03 ao GATE-06).	Pode forçar modificações em artefactos de arquitetura e sobrepor comportamentos do motor do LLM.
+Engenheiro de Automação	
+Nível administrativo. Pode editar os System Prompts dos agentes e parametrizar quais ferramentas corporativas o MCP Hub disponibiliza.
+
+Tem autoridade para configurar os perfis estáticos da tabela AgentProfile e definir o comportamento do Modo Semiautónomo.
+  
+9. UI/UX e experiência visual
+A transição de uma interface de chat unidimensional para uma experiência visual bidimensional (canvas) é o diferencial que validará o projeto comercialmente. Ao observar um agente modificar propriedades ou comunicar, a confiança do utilizador na capacidade de execução da máquina solidifica-se. O ambiente deve ser renderizado como um "Dashboard de Missão".   
+
+A biblioteca de base para a construção do frontend interativo deve ser o React Flow / xyflow, que se estabeleceu como a norma na construção de mapas de processo dinâmicos e editores baseados em nós. A interface deve seguir padrões avançados de roteamento de arestas (edge routing) e componentes personalizados de nós.   
+
+Estrutura de Telas e Navegação
+A aplicação deve ser orquestrada com a seguinte organização espacial:
+
+Zona da Interface	Descrição e Comportamento Visual
+Canvas Principal (Centro)	
+O palco da execução. Renderizado utilizando ReactFlow com nós arrastáveis e capacidade de zoom (pan and zoom). O grafo revela os caminhos de handoff. As arestas (edges) incluem marcadores animados que viajam entre nós sinalizando o envio de estado.
+
+Nó do Agente (No Canvas)	Cartões (Cards) altamente estilizados que alojam a identidade visual do agente. Possuem luzes de status (Status Indicators) e um pequeno log embutido na base do cartão, semelhante a um terminal truncado, exibindo a ação atual ("Generating schema...").
+Painel de Inspeção Lateral (Direita)	
+Abre-se dinamicamente ao selecionar um nó ou conector. Inclui tabuladores contextuais: Entrada (dados recebidos pelo agente), Ferramentas (Tool Calls em execução via MCP) e Artefato (pré-visualização Markdown, YAML ou renderização de diagramas).
+
+Barra de Linha do Tempo e Decisões (Fundo)	
+Um registo temporal horizontal ou lista vertical compressível, enumerando os eventos da sessão. Quando um Gate congela a esteira, este painel eleva-se assumindo precedência visual, apresentando botões de aprovação e caixa de introdução de correções.
+
+Cabeçalho de Missão (Topo)	Exibe o título da Run, o consumo estimado de inferência e os comandos globais de execução (Pausar Esteira, Terminar Execução, Controlos de Zoom).
+  
+O motor React Flow manter-se-á em sincronia perfeita com a execução do backend submetendo uma assinatura a um canal de eventos (ex: WebSocket ou Server-Sent Events do protocolo MCP), re-renderizando a posição e o estado dos nós reativamente à medida que a Run se desenrola no LangGraph.   
+
+10. Dados, logs, artefatos e auditoria
+A sustentabilidade de uma arquitetura multiagente complexa reside num isolamento claro entre a gestão relacional de metadados de operação, o armazenamento e armazenamento vetorial e a imutabilidade dos registos de transação. Sem este rigor, a base de dados centralizada colapsará sob o volume e verbosidade extrema do output dos LLMs.
+
+Estrutura de Banco de Dados Futura (Relacional)
+O esquema deve seguir o modelo transacional clássico (PostgreSQL gerido via Supabase, por exemplo), minimizando a carga útil em formato JSON nas tabelas principais para facilitar pesquisas rápidas na UI.
+
+Entidade Principal	Função e Relacionamento	Campos Essenciais de Estrutura
+Project / Workspace	Agrupador lógico. Diferentes equipas criam várias ideias na mesma organização.	id, org_id, name, created_at.
+Run	Uma sessão isolada e instanciada pela submissão de uma "ideia bruta". Relaciona-se com Project.	id, project_id, user_id, status (Enum da Lógica de Estados), autonomy_mode, started_at, completed_at.
+AgentProfile	Catálogo imutável das configurações do sistema. Fornece os parâmetros base aos agentes antes da execução.	id, internal_name, display_role, system_prompt, avatar_config, allowed_mcp_tools (JSONB).
+RunEvent (Auditoria)	Log apêndice-apenas (Append-only) gerado para cada decisão microscópica. Permite reconstrução do histórico.	id, run_id, agent_id, event_type (thought, tool_call, handoff, error), payload_snippet (JSONB), timestamp.
+CheckpointerState	
+Base de persistência binária ou serializada exigida pelo LangGraph/ADK para o Pause/Resume em tempo de execução.
+
+thread_id (associa à Run), checkpoint_id, parent_id, state_blob (bytea/JSON), created_at.
+Artifact	
+A representação transacional dos ficheiros ou conhecimentos gerados pelos agentes e disponibilizados para o próximo na cadeia.
+
+id, run_id, creator_agent_id, version, artifact_type (code, UML, markdown), reference_uri (S3 path).
+ApprovalGate	O registo humano sobre a suspensão dos nós e o veredicto acionado. Relaciona-se com RunEvent.	id, run_id, gate_type, decision_action (approve, reject, revert), feedback_notes, resolved_by_user_id.
+  
+Lógica de Artefatos e Auditoria
+A Lógica de Auditoria implementa um padrão de Event Sourcing. O motor no servidor não altera diretamente o estado dos agentes numa tabela gigante; emite continuamente RunEvents. O frontend consome este fluxo (stream) para desenhar os painéis de logs. Esta abordagem garante que qualquer anomalia comportamental de um LLM possa ser inspecionada passo-a-passo numa linha cronológica, satisfazendo requisitos de compliance empresarial.
+
+A Lógica de Artefatos resolve a limitação física da janela de contexto. Quando a "Documentação Técnica" elabora o manual da API com centenas de linhas, seria incorreto concatenar essas linhas para o "Front-end Engineer" a seguir. O sistema grava o conteúdo real num bloco de armazenamento não estruturado (S3 / Supabase Storage), criando o registo Artifact. O sistema injeta apenas o "Identificador do Recurso" (Handle Pattern) no contexto (ex: Reference: artifact_api_docs_v1). O próximo agente é ensinado a utilizar a ferramenta LoadArtifactTool do MCP Hub para consultar pedaços específicos desse recurso somente quando necessário, preservando a coerência das premissas sem inundações textuais destrutivas.   
+
+11. MVP recomendado
+A estratégia ideal para levar o Loze Dev ao mercado requer a separação rigorosa entre a demonstração do valor conceptual e o risco técnico associado a execuções remotas reais. O Produto Mínimo Viável (MVP) deve maximizar a impressão visual, ocultando num primeiro momento as integrações corporativas complexas sob dados e infraestruturas controladas.
+
+O caminho recomendável é desenvolver o "MVP Mockado e Visual", que funciona na realidade como um gerador de planeamento arquitetural e conceptual automatizado, parando imediatamente antes de tocar na manipulação de bases de dados ativas ou escrever código de produção final. A esteira processa ideias até à estruturação de documentação avançada.
+
+O foco tecnológico deste MVP recai no motor interativo frontend e no motor do grafo backend. O frontend é desenvolvido usando Next.js com xyflow (React Flow) em profundidade , garantindo que todos os efeitos de transição de handoffs pareçam vivos. O backend será orquestrado com uma implementação concisa de LangGraph em Python, que gerirá as transições de nós, o sistema de checkpoints (em SQLite ou persistência básica no Supabase para provar o HITL com as paragens em Gates).   
+
+Na lógica interna, a execução não recorre a execuções cruzadas de agentes remotos num MCP global; todos os agentes são essencialmente diferentes nós do mesmo grafo chamando diferentes prompts e submetendo retornos tipados usando LLMs rápidos e eficientes como o Claude 3.5 Haiku, assegurando latência irrisória durante as sessões de demonstração no modo Demo ou Manual, provando a cadência sequencial do fluxo de informações.
+
+12. Fases de evolução
+O roteiro de transformação da visão inicial para uma arquitetura de adoção generalizada (SaaS / PaaS) será estruturado em fases incrementais, gerindo os graus de maturidade da integração do ecossistema e escalabilidade de recursos.
+
+Fase 1: Motor Visual e Documentação (O MVP Avançado)
+Foco exclusivo na orquestração espacial (Canvas) e interrupções em Gates. Os agentes geram puramente esquemas conceptuais baseados em texto e diagramas Markdown/PlantUML (Analista, Arquiteto, UX Técnico). Nenhuma alteração ativa é feita fora do contexto do sistema. Comprova a eficácia e fluidez das paragens e aprovações humanas em projetos conceptuais.
+
+Fase 2: Domínio do Contexto e Sub-Agentes em Paralelo
+O modelo de agentes sequenciais é modificado para a estrutura de delegação a Agentes Especialistas (Task Agents / Sub-agentes). A introdução de técnicas de engenharia de contexto (Context Stack) com a separação entre o Working Context transiente, e memórias recuperáveis do projeto através de vetores. Desenvolvimento do Artifact Vault como entidade primária com o padrão de referenciação isolada.   
+
+Fase 3: Era da Integração Corporativa (MCP First)
+
+Lógica de Integração Futura com Ferramentas Externas
+Esta fase implementa o Model Context Protocol e rompe com os ambientes confinados. A plataforma é equipada com um MCP Hub interno. A partir deste momento, os agentes do Loze Dev operam ativamente sobre ferramentas de empresas terceiras sem requerer desenvolvimento adicional personalizado por ferramenta. O "Supabase/Database Engineer" comunica nativamente com o servidor MCP open-source oficial da Supabase, lendo esquemas reais e projetando comandos SQL de alteração no projeto cliente associado. O "Agente de DevOps" ganha pernas virtuais ligando-se a repositórios GitHub, configurando infraestruturas usando bibliotecas comunitárias normalizadas na Linux Foundation.   
+
+Fase 4: Sistema de Agencia de Auto-Correção Autônoma
+Desenvolvimento das lógicas de ciclos de tentativa (retries) assíncronas baseadas em Test-Driven Development iterativo. Os agentes criam sandboxes efêmeros, injetam o código, leem os logs e observabilidade (telemetria), reescrevem sobre os erros das tentativas falhadas, isolando os seres humanos puramente a decisões de arquitetura e aprovação final de deploys.   
+
+13. Riscos e cuidados
+Implementar uma plataforma com este grau de ambição engloba desafios técnicos que frequentemente desmantelam arquiteturas de IA experimentais ao tentar escalar:
+
+Espiral de Custos e Latência Incontrolável: À medida que o limite da janela de contexto expande as interações, a inserção repetitiva do histórico do sistema para que os agentes finais consigam raciocinar destrói o orçamento computacional da Run. Processos de múltiplas etapas, cada vez mais cheios com os resíduos de logs de tarefas anteriores, criam latências impraticáveis de tempo até o primeiro token. O rigoroso truncamento através da Lógica de Artefatos supracitada é a principal linha de defesa.   
+
+Perda do Sinal Relevante (Lost in the Middle): Janelas de contexto afogadas em telemetria, resultados vazios de ferramentas de pesquisa e logs irrelevantes prejudicam a perceção seletiva da IA. O LLM fixar-se-á em padrões irrelevantes do passado esquecendo a instrução imediata. A dependência forçada na estruturação estrita de transição assegurará coerência.   
+
+Alucinação Cognitiva Provocada pelo Tempo de Ociosidade (Idle Time Hallucination): Em fluxos de longo prazo (long-running agents), se o agente estiver suspenso durante dias a aguardar o Gate de arquitetura e acordar abruptamente, o motor irá frequentemente tentar preencher falhas deduzindo falsamente que algumas aprovações não declaradas já foram concretizadas. A reinjeção agressiva de instruções com a declaração exata da etapa em curso através das variáveis do State Delta durante a transição é mandatória para mitigar a entropia das interrupções do fluxo.   
+
+14. O que está faltando nessa visão
+A abstração descrita pelo utilizador no design conceptual da operação multiagente possui três omissões arquiteturais graves de relevância sistémica, as quais se manifestam apenas quando postas em teste fora da esfera conceptual:
+
+Orquestração de Regressões e Correção de Erros (Error Recovery Loops): O modelo submetido aborda apenas o caminho ideal de sucesso, num fluxo descendente (happy path). No entanto, o agente de QA/Testes ou de Observabilidade irá inevitavelmente falhar no código do Back-end Engineer. Sem prever arestas de grafo cíclicas com controlos de max-retries, o sistema bloqueia. O conceito deve incorporar fluxos regressivos estruturados, definindo quantas vezes o Back-end Engineer pode tentar compilar o código antes de acionar um Gate de erro para o humano.   
+
+Abordagem à Gestão de Finanças de Inferência (Budget Awareness): Trabalhar com enxames em cadeia pode atingir restrições onerosas se modelos poderosos forem empregues sem limites. O sistema deve integrar uma contabilidade preditiva ou um roteamento dinâmico de modelos. Um analista deve consumir um modelo de vanguarda (GPT-4o ou Claude Opus), enquanto o formatador de logs ou um validador de resposta tipada consome versões muito mais leves, atenuando a sobrecarga económica global.   
+
+Mecanismos de Tradução e Atribuição de Contexto: Como o LLM nativamente entende padrões de sistema, assistente e utilizador, a introdução brusca de um assistente simulando múltiplas identidades causa colapsos semânticos. Se um agente vir no histórico que "O agente" concluiu uma análise, poderá crer erroneamente que ele mesmo detém a competência e o histórico dessa etapa transata. O sistema deve prever o Narrative Casting , reformulando as mensagens de agentes anteriores e demarcando-as objetivamente como contexto direcional (""), de forma a blindar o pensamento operacional isolado de cada etapa da Run.   
+
+15. Sugestões diferentes que você adicionaria
+A fim de distinguir amplamente o produto Loze Dev das ferramentas genéricas de integração e elevar a infraestrutura baseada no motor ADK e MCP em produção corporativa, adicionaria propostas não convencionais, maximizando os fundamentos identificados na análise:
+
+Adição Estratégica: Agente Especializado Compressor de Contexto.
+Criaria uma classe invisível de agente atuando nos bastidores. O seu único objetivo é escutar o fluxo contínuo de conversas e tool-outputs e colapsar semanticamente a informação num estado sintético concentrado e direcional. Essa estratégia ativa converte amontoados de registos (logs) desorganizados em compressões de alta densidade informativa de baixo custo, libertando a banda larga para uma operação prolongada e sustentável.   
+
+Integração Nativa a Model Context Protocol (Arquitetura MCP-First).
+Abdicaria imediatamente de desenvolver infraestrutura individual de conexão às bases e integrações da esteira. Transformar o projeto todo numa rede servida pela estrutura Model Context Protocol converte a necessidade extenuante de criar suportes do zero para Jira, GitLab ou Supabase em instalações triviais "plug-and-play". O catálogo técnico proposto no planeamento funcionaria em simbiose com esta expansão adaptável de mercado.   
+
+Funcionalidade de Regressão Temporal Visual ("Time-Travel Debugging").
+Aproveitando o modelo nativo de armazenagem sequencial por Checkpointers , introduziria a capacidade do utilizador revogar passos da esteira visualmente ("Desfazer"). Ao retroceder três nós atrás no tempo, o sistema restauraria o instante congelado na base de dados, permitindo a exploração de ramos paralelos alternativos (A/B testing de arquiteturas) para a mesma Run da ideia central, constituindo um marco comercial assinalável.   
+
+16. Recomendação final
+O projeto Loze Dev detém um potencial disruptivo palpável ao reposicionar o desenvolvimento agêntico de software. A lacuna comercial encontra-se na ausência de observabilidade operacional das ferramentas contemporâneas, e o compromisso da equipa numa perspetiva orientada a uma "Sala Viva" baseada em canvas espaciais supera a interface baseada em transcrições (Chat) em eficiência psicológica e coordenação estratégica.
+
+A viabilidade global do projeto exige dedicação profunda à engenharia infraestrutural subjacente – nomeadamente, o domínio irrestrito e exaustivo de gestão de estados usando DAGs (LangGraph, ADK workflows) e do Model Context Protocol. Sem este fundamento, a demonstração colapsará sob o peso da desorientação dos agentes face à crescente entropia da poluição contextual e inchaço de dados. Contudo, ao encapsular a transferência de comunicação por identificadores estritos (Artifact Handles), proteger os nós críticos através de uma hierarquia rigorosa de interrupções Human-in-the-Loop duráveis , e converter a sequência linear em delegações especializadas isoladas, a Loze Dev erguer-se-á com competências fundacionais de PaaS de classe empresarial, capacitada a moldar de forma soberana a futura fronteira do desenvolvimento cognitivo interativo.   
+
+
+developers.googleblog.com
+Architecting efficient context-aware multi-agent framework for ...
+Abre em uma nova janela
+
+epam.com
+Designing Autonomous AI Agents: How We Built a Multi-Agent Swarm for UI Development
+Abre em uma nova janela
+
+developers.googleblog.com
+Build Long-running AI agents that pause, resume, and never lose ...
+Abre em uma nova janela
+
+medium.com
+Human-in-the-Loop for AI Agents: A Checkpoint-Based Pause & Resume Pattern with Spring AI | by Ali Gelenler | May, 2026 | Medium
+Abre em uma nova janela
+
+langchain.com
+LangGraph: Agent Orchestration Framework for Reliable AI Agents - LangChain
+Abre em uma nova janela
+
+github.com
+GitHub - luuisotorres/langgraph-multiagent-orchestration: A series of notebooks exploring the capabilities of LangGraph for building agentic workflow, from ReAct Agents to Multi-Agent Orchestration with memory and human-in-the-loop
+Abre em uma nova janela
+
+langchain.com
+Making it easier to build human-in-the-loop agents with interrupt
+Abre em uma nova janela
+
+reddit.com
+How do you persist agent state & resume conversations in a multi-agent system when moving from CLI to UI/API? : r/LangChain - Reddit
+Abre em uma nova janela
+
+medium.com
+MCP vs A2A: Same AI Task, Completely Different Architectures | by Hemanth Raju Koneti | ILLUMINATION | May, 2026
+Abre em uma nova janela
+
+developer.ibm.com
+Model Context Protocol architecture patterns for multi-agent AI systems - IBM Developer
+Abre em uma nova janela
+
+anthropic.com
+Introducing the Model Context Protocol - Anthropic
+Abre em uma nova janela
+
+azimuahamed.medium.com
+React Flow Examples - Azim Uddin Ahamed
+Abre em uma nova janela
+
+github.com
+thedogwiththedataonit/react-flow: React Flow skills for coding agents - GitHub
+Abre em uma nova janela
+
+medium.com
+Building Multi-Agent Systems with LangGraph: A Step-by-Step Guide | by Sushmita Nandi
+Abre em uma nova janela
+
+vellum.ai
+How to Build Multi Agent AI Systems With Context Engineering - Vellum
+Abre em uma nova janela
+
+anthropic.com
+Effective context engineering for AI agents - Anthropic
+Abre em uma nova janela
+
+medium.com
+Model Context Protocol (MCP) for Multi-Agent Systems | by Mahesh Nikam | Medium
+Abre em uma nova janela
+
+medium.com
+7 Key MCP Architecture Patterns for Enterprise Data Integration | by CData Software
+Abre em uma nova janela
+
+medium.com
+How I Built a Multi-Agent AI System That Changed My Development Workflow Forever | by Vedantparmarsingh | Medium
+Abre em uma nova janela
+
+agno.com
+How to add human-in-the-loop controls to AI agents that actually run in production - Agno
+Abre em uma nova janela
+
+github.com
+Supabase MCP Server - GitHub
+Abre em uma nova janela
+
+strategy.com
+Model context protocol (MCP) for enterprise AI integration - Strategy
+Abre em uma nova janela
+
+reddit.com
+I built an agent-operated canvas where you can watch AI design editable graphics in real time (React + Fabric.js) - Reddit
+Abre em uma nova janela
+
+reactflow.dev
+React Flow: Node-Based UIs in React
+Abre em uma nova janela
+
+xyflow.com
+xyflow: Node-Based UIs for React and Svelte
+Abre em uma nova janela
+
+github.com
+Supabase MCP Server - GitHub
+Abre em uma nova janela
+
+supabase.com
+Supabase MCP Server
+Abre em uma nova janela
+
+julsimon.medium.com
+Still Missing Critical Pieces
+Abre em uma nova janela
+
+developer.nvidia.com
+Build a Log Analysis Multi-Agent Self-Corrective RAG System with NVIDIA Nemotron
+Abre em uma nova janela
+
+arxiv.org
+ContextEvolve: Multi-Agent Context Compression for Systems Code Optimization - arXiv
+Abre em uma nova janela
+
+youtube.com
+One AI Chat to Rule Them All: Connecting Enterprise Tools with MCP by Karthik Sayapparaju
+
+1. O QUE ENTENDI DO PROJETO
+
+O Loze Dev | Esteira Autônoma Visual de Agentes é um sistema para transformar uma ideia bruta em uma entrega estruturada por meio de uma sala viva de agentes especializados.
+
+A essência do produto não é “ter IA”. A essência é criar uma operação visual, rastreável e controlada, onde a ideia passa por uma esteira inteligente com agentes, handoffs, gates humanos, logs, decisões, artefatos e estados claros.
+
+O usuário entra com algo simples, como:
+
+“Quero criar um app para organizar ideias e transformar em projetos.”
+
+E o Loze Dev transforma isso em uma RUN.
+
+Essa run passa por agentes como estrategista, arquiteto, UX, front-end, back-end, banco, segurança, QA, documentação e revisor final. Cada um recebe contexto, executa sua parte, gera entregável, registra decisão e passa o bastão para o próximo agente.
+
+O ponto mais importante: o Loze Dev não deve ser só um chat multiagente. Ele deve ser um sistema operacional visual de criação, planejamento e preparação técnica.
+
+A promessa central seria:
+
+“Coloque uma ideia. Veja uma equipe de agentes transformar isso em plano, arquitetura, documentação, backlog e execução preparada.”
+
+2. LEITURA ESTRATÉGICA
+
+Minha leitura é que o Loze Dev pode virar um produto muito forte, mas somente se ele for tratado como uma esteira de produção inteligente, e não como um painel bonito de agentes conversando.
+
+O mercado já está cheio de ferramentas que dizem “crie apps com IA”, “converse com agentes” ou “automatize tarefas”. O diferencial do Loze Dev deve ser outro:
+
+- visualização da operação acontecendo;
+- agentes com papéis bem definidos;
+- controle humano nos pontos críticos;
+- reaproveitamento de padrões e módulos;
+- geração de artefatos úteis;
+- histórico de decisões;
+- handoff estruturado;
+- auditoria;
+- preparação para execução real;
+- autonomia progressiva, não caótica.
+
+A maior oportunidade é transformar o Loze Dev em uma “fábrica visual de projetos inteligentes”.
+
+Ele pode servir para:
+
+- criar sistemas;
+- criar apps;
+- estruturar metodologias;
+- criar documentação técnica;
+- planejar automações;
+- gerar backlog;
+- preparar prompts para outros agentes;
+- organizar projetos internos;
+- acelerar times de desenvolvimento;
+- vender como ferramenta para consultorias, agências, founders, devs e squads.
+
+A decisão estratégica mais importante é esta:
+
+O Loze Dev deve nascer como uma esteira visual controlada, com agentes simulados e lógica real de processo, antes de tentar executar tudo de forma autônoma.
+
+Decisão tomada: solução mais simples, robusta e escalável no início = criar primeiro o motor visual de runs, estados, agentes, gates, handoffs e artefatos. Depois plugar IA real, integrações e execução externa.
+
+3. ARQUITETURA RECOMENDADA
+
+A arquitetura ideal deve ter 5 camadas principais.
+
+CAMADA 1 — Interface visual
+
+Responsável pela experiência do usuário.
+
+Funções:
+- cockpit da run;
+- sala visual dos agentes;
+- timeline;
+- painel de gates;
+- painel de artefatos;
+- painel de decisões;
+- painel do agente ativo;
+- modo demo/apresentação;
+- logs em tempo real;
+- mapa da esteira.
+
+Tecnologia recomendada:
+- React + TypeScript;
+- Vite;
+- Tailwind ou design system próprio;
+- Netlify para deploy;
+- componentes modulares;
+- animações leves;
+- layout responsivo.
+
+CAMADA 2 — Motor de Run
+
+É o coração do sistema.
+
+Responsável por:
+- criar uma run;
+- controlar etapa atual;
+- avançar ou pausar;
+- acionar agente;
+- registrar evento;
+- abrir gate;
+- criar handoff;
+- salvar artefato;
+- mudar status;
+- controlar autonomia.
+
+Essa camada não deve depender da interface. A UI apenas mostra o que o motor decidiu.
+
+CAMADA 3 — Orquestrador de Agentes
+
+Responsável por decidir:
+
+- qual agente entra;
+- qual contexto ele recebe;
+- qual saída precisa gerar;
+- qual próximo agente será chamado;
+- se precisa de aprovação humana;
+- se a etapa pode avançar sozinha;
+- se houve erro, bloqueio ou risco.
+
+O orquestrador deve funcionar como “gerente da sala”, não como agente criativo solto.
+
+CAMADA 4 — Camada de Inteligência
+
+Aqui entram os agentes.
+
+Cada agente deve ter:
+- prompt base;
+- função;
+- contexto permitido;
+- ferramentas permitidas;
+- template de saída;
+- critérios de qualidade;
+- limite de autonomia;
+- regras de handoff;
+- gatilhos de gate;
+- limite de ações;
+- histórico de atuação.
+
+No MVP, os agentes podem ser mockados ou semi-reais. Depois, cada agente pode chamar modelos de IA de verdade.
+
+CAMADA 5 — Dados, auditoria e integrações
+
+Responsável por persistência e rastreabilidade.
+
+Tecnologia recomendada:
+- Supabase;
+- Postgres;
+- Row Level Security;
+- Realtime;
+- Storage;
+- Edge Functions;
+- tabelas de runs, agentes, gates, handoffs, logs, artefatos, eventos e integrações.
+
+Integrações futuras:
+- GitHub;
+- Google Drive;
+- Notion;
+- ClickUp;
+- Roo Code;
+- VS Code;
+- Netlify;
+- Supabase;
+- Slack;
+- WhatsApp;
+- Gmail;
+- Google Calendar;
+- APIs externas;
+- MCPs;
+- webhooks.
+
+Arquitetura conceitual:
+
+Usuário → Ideia → Run Engine → Orquestrador → Agentes → Handoffs → Gates → Artefatos → Auditoria → Relatório Final.
+
+4. MÓDULOS NECESSÁRIOS
+
+1. Módulo de Projetos
+
+Função:
+Organizar os projetos que receberão runs.
+
+Campos principais:
+- nome;
+- descrição;
+- tipo;
+- status;
+- dono;
+- organização;
+- contexto base;
+- restrições;
+- padrões usados;
+- tecnologias preferidas.
+
+2. Módulo de Runs
+
+Função:
+Controlar cada execução da esteira.
+
+Uma run é a unidade principal de trabalho.
+
+Exemplo:
+“Run 001 — Criar app de organização de ideias.”
+
+3. Módulo de Esteiras / Workflows
+
+Função:
+Definir o fluxo padrão que a run seguirá.
+
+Exemplos de esteiras:
+- Ideia para sistema;
+- Ideia para app;
+- Ideia para metodologia;
+- Ideia para automação;
+- Diagnóstico técnico;
+- Auditoria de projeto;
+- Geração de backlog;
+- Preparação para dev.
+
+4. Módulo de Agentes
+
+Função:
+Cadastrar, configurar e exibir agentes.
+
+Cada agente deve ter:
+- nome;
+- especialidade;
+- avatar;
+- função;
+- autonomia;
+- permissões;
+- ferramentas;
+- templates;
+- status;
+- histórico.
+
+5. Módulo de Handoffs
+
+Função:
+Controlar a passagem de contexto entre agentes.
+
+Não deve ser conversa solta. Deve ser contrato estruturado.
+
+6. Módulo de Gates
+
+Função:
+Pausar a run em pontos críticos para aprovação humana.
+
+7. Módulo de Artefatos
+
+Função:
+Guardar tudo que a run gerou.
+
+Exemplos:
+- briefing;
+- arquitetura;
+- mapa de telas;
+- backlog;
+- esquema de banco;
+- plano de integração;
+- checklist QA;
+- runbook;
+- tarefa técnica;
+- relatório final.
+
+8. Módulo de Decisões
+
+Função:
+Registrar decisões importantes.
+
+Exemplo:
+“Decisão: MVP será mockado antes de Supabase real.”
+“Motivo: reduzir risco e acelerar validação visual.”
+
+9. Módulo de Logs e Auditoria
+
+Função:
+Registrar tudo que aconteceu.
+
+Eventos:
+- run criada;
+- agente acionado;
+- handoff criado;
+- gate aberto;
+- gate aprovado;
+- artefato gerado;
+- erro encontrado;
+- etapa concluída;
+- revisão solicitada.
+
+10. Módulo de Catálogo Técnico
+
+Função:
+Consultar padrões, componentes, módulos e decisões já existentes.
+
+Esse módulo é essencial para o “Guardião de Reaproveitamento”.
+
+11. Módulo de Reaproveitamento
+
+Função:
+Verificar se já existe módulo, componente, padrão, prompt, agente ou arquitetura similar.
+
+12. Módulo de Autonomia
+
+Função:
+Definir modo de operação:
+
+- manual;
+- semiautônomo;
+- demo;
+- real controlado;
+- futuro executivo.
+
+13. Módulo de Integrações
+
+Função:
+Permitir conexão futura com ferramentas externas.
+
+14. Módulo de Apresentação/Demo
+
+Função:
+Rodar a esteira de forma visual para demonstração comercial.
+
+15. Módulo Administrativo
+
+Função:
+Gerenciar usuários, organizações, planos, permissões, uso, custos, limites e modelos.
+
+5. ESTRUTURA DOS AGENTES
+
+A lista atual de agentes está boa, mas está grande para o MVP. Minha recomendação é separar em agentes essenciais, agentes compostos e agentes futuros.
+
+AGENTES ESSENCIAIS PARA O MVP
+
+1. Orquestrador Técnico
+
+Função:
+Controla a run, define etapas, chama agentes, abre gates e mantém a esteira organizada.
+
+Esse é o agente mais importante.
+
+2. Analista de Produto e MVP
+
+Função:
+Transforma ideia bruta em proposta de valor, público, escopo, MVP e limites.
+
+3. Guardião de Reaproveitamento
+
+Função:
+Verifica se já existe algo parecido no catálogo técnico, no SagB, na Loze ou em padrões anteriores.
+
+4. Arquiteto de Sistemas
+
+Função:
+Define módulos, arquitetura, fluxos, entidades, integrações, riscos técnicos e estrutura geral.
+
+5. UX/UI Técnico
+
+Função:
+Desenha experiência visual, telas, jornadas, estados, cards, painéis e interações.
+
+6. Engineer Full Stack
+
+No MVP, eu juntaria Front-end Engineer, Back-end Engineer e Supabase Engineer em um agente só.
+
+Motivo:
+Separar front, back e banco cedo demais aumenta complexidade visual e operacional.
+
+Nome sugerido:
+Engenheiro Full Stack de MVP.
+
+7. Segurança e Governança
+
+Função:
+Avalia permissões, dados sensíveis, RLS, logs, riscos, autonomia e integrações.
+
+8. QA / Testes
+
+Função:
+Revisa a run, valida coerência, acha falhas e gera checklist de teste.
+
+9. Documentador Técnico
+
+Função:
+Organiza artefatos, decisões, runbooks e relatório final.
+
+10. Revisor Final
+
+Função:
+Consolida tudo em uma entrega copiável, clara e pronta para execução.
+
+AGENTES QUE EU JUNTARIA
+
+Front-end Engineer + UX/UI Técnico:
+Podem ser separados no futuro, mas no MVP podem atuar conectados.
+
+Back-end Engineer + Supabase / Database Engineer:
+No MVP, um único agente Full Stack pode cuidar disso.
+
+Logs e Observabilidade + Versionamento Técnico:
+Podem virar um agente de Governança Técnica no início.
+
+Catálogo Técnico + Guardião de Reaproveitamento:
+Podem ser o mesmo agente no MVP.
+
+API & Integrations Engineer + Agentes, MCPs e Automações:
+Podem ser um agente futuro chamado Engenheiro de Integrações e Automações.
+
+AGENTES QUE EU CRIARIA
+
+1. Agente Crítico / Advogado do Diabo
+
+Função:
+Questionar se a ideia está complexa demais, se o MVP está inchado, se a arquitetura está frágil e se há risco escondido.
+
+2. Agente Comercial de Produto
+
+Função:
+Avaliar se o projeto tem valor vendável, público, diferenciação e caminho de monetização.
+
+3. Agente de Escopo
+
+Função:
+Evitar que a run vire um monstro. Ele corta excessos e separa agora/depois.
+
+4. Agente de Memória Operacional
+
+Função:
+Identificar decisões importantes e mandar para a memória/contexto do projeto.
+
+ESTRUTURA PADRÃO DE CADA AGENTE
+
+Cada agente deve ter:
+
+- id;
+- nome;
+- avatar;
+- categoria;
+- função;
+- missão;
+- especialidade;
+- limites;
+- autonomia máxima;
+- ferramentas permitidas;
+- entrada esperada;
+- saída esperada;
+- template de resposta;
+- critérios de qualidade;
+- gatilhos de handoff;
+- gatilhos de gate;
+- status atual;
+- última ação;
+- artefatos gerados;
+- histórico na run.
+
+STATUS DOS AGENTES
+
+Sugestão de status:
+
+- idle: aguardando;
+- queued: na fila;
+- receiving_context: recebendo contexto;
+- thinking: analisando;
+- working: executando;
+- generating_artifact: gerando artefato;
+- waiting_human: aguardando aprovação humana;
+- handing_off: passando para outro agente;
+- blocked: bloqueado;
+- reviewing: revisando;
+- completed: concluído;
+- failed: falhou;
+- skipped: pulado;
+- paused: pausado.
+
+6. FLUXO IDEAL DA ESTEIRA
+
+Fluxo recomendado da run:
+
+ETAPA 0 — Entrada da ideia
+
+Usuário envia ideia bruta.
+
+Saída:
+- ideia registrada;
+- run criada;
+- status: draft ou queued.
+
+ETAPA 1 — Entendimento inicial
+
+Agente:
+Orquestrador Técnico.
+
+Função:
+Normalizar a ideia e identificar tipo de projeto.
+
+Saída:
+- resumo da ideia;
+- objetivo principal;
+- tipo de entrega;
+- dúvidas;
+- riscos iniciais.
+
+Gate:
+GATE-00 — Aprovar entendimento da ideia.
+
+ETAPA 2 — Briefing estruturado
+
+Agente:
+Analista de Produto e MVP.
+
+Função:
+Transformar a ideia em briefing.
+
+Saída:
+- público;
+- dor;
+- proposta;
+- objetivo;
+- escopo;
+- não escopo;
+- restrições;
+- resultado esperado.
+
+Gate:
+GATE-01 — Aprovar briefing.
+
+ETAPA 3 — Reaproveitamento
+
+Agente:
+Guardião de Reaproveitamento.
+
+Função:
+Verificar se já existe algo parecido.
+
+Saída:
+- módulos parecidos;
+- componentes reaproveitáveis;
+- padrões existentes;
+- riscos de duplicidade;
+- recomendação de reaproveitamento.
+
+Gate:
+Opcional.
+
+ETAPA 4 — Plano de MVP
+
+Agente:
+Analista de Produto e MVP + Agente de Escopo.
+
+Função:
+Definir primeira versão.
+
+Saída:
+- MVP;
+- versão futura;
+- o que não entra agora;
+- critérios de sucesso;
+- entregáveis mínimos.
+
+Gate:
+GATE-02 — Aprovar plano do MVP.
+
+ETAPA 5 — Arquitetura
+
+Agente:
+Arquiteto de Sistemas.
+
+Função:
+Desenhar a estrutura técnica.
+
+Saída:
+- módulos;
+- entidades;
+- fluxos;
+- estados;
+- banco futuro;
+- integrações;
+- riscos;
+- dependências.
+
+Gate:
+GATE-03 — Aprovar arquitetura.
+
+ETAPA 6 — UX/UI e experiência visual
+
+Agente:
+UX/UI Técnico.
+
+Função:
+Definir telas e experiência.
+
+Saída:
+- estrutura de telas;
+- jornada;
+- componentes;
+- estados visuais;
+- modo demo;
+- painéis principais.
+
+Gate:
+Opcional ou GATE-03.5.
+
+ETAPA 7 — Dados, segurança e integrações
+
+Agentes:
+Full Stack Engineer + Segurança e Governança.
+
+Função:
+Mapear banco, permissões, RLS, logs, integrações e limites.
+
+Saída:
+- entidades;
+- tabelas;
+- permissões;
+- regras de acesso;
+- logs;
+- auditoria;
+- integrações futuras.
+
+Gate:
+GATE-04 — Aprovar dados, integrações e segurança.
+
+ETAPA 8 — Backlog e tarefa técnica
+
+Agente:
+Documentador Técnico + Full Stack Engineer.
+
+Função:
+Transformar tudo em backlog ou tarefa técnica.
+
+Saída:
+- mega tarefa;
+- fases;
+- arquivos prováveis;
+- critérios de validação;
+- riscos;
+- comandos;
+- entregáveis.
+
+Gate:
+GATE-05 — Aprovar início da implementação.
+
+ETAPA 9 — QA e crítica
+
+Agentes:
+QA / Testes + Agente Crítico.
+
+Função:
+Revisar coerência e apontar falhas.
+
+Saída:
+- checklist;
+- riscos;
+- inconsistências;
+- ajustes sugeridos;
+- validação final.
+
+ETAPA 10 — Relatório final e runbook
+
+Agente:
+Revisor Final e Runbooks.
+
+Função:
+Consolidar entrega final.
+
+Saída:
+- resumo executivo;
+- decisões;
+- arquitetura;
+- telas;
+- banco;
+- backlog;
+- próximos passos;
+- tarefa copiável;
+- runbook.
+
+Gate:
+GATE-06 — Aprovar entrega final.
+
+7. HANDOFFS, GATES E APROVAÇÕES
+
+Handoff não pode ser conversa solta.
+
+Handoff precisa ser um objeto estruturado.
+
+MODELO DE HANDOFF
+
+Cada handoff deve conter:
+
+- id;
+- run_id;
+- from_agent;
+- to_agent;
+- etapa_origem;
+- etapa_destino;
+- motivo;
+- contexto_resumido;
+- decisões_relevantes;
+- restrições;
+- artefatos_anexos;
+- saída_esperada;
+- riscos;
+- prioridade;
+- precisa_aprovação;
+- status;
+- criado_em;
+- recebido_em;
+- concluído_em.
+
+Exemplo:
+
+Handoff:
+Do Agente: Analista de Produto e MVP
+Para o Agente: Arquiteto de Sistemas
+
+Motivo:
+MVP aprovado e pronto para arquitetura.
+
+Contexto:
+O produto será uma esteira visual de agentes para transformar ideias em entregas técnicas.
+
+Decisões:
+MVP será visual/mockado primeiro.
+Supabase real ficará para fase seguinte.
+Autonomia máxima inicial será semiautônoma.
+
+Saída esperada:
+Arquitetura modular, entidades, estados da run, agentes, gates, artefatos e estrutura futura de banco.
+
+GATES DE APROVAÇÃO
+
+Cada gate deve ter:
+
+- nome;
+- código;
+- descrição;
+- etapa;
+- solicitante;
+- resumo da decisão;
+- opções de ação;
+- impacto se aprovado;
+- impacto se rejeitado;
+- risco;
+- artefatos relacionados;
+- decisão humana;
+- observações;
+- data.
+
+AÇÕES DO USUÁRIO NO GATE
+
+O usuário deve poder:
+
+- aprovar;
+- aprovar com observações;
+- pedir revisão;
+- bloquear;
+- voltar etapa;
+- trocar escopo;
+- adicionar contexto;
+- chamar agente crítico;
+- comparar versões;
+- encerrar run.
+
+GATES RECOMENDADOS
+
+GATE-00 — Aprovar entendimento da ideia
+Evita começar com interpretação errada.
+
+GATE-01 — Aprovar briefing
+Evita construir em cima de briefing fraco.
+
+GATE-02 — Aprovar MVP
+Evita escopo gigante.
+
+GATE-03 — Aprovar arquitetura
+Evita arquitetura errada antes de gerar backlog.
+
+GATE-04 — Aprovar dados, integrações e segurança
+Evita riscos técnicos.
+
+GATE-05 — Aprovar execução técnica
+Evita mandar tarefa ruim para dev.
+
+GATE-06 — Aprovar entrega final
+Fecha a run.
+
+8. AUTOMAÇÃO E NÍVEIS DE AUTONOMIA
+
+A autonomia deve ser progressiva.
+
+NÍVEL 0 — Manual
+
+Tudo precisa de aprovação humana.
+
+Uso:
+- primeira versão;
+- projetos sensíveis;
+- cliente novo;
+- fase de validação.
+
+NÍVEL 1 — Assistido
+
+Agentes podem gerar artefatos, mas não avançam gates.
+
+Uso:
+- MVP inicial;
+- geração de documentos;
+- planejamento.
+
+NÍVEL 2 — Semiautônomo
+
+Agentes avançam etapas simples, mas pausam em decisões críticas.
+
+Uso:
+- operação real segura;
+- esteira interna;
+- projetos recorrentes.
+
+NÍVEL 3 — Demo automático
+
+A run avança automaticamente para apresentação visual, mas sem executar ações externas reais.
+
+Uso:
+- vendas;
+- demonstração;
+- pitch;
+- onboarding.
+
+NÍVEL 4 — Operacional controlado
+
+Agentes podem executar ações externas aprovadas.
+
+Exemplos:
+- criar documento;
+- criar card;
+- abrir issue;
+- salvar arquivo;
+- gerar schema;
+- enviar para repositório.
+
+Sempre com:
+- permissão;
+- log;
+- limite;
+- reversibilidade;
+- aprovação configurável.
+
+NÍVEL 5 — Executivo autônomo
+
+Agentes conduzem fluxos completos com intervenção mínima.
+
+Eu não recomendo esse nível no curto prazo.
+
+REGRA DE OURO
+
+Autonomia não deve ser medida por “quanto a IA faz sozinha”.
+Autonomia deve ser medida por “quanto o sistema consegue fazer com segurança, rastreabilidade e possibilidade de intervenção humana”.
+
+LÓGICA DE AUTOMAÇÃO
+
+A run deve ter regras como:
+
+Se etapa = simples e autonomia >= 2:
+avançar automaticamente.
+
+Se etapa = gate crítico:
+pausar.
+
+Se risco >= alto:
+chamar aprovação humana.
+
+Se agente gerar saída incompleta:
+mandar para revisão.
+
+Se handoff falhar:
+voltar para orquestrador.
+
+Se artefato final estiver abaixo do padrão:
+acionar QA.
+
+Se integração externa for acionada:
+verificar permissão.
+
+9. UI/UX E EXPERIÊNCIA VISUAL
+
+A experiência visual precisa vender a sensação de “equipe viva trabalhando”.
+
+ESTRUTURA DE TELAS
+
+1. Tela inicial / Home
+
+Componentes:
+- botão “Criar nova run”;
+- projetos recentes;
+- runs ativas;
+- aprovações pendentes;
+- agentes disponíveis;
+- artefatos recentes;
+- cards de demonstração.
+
+2. Tela de criação da run
+
+Campos:
+- ideia bruta;
+- tipo de projeto;
+- objetivo;
+- nível de autonomia;
+- modo manual/semiautônomo/demo;
+- esteira desejada;
+- contexto adicional.
+
+3. Cockpit da Run
+
+Essa é a tela principal.
+
+Deve mostrar:
+- nome da run;
+- status geral;
+- progresso;
+- etapa atual;
+- agente ativo;
+- próximos agentes;
+- gates pendentes;
+- artefatos gerados;
+- decisões;
+- timeline;
+- logs em tempo real.
+
+4. Sala Visual de Agentes
+
+Tela mais comercial e impressionante.
+
+Elementos:
+- agentes em cards;
+- conectores vivos;
+- linha de handoff;
+- agente ativo destacado;
+- animação de processamento;
+- status por cor;
+- avatar;
+- mini resumo de tarefa;
+- avanço da esteira.
+
+5. Timeline da Run
+
+Mostra:
+- eventos;
+- decisões;
+- handoffs;
+- gates;
+- artefatos;
+- erros;
+- revisões.
+
+6. Painel do Agente Ativo
+
+Mostra:
+- quem é o agente;
+- função;
+- entrada recebida;
+- tarefa atual;
+- saída esperada;
+- progresso;
+- entregável parcial;
+- próximo destino.
+
+7. Central de Gates
+
+Mostra:
+- aprovações pendentes;
+- impacto;
+- risco;
+- opções de decisão;
+- comentários;
+- histórico de decisões.
+
+8. Central de Artefatos
+
+Mostra:
+- briefing;
+- arquitetura;
+- UX;
+- banco;
+- backlog;
+- QA;
+- runbook;
+- relatório final.
+
+9. Modo Demo / Apresentação
+
+Tela limpa, bonita, com menos detalhes técnicos.
+
+Ideal para:
+- pitch;
+- cliente;
+- demonstração;
+- venda.
+
+10. Tela de Catálogo Técnico
+
+Mostra:
+- módulos existentes;
+- componentes;
+- padrões;
+- agentes;
+- workflows;
+- prompts;
+- templates;
+- integrações.
+
+11. Tela de Configuração de Workflow
+
+Para futuro:
+- criar esteiras;
+- ordenar etapas;
+- definir agentes;
+- definir gates;
+- definir autonomia.
+
+12. Tela de Auditoria
+
+Mais técnica:
+- logs;
+- eventos;
+- mudanças de estado;
+- permissões;
+- integrações chamadas;
+- erros.
+
+ESTADOS VISUAIS IMPORTANTES
+
+Run:
+- nova;
+- em preparação;
+- em execução;
+- aguardando aprovação;
+- bloqueada;
+- em revisão;
+- concluída;
+- cancelada;
+- falhou.
+
+Agente:
+- aguardando;
+- recebendo;
+- pensando;
+- executando;
+- gerando artefato;
+- entregando handoff;
+- aguardando humano;
+- concluído;
+- bloqueado;
+- falhou.
+
+Artefato:
+- rascunho;
+- em revisão;
+- aprovado;
+- substituído;
+- final;
+- arquivado.
+
+10. DADOS, LOGS, ARTEFATOS E AUDITORIA
+
+ESTRUTURA DE BANCO DE DADOS FUTURA
+
+Tabela: organizations
+
+Campos:
+- id;
+- name;
+- plan;
+- status;
+- created_at;
+- updated_at.
+
+Tabela: users
+
+Campos:
+- id;
+- organization_id;
+- name;
+- email;
+- role;
+- status;
+- created_at.
+
+Tabela: projects
+
+Campos:
+- id;
+- organization_id;
+- name;
+- description;
+- project_type;
+- status;
+- context;
+- created_by;
+- created_at;
+- updated_at.
+
+Tabela: workflows
+
+Campos:
+- id;
+- organization_id;
+- name;
+- description;
+- workflow_type;
+- version;
+- status;
+- config;
+- created_at.
+
+Tabela: workflow_steps
+
+Campos:
+- id;
+- workflow_id;
+- name;
+- description;
+- order_index;
+- required_agent_role;
+- gate_required;
+- expected_artifact_type;
+- autonomy_min_level;
+- autonomy_max_level;
+- config.
+
+Tabela: agents
+
+Campos:
+- id;
+- organization_id;
+- name;
+- slug;
+- role;
+- category;
+- avatar;
+- description;
+- autonomy_level;
+- status;
+- system_prompt;
+- output_template;
+- tools_allowed;
+- config;
+- created_at.
+
+Tabela: runs
+
+Campos:
+- id;
+- project_id;
+- workflow_id;
+- title;
+- raw_idea;
+- structured_briefing;
+- status;
+- autonomy_mode;
+- current_step_id;
+- progress_percentage;
+- risk_level;
+- created_by;
+- started_at;
+- completed_at;
+- created_at;
+- updated_at.
+
+Tabela: run_steps
+
+Campos:
+- id;
+- run_id;
+- workflow_step_id;
+- assigned_agent_id;
+- status;
+- input_context;
+- output_summary;
+- started_at;
+- completed_at;
+- quality_score;
+- error_message.
+
+Tabela: agent_sessions
+
+Campos:
+- id;
+- run_id;
+- run_step_id;
+- agent_id;
+- status;
+- current_task;
+- input_received;
+- expected_output;
+- generated_output;
+- token_usage;
+- cost_estimate;
+- started_at;
+- completed_at.
+
+Tabela: handoffs
+
+Campos:
+- id;
+- run_id;
+- from_agent_id;
+- to_agent_id;
+- from_step_id;
+- to_step_id;
+- reason;
+- context_summary;
+- decisions_summary;
+- constraints;
+- expected_output;
+- status;
+- approval_required;
+- created_at;
+- accepted_at;
+- completed_at.
+
+Tabela: gates
+
+Campos:
+- id;
+- run_id;
+- gate_code;
+- title;
+- description;
+- status;
+- risk_level;
+- requested_by_agent_id;
+- summary;
+- options;
+- selected_decision;
+- decision_note;
+- decided_by;
+- created_at;
+- decided_at.
+
+Tabela: artifacts
+
+Campos:
+- id;
+- organization_id;
+- project_id;
+- run_id;
+- created_by_agent_id;
+- type;
+- title;
+- content;
+- status;
+- version;
+- parent_artifact_id;
+- metadata;
+- created_at;
+- updated_at.
+
+Tabela: artifact_versions
+
+Campos:
+- id;
+- artifact_id;
+- version_number;
+- content;
+- change_summary;
+- created_by_type;
+- created_by_id;
+- created_at.
+
+Tabela: decisions
+
+Campos:
+- id;
+- run_id;
+- title;
+- description;
+- reason;
+- impact;
+- decided_by_type;
+- decided_by_id;
+- related_gate_id;
+- related_artifact_id;
+- created_at.
+
+Tabela: events
+
+Campos:
+- id;
+- run_id;
+- event_type;
+- actor_type;
+- actor_id;
+- title;
+- description;
+- payload;
+- created_at.
+
+Tabela: audit_logs
+
+Campos:
+- id;
+- organization_id;
+- project_id;
+- run_id;
+- action;
+- actor_type;
+- actor_id;
+- before_state;
+- after_state;
+- metadata;
+- created_at.
+
+Tabela: integrations
+
+Campos:
+- id;
+- organization_id;
+- provider;
+- name;
+- status;
+- permissions;
+- config;
+- created_at;
+- updated_at.
+
+Tabela: external_actions
+
+Campos:
+- id;
+- run_id;
+- integration_id;
+- action_type;
+- status;
+- request_payload;
+- response_payload;
+- approval_required;
+- approval_id;
+- created_at;
+- completed_at.
+
+LÓGICA DE ESTADOS DA RUN
+
+Estados recomendados:
+
+- draft: criada, mas não iniciada;
+- queued: aguardando iniciar;
+- briefing: entendendo ideia;
+- planning: criando plano;
+- architecture: desenhando arquitetura;
+- ux_mapping: desenhando UX;
+- data_mapping: mapeando dados;
+- waiting_approval: aguardando gate;
+- running: agentes trabalhando;
+- reviewing: em revisão;
+- blocked: bloqueada por erro ou decisão;
+- paused: pausada manualmente;
+- completed: concluída;
+- failed: falhou;
+- cancelled: cancelada;
+- archived: arquivada.
+
+LÓGICA DE PERMISSÕES
+
+Papéis de usuário:
+
+Owner:
+- cria organização;
+- gerencia tudo;
+- aprova gates críticos;
+- configura integrações.
+
+Admin:
+- gerencia projetos;
+- aprova runs;
+- configura agentes;
+- acessa logs.
+
+Operator:
+- cria runs;
+- interage com agentes;
+- aprova gates operacionais.
+
+Viewer:
+- visualiza runs e artefatos;
+- não aprova nem altera.
+
+Client:
+- vê modo apresentação;
+- aprova gates específicos;
+- não vê detalhes internos sensíveis.
+
+Agent:
+- executa ações dentro do limite.
+
+Regras:
+- agente não deve alterar permissão;
+- agente não deve apagar log;
+- agente não deve executar integração sem autorização;
+- gate crítico exige humano;
+- ações externas exigem permissão explícita.
+
+LÓGICA DE AUDITORIA
+
+Tudo que muda o estado do sistema deve gerar evento.
+
+Auditar:
+- criação de run;
+- alteração de status;
+- agente acionado;
+- entrada recebida;
+- saída gerada;
+- handoff criado;
+- gate aberto;
+- decisão humana;
+- artefato criado;
+- artefato editado;
+- integração chamada;
+- erro;
+- retry;
+- cancelamento;
+- conclusão.
+
+11. MVP RECOMENDADO
+
+O melhor MVP é:
+
+“Transformar uma ideia bruta em uma entrega técnica completa, com sala visual de agentes, handoffs, gates e artefatos, ainda que a execução seja mockada ou semiautomática.”
+
+O MVP não deve tentar programar de verdade ainda.
+
+O MVP deve provar:
+
+- a experiência visual;
+- a lógica da run;
+- os agentes;
+- os handoffs;
+- os gates;
+- os artefatos;
+- a sensação de operação viva;
+- o valor comercial.
+
+MVP FUNCIONAL RECOMENDADO
+
+1. Criar nova run
+
+Usuário coloca:
+- ideia;
+- tipo de projeto;
+- modo de autonomia;
+- nível de detalhe desejado.
+
+2. Rodar esteira padrão
+
+Esteira:
+- Entendimento;
+- Briefing;
+- Reaproveitamento;
+- MVP;
+- Arquitetura;
+- UX;
+- Dados;
+- Backlog;
+- QA;
+- Relatório Final.
+
+3. Mostrar agentes visualmente
+
+Agentes aparecem em cards vivos.
+
+4. Mostrar handoffs
+
+Quando um agente termina, aparece:
+“Analista de Produto entregou para Arquiteto de Sistemas.”
+
+5. Abrir gates
+
+Pelo menos 3 gates no MVP:
+- aprovar briefing;
+- aprovar MVP;
+- aprovar arquitetura.
+
+6. Gerar artefatos
+
+Artefatos mínimos:
+- briefing estruturado;
+- plano de MVP;
+- arquitetura recomendada;
+- mapa de telas;
+- estrutura de dados futura;
+- backlog técnico;
+- relatório final.
+
+7. Timeline
+
+Registrar todos os eventos.
+
+8. Modo demo
+
+Permitir rodar automaticamente para apresentação.
+
+9. Bloco final copiável
+
+Ao final, gerar uma entrega em bloco único para enviar a outro agente ou programador.
+
+O MVP ideal não é “fazer tudo”.
+O MVP ideal é “mostrar que a esteira existe, é clara, é bonita, é útil e gera entrega real”.
+
+12. FASES DE EVOLUÇÃO
+
+FASE 1 — Protótipo visual
+
+Objetivo:
+Criar impacto visual.
+
+Entregas:
+- cockpit;
+- sala de agentes;
+- cards;
+- status;
+- esteira;
+- timeline;
+- gates mockados;
+- artefatos mockados.
+
+FASE 2 — MVP com dados reais
+
+Objetivo:
+Persistir runs, agentes, gates, handoffs e artefatos.
+
+Entregas:
+- Supabase;
+- tabelas principais;
+- criação de run;
+- eventos;
+- status;
+- artefatos salvos;
+- histórico.
+
+FASE 3 — Agentes com IA real
+
+Objetivo:
+Gerar conteúdo real por etapa.
+
+Entregas:
+- prompts por agente;
+- templates de saída;
+- contexto controlado;
+- resumos automáticos;
+- revisão cruzada;
+- custos por run.
+
+FASE 4 — Catálogo técnico e reaproveitamento
+
+Objetivo:
+Consultar padrões existentes.
+
+Entregas:
+- módulos;
+- componentes;
+- templates;
+- agentes;
+- workflows;
+- padrões técnicos;
+- sugestões de reaproveitamento.
+
+FASE 5 — Workflow Builder
+
+Objetivo:
+Permitir criar esteiras personalizadas.
+
+Entregas:
+- builder visual;
+- etapas configuráveis;
+- gates customizados;
+- agentes por etapa;
+- automações.
+
+FASE 6 — Integrações externas
+
+Objetivo:
+Conectar com operação real.
+
+Entregas:
+- GitHub;
+- Google Drive;
+- ClickUp;
+- Notion;
+- Netlify;
+- Supabase;
+- webhooks;
+- Roo Code/VS Code futuramente.
+
+FASE 7 — Execução controlada
+
+Objetivo:
+Permitir agentes executarem ações reais.
+
+Exemplos:
+- criar issue;
+- gerar PR;
+- criar documento;
+- criar tarefa;
+- salvar schema;
+- criar checklist;
+- atualizar status externo.
+
+FASE 8 — Produto SaaS
+
+Objetivo:
+Vender para outras pessoas/empresas.
+
+Entregas:
+- organizações;
+- planos;
+- billing;
+- limites;
+- templates premium;
+- marketplace de agentes;
+- analytics;
+- onboarding;
+- modo cliente.
+
+13. RISCOS E CUIDADOS
+
+1. Virar teatro visual
+
+Risco:
+A interface parecer bonita, mas não produzir nada útil.
+
+Solução:
+Todo agente precisa gerar artefato concreto.
+
+2. Virar bagunça multiagente
+
+Risco:
+Agentes conversando sem controle.
+
+Solução:
+Handoff estruturado, orquestrador forte e estados claros.
+
+3. Escopo gigante no MVP
+
+Risco:
+Tentar colocar 18 agentes, integrações e execução real de início.
+
+Solução:
+MVP com poucos agentes compostos.
+
+4. Autonomia perigosa
+
+Risco:
+Agentes executarem ações erradas.
+
+Solução:
+Permissões, gates, logs e autonomia progressiva.
+
+5. Custo alto de IA
+
+Risco:
+Cada run ficar cara.
+
+Solução:
+Contexto resumido, agentes essenciais, cache e limites.
+
+6. Falta de rastreabilidade
+
+Risco:
+Usuário não saber por que algo foi decidido.
+
+Solução:
+Módulo de decisões e auditoria.
+
+7. Agentes redundantes
+
+Risco:
+Muitos agentes fazendo a mesma coisa.
+
+Solução:
+Juntar agentes no MVP e separar depois.
+
+8. Excesso técnico para usuário comum
+
+Risco:
+A tela ficar complexa demais.
+
+Solução:
+Duas camadas:
+- visão executiva;
+- visão técnica.
+
+9. Falta de caso de uso claro
+
+Risco:
+Produto parecer genérico.
+
+Solução:
+Começar com um caso de uso forte:
+“Ideia bruta → plano técnico pronto para execução.”
+
+14. O QUE ESTÁ FALTANDO
+
+1. Definir o usuário principal
+
+Sugestões:
+- founder não técnico;
+- agência;
+- consultoria;
+- time interno Loze/GrupoB;
+- dev que quer organizar projetos;
+- gestor que transforma ideias em tarefas.
+
+2. Definir o primeiro workflow oficial
+
+Minha sugestão:
+“Criar sistema/app a partir de ideia bruta.”
+
+3. Definir o artefato final padrão
+
+Minha sugestão:
+Ao final da run, gerar:
+
+- resumo executivo;
+- briefing;
+- MVP;
+- arquitetura;
+- telas;
+- banco futuro;
+- backlog;
+- riscos;
+- tarefa técnica copiável;
+- próximos passos.
+
+4. Definir o limite do MVP
+
+Não incluir no MVP:
+- execução real em GitHub;
+- múltiplas integrações;
+- agentes demais;
+- workflow builder avançado;
+- billing;
+- marketplace.
+
+5. Definir identidade visual da sala
+
+Precisa parecer:
+- vivo;
+- tecnológico;
+- premium;
+- operacional;
+- confiável.
+
+6. Definir padrão de qualidade dos artefatos
+
+Cada artefato precisa ter template fixo.
+
+7. Definir métrica de sucesso da run
+
+Exemplos:
+- completude;
+- clareza;
+- risco;
+- prontidão técnica;
+- nível de reaproveitamento;
+- aprovação humana.
+
+15. SUGESTÕES DIFERENTES QUE EU ADICIONARIA
+
+1. Score da Run
+
+Cada run recebe notas:
+
+- clareza da ideia;
+- maturidade do MVP;
+- risco técnico;
+- complexidade;
+- prontidão para execução;
+- qualidade da documentação.
+
+2. Mapa de Decisões
+
+Tela só para decisões tomadas.
+
+Isso é muito valioso porque sistemas complexos morrem quando ninguém lembra por que uma decisão foi tomada.
+
+3. Radar de Riscos
+
+Um painel visual com riscos:
+
+- técnico;
+- UX;
+- segurança;
+- dados;
+- integrações;
+- custo;
+- escopo;
+- produto.
+
+4. Modo Executivo e Modo Técnico
+
+Modo Executivo:
+Mostra progresso, decisões, riscos e entregas.
+
+Modo Técnico:
+Mostra logs, entidades, schemas, handoffs, estados e detalhes.
+
+5. Replay da Run
+
+O usuário consegue rever a run como uma linha do tempo animada.
+
+6. Biblioteca de Runs
+
+Runs antigas podem virar referência.
+
+7. Templates de Esteira
+
+Exemplos:
+- Criar SaaS;
+- Criar app mobile;
+- Criar módulo;
+- Criar metodologia;
+- Criar automação;
+- Auditar sistema;
+- Gerar backlog;
+- Preparar tarefa para dev.
+
+8. Agente Advogado do Diabo
+
+Antes da entrega final, ele desafia tudo.
+
+Perguntas:
+- Isso está complexo demais?
+- Isso resolve uma dor real?
+- O MVP está inchado?
+- A arquitetura é sustentável?
+- O usuário conseguiria vender isso?
+
+9. Modo Pitch
+
+Transforma a run em apresentação comercial.
+
+10. Modo Dev
+
+Transforma a run em tarefa técnica detalhada.
+
+11. Modo Cliente
+
+Mostra somente a parte bonita e aprovada.
+
+12. Memória por projeto
+
+Cada projeto deve acumular:
+- decisões;
+- padrões;
+- tecnologias;
+- módulos;
+- preferências;
+- histórico;
+- restrições.
+
+13. Motor de reaproveitamento
+
+Antes de criar qualquer coisa, o sistema pergunta:
+“Isso já existe?”
+“Dá para reaproveitar?”
+“Dá para adaptar?”
+“Existe padrão aprovado?”
+
+Isso evita retrabalho e cria inteligência acumulativa.
+
+16. RECOMENDAÇÃO FINAL
+
+Minha recomendação final é construir o Loze Dev como um produto em camadas, começando pela experiência visual e pela lógica de esteira, não pela autonomia total.
+
+O caminho mais seguro é:
+
+1. Criar uma run visual muito forte.
+2. Criar agentes com papéis claros.
+3. Criar estados reais.
+4. Criar handoffs estruturados.
+5. Criar gates humanos.
+6. Criar artefatos úteis.
+7. Criar logs e decisões.
+8. Só depois plugar IA real em cada agente.
+9. Só depois integrar ferramentas externas.
+10. Só depois permitir execução autônoma real.
+
+A frase estratégica do produto poderia ser:
+
+“Loze Dev transforma ideias brutas em projetos estruturados por meio de uma sala visual de agentes autônomos, com controle humano, rastreabilidade e entregas prontas para execução.”
+
+O melhor MVP:
+
+Uma esteira visual onde o usuário coloca uma ideia de sistema/app e vê agentes passando por briefing, MVP, reaproveitamento, arquitetura, UX, dados, backlog, QA e relatório final, com gates de aprovação e geração de artefatos copiáveis.
+
+O que eu faria agora:
+
+Opção A — Construir primeiro o protótipo visual da sala de agentes, com run simulada, cards, conectores, gates e artefatos mockados.
+
+Opção B — Modelar primeiro o banco Supabase com runs, agentes, handoffs, gates, artefatos, eventos e logs.
+
+Opção C — Definir o workflow oficial “Ideia bruta → projeto técnico pronto para execução” e transformar isso na primeira esteira padrão do Loze Dev.
+
+Opção D — Criar o catálogo inicial de agentes, juntando os 18 agentes em uma versão MVP com 8 a 10 agentes essenciais.
+
+```text
+1. O QUE ENTENDI DO PROJETO
+
+O Loze Dev | Esteira Autônoma Visual de Agentes é um sistema/produto que pretende simular e depois operar uma “sala de desenvolvimento inteligente”, onde vários agentes especializados trabalham em conjunto para transformar uma demanda inicial em entregas estruturadas.
+
+A ideia central não é apenas ter um chat com IA. É criar uma esteira visual de produção, com agentes autônomos, handoffs organizados, aprovações humanas quando necessário, execução por etapas, geração de artefatos, logs, auditoria e possibilidade futura de integração com ferramentas reais como GitHub, Supabase, Netlify, Google Drive, ClickUp, WhatsApp, e-mail, CRMs e outros sistemas.
+
+Na prática, o Loze Dev deve funcionar como uma mistura de:
+
+- sala de agentes;
+- orquestrador de tarefas;
+- cockpit visual de produção;
+- sistema de workflow inteligente;
+- central de artefatos;
+- simulador de time autônomo;
+- produto SaaS para criação, gestão e acompanhamento de esteiras com IA.
+
+A visão é muito forte: o usuário não quer apenas “pedir algo para uma IA”, ele quer ver um time inteiro trabalhando de forma visual, organizada, com autonomia controlada e capacidade de passar tarefas de um agente para outro.
+
+2. LEITURA ESTRATÉGICA
+
+A leitura estratégica é que o Loze Dev pode virar um produto extremamente valioso se for tratado como um sistema de operação inteligente, não como uma interface bonita de chat.
+
+O grande diferencial não deve ser “ter vários agentes”. Isso já está ficando comum. O diferencial deve ser:
+
+- agentes com papéis claros;
+- esteiras com lógica de produção;
+- autonomia com limites;
+- visualização do trabalho acontecendo;
+- gates humanos bem desenhados;
+- rastreabilidade total;
+- geração de artefatos utilizáveis;
+- reaproveitamento de padrões;
+- memória operacional por projeto;
+- versionamento de decisões;
+- clareza sobre quem fez o quê, por quê e em qual etapa.
+
+O erro mais comum nesse tipo de sistema seria criar vários agentes conversando livremente entre si, sem estrutura. Isso vira bagunça, gasto de tokens, decisões inconsistentes e pouca utilidade prática.
+
+Minha recomendação estratégica é: o Loze Dev deve nascer como uma esteira visual determinística com inteligência aplicada, e não como uma multidão de agentes soltos.
+
+Ou seja:
+
+- o sistema define a trilha;
+- o orquestrador controla o avanço;
+- os agentes executam papéis específicos;
+- o humano aprova pontos críticos;
+- os artefatos registram a evolução;
+- a interface mostra tudo de forma clara.
+
+O produto deve vender a sensação de: “eu tenho uma equipe inteira trabalhando no meu projeto, mas com controle, histórico, rastreabilidade e aprovação”.
+
+3. ARQUITETURA RECOMENDADA
+
+A arquitetura recomendada deve separar claramente quatro camadas:
+
+CAMADA 1 — Interface visual
+Responsável por mostrar a sala, a esteira, os agentes, os cards, os status, os artefatos, os logs e as aprovações.
+
+Sugestão:
+- React/Vite no front-end;
+- deploy via Netlify;
+- design modular;
+- componentes reutilizáveis;
+- experiência tipo cockpit high-tech;
+- layout responsivo;
+- visual de “war room” ou “sala de comando”.
+
+CAMADA 2 — Orquestração
+Responsável por controlar o fluxo da run, definir próximo agente, acionar gates, registrar estados e impedir que a autonomia saia do controle.
+
+Sugestão:
+- state machine;
+- run engine;
+- workflow definitions;
+- regras de transição;
+- autonomia por nível;
+- controle de permissões;
+- registro de eventos.
+
+CAMADA 3 — Inteligência dos agentes
+Responsável por executar tarefas cognitivas: analisar, planejar, revisar, gerar, criticar, consolidar, validar, documentar e sugerir.
+
+Cada agente deve ter:
+- papel;
+- escopo;
+- limites;
+- entrada esperada;
+- saída esperada;
+- critérios de qualidade;
+- modelo de resposta;
+- nível máximo de autonomia;
+- permissão para criar handoff ou solicitar aprovação.
+
+CAMADA 4 — Dados, logs e artefatos
+Responsável por salvar tudo que importa.
+
+Sugestão:
+- Supabase como banco principal;
+- tabelas para runs, agentes, eventos, handoffs, aprovações, artefatos, mensagens, decisões, logs e integrações;
+- storage para arquivos;
+- auditoria forte;
+- versionamento de artefatos.
+
+Arquitetura técnica ideal:
+
+Front-end:
+- React + TypeScript;
+- Vite;
+- Netlify;
+- design system próprio da Loze;
+- componentes modulares.
+
+Back-end:
+- Supabase;
+- Edge Functions;
+- Postgres;
+- Row Level Security;
+- Storage;
+- Realtime para atualização visual da sala.
+
+Camada de execução:
+- funções serverless para invocar agentes;
+- filas futuras para jobs longos;
+- adapters para modelos de IA;
+- adapters para ferramentas externas.
+
+Camada futura:
+- GitHub integration;
+- Google Drive;
+- ClickUp;
+- Notion;
+- WhatsApp;
+- e-mail;
+- calendário;
+- webhooks;
+- deploy automation;
+- análise de repositório.
+
+4. MÓDULOS NECESSÁRIOS
+
+Eu estruturaria o Loze Dev com os seguintes módulos principais:
+
+1. Cockpit
+Tela principal do projeto. Mostra o estado geral da run, agentes ativos, próximos passos, aprovações pendentes, artefatos gerados e saúde da esteira.
+
+2. Sala de Agentes
+Ambiente visual onde os agentes aparecem como participantes ativos. Cada agente tem card, status, função, etapa atual, última ação e próximo possível handoff.
+
+3. Esteiras / Workflows
+Módulo para criar, visualizar e executar fluxos. Exemplo: Ideia → Diagnóstico → Arquitetura → Planejamento → Implementação → Revisão → QA → Documentação → Entrega.
+
+4. Runs
+Cada execução de uma esteira. A run é uma instância viva do processo.
+
+5. Tarefas Inteligentes
+Cards operacionais criados pela esteira ou por agentes. Cada tarefa tem responsável, status, prioridade, entrada, saída esperada e vínculo com artefatos.
+
+6. Handoffs
+Módulo específico para passagem de responsabilidade entre agentes.
+
+7. Gates de Aprovação
+Local onde o humano aprova, reprova, ajusta ou libera etapas.
+
+8. Artefatos
+Central onde ficam documentos, prompts, tarefas para programador, briefings, relatórios, mapas, esquemas, código, decisões e entregáveis.
+
+9. Logs e Auditoria
+Linha do tempo completa com ações, decisões, execuções, alterações, aprovações, rejeições e erros.
+
+10. Biblioteca de Agentes
+Cadastro e configuração de agentes por papel.
+
+11. Biblioteca de Playbooks
+Modelos de esteira reutilizáveis.
+
+12. Integrações
+Configuração de ferramentas externas.
+
+13. Configurações de Autonomia
+Painel para definir até onde cada agente pode ir sem aprovação humana.
+
+14. Memória do Projeto
+Base de contexto persistente do projeto, separando informações estratégicas, técnicas, comerciais, decisões e restrições.
+
+15. Painel Administrativo
+Gestão de usuários, planos, permissões, limites, créditos, modelos, integrações e logs de uso.
+
+5. ESTRUTURA DOS AGENTES
+
+Eu recomendo que os agentes sejam divididos em categorias, não apenas em nomes.
+
+CATEGORIA 1 — Orquestração
+
+Agente Orquestrador
+Função: controlar a esteira, decidir próxima etapa, acionar agentes, avaliar dependências e abrir gates.
+
+Agente Auditor de Processo
+Função: verificar se a esteira está seguindo o protocolo e se não houve salto de etapa.
+
+CATEGORIA 2 — Estratégia
+
+Agente Estrategista de Produto
+Função: analisar ideia, proposta de valor, público, diferenciais e caminho comercial.
+
+Agente Arquiteto de Sistema
+Função: transformar necessidade em arquitetura técnica, módulos, dados e fluxos.
+
+Agente Especialista em UX
+Função: pensar telas, experiência visual, clareza, jornada e usabilidade.
+
+CATEGORIA 3 — Execução
+
+Agente Planejador Técnico
+Função: transformar arquitetura em tarefa para programador ou automação.
+
+Agente Desenvolvedor Simulado
+Função: sugerir implementação, arquivos prováveis, riscos e lógica técnica.
+
+Agente Documentador
+Função: registrar decisões, criar artefatos e consolidar histórico.
+
+CATEGORIA 4 — Qualidade
+
+Agente QA
+Função: revisar entrega, testar lógica, apontar inconsistências e validar critérios.
+
+Agente Crítico
+Função: questionar fragilidades, riscos, excesso de complexidade e pontos cegos.
+
+Agente Segurança/Governança
+Função: avaliar permissões, dados sensíveis, logs, autonomia e risco operacional.
+
+CATEGORIA 5 — Comercial
+
+Agente Produto/SaaS
+Função: avaliar potencial comercial, planos, posicionamento e monetização.
+
+Agente Sucesso do Usuário
+Função: pensar onboarding, clareza, suporte, retenção e experiência do cliente.
+
+Cada agente precisa ter:
+
+- id;
+- nome;
+- avatar;
+- função;
+- escopo;
+- tipo;
+- nível de autonomia;
+- permissões;
+- status;
+- ferramentas permitidas;
+- templates de saída;
+- critérios de qualidade;
+- regras de handoff;
+- gatilhos de aprovação;
+- limite de ações por run.
+
+6. FLUXO IDEAL DA ESTEIRA
+
+Fluxo recomendado para o Loze Dev:
+
+ETAPA 1 — Entrada da demanda
+O usuário descreve o que quer criar, resolver ou analisar.
+
+ETAPA 2 — Normalização
+O sistema transforma a demanda em briefing estruturado.
+
+ETAPA 3 — Classificação
+O orquestrador identifica tipo de projeto:
+- app;
+- SaaS;
+- automação;
+- site;
+- diagnóstico;
+- módulo;
+- documento;
+- campanha;
+- fluxo operacional.
+
+ETAPA 4 — Diagnóstico inicial
+Agente estrategista analisa contexto, objetivo, riscos e oportunidades.
+
+ETAPA 5 — Arquitetura
+Agente arquiteto define módulos, entidades, telas, fluxos, banco e integrações.
+
+ETAPA 6 — Planejamento
+Agente planejador transforma a arquitetura em etapas, tarefas e critérios.
+
+ETAPA 7 — Gate humano
+Usuário aprova, ajusta ou bloqueia o plano antes da execução.
+
+ETAPA 8 — Execução assistida
+Agentes produzem artefatos: tarefa para programador, prompt para IA, documento, checklist, plano técnico, estrutura de banco, etc.
+
+ETAPA 9 — Revisão cruzada
+Agente QA e agente crítico avaliam a entrega.
+
+ETAPA 10 — Consolidação
+Agente documentador registra resultado, decisões e próximos passos.
+
+ETAPA 11 — Nova rodada
+O orquestrador propõe próxima etapa com base no estado atual.
+
+7. HANDOFFS, GATES E APROVAÇÕES
+
+O handoff é um dos pontos mais importantes do sistema.
+
+Um handoff bom deve conter:
+
+- origem;
+- destino;
+- motivo;
+- contexto resumido;
+- artefatos anexos;
+- decisão tomada;
+- pendências;
+- restrições;
+- saída esperada;
+- nível de urgência;
+- necessidade de aprovação humana ou não.
+
+Exemplo de handoff:
+
+“Agente Estrategista → Agente Arquiteto
+Motivo: ideia validada conceitualmente.
+Contexto: produto será uma esteira visual multiagente.
+Saída esperada: arquitetura modular, entidades principais, fluxo de run e banco futuro.
+Gate necessário: não.
+Risco: evitar complexidade excessiva no MVP.”
+
+Tipos de gate:
+
+1. Gate de direção
+Usado quando o sistema precisa validar o caminho estratégico.
+
+2. Gate de escopo
+Usado antes de expandir módulos ou criar complexidade.
+
+3. Gate técnico
+Usado antes de sugerir implementação, banco, integrações ou deploy.
+
+4. Gate comercial
+Usado antes de transformar em produto, plano ou oferta.
+
+5. Gate de segurança
+Usado quando envolve dados, permissões, acesso externo ou automação real.
+
+6. Gate final
+Usado antes de consolidar entrega.
+
+Aprovações possíveis:
+
+- aprovado;
+- aprovado com ajustes;
+- rejeitado;
+- voltar etapa;
+- pedir nova análise;
+- escalar para agente crítico;
+- solicitar resumo para humano;
+- congelar run.
+
+8. AUTOMAÇÃO E NÍVEIS DE AUTONOMIA
+
+Eu recomendo uma escala clara de autonomia.
+
+NÍVEL 0 — Manual
+Agente apenas sugere. Nada acontece sem comando humano.
+
+NÍVEL 1 — Assistido
+Agente pode estruturar respostas, mas precisa de aprovação para avançar.
+
+NÍVEL 2 — Semi-autônomo
+Agente pode avançar dentro da etapa atual, mas não muda de etapa sem aprovação.
+
+NÍVEL 3 — Autônomo controlado
+Agente pode acionar outro agente, criar handoff e gerar artefatos, mas não executar ações externas.
+
+NÍVEL 4 — Autônomo operacional
+Agente pode interagir com ferramentas externas permitidas, como criar tarefa, salvar documento ou abrir issue, com logs e limites.
+
+NÍVEL 5 — Autônomo executivo
+Agente pode executar fluxos inteiros com mínima intervenção humana. Esse nível deve ser futuro e muito controlado.
+
+Para o MVP, eu recomendo no máximo Nível 2 ou Nível 3.
+
+Motivo: o produto precisa primeiro provar clareza visual, lógica de esteira, valor percebido e controle. Automação total cedo demais pode gerar confusão, custo e risco.
+
+9. UI/UX E EXPERIÊNCIA VISUAL
+
+O Loze Dev precisa ser visualmente forte. A experiência deve parecer uma sala de comando, não uma tela comum de chat.
+
+Estrutura de telas recomendada:
+
+1. Dashboard inicial
+- projetos recentes;
+- runs ativas;
+- aprovações pendentes;
+- agentes disponíveis;
+- artefatos recentes;
+- saúde da operação.
+
+2. Tela da Run
+A principal tela do produto.
+
+Componentes:
+- barra de progresso da esteira;
+- cards dos agentes;
+- timeline de eventos;
+- painel de artefatos;
+- painel de aprovações;
+- painel de próximos passos;
+- status geral da run.
+
+3. Sala Visual de Agentes
+Uma visualização mais emocional e comercial.
+
+Pode ter:
+- agentes em cards circulares;
+- linhas de conexão;
+- handoff animado;
+- status em tempo real;
+- agente “pensando”, “aguardando”, “executando”, “bloqueado”;
+- destaque para o agente ativo.
+
+4. Kanban da Esteira
+Colunas:
+- Entrada;
+- Análise;
+- Arquitetura;
+- Planejamento;
+- Aprovação;
+- Execução;
+- Revisão;
+- Documentação;
+- Finalizado.
+
+5. Central de Artefatos
+Lista de documentos gerados:
+- briefing;
+- plano técnico;
+- tarefa para dev;
+- estrutura de banco;
+- relatório QA;
+- resumo executivo;
+- histórico de decisões.
+
+6. Tela de Handoff
+Mostra a passagem de bastão entre agentes.
+
+7. Tela de Aprovação Humana
+Deve ser extremamente clara:
+- o que foi decidido;
+- por que precisa de aprovação;
+- risco se aprovar;
+- opções de decisão;
+- impacto no fluxo.
+
+8. Biblioteca de Agentes
+Cards com:
+- nome;
+- papel;
+- nível de autonomia;
+- ferramentas;
+- status;
+- histórico;
+- especialidade.
+
+9. Configuração de Esteiras
+Para criar playbooks:
+- etapas;
+- agentes por etapa;
+- gates;
+- automações;
+- artefatos esperados.
+
+10. Logs/Auditoria
+Tela técnica, mas visualmente organizada.
+
+11. Configurações do Projeto
+- contexto;
+- regras;
+- preferências;
+- integrações;
+- permissões;
+- modelos de IA;
+- limites.
+
+10. DADOS, LOGS, ARTEFATOS E AUDITORIA
+
+O Loze Dev precisa tratar dados como base central do produto.
+
+Entidades principais:
+
+users
+- id;
+- name;
+- email;
+- role;
+- created_at.
+
+organizations
+- id;
+- name;
+- plan;
+- status;
+- created_at.
+
+projects
+- id;
+- organization_id;
+- name;
+- description;
+- type;
+- status;
+- created_by;
+- created_at.
+
+agents
+- id;
+- name;
+- role;
+- category;
+- description;
+- autonomy_level;
+- status;
+- config;
+- created_at.
+
+workflows
+- id;
+- name;
+- description;
+- type;
+- version;
+- status;
+- created_at.
+
+workflow_steps
+- id;
+- workflow_id;
+- name;
+- order_index;
+- required_agent_role;
+- gate_required;
+- expected_output_type;
+- autonomy_limit;
+- config.
+
+runs
+- id;
+- project_id;
+- workflow_id;
+- title;
+- objective;
+- status;
+- current_step_id;
+- autonomy_mode;
+- created_by;
+- started_at;
+- finished_at;
+- created_at.
+
+run_steps
+- id;
+- run_id;
+- workflow_step_id;
+- status;
+- assigned_agent_id;
+- started_at;
+- completed_at;
+- output_summary;
+- quality_score.
+
+agent_sessions
+- id;
+- run_id;
+- agent_id;
+- status;
+- current_action;
+- started_at;
+- completed_at;
+- token_usage;
+- cost_estimate.
+
+messages
+- id;
+- run_id;
+- agent_id;
+- sender_type;
+- content;
+- message_type;
+- created_at.
+
+handoffs
+- id;
+- run_id;
+- from_agent_id;
+- to_agent_id;
+- from_step_id;
+- to_step_id;
+- reason;
+- context_summary;
+- expected_output;
+- status;
+- approval_required;
+- created_at.
+
+approvals
+- id;
+- run_id;
+- gate_type;
+- requested_by_agent_id;
+- title;
+- summary;
+- risk_level;
+- status;
+- decision_by;
+- decision_note;
+- created_at;
+- decided_at.
+
+artifacts
+- id;
+- run_id;
+- project_id;
+- created_by_agent_id;
+- type;
+- title;
+- content;
+- version;
+- status;
+- parent_artifact_id;
+- created_at;
+- updated_at.
+
+artifact_versions
+- id;
+- artifact_id;
+- version_number;
+- content;
+- change_summary;
+- created_by;
+- created_at.
+
+events
+- id;
+- run_id;
+- event_type;
+- actor_type;
+- actor_id;
+- payload;
+- created_at.
+
+audit_logs
+- id;
+- organization_id;
+- project_id;
+- run_id;
+- action;
+- actor_type;
+- actor_id;
+- before_state;
+- after_state;
+- metadata;
+- created_at.
+
+integrations
+- id;
+- organization_id;
+- provider;
+- status;
+- config;
+- created_at.
+
+external_actions
+- id;
+- run_id;
+- integration_id;
+- action_type;
+- status;
+- request_payload;
+- response_payload;
+- approval_id;
+- created_at.
+
+11. MVP RECOMENDADO
+
+O MVP não deve tentar fazer tudo. Ele deve provar a sensação de esteira autônoma visual.
+
+MVP ideal:
+
+1. Criar projeto
+Usuário cria um projeto e descreve o objetivo.
+
+2. Escolher tipo de esteira
+Inicialmente, pode ter 3 modelos:
+- Criar aplicativo;
+- Criar sistema/SaaS;
+- Analisar e planejar módulo.
+
+3. Rodar uma run simulada/assistida
+A run passa por etapas visuais:
+- Briefing;
+- Estratégia;
+- Arquitetura;
+- Planejamento;
+- Tarefa técnica;
+- Revisão;
+- Entrega.
+
+4. Agentes simulados com lógica real
+Não precisa integrar vários modelos de IA no início. Pode simular os agentes com prompts e estados bem definidos.
+
+5. Handoff visual
+Mostrar quando um agente passa para outro.
+
+6. Gate humano
+Em pelo menos dois pontos:
+- aprovação da arquitetura;
+- aprovação da tarefa final.
+
+7. Central de artefatos
+Salvar:
+- briefing;
+- arquitetura;
+- tarefa para programador;
+- revisão QA;
+- recomendação final.
+
+8. Timeline
+Registrar tudo que aconteceu.
+
+9. Status da run
+Estados claros:
+- draft;
+- queued;
+- running;
+- waiting_approval;
+- paused;
+- blocked;
+- reviewing;
+- completed;
+- failed;
+- cancelled.
+
+10. Exportação
+Permitir copiar a entrega final em um bloco único.
+
+Esse MVP já seria comercialmente demonstrável.
+
+12. FASES DE EVOLUÇÃO
+
+FASE 1 — Protótipo visual
+Objetivo: parecer produto real.
+Foco:
+- telas;
+- fluxo visual;
+- agentes simulados;
+- run estática/dinâmica;
+- artefatos locais;
+- experiência high-tech.
+
+FASE 2 — MVP funcional
+Objetivo: rodar uma esteira real com persistência.
+Foco:
+- Supabase;
+- runs;
+- agentes;
+- handoffs;
+- artefatos;
+- aprovações;
+- logs.
+
+FASE 3 — Agentes com IA real
+Objetivo: cada etapa gerar conteúdo de verdade.
+Foco:
+- prompts por agente;
+- contexto por projeto;
+- saídas padronizadas;
+- custos;
+- limites;
+- avaliação de qualidade.
+
+FASE 4 — Workflows editáveis
+Objetivo: usuário criar ou adaptar esteiras.
+Foco:
+- builder visual;
+- etapas customizadas;
+- gates customizados;
+- agentes customizados.
+
+FASE 5 — Integrações externas
+Objetivo: conectar com ferramentas reais.
+Foco:
+- GitHub;
+- Google Drive;
+- ClickUp;
+- Notion;
+- Slack;
+- WhatsApp;
+- e-mail;
+- Supabase;
+- Netlify.
+
+FASE 6 — Autonomia operacional
+Objetivo: permitir que agentes executem ações reais.
+Foco:
+- abrir issue;
+- criar documento;
+- atualizar tarefa;
+- gerar PR;
+- disparar webhook;
+- criar estrutura de banco;
+- preparar deploy.
+
+FASE 7 — Produto SaaS
+Objetivo: vender para empresas, consultorias, agências e times.
+Foco:
+- planos;
+- billing;
+- multiusuário;
+- organizações;
+- permissões;
+- templates;
+- marketplace de agentes;
+- analytics.
+
+13. RISCOS E CUIDADOS
+
+1. Complexidade cedo demais
+O maior risco é tentar criar autonomia completa antes de validar o fluxo visual.
+
+2. Agentes sem papel claro
+Se todos puderem fazer tudo, o sistema perde confiança.
+
+3. Excesso de conversa entre agentes
+Agentes conversando livremente podem gerar ruído. O ideal é handoff estruturado.
+
+4. Falta de logs
+Sem logs, o usuário não confia no que aconteceu.
+
+5. Falta de gates
+Sem aprovação humana, o sistema pode tomar decisões ruins.
+
+6. Interface bonita, mas sem operação
+O visual precisa representar estados reais, não ser só animação.
+
+7. Custo de IA
+Rodar vários agentes pode ficar caro. Precisa ter limite, cache, resumo e controle.
+
+8. Contexto inchado
+Cada agente deve receber o contexto necessário, não todo o histórico.
+
+9. Falta de versionamento
+Artefatos precisam ter versões, senão as decisões se perdem.
+
+10. Integrações perigosas
+Executar ações externas deve exigir permissão, logs e reversibilidade.
+
+14. O QUE ESTÁ FALTANDO
+
+Pelo conceito atual, eu sentiria falta de definir com precisão:
+
+1. Qual é o primeiro caso de uso comercial?
+Exemplo:
+- criar apps;
+- criar tarefas para dev;
+- gerenciar projetos;
+- montar documentação;
+- operar squads de IA;
+- vender para agências;
+- vender para empresas.
+
+2. Quem é o usuário inicial?
+Pode ser:
+- fundador solo;
+- agência;
+- consultoria;
+- equipe de produto;
+- dev;
+- gestor não técnico;
+- operação interna do GrupoB/Loze.
+
+3. O que é sucesso em uma run?
+Precisa ter uma definição objetiva:
+- gerar tarefa técnica aprovada;
+- gerar arquitetura;
+- gerar protótipo;
+- gerar documentação;
+- gerar plano executável.
+
+4. Qual é o limite entre simulação e execução real?
+No início, recomendo deixar claro:
+- agentes simulam trabalho operacional;
+- depois executam ações reais via integrações.
+
+5. Qual será o primeiro workflow oficial?
+Sugestão:
+“Transformar uma ideia de sistema em uma tarefa técnica completa para programador.”
+
+Esse é um ótimo MVP, porque conversa com o uso real atual.
+
+15. SUGESTÕES DIFERENTES QUE EU ADICIONARIA
+
+1. Modo Espelho
+O sistema mostra duas visões:
+- visão humana simplificada;
+- visão técnica detalhada.
+
+2. Mapa de Decisões
+Uma tela só com decisões tomadas na run:
+- decisão;
+- motivo;
+- agente responsável;
+- impacto;
+- data;
+- se foi aprovada por humano.
+
+3. Score da Run
+Cada run recebe pontuações:
+- clareza;
+- completude;
+- risco;
+- maturidade técnica;
+- prontidão para execução.
+
+4. Radar de Risco
+Agente crítico marca riscos:
+- técnico;
+- comercial;
+- UX;
+- segurança;
+- custo;
+- dependência externa.
+
+5. Replay da Run
+O usuário consegue rever a execução como uma linha do tempo animada.
+
+6. Modo “Agente Advogado do Diabo”
+Antes de finalizar, um agente tenta destruir a ideia para encontrar pontos fracos.
+
+7. Modo “Próxima Melhor Ação”
+Ao final de toda run, o sistema sugere a próxima ação mais inteligente.
+
+8. Biblioteca de Entregáveis
+Modelos prontos:
+- tarefa para Cássio;
+- plano de banco;
+- briefing de produto;
+- arquitetura modular;
+- prompt para IA Studio;
+- checklist QA;
+- documento oficial;
+- relatório executivo.
+
+9. Sistema de confiança por agente
+Cada agente ganha uma nota com base nas revisões:
+- precisão;
+- utilidade;
+- clareza;
+- retrabalho gerado.
+
+10. Modo Comercial
+Transforma a entrega técnica em apresentação para cliente ou investidor.
+
+11. Modo Dev
+Transforma a entrega estratégica em tarefa técnica com arquivos, comandos, riscos e critérios.
+
+12. Modo Fundador
+Traduz tudo para decisão de negócio.
+
+16. RECOMENDAÇÃO FINAL
+
+Minha recomendação final é construir o Loze Dev em três movimentos:
+
+MOVIMENTO 1 — Produto visual primeiro
+Criar uma experiência forte, bonita e clara de esteira multiagente, mesmo que parte da inteligência ainda seja simulada.
+
+MOVIMENTO 2 — Orquestração real antes de autonomia real
+Criar runs, estados, handoffs, gates, artefatos e logs antes de permitir agentes executando ações externas.
+
+MOVIMENTO 3 — Autonomia progressiva
+Aumentar autonomia por níveis, nunca de uma vez.
+
+A ordem certa não é:
+
+“vários agentes autônomos fazendo tudo”.
+
+A ordem certa é:
+
+“uma esteira visual controlada, com agentes especializados, gates humanos, artefatos rastreáveis e autonomia crescente”.
+
+O MVP mais forte seria:
+
+Loze Dev transforma uma ideia bruta de sistema em uma entrega técnica completa, passando por agentes visuais de estratégia, arquitetura, planejamento, revisão e documentação, com aprovação humana nos pontos críticos e geração final de um bloco copiável para execução.
+
+Esse MVP já resolve uma dor real do usuário atual e também pode virar produto comercial.
+
+Opção A — Começar pelo protótipo visual da sala de agentes e da run.
+Opção B — Começar pelo banco Supabase e modelagem das entidades principais.
+Opção C — Começar pelo primeiro workflow oficial: ideia → arquitetura → tarefa técnica.
+Opção D — Começar pela definição dos agentes oficiais, papéis, permissões e níveis de autonomia.
+```

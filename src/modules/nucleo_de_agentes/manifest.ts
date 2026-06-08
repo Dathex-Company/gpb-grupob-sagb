@@ -5,11 +5,11 @@ export const manifest: ModuleManifest = {
   internalName: 'Núcleo de Agentes',
   displayName: 'Núcleo de Agentes',
   baseRoute: '/nucleo_de_agentes',
-  icon: 'ShieldCheckIcon',
+  icon: 'UsersIcon',
   initialStatus: 'active',
   owner: {
     type: 'agent',
-    id: 'brene-sagore',
-    displayName: 'Brene Sagore'
+    id: 'helen-dravet',
+    displayName: 'Helen Dravet'
   }
 };

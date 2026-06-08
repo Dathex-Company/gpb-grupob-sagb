@@ -4,8 +4,8 @@
 
 A Sala Dev é o cockpit operacional da esteira Dathex dentro do SagB.
 
-Ela não substitui a esteira completa e não substitui o núcleo oficial de agentes.
-Seu papel é organizar, coordenar e tornar auditável a execução de runs.
+Ela não substitui a esteira completa e não substitui o [Quadro de Elite](00_sagb/src/modules/quadro_de_elite/module-doc.ts) (Núcleo de Identidades) como fonte oficial de agentes.
+Seu papel é organizar, coordenar e tornar auditável a execução de runs, **consumindo agentes do Quadro de Elite** com DNA completo — identidade, prompt, memória, conhecimento, documentos e governança.
 
 ## 1.1 status executivo
 
@@ -69,7 +69,7 @@ Fechar a Fase 1 (ET01–ET09), validar consistência arquitetural do módulo e d
 **fora de escopo**
 - construção de novas features funcionais
 - integração real Supabase
-- integração real com núcleo oficial de agentes
+- integração real com o [Quadro de Elite](00_sagb/src/modules/quadro_de_elite/module-doc.ts) como fonte oficial de agentes (substituição das constantes locais)
 - integração real VS Code/Roo
 
 ## 2. precedência canônica obrigatória
@@ -84,7 +84,7 @@ Em caso de conflito, a norma canônica prevalece.
 
 1. A Sala Dev não é a esteira inteira.
 2. A Sala Dev é o cockpit visual e operacional da esteira.
-3. O núcleo de agentes do SagB é a fonte oficial dos agentes.
+3. O [Quadro de Elite](00_sagb/src/modules/quadro_de_elite/module-doc.ts) (Núcleo de Identidades) é a fonte oficial única dos agentes. A Sala Dev não gerencia cadastro paralelo de agentes.
 4. A Sala Dev convoca, organiza e exibe agentes em uma run.
 5. Handoff é a unidade operacional central.
 6. Gate é o controle obrigatório de avanço.

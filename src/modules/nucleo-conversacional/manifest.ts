@@ -1,11 +1,15 @@
 import { ModuleManifest } from '../../core/modules/module.types';
 
-export const nucleoConversacionalManifest: ModuleManifest = {
-  id: 'conversations',
-  internalName: 'nucleo-conversacional',
-  displayName: 'Conversas',
-  baseRoute: '/conversas',
-  icon: 'MessageSquareIcon',
+export const manifest: ModuleManifest = {
+  id: 'nucleo-conversacional',
+  internalName: 'Núcleo Conversacional',
+  displayName: 'Núcleo Conversacional',
+  baseRoute: '/nucleo-conversacional',
+  icon: 'ChatBubbleOvalLeftEllipsisIcon',
   initialStatus: 'active',
-  owner: 'Poazi Bellini'
+  owner: {
+    type: 'human',
+    id: 'cassio-mendes',
+    displayName: 'Cássio Mendes'
+  }
 };
