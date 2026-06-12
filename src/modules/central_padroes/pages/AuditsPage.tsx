@@ -1,7 +1,16 @@
 import React from 'react';
-import { CentralPageShell } from '../components/CentralPageShell';
-import { SectionPanel } from '../components/SectionPanel';
+import CentralGovernanceRecordsPage from './CentralGovernanceRecordsPage';
 
-const AuditsPage: React.FC = () => <CentralPageShell title="Auditorias e Evidências" subtitle="Área preparada para achados, evidências, severidade e planos de ação."><SectionPanel title="Status V1" description="Estrutura criada; persistência real de evidências depende da etapa de Storage/RLS." ><p className="text-[12px] text-sagb-muted">Nenhuma auditoria formal registrada nesta implantação local.</p></SectionPanel></CentralPageShell>;
+const AuditsPage: React.FC = () => (
+  <CentralGovernanceRecordsPage
+    table="central_padroes_audits"
+    title="Auditorias e Evidências"
+    subtitle="Achados, evidências, severidade, risco e planos de ação da Central de Documentos e Padrões."
+    icon="🧾"
+    recordType="auditoria"
+    defaultCategory="governanca"
+    guidance="Use esta tela para registrar o que foi auditado, qual evidência existe, qual risco foi encontrado e qual próximo passo resolve o problema. Não use auditoria para esconder falha: registre a falha com clareza."
+  />
+);
+
 export default AuditsPage;
-

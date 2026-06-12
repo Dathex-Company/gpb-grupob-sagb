@@ -144,3 +144,12 @@
 - **adapters.test.ts**: Mock fetch reescrito para respeitar `AbortSignal` via `addEventListener('abort', ...)`
 - **adapters.test.ts**: Handler de `.catch()` anexado antes de `vi.advanceTimersByTimeAsync()` para evitar unhandled rejection
 - **Resultado final**: **86/86 testes passando, 0 erros, 0 unhandled rejections**
+# 2026-06-12 — Finalização API SagB 100% Integrações
+
+- Auditoria técnica mostrou divergência entre status documentado 100% e runtime focado em Health/TaskZei/CRM/Studio/Vox.
+- Router Netlify consolidado como borda oficial `/api-sagb/v1`.
+- Criados/validados Status API, Events API, Integration API e WhatsApp Cloud API oficial.
+- Segurança fortalecida com hash SHA-256 para API Key, escopos oficiais e bloqueio de mock em produção.
+- Auditoria persistente ampliada para sucesso, erro, 401, 403, webhook e actions.
+- Migration criada para eventos, integrações e persistência WhatsApp.
+- OpenAPI e documentação atualizados.

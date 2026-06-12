@@ -1,5 +1,6 @@
 import { centralPadroesRepository } from './centralPadroesRepository';
 import { CentralAgentRun, CentralBaseModule, CentralDecision, CentralDocument, CentralStandard, SearchResult, SearchResultEntityType } from '../types';
+import { CentralGovernanceRecord, CentralTraceLog, centralPadroesGovernanceService } from './centralPadroesGovernanceService';
 
 export const centralPadroesSearchRoadmap = {
   currentMode: 'textual' as const,
@@ -79,6 +80,38 @@ const agentRunText = (item: CentralAgentRun) => flattenText([
   item.deliverable
 ]);
 
+const governanceRecordText = (item: CentralGovernanceRecord) => flattenText([
+  item.title,
+  item.type,
+  item.category,
+  item.status,
+  item.riskLevel,
+  item.owner,
+  item.tags,
+  item.pathAbsolute,
+  item.pathRelative,
+  item.summary,
+  item.content,
+  item.source,
+  item.createdAt,
+  item.updatedAt
+]);
+
+const traceLogText = (item: CentralTraceLog) => flattenText([
+  item.executionId,
+  item.project,
+  item.module,
+  item.executor,
+  item.taskTitle,
+  item.riskMax,
+  item.status,
+  item.summary,
+  JSON.stringify(item.commandsJson),
+  JSON.stringify(item.filesChangedJson),
+  JSON.stringify(item.errorsJson),
+  item.createdAt
+]);
+
 const byScoreThenTitle = (a: SearchResult, b: SearchResult) => {
   if (b.score !== a.score) return b.score - a.score;
   const titleA = 'title' in a.entity ? a.entity.title : '';
@@ -100,6 +133,12 @@ export const centralPadroesSearchService = {
     const snapshot = await centralPadroesRepository.getSnapshot();
     const results: SearchResult[] = [];
     const hasQuery = Boolean(query.trim());
+    const [reports, audits, curadoria, traceLogs] = await Promise.all([
+      centralPadroesGovernanceService.listRecords('central_padroes_reports').catch(() => []),
+      centralPadroesGovernanceService.listRecords('central_padroes_audits').catch(() => []),
+      centralPadroesGovernanceService.listRecords('central_padroes_curadoria').catch(() => []),
+      centralPadroesGovernanceService.listTraceLogs().catch(() => [])
+    ]);
     
     snapshot.standards.forEach((item) => {
       const text = standardText(item);
@@ -127,6 +166,64 @@ export const centralPadroesSearchService = {
       const text = agentRunText(item);
       const score = scoreText(text, query);
       if (score > 0 || !hasQuery) results.push({ entityType: 'agentRun', entity: item, score, excerpt: `${item.agentName} • ${item.block} • ${item.status} • ${item.deliverable}` });
+    });
+
+    const pushGovernance = (items: CentralGovernanceRecord[], entityType: 'report' | 'audit' | 'curadoria', originLabel: string, routeId: string) => {
+      items.forEach((item) => {
+        const text = governanceRecordText(item);
+        const score = scoreText(text, query);
+        if (score > 0 || !hasQuery) {
+          results.push({
+            entityType,
+            entity: item as unknown as Record<string, unknown>,
+            score,
+            routeId,
+            originLabel,
+            excerpt: `${item.type} • ${item.category} • ${item.status} • ${item.riskLevel} • ${item.owner || 'sem owner'} • ${item.pathRelative || item.pathAbsolute || 'sem caminho'} • ${item.summary || ''}`,
+            meta: {
+              title: item.title,
+              type: item.type,
+              category: item.category,
+              status: item.status,
+              risk: item.riskLevel,
+              owner: item.owner || undefined,
+              tags: item.tags,
+              pathAbsolute: item.pathAbsolute,
+              pathRelative: item.pathRelative,
+              summary: item.summary
+            }
+          });
+        }
+      });
+    };
+
+    pushGovernance(reports, 'report', 'Relatórios', 'relatorios');
+    pushGovernance(audits, 'audit', 'Auditorias', 'audits');
+    pushGovernance(curadoria, 'curadoria', 'Curadoria', 'curadoria');
+
+    traceLogs.forEach((item) => {
+      const text = traceLogText(item);
+      const score = scoreText(text, query);
+      if (score > 0 || !hasQuery) {
+        results.push({
+          entityType: 'traceLog',
+          entity: item as unknown as Record<string, unknown>,
+          score,
+          routeId: 'agent-mode',
+          originLabel: 'LOZE-TRACE',
+          excerpt: `${item.executionId} • ${item.status} • ${item.riskMax} • ${item.executor || 'sem executor'} • ${item.summary || item.taskTitle}`,
+          meta: {
+            title: item.taskTitle,
+            type: 'loze-trace',
+            category: item.module,
+            status: item.status,
+            risk: item.riskMax,
+            owner: item.executor || undefined,
+            tags: [item.project, item.module, item.executionId].filter(Boolean),
+            summary: item.summary
+          }
+        });
+      }
     });
     return results.sort(byScoreThenTitle).slice(0, limit);
   },

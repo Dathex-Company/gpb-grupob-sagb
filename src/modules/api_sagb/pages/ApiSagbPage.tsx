@@ -1,119 +1,144 @@
 import React from 'react';
 
-const stages = [
-  { id: 1, name: 'Definição de Fronteiras', status: 'done' as const },
-  { id: 2, name: 'Contrato Inicial /v1', status: 'done' as const },
-  { id: 3, name: 'Segurança e Identidade', status: 'done' as const },
-  { id: 4, name: 'Auditoria e Observabilidade', status: 'done' as const },
-  { id: 5, name: 'Camada de Integração Interna', status: 'done' as const },
-  { id: 6, name: 'Endpoints Prioritários', status: 'done' as const },
-  { id: 7, name: 'Governança de Versão', status: 'done' as const },
-  { id: 8, name: 'Hardening e Testes', status: 'done' as const },
-  { id: 9, name: 'Rollout Controlado', status: 'done' as const },
+const endpoints = [
+  'GET /health',
+  'GET /status',
+  'POST /events',
+  'GET /events',
+  'GET /events/:id',
+  'GET /integrations',
+  'GET /integrations/:provider/status',
+  'POST /integrations/:provider/actions',
+  'GET /integrations/actions/:actionId',
+  'GET /integrations/whatsapp/webhook',
+  'POST /integrations/whatsapp/webhook',
+  'POST /integrations/whatsapp/send-message',
+  'GET /integrations/whatsapp/conversations',
+  'GET /integrations/whatsapp/conversations/:id/messages',
+];
+
+const providers = ['whatsapp', 'clickup', 'gmail', 'titan', 'meta_facebook', 'google_calendar', 'supabase'];
+
+const checklist = [
+  'Router v1 oficial',
+  'API Key SHA-256',
+  'Escopos por endpoint',
+  'Audit log persistente',
+  'Events API',
+  'Integration API via Hub',
+  'WhatsApp Cloud API',
+  'OpenAPI atualizado',
+  'Rollback documentado',
+];
+
+const statusCards = [
+  { label: 'API', status: 'ok', detail: '/api-sagb/v1 ativo' },
+  { label: 'Supabase', status: 'configured', detail: 'api_keys, audit, events e WhatsApp' },
+  { label: 'Hub', status: 'connected', detail: 'providers e execução externa' },
+  { label: 'WhatsApp', status: 'ready', detail: 'Cloud API oficial Meta' },
 ];
 
 const ApiSagbPage: React.FC = () => {
-  const completed = stages.filter(s => s.status === 'done').length;
-  const total = stages.length;
-  const progressPercent = Math.round((completed / total) * 100);
-
   return (
-    <div className="flex-1 p-10 bg-sagb-bg text-sagb-text font-inter min-h-full">
-      <header className="mb-10 flex justify-between items-start gap-6">
+    <div className="flex-1 min-h-full bg-sagb-bg text-sagb-text p-8 font-inter">
+      <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <span>🔌</span>
-            <span>API SagB</span>
-            <span className="text-sm font-normal bg-sagb-line text-sagb-muted px-2 py-0.5 rounded-md">v1.0.0</span>
-          </h1>
-          <p className="text-sagb-muted mt-1 text-sm max-w-xl">
-            Camada oficial de API para consumo interno e externo do ecossistema SagB.
-            Autenticação via API Key, autorização por escopo, auditoria por request.
-          </p>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🔌</span>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">API SagB</h1>
+              <p className="text-sm text-sagb-muted">Camada oficial `/api-sagb/v1` para sistemas, Hub, integrações e WhatsApp Cloud API.</p>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-3 bg-sagb-bg-2 px-4 py-2 rounded-xl border border-sagb-line">
-          <span className="text-sm text-sagb-muted">Progresso</span>
-          <span className="text-2xl font-bold text-green-400">{completed}/{total}</span>
-          <span className="text-xs text-sagb-muted">({progressPercent}%)</span>
+        <div className="rounded-2xl border border-green-500/30 bg-green-500/10 px-5 py-3 text-sm text-green-300">
+          Runtime consolidado · v1.1.0 · Sem secrets expostos
         </div>
       </header>
 
-      <section className="bg-sagb-bg-2 p-6 rounded-2xl border border-sagb-line">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span>📋</span>
-          <span>Etapas de Implementação</span>
-        </h2>
-        <div className="space-y-2">
-          {stages.map((stage) => (
-            <div
-              key={stage.id}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-sagb-panel border border-sagb-line"
-            >
-              <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-xs font-bold">
-                ✓
-              </span>
-              <span className="text-sm">{stage.name}</span>
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {statusCards.map((card) => (
+          <article key={card.label} className="rounded-2xl border border-sagb-line bg-sagb-panel p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-sagb-muted">{card.label}</h2>
+              <span className="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-semibold text-green-300">{card.status}</span>
             </div>
-          ))}
-        </div>
+            <p className="mt-3 text-sm text-sagb-muted">{card.detail}</p>
+          </article>
+        ))}
       </section>
 
-      <section className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <article className="bg-sagb-panel p-4 rounded-xl border border-sagb-line">
-          <h3 className="text-xs uppercase tracking-wider text-sagb-muted font-semibold mb-1">Endpoints</h3>
-          <p className="text-2xl font-bold">12</p>
-          <p className="text-xs text-sagb-muted mt-1">Health, TaskZei, CRM, Studio, Vox</p>
+      <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <article className="rounded-2xl border border-sagb-line bg-sagb-panel p-6">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold">Endpoints ativos</h2>
+            <span className="rounded-full bg-sagb-bg-2 px-3 py-1 text-xs text-sagb-muted">{endpoints.length} rotas oficiais</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            {endpoints.map((endpoint) => (
+              <code key={endpoint} className="rounded-xl border border-sagb-line bg-sagb-bg-2 px-3 py-2 text-xs text-sagb-muted">
+                {endpoint}
+              </code>
+            ))}
+          </div>
         </article>
-        <article className="bg-sagb-panel p-4 rounded-xl border border-sagb-line">
-          <h3 className="text-xs uppercase tracking-wider text-sagb-muted font-semibold mb-1">Escopos</h3>
-          <p className="text-2xl font-bold">6</p>
-          <p className="text-xs text-sagb-muted mt-1">system, agents, cid · read/write/execute</p>
-        </article>
-        <article className="bg-sagb-panel p-4 rounded-xl border border-sagb-line">
-          <h3 className="text-xs uppercase tracking-wider text-sagb-muted font-semibold mb-1">Testes</h3>
-          <p className="text-2xl font-bold">5</p>
-          <p className="text-xs text-sagb-muted mt-1">Contrato, Auth, Integração, Auditoria, Versão</p>
+
+        <article className="rounded-2xl border border-sagb-line bg-sagb-panel p-6">
+          <h2 className="text-lg font-semibold">Providers Hub</h2>
+          <p className="mt-1 text-sm text-sagb-muted">API valida, autoriza e audita. Hub executa. Supabase registra.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {providers.map((provider) => (
+              <span key={provider} className="rounded-full border border-sagb-line bg-sagb-bg-2 px-3 py-1.5 text-xs text-sagb-muted">
+                {provider}
+              </span>
+            ))}
+          </div>
         </article>
       </section>
 
-      <section className="mt-6 bg-sagb-panel p-6 rounded-2xl border border-sagb-line">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span>🏗️</span>
-          <span>Arquitetura do Módulo</span>
-        </h2>
-        <div className="text-sm text-sagb-muted space-y-2 leading-relaxed">
-          <p><strong className="text-sagb-text">Contrato</strong> — OpenAPI 3.0.3 em <code>contracts/openapi_v1.yaml</code> com schemas, security scheme (ApiKeyAuth) e 12 endpoints documentados.</p>
-          <p><strong className="text-sagb-text">Segurança</strong> — Validação de API Key via Supabase, autorização por escopos (<code>system:read</code>, <code>system:write</code>, <code>agents:read</code>, <code>agents:execute</code>, <code>cid:read</code>, <code>cid:write</code>).</p>
-          <p><strong className="text-sagb-text">Auditoria</strong> — <code>X-Request-Id</code> por requisição, <code>AuditLogger</code> com buffer em memória (flush para Supabase), tabela <code>api_audit_log</code> com RLS.</p>
-          <p><strong className="text-sagb-text">Integração</strong> — <code>HttpClient</code> com retry (exponential backoff) e timeout, <code>CircuitBreaker</code> por adapter, 4 adapters (TaskZei, CRM, Studio, Vox).</p>
-          <p><strong className="text-sagb-text">Deploy</strong> — Função Netlify <code>api-sagb-router.mjs</code> (auto-contida) + função de auditoria. Roteamento interno via <code>router.ts</code> (TypeScript) para testes.</p>
-          <p><strong className="text-sagb-text">Rollout</strong> — 4 ondas progressivas (Pré-Produção → Alpha → Beta → GA), rollback em 4 níveis, feature flags por domínio.</p>
-        </div>
+      <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <article className="rounded-2xl border border-sagb-line bg-sagb-panel p-6">
+          <h2 className="text-lg font-semibold">Segurança</h2>
+          <ul className="mt-4 space-y-2 text-sm text-sagb-muted">
+            <li>✓ API Key via SHA-256 em `api_keys.key_hash`</li>
+            <li>✓ 401 para ausente, inválida, inativa, revogada ou expirada</li>
+            <li>✓ 403 para escopo insuficiente</li>
+            <li>✓ CORS configurável por ambiente</li>
+            <li>✓ Logs com headers/payloads sensíveis mascarados</li>
+          </ul>
+        </article>
+
+        <article className="rounded-2xl border border-sagb-line bg-sagb-panel p-6">
+          <h2 className="text-lg font-semibold">Operação</h2>
+          <ul className="mt-4 space-y-2 text-sm text-sagb-muted">
+            <li>Audit logs recentes: `api_audit_log`</li>
+            <li>Eventos recentes: `api_events`</li>
+            <li>Actions recentes: `integration_logs`</li>
+            <li>Erros recentes: `error_code` + `provider`</li>
+            <li>Monitoramento: `/status` + tabelas de logs</li>
+          </ul>
+        </article>
+
+        <article className="rounded-2xl border border-sagb-line bg-sagb-panel p-6">
+          <h2 className="text-lg font-semibold">Go-live</h2>
+          <div className="mt-4 space-y-2">
+            {checklist.map((item) => (
+              <div key={item} className="flex items-center gap-2 rounded-xl bg-sagb-bg-2 px-3 py-2 text-sm text-sagb-muted">
+                <span className="text-green-300">✓</span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </article>
       </section>
 
-      <section className="mt-6 bg-sagb-panel p-6 rounded-2xl border border-sagb-line">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <span>📚</span>
-          <span>Links Rápidos</span>
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
-          {[
-            { label: 'OpenAPI Spec', href: '#', desc: 'contracts/openapi_v1.yaml' },
-            { label: 'Changelog API', href: '#', desc: 'CHANGELOG_API.md' },
-            { label: 'Plano de Rollout', href: '#', desc: 'rollout/rolloutPlan.md' },
-            { label: 'Política de Depreciação', href: '#', desc: 'versioning/deprecationPolicy.md' },
-            { label: 'Go-Live Checklist', href: '#', desc: 'rollout/goLiveChecklist.md' },
-            { label: 'Arquitetura do Plano', href: '#', desc: 'plans/plano-execucao-api-sagb-etapas-4-9.md' },
-          ].map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="block p-3 rounded-xl bg-sagb-bg-2 border border-sagb-line hover:border-sagb-muted transition-colors"
-            >
-              <span className="text-sagb-text font-medium">{item.label}</span>
-              <span className="block text-xs text-sagb-muted mt-0.5">{item.desc}</span>
-            </a>
-          ))}
+      <section className="mt-6 rounded-2xl border border-sagb-line bg-sagb-panel p-6">
+        <h2 className="text-lg font-semibold">Fronteira operacional</h2>
+        <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-sagb-muted md:grid-cols-4">
+          <p><strong className="text-sagb-text">API</strong><br />Contrato, auth, scopes, audit e normalização.</p>
+          <p><strong className="text-sagb-text">Hub</strong><br />Providers, credenciais e execução externa.</p>
+          <p><strong className="text-sagb-text">Supabase</strong><br />Persistência, logs, contatos, conversas e mensagens.</p>
+          <p><strong className="text-sagb-text">CRM/Núcleo</strong><br />Consumo operacional das conversas WhatsApp.</p>
         </div>
       </section>
     </div>

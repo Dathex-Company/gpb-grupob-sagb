@@ -151,6 +151,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'home', label: 'Início', source: 'core', visibility: 'always' },
     { id: 'ecosystem', label: 'Ecossistema Master', source: 'core', visibility: 'always' },
     { id: 'nucleo-conversacional', label: 'Conversas', source: 'core', visibility: 'always' },
+    { id: 'programmers-room', label: 'Sala dos Programadores', source: 'core', visibility: 'hidden' },
+    { id: 'missions', label: 'Missões', source: 'core', visibility: 'hidden' },
     { id: 'nic', label: 'NIC', source: 'core', visibility: 'always' },
     { id: 'intelligence-flow', label: 'Fluxo de Inteligência', source: 'core', visibility: 'always' },
     { id: 'nagi', label: 'NAGI', source: 'core', visibility: 'always' },

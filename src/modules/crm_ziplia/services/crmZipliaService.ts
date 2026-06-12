@@ -129,5 +129,28 @@ export const crmZipliaService = {
     const openLeads = leads.filter((l) => l.status !== 'Fechado ganho' && l.status !== 'Fechado perdido').length;
 
     return { projected, probable, openLeads };
+  },
+
+  async getWhatsAppConversations(limit = 50): Promise<any[]> {
+    const query = new URLSearchParams({
+      select: '*,whatsapp_contacts(*)',
+      order: 'last_message_at.desc',
+      limit: String(Math.min(Math.max(limit, 1), 100))
+    });
+
+    const rows = await restFetch('whatsapp_conversations', { query });
+    return Array.isArray(rows) ? rows : [];
+  },
+
+  async getWhatsAppConversationMessages(conversationId: string, limit = 100): Promise<any[]> {
+    const query = new URLSearchParams({
+      select: '*',
+      conversation_id: `eq.${conversationId}`,
+      order: 'created_at.asc',
+      limit: String(Math.min(Math.max(limit, 1), 200))
+    });
+
+    const rows = await restFetch('whatsapp_messages', { query });
+    return Array.isArray(rows) ? rows : [];
   }
 };

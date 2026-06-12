@@ -1,6 +1,14 @@
 import { ApiScope, AuthContext } from './auth.types';
 import type { AuditEntry } from '../audit/audit.types';
 
+const isProduction = () => ['production', 'prod'].includes(String(process.env.SAGB_ENV || process.env.NODE_ENV || '').toLowerCase());
+
+async function sha256Hex(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export class UnauthorizedError extends Error {
   constructor(message: string = 'Unauthorized') {
     super(message);
@@ -40,14 +48,15 @@ export async function validateApiKey(apiKey: string): Promise<AuthContext> {
     throw new UnauthorizedError('API Key is required');
   }
 
-  // Se for uma chave de teste mock (ambiente de desenvolvimento/teste),
-  // retorna contexto fixo sem consultar banco
+  // Mock apenas em desenvolvimento/teste. Produção sempre consulta key_hash.
   if (apiKey === 'sgb_sandbox_test_key') {
+    if (isProduction()) {
+      throw new UnauthorizedError('Mock API Key is not allowed in production');
+    }
     return {
       clientId: 'client_test_001',
-      apiKey,
       environment: 'sandbox',
-      scopes: ['system:read', 'system:write'],
+      scopes: ['system:read', 'system:write', 'events:read', 'events:write'],
       requestId: crypto.randomUUID(),
     };
   }
@@ -55,8 +64,9 @@ export async function validateApiKey(apiKey: string): Promise<AuthContext> {
   try {
     // Consulta a tabela api_keys via REST do Supabase
     const { url, serviceKey } = getSupabaseConfig();
+    const keyHash = await sha256Hex(apiKey);
     const response = await fetch(
-      `${url}/rest/v1/api_keys?key_hash=eq.${apiKey}&select=client_id,environment,scopes,active,client_name`,
+      `${url}/rest/v1/api_keys?key_hash=eq.${encodeURIComponent(keyHash)}&select=id,key_hash,client_id,environment,scopes,active,client_name,expires_at,revoked_at`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -82,9 +92,16 @@ export async function validateApiKey(apiKey: string): Promise<AuthContext> {
       throw new UnauthorizedError('API Key is inactive');
     }
 
+    if (keyRecord.revoked_at) {
+      throw new UnauthorizedError('API Key is revoked');
+    }
+
+    if (keyRecord.expires_at && new Date(keyRecord.expires_at).getTime() <= Date.now()) {
+      throw new UnauthorizedError('API Key is expired');
+    }
+
     return {
       clientId: keyRecord.client_id,
-      apiKey,
       environment: keyRecord.environment || 'production',
       scopes: keyRecord.scopes || [],
       requestId: crypto.randomUUID(),

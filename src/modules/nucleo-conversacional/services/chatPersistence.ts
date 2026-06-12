@@ -1,4 +1,5 @@
 import { getDbProvider } from './ncDb';
+import { restFetch } from '../../../../services/supabase';
 
 interface PersistBotPlaceholderInput {
   workspaceId: string;
@@ -27,6 +28,18 @@ export const persistBotPlaceholder = async ({ workspaceId, sessionId, agentId, b
     hasAttachment: false,
     isStreaming: true,
   });
+};
+
+export const getWhatsAppConversationMessagesForNucleo = async (conversationId: string, limit = 100) => {
+  const query = new URLSearchParams({
+    select: '*',
+    conversation_id: `eq.${conversationId}`,
+    order: 'created_at.asc',
+    limit: String(Math.min(Math.max(limit, 1), 200)),
+  });
+
+  const rows = await restFetch('whatsapp_messages', { query });
+  return Array.isArray(rows) ? rows : [];
 };
 
 // Re-export provider for convenience

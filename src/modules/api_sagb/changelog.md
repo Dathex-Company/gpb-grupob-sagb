@@ -1,5 +1,23 @@
 # changelog - api_sagb
 
+## [2026-06-12] — Finalização API Oficial, Hub e WhatsApp Cloud API
+
+### Adicionado
+- Plano final em `Plans/plano-finalizacao-api-sagb-100-integracoes.md`.
+- Runtime oficial em `netlify/functions/api-sagb-router.mjs` com `/api-sagb/v1/status`, Events API, Integration API e endpoints WhatsApp Cloud API.
+- Migration `20260612000101_api_sagb_final_integrations.sql` para `api_events`, `integration_logs`, `integration_events`, tabelas WhatsApp e enriquecimento de auditoria.
+- Documentação completa em `README.md`, `PLANNED.md` e `docs/`.
+
+### Alterado
+- Autenticação passa a comparar SHA-256 com `api_keys.key_hash`.
+- Escopos oficiais expandidos para system, api, audit, events, integrations, whatsapp, crm e messages.
+- OpenAPI atualizado para refletir o router real.
+
+### Segurança
+- Mock key bloqueada em produção.
+- Headers e payloads sensíveis são redigidos.
+- Audit log cobre sucesso, erro, 401, 403, webhooks e actions.
+
 ## [2026-05-05] — Mega Batch: Etapas 4 a 9
 
 ### Execução em Lote (Mega Batch)
@@ -37,4 +55,3 @@
 - criação oficial do módulo `api_sagb`
 - definição de manifesto, rota e documentação base
 - alinhamento do módulo à governança canônica SagB
-

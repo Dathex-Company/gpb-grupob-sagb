@@ -1,5 +1,6 @@
 // ============================================================
-// Chat Pietro — Página de conversa com IA (T2.3)
+// Chat Pietro — Assistente IA da Central de Padrões (T2.3)
+// Refatoração UI/UX — 12-06-2026
 // ============================================================
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -27,118 +28,92 @@ const MODE_OPTIONS: { value: ChatPietroMode; label: string }[] = [
   { value: 'preparar_validacao', label: 'Preparar validação' },
 ];
 
+const SUGGESTED_QUESTIONS = [
+  'Quais padrões existem sobre segurança?',
+  'Me mostra tudo pendente do Rodrigues',
+  'O que é canônico operacional?',
+  'Quais documentos falam sobre gate visual?',
+];
+
 const ChatPietroPage: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Olá! Eu sou o Pietro Carboni, curador da Central de Padrões. Como posso ajudar?\n\nPergunte sobre padrões, documentos, decisões ou peça para encontrar lacunas. Exemplos:\n- "Quais padrões existem sobre segurança?"\n- "Me mostra tudo pendente do Rodrigues"\n- "O que é canônico operacional?"\n- "Quais documentos falam sobre gate visual?"'
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<ChatPietroMode>('buscar_documento');
   const [loading, setLoading] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  const handleSend = async () => {
-    const question = input.trim();
+  const handleSend = async (text?: string) => {
+    const question = (text || input).trim();
     if (!question || loading) return;
 
     const userMessage: Message = { role: 'user', content: question };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setShowIntro(false);
     setLoading(true);
 
     try {
       const role = centralPadroesPermissionService.getCurrentRole();
-      const response: ChatPietroResponse = await centralPadroesChatPietroService.ask({
-        question,
-        mode,
-        userRole: role,
-      });
-
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: response.answer,
-        sources: response.sources,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      const response: ChatPietroResponse = await centralPadroesChatPietroService.ask({ question, mode, userRole: role });
+      setMessages((prev) => [...prev, { role: 'assistant', content: response.answer, sources: response.sources }]);
     } catch (err) {
-      const errorMessage: Message = {
-        role: 'assistant',
-        content: `Desculpe, não consegui processar sua pergunta.\n\n${(err as Error).message}`,
-        isError: true,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setLoading(false);
-    }
+      setMessages((prev) => [...prev, { role: 'assistant', content: `Desculpe, não consegui processar sua pergunta.\n\n${(err as Error).message}`, isError: true }]);
+    } finally { setLoading(false); }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const handleSuggestedAction = async (action: string) => {
-    setInput(action);
-    // Auto-send after brief delay
-    setTimeout(() => {
-      const btn = document.querySelector('.cp-chat-send-btn') as HTMLButtonElement;
-      btn?.click();
-    }, 100);
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
   return (
     <div className="cp-chat-container">
+      {showIntro && messages.length === 0 && (
+        <div className="cp-chat-intro">
+          <div className="cp-chat-intro-avatar">🧠</div>
+          <h2 className="cp-chat-intro-title">Pietro Carboni</h2>
+          <p className="cp-chat-intro-desc">
+            Curador da Central de Padrões. Pergunte sobre padrões, documentos, decisões, pendências e lacunas da Central de Documentos e Padrões do SagB.
+          </p>
+          <div className="cp-chat-intro-chips">
+            {SUGGESTED_QUESTIONS.map((q) => (
+              <button key={q} type="button" className="cp-chat-chip" onClick={() => handleSend(q)}>{q}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="cp-chat-header">
         <div className="cp-chat-header-info">
-          <h2>💬 Conversar com Pietro</h2>
-          <p className="cp-chat-subtitle">Pergunte sobre padrões, documentos e decisões da Central</p>
+          <h2>💬 Pietro Carboni</h2>
+          <p className="cp-chat-subtitle">Assistente da Central de Padrões</p>
         </div>
         <div className="cp-chat-mode-selector">
           <select value={mode} onChange={(e) => setMode(e.target.value as ChatPietroMode)} className="cp-chat-mode-select">
-            {MODE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
+            {MODE_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
           </select>
         </div>
       </div>
 
       <div className="cp-chat-messages">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`cp-chat-message cp-chat-message-${msg.role} ${msg.isError ? 'cp-chat-message-error' : ''}`}>
-            <div className="cp-chat-message-avatar">
-              {msg.role === 'user' ? '👤' : '🤖'}
-            </div>
-            <div className="cp-chat-message-content">
-              <div className="cp-chat-message-text" style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+          <div key={idx} className={`cp-chat-message cp-chat-message-${msg.role}${msg.isError ? ' cp-chat-message-error' : ''}`}>
+            <div className="cp-chat-message-avatar">{msg.role === 'user' ? '👤' : '🧠'}</div>
+            <div className="cp-chat-message-bubble">
+              <div className="cp-chat-message-text">{msg.content}</div>
               {msg.sources && msg.sources.length > 0 && (
                 <div className="cp-chat-sources">
-                  <strong>Fontes encontradas ({msg.sources.length}):</strong>
+                  <div className="cp-chat-sources-label">🔗 Fontes ({msg.sources.length})</div>
                   {msg.sources.map((source, sIdx) => (
                     <div key={sIdx} className="cp-chat-source-item" onClick={() => window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: source.route }))}>
-                      <div className="cp-chat-source-title">
-                        <strong>{source.key}</strong> — {source.title}
-                      </div>
+                      <div className="cp-chat-source-title">{source.key} — {source.title}</div>
                       <div className="cp-chat-source-meta">
-                        <span className={`cp-status-badge cp-status-${source.status}`}>{source.status}</span>
+                        <span className={`cp-visual-badge info`}>{source.status}</span>
                         <span>{source.owner}</span>
-                        <span className="cp-chat-source-confidence">{Math.round(source.confidence * 100)}% relevante</span>
+                        <span>{Math.round(source.confidence * 100)}% relevante</span>
                       </div>
-                      <div className="cp-chat-source-why">{source.whyMatched}</div>
-                      {source.allowedActions.length > 0 && (
-                        <div className="cp-chat-source-actions">
-                          {source.allowedActions.includes('abrir') && (
-                            <button className="cp-chat-source-action-btn" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: source.route })); }}>Abrir</button>
-                          )}
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -148,9 +123,9 @@ const ChatPietroPage: React.FC = () => {
         ))}
         {loading && (
           <div className="cp-chat-message cp-chat-message-assistant">
-            <div className="cp-chat-message-avatar">🤖</div>
-            <div className="cp-chat-message-content">
-              <div className="cp-chat-typing">Pietro está pensando...</div>
+            <div className="cp-chat-message-avatar">🧠</div>
+            <div className="cp-chat-message-bubble">
+              <div className="cp-chat-typing"><span /><span /><span /></div>
             </div>
           </div>
         )}
@@ -160,14 +135,14 @@ const ChatPietroPage: React.FC = () => {
       <div className="cp-chat-input-area">
         <textarea
           className="cp-chat-input"
-          placeholder="Digite sua pergunta para o Pietro..."
+          placeholder="Digite sua pergunta... (Enter para enviar)"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           rows={2}
           disabled={loading}
         />
-        <button className="cp-chat-send-btn" onClick={handleSend} disabled={loading || !input.trim()}>
+        <button className="cp-chat-send-btn" onClick={() => handleSend()} disabled={loading || !input.trim()}>
           {loading ? '⏳' : '➤'}
         </button>
       </div>

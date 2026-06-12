@@ -1823,6 +1823,9 @@ const asDate = (v: any): Date | undefined => {
       case 'programmers-room':
         console.warn('[SagB][Nav] Fallback legado "programmers-room" acionado. Renderizando "sala-dev" módulo novo.');
         return <SalaDevPage agents={operationalAgents} />;
+      case 'missions':
+        console.warn('[SagB][Nav] Fallback legado "missions" acionado. Renderizando missões nativas.');
+        return <AgentMissionsView workspaceId={activeWorkspaceId} ownerUserId={ownerUserId} agents={operationalAgents} onBack={() => setActiveTab('ecosystem')} />;
       case 'unit-room': return <UnitView activeBU={activeBU} agents={activatedAgents} onBack={handleBackNavigation} activeWorkspaceId={activeWorkspaceId} ownerUserId={ownerUserId} />;
 
       // NOVA ROTA: CONVERSAS (HISTÓRICO)

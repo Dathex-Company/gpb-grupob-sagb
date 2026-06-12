@@ -24,7 +24,13 @@ const DecisionsPage: React.FC = () => {
     }
   };
   return (
-    <CentralPageShell title="Decisões e Exceções" subtitle="Registro mestre de decisões arquiteturais e exceções futuras vinculadas a padrões.">
+    <CentralPageShell
+      title="Decisões e Exceções"
+      subtitle="Registro mestre de decisões arquiteturais e exceções futuras vinculadas a padrões."
+      icon="🟣"
+      status="decisao"
+      guidance="Use esta tela quando uma escolha técnica precisar ser rastreável. Decisões críticas não devem ser tomadas apenas no chat: registre impacto, área e motivo."
+    >
       <SectionPanel title="Decisões estruturais">
         <div className="mb-4"><button onClick={() => setOpen(true)} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Nova Decisão</button></div>
         <div className="space-y-3">

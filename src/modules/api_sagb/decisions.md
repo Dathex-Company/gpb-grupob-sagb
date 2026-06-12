@@ -10,3 +10,8 @@
 - **[05/05/2026]**: D-005 — Tabela `api_keys` armazena apenas `key_hash` (SHA-256 da chave), nunca o valor plano. Chaves são geradas fora do banco e fornecidas uma única vez ao cliente.
 - **[05/05/2026]**: D-006 — Rate Limiting adotado via Token Bucket in-memory (sem Redis) para simplificar deploy inicial. Upgrade para Redis ocorrerá quando houver múltiplas instâncias do router.
 - **[05/05/2026]**: D-007 — Mock de `fetch` nos testes de timeout respeita `AbortSignal` via `addEventListener('abort', ...)` em vez de `setTimeout`, eliminando unhandled rejections do Node.js.
+- **[12/06/2026]**: D-008 — `api-sagb-router.mjs` passa a ser a borda oficial `/api-sagb/v1`, com Health, Status, Events API, Integration API e WhatsApp Cloud API oficial.
+- **[12/06/2026]**: D-009 — API Key em produção deve comparar somente SHA-256 contra `api_keys.key_hash`; mocks ficam restritos a dev/test.
+- **[12/06/2026]**: D-010 — Webhook WhatsApp GET/POST é público para a Meta, mas validado por `WHATSAPP_VERIFY_TOKEN`, sanitizado, persistido e auditado.
+- **[12/06/2026]**: D-011 — CRM Ziplia e Núcleo Conversacional consomem WhatsApp por conversas/mensagens persistidas e endpoints oficiais, sem banco paralelo.
+- **[12/06/2026]**: D-012 — Hub de Integrações continua dono de providers/execução externa; API valida, autoriza, audita e normaliza.

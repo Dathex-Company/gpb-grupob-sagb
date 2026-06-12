@@ -304,13 +304,27 @@ export interface CentralOperationState {
 // Busca e resultado
 // ============================================================
 
-export type SearchResultEntityType = 'standard' | 'document' | 'decision' | 'baseModule' | 'agentRun';
+export type SearchResultEntityType = 'standard' | 'document' | 'decision' | 'baseModule' | 'agentRun' | 'report' | 'audit' | 'curadoria' | 'traceLog';
 
 export interface SearchResult {
   entityType: SearchResultEntityType;
-  entity: CentralStandard | CentralDocument | CentralDecision | CentralBaseModule | CentralAgentRun;
+  entity: CentralStandard | CentralDocument | CentralDecision | CentralBaseModule | CentralAgentRun | Record<string, unknown>;
   score: number;
   excerpt: string;
+  routeId?: string;
+  originLabel?: string;
+  meta?: {
+    title?: string;
+    type?: string;
+    category?: string;
+    status?: string;
+    risk?: string;
+    owner?: string;
+    tags?: string[];
+    pathAbsolute?: string | null;
+    pathRelative?: string | null;
+    summary?: string | null;
+  };
 }
 
 // ============================================================

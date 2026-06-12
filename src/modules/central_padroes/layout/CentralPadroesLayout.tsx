@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useTheme } from '../../../core/context/ThemeContext';
 import DashboardPage from '../pages/DashboardPage';
 import StandardsPage from '../pages/StandardsPage';
 import DocumentsPage from '../pages/DocumentsPage';
@@ -24,6 +25,7 @@ import DocumentosMestresPage from '../pages/DocumentosMestresPage';
 import DocumentoBasePage from '../pages/DocumentoBasePage';
 import RelatoriosPage from '../pages/RelatoriosPage';
 import SubdocumentosPrevistosPage from '../pages/SubdocumentosPrevistosPage';
+import CuradoriaPage from '../pages/CuradoriaPage';
 import { centralPadroesSeedService } from '../services/centralPadroesSeedService';
 import { sidebarSections, getViewLabel, breadcrumbLabels } from '../data/sidebarConfig';
 import '../styles/centralDocs.css';
@@ -56,22 +58,39 @@ type CentralPadroesView =
   | 'documentos-mestres'
   | 'documento-base-99'
   | 'relatorios'
-  | 'subdocumentos-previstos';
+  | 'subdocumentos-previstos'
+  | 'curadoria';
 
 export const CentralPadroesLayout: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
   const [currentView, setCurrentView] = useState<CentralPadroesView>('dashboard');
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
   const [seedStatus, setSeedStatus] = useState<string>('');
   const [menuQuery, setMenuQuery] = useState('');
+  const [registerMenuOpen, setRegisterMenuOpen] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     Central: true,
-    Padrões: true,
-    'Documentos e Decisões': true,
+    'Documentos e Padrões': true,
+    'Auditoria e Execução': true,
     Módulos: true,
     Curadoria: false,
-    'Acervo MD': true,
-    Relacionamentos: false
+    Operação: false
   });
+
+  const plannedView = (icon: string, title: string, description: string, nextView: CentralPadroesView = 'documents') => (
+    <div className="cp-planned-state">
+      <div className="cp-planned-icon">{icon}</div>
+      <div>
+        <h2>{title}</h2>
+        <p>{description}</p>
+        <div className="cp-planned-grid">
+          <span className="cp-visual-badge info">🔵 Funcionalidade planejada</span>
+          <span className="cp-visual-badge attention">🟡 Requer curadoria</span>
+          <span className="cp-visual-badge safe">🟢 Sem botão morto</span>
+        </div>
+        <button type="button" className="cp-docs-top-link primary" onClick={() => setCurrentView(nextView)}>Abrir área relacionada</button>
+      </div>
+    </div>
+  );
 
   const renderCurrentView = () => {
     switch (currentView) {
@@ -108,7 +127,7 @@ export const CentralPadroesLayout: React.FC = () => {
       case 'agent-mode':
         return <AgentsPage />;
       case 'search':
-        return <SearchPage />;
+        return <SearchPage onNavigate={(viewId) => setCurrentView(viewId as CentralPadroesView)} />;
       case 'relationships':
         return <RelationshipsPage />;
       case 'approvals':
@@ -118,11 +137,11 @@ export const CentralPadroesLayout: React.FC = () => {
       case 'publisher':
         return <CentralPadroesPage />;
       case 'tags':
-        return <div className="cp-docs-empty"><h2>Tags</h2><p>Gerenciamento de tags — em desenvolvimento.</p></div>;
+        return plannedView('🏷️', 'Tags e classificação', 'Use esta área para planejar tags oficiais. Próximo passo: ligar tags aos documentos e padrões.', 'documents');
       case 'ingestion':
-        return <div className="cp-docs-empty"><h2>Triagem e Ingestão</h2><p>Fila de ingestão de documentos — em desenvolvimento.</p></div>;
+        return plannedView('📥', 'Triagem e ingestão', 'Fila visual para entrada de documentos vindos da curadoria. Por enquanto, registre o documento em Documentos.', 'documents');
       case 'evidence':
-        return <div className="cp-docs-empty"><h2>Evidências</h2><p>Registro de evidências — em desenvolvimento.</p></div>;
+        return plannedView('🧪', 'Evidências', 'Área para provas, anexos e validações. Enquanto a storage oficial não estiver completa, registre evidências em Auditorias.', 'audits');
       case 'documentos-mestres':
         return <DocumentosMestresPage />;
       case 'documento-base-99':
@@ -131,6 +150,8 @@ export const CentralPadroesLayout: React.FC = () => {
         return <RelatoriosPage />;
       case 'subdocumentos-previstos':
         return <SubdocumentosPrevistosPage />;
+      case 'curadoria':
+        return <CuradoriaPage />;
       default:
         return <DashboardPage />;
     }
@@ -150,6 +171,11 @@ export const CentralPadroesLayout: React.FC = () => {
 
   const currentLabel = getViewLabel(currentView as string);
 
+  const openRegisterTarget = (viewId: CentralPadroesView) => {
+    setCurrentView(viewId);
+    setRegisterMenuOpen(false);
+  };
+
   const seedSupabase = async () => {
     setSeedStatus('Sincronizando fallback para Supabase...');
     try {
@@ -161,12 +187,12 @@ export const CentralPadroesLayout: React.FC = () => {
   };
 
   return (
-    <div className="cp-docs-root h-full overflow-hidden" data-mode={mode}>
+    <div className="cp-docs-root h-full overflow-hidden" data-mode={theme}>
       <div className="cp-docs-app h-full">
         <aside className="cp-docs-sidebar">
           <div className="cp-docs-brand-row">
-            <div className="cp-docs-brand"><span className="cp-docs-brand-dot">CP</span><span>Central de Padrões</span></div>
-            <button className="cp-docs-icon-btn" type="button" title="Alternar modo" onClick={() => setMode((prev) => (prev === 'dark' ? 'light' : 'dark'))}>◐</button>
+            <div className="cp-docs-brand"><span className="cp-docs-brand-dot">CD</span><span>Central de Documentos e Padrões</span></div>
+            <button className="cp-docs-icon-btn" type="button" title="Alternar modo" onClick={toggleTheme}>{theme === 'dark' ? '◑' : '◐'}</button>
           </div>
 
           <label className="cp-docs-search">
@@ -210,12 +236,22 @@ export const CentralPadroesLayout: React.FC = () => {
 
         <main className="cp-docs-main">
           <header className="cp-docs-topbar">
-            <div className="cp-docs-crumbs"><span>GrupoB</span><span className="sep">›</span><span>Central de Padrões</span><span className="sep">›</span><strong>{currentLabel}</strong></div>
+            <div className="cp-docs-crumbs"><span>GrupoB</span><span className="sep">›</span><span>Central de Documentos e Padrões</span><span className="sep">›</span><strong>{currentLabel}</strong></div>
             <div className="cp-docs-top-actions">
               <button className="cp-docs-top-link" type="button" onClick={() => setCurrentView('search')}>Buscar</button>
               <button className="cp-docs-top-link ai" type="button" onClick={() => setCurrentView('chat-pietro')}>Pietro IA</button>
               <button className="cp-docs-top-link" type="button" onClick={seedSupabase}>Sincronizar</button>
-              <button className="cp-docs-top-link primary" type="button" onClick={() => setCurrentView('documents')}>Registrar</button>
+              <div className="cp-docs-register-menu">
+                <button className="cp-docs-top-link primary" type="button" onClick={() => setRegisterMenuOpen((value) => !value)} aria-expanded={registerMenuOpen} aria-haspopup="menu">Registrar ▾</button>
+                {registerMenuOpen && (
+                  <div className="cp-docs-register-popover" role="menu" aria-label="Registrar na Central">
+                    <button type="button" role="menuitem" onClick={() => openRegisterTarget('relatorios')}>Registrar relatório</button>
+                    <button type="button" role="menuitem" onClick={() => openRegisterTarget('audits')}>Registrar auditoria</button>
+                    <button type="button" role="menuitem" onClick={() => openRegisterTarget('curadoria')}>Registrar item de curadoria</button>
+                    <button type="button" role="menuitem" onClick={() => openRegisterTarget('agent-mode')}>Registrar LOZE-TRACE</button>
+                  </div>
+                )}
+              </div>
               <button className="cp-docs-icon-btn" type="button" onClick={() => setCurrentView('settings')} title="Configurações">⋯</button>
             </div>
           </header>

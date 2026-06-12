@@ -5,6 +5,41 @@ Todas as mudanças notáveis na API SagB serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.1.0] - 2026-06-12
+
+### Adicionado
+
+#### System
+- `GET /v1/status` — status real da API, Supabase, Hub, providers e WhatsApp sem expor secrets.
+
+#### Events API
+- `POST /v1/events` — registra evento universal.
+- `GET /v1/events` — lista eventos.
+- `GET /v1/events/{id}` — obtém evento por ID.
+
+#### Integration API
+- `GET /v1/integrations` — lista providers oficiais.
+- `GET /v1/integrations/{provider}/status` — consulta status de provider.
+- `POST /v1/integrations/{provider}/actions` — executa action via Hub.
+- `GET /v1/integrations/actions/{actionId}` — consulta action.
+
+#### WhatsApp Cloud API Oficial
+- `GET /v1/integrations/whatsapp/webhook` — valida webhook Meta.
+- `POST /v1/integrations/whatsapp/webhook` — recebe payload Meta e persiste contatos, conversas, mensagens e status.
+- `POST /v1/integrations/whatsapp/send-message` — envia mensagem pela Cloud API oficial.
+- `GET /v1/integrations/whatsapp/conversations` — lista conversas.
+- `GET /v1/integrations/whatsapp/conversations/{id}/messages` — lista mensagens.
+
+### Alterado
+- Autenticação por API Key agora compara SHA-256 em `api_keys.key_hash`.
+- Escopos oficiais adicionados: `api:*`, `events:*`, `integrations:*`, `whatsapp:*`, `crm:*`, `messages:*`.
+- Audit log enriquecido com action, provider, resource, error_code, ip_hash e user_agent_hash.
+
+### Segurança
+- Mock keys bloqueadas em produção.
+- CORS parametrizado por ambiente.
+- Nenhum secret deve aparecer em código, log ou documentação.
+
 ## [1.0.0] - 2026-05-05
 
 ### Adicionado

@@ -1,28 +1,27 @@
 openapi: 3.0.3
 info:
   title: API SagB
-  version: 1.0.0
-  description: "API Oficial do ecossistema SagB para consumo por sistemas internos e externos. Inclui endpoints para notificações (TaskZei), CRM, Studio e transcrição (Vox)."
-  contact:
-    name: Dande Conec
-    email: dande.conec@sagb.com.br
+  version: 1.1.0
+  description: API Oficial do ecossistema SagB em /api-sagb/v1 para sistemas, módulos, integrações, Hub de Integrações e WhatsApp Cloud API oficial da Meta.
   x-module: api-sagb
 servers:
-  - url: "https://api.sagb.com.br/v1"
-    description: Produção
-  - url: "https://api-sandbox.sagb.com.br/v1"
-    description: Sandbox
+  - url: https://app.sagb.com.br/api-sagb/v1
+    description: Produção via Netlify Function
+  - url: http://localhost:8888/api-sagb/v1
+    description: Desenvolvimento local Netlify
+security:
+  - ApiKeyAuth: []
 components:
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
       in: header
       name: X-API-Key
-      description: "Chave de API para autenticação. Obtenha sua chave no painel de administração."
+      description: API Key armazenada no SagB apenas como SHA-256 em api_keys.key_hash.
   schemas:
     ErrorResponse:
       type: object
-      description: "Resposta de erro padronizada para toda a API."
+      required: [error]
       properties:
         error:
           type: object
@@ -30,720 +29,450 @@ components:
           properties:
             code:
               type: string
-              example: "VALIDATION_ERROR"
-              description: "Código do erro. Valores comuns: VALIDATION_ERROR, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, UPSTREAM_ERROR, INTERNAL_ERROR"
+              example: FORBIDDEN
             message:
               type: string
-              example: "Parâmetros inválidos."
-              description: "Mensagem descritiva do erro."
+              example: Insufficient scopes.
             details:
-              type: array
-              items:
-                type: string
-              description: "Lista de detalhes específicos do erro (ex: campos inválidos)."
+              nullable: true
     HealthResponse:
       type: object
       properties:
-        status:
-          type: string
-          example: "ok"
-        version:
-          type: string
-          example: "1.0.0"
-        timestamp:
-          type: string
-          format: date-time
-          example: "2026-05-05T00:00:00.000Z"
-        module:
-          type: string
-          example: "api-sagb"
-    Notification:
+        status: { type: string, example: ok }
+        version: { type: string, example: 1.1.0 }
+        timestamp: { type: string, format: date-time }
+        module: { type: string, example: api-sagb }
+    StatusResponse:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-        title:
-          type: string
-        message:
-          type: string
-        type:
-          type: string
-          enum: [info, warning, error, success]
-        recipient_ids:
-          type: array
-          items:
-            type: string
-        status:
-          type: string
-          enum: [pending, sent, failed]
-        created_at:
-          type: string
-          format: date-time
-    Lead:
+        status: { type: string, enum: [ok, degraded] }
+        version: { type: string }
+        environment: { type: string }
+        supabase: { $ref: '#/components/schemas/ComponentStatus' }
+        hub:
+          type: object
+        providers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ComponentStatus'
+        whatsapp:
+          $ref: '#/components/schemas/ComponentStatus'
+    ComponentStatus:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        email:
-          type: string
-          format: email
-        phone:
-          type: string
-        status:
-          type: string
-        notes:
-          type: string
-        assigned_to:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    StudioProject:
+        status: { type: string, example: configured }
+        configured: { type: boolean }
+        secrets_exposed: { type: boolean, example: false }
+    EventPayload:
       type: object
+      required: [event_type, source]
       properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        description:
-          type: string
-        status:
-          type: string
-          enum: [draft, active, archived]
-        client_id:
-          type: string
-        thumbnail_url:
-          type: string
-          format: uri
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    StudioProjectDetail:
+        event_type: { type: string, example: whatsapp.message.received }
+        source:
+          type: object
+          required: [type, id]
+          properties:
+            type: { type: string, enum: [module, system, integration, agent, external] }
+            id: { type: string }
+        context:
+          type: object
+          properties:
+            type: { type: string, enum: [global, qg, module, client, conversation, integration] }
+            id: { type: string }
+        resource:
+          type: object
+          properties:
+            type: { type: string }
+            id: { type: string }
+        payload: { type: object, additionalProperties: true }
+        metadata: { type: object, additionalProperties: true }
+    ApiEvent:
       allOf:
-        - $ref: '#/components/schemas/StudioProject'
+        - $ref: '#/components/schemas/EventPayload'
         - type: object
           properties:
-            assets:
-              type: array
-              items:
-                $ref: '#/components/schemas/StudioAsset'
-            collaborators:
-              type: array
-              items:
-                type: string
-            metadata:
-              type: object
-    StudioAsset:
+            id: { type: string, format: uuid }
+            request_id: { type: string, format: uuid }
+            client_id: { type: string }
+            created_at: { type: string, format: date-time }
+    IntegrationActionPayload:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, example: send-message }
+        payload: { type: object, additionalProperties: true }
+    IntegrationAction:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        type:
-          type: string
-          enum: [image, video, audio, document]
-        url:
-          type: string
-          format: uri
-        size_bytes:
-          type: integer
-        created_at:
-          type: string
-          format: date-time
+        id: { type: string, format: uuid }
+        provider: { type: string }
+        action: { type: string }
+        status: { type: string, enum: [running, success, failure] }
+        request_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+    WhatsAppWebhookPayload:
+      type: object
+      description: Payload oficial enviado pela Meta WhatsApp Business Platform.
+      additionalProperties: true
+    WhatsAppSendMessagePayload:
+      type: object
+      required: [to]
+      properties:
+        to: { type: string, example: '5511999999999' }
+        type: { type: string, enum: [text, template, image, audio, video, document], default: text }
+        text:
+          oneOf:
+            - type: string
+            - type: object
+              properties:
+                body: { type: string }
+        message: { type: string }
+        template: { type: object, additionalProperties: true }
+        media: { type: object, additionalProperties: true }
+    WhatsAppConversation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        contact_id: { type: string, format: uuid }
+        status: { type: string }
+        origin: { type: string }
+        last_message_at: { type: string, format: date-time }
+    WhatsAppMessage:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        conversation_id: { type: string, format: uuid }
+        provider_message_id: { type: string }
+        direction: { type: string, enum: [inbound, outbound] }
+        type: { type: string }
+        text: { type: string, nullable: true }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+    Notification:
+      type: object
+    Lead:
+      type: object
+    StudioProject:
+      type: object
+    StudioProjectDetail:
+      type: object
     Transcription:
       type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum: [pending, processing, completed, failed]
-        audio_url:
-          type: string
-          format: uri
-        text:
-          type: string
-        language:
-          type: string
-        duration_seconds:
-          type: number
-        created_at:
-          type: string
-          format: date-time
-        completed_at:
-          type: string
-          format: date-time
-        error:
-          type: string
     TranscribePayload:
       type: object
       required: [audio_url]
       properties:
-        audio_url:
-          type: string
-          format: uri
-          description: "URL pública do áudio a ser transcrito."
-        language:
-          type: string
-          description: "Código do idioma (ex: pt-BR, en-US). Opcional, detectado automaticamente se omitido."
-        webhook_url:
-          type: string
-          format: uri
-          description: "URL para callback quando a transcrição for concluída."
+        audio_url: { type: string, format: uri }
     SendNotificationPayload:
       type: object
       required: [title, message, type, recipient_ids]
       properties:
-        title:
-          type: string
-          description: "Título da notificação."
-        message:
-          type: string
-          description: "Corpo da notificação."
-        type:
-          type: string
-          enum: [info, warning, error, success]
-          description: "Tipo/Tag visual da notificação."
+        title: { type: string }
+        message: { type: string }
+        type: { type: string }
         recipient_ids:
           type: array
-          items:
-            type: string
-          description: "Lista de IDs dos destinatários."
-        metadata:
-          type: object
-          description: "Metadados adicionais (opcional)."
+          items: { type: string }
     CreateLeadPayload:
       type: object
-      required: [name, email]
+      required: [name]
       properties:
-        name:
-          type: string
-          description: "Nome completo do lead."
-        email:
-          type: string
-          format: email
-          description: "Email do lead."
-        phone:
-          type: string
-          description: "Telefone (opcional)."
-        notes:
-          type: string
-          description: "Observações (opcional)."
-        assigned_to:
-          type: string
-          description: "ID do agente responsável (opcional)."
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
     UpdateLeadPayload:
       type: object
       properties:
-        name:
-          type: string
-        email:
-          type: string
-          format: email
-        phone:
-          type: string
-        status:
-          type: string
-        notes:
-          type: string
-        assigned_to:
-          type: string
+        name: { type: string }
+        status: { type: string }
   responses:
     BadRequest:
-      description: "Requisição mal formatada ou inválida."
+      description: Requisição inválida.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     Unauthorized:
-      description: "Falha de autenticação. API Key ausente ou inválida."
+      description: API Key ausente, inválida, expirada, inativa ou revogada.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     Forbidden:
-      description: "Escopo insuficiente para acessar o recurso."
+      description: Escopo insuficiente.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     NotFound:
-      description: "Recurso não encontrado."
+      description: Recurso não encontrado.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     UpstreamError:
-      description: "Erro ao comunicar com serviço upstream."
+      description: Erro em Supabase, Hub ou provider externo.
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-security:
-  - ApiKeyAuth: []
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
 paths:
-  # ──────────────────────────────────────────────
-  # Health
-  # ──────────────────────────────────────────────
   /health:
     get:
-      summary: "Healthcheck da API"
-      description: "Verifica se a API está online, retorna versão e timestamp."
-      operationId: healthCheck
-      tags:
-        - System
+      tags: [System]
+      summary: Healthcheck da API SagB.
+      security: [{ ApiKeyAuth: [system:read] }]
       responses:
-        '200':
-          description: "API online"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  # ──────────────────────────────────────────────
-  # TaskZei - Notificações
-  # ──────────────────────────────────────────────
+        '200': { description: API online, content: { application/json: { schema: { $ref: '#/components/schemas/HealthResponse' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /status:
+    get:
+      tags: [System]
+      summary: Status operacional real da API, Supabase, Hub e providers.
+      security: [{ ApiKeyAuth: [system:read] }]
+      responses:
+        '200': { description: Status operacional, content: { application/json: { schema: { $ref: '#/components/schemas/StatusResponse' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /events:
+    post:
+      tags: [Events]
+      summary: Registra evento universal no SagB.
+      security: [{ ApiKeyAuth: [events:write] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventPayload' }
+      responses:
+        '201': { description: Evento persistido, content: { application/json: { schema: { type: object, properties: { event: { $ref: '#/components/schemas/ApiEvent' } } } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    get:
+      tags: [Events]
+      summary: Lista eventos universais.
+      security: [{ ApiKeyAuth: [events:read] }]
+      responses:
+        '200': { description: Eventos, content: { application/json: { schema: { type: object, properties: { events: { type: array, items: { $ref: '#/components/schemas/ApiEvent' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /events/{id}:
+    get:
+      tags: [Events]
+      summary: Obtém evento por ID.
+      security: [{ ApiKeyAuth: [events:read] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Evento, content: { application/json: { schema: { type: object, properties: { event: { $ref: '#/components/schemas/ApiEvent' } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /integrations:
+    get:
+      tags: [Integrations]
+      summary: Lista providers registrados no Hub.
+      security: [{ ApiKeyAuth: [integrations:read] }]
+      responses:
+        '200': { description: Providers, content: { application/json: { schema: { type: object } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /integrations/{provider}/status:
+    get:
+      tags: [Integrations]
+      summary: Consulta status de provider.
+      security: [{ ApiKeyAuth: [integrations:read] }]
+      parameters:
+        - { name: provider, in: path, required: true, schema: { type: string, enum: [whatsapp, clickup, gmail, titan, meta_facebook, google_calendar, supabase] } }
+      responses:
+        '200': { description: Status do provider, content: { application/json: { schema: { $ref: '#/components/schemas/ComponentStatus' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /integrations/{provider}/actions:
+    post:
+      tags: [Integrations]
+      summary: Executa ação em provider via Hub de Integrações.
+      security: [{ ApiKeyAuth: [integrations:execute] }]
+      parameters:
+        - { name: provider, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IntegrationActionPayload' }
+      responses:
+        '202': { description: Ação aceita/executada, content: { application/json: { schema: { type: object } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /integrations/actions/{actionId}:
+    get:
+      tags: [Integrations]
+      summary: Consulta resultado de action.
+      security: [{ ApiKeyAuth: [integrations:read] }]
+      parameters:
+        - { name: actionId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Action, content: { application/json: { schema: { type: object, properties: { action: { $ref: '#/components/schemas/IntegrationAction' } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /integrations/whatsapp/webhook:
+    get:
+      tags: [WhatsApp]
+      summary: Verificação do webhook da Meta.
+      security: []
+      parameters:
+        - { name: hub.mode, in: query, required: true, schema: { type: string } }
+        - { name: hub.verify_token, in: query, required: true, schema: { type: string } }
+        - { name: hub.challenge, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: Challenge em text/plain }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [WhatsApp]
+      summary: Recebe webhook POST da Meta e persiste contatos, conversas, mensagens e status.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WhatsAppWebhookPayload' }
+      responses:
+        '200': { description: Recebido, content: { application/json: { schema: { type: object } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /integrations/whatsapp/send-message:
+    post:
+      tags: [WhatsApp]
+      summary: Envia mensagem pela Cloud API oficial via Hub.
+      security: [{ ApiKeyAuth: [whatsapp:send] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WhatsAppSendMessagePayload' }
+      responses:
+        '202': { description: Mensagem enviada, content: { application/json: { schema: { type: object } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '502': { $ref: '#/components/responses/UpstreamError' }
+  /integrations/whatsapp/conversations:
+    get:
+      tags: [WhatsApp]
+      summary: Lista conversas WhatsApp disponíveis para CRM Ziplia e Núcleo Conversacional.
+      security: [{ ApiKeyAuth: [whatsapp:read] }]
+      responses:
+        '200': { description: Conversas, content: { application/json: { schema: { type: object, properties: { conversations: { type: array, items: { $ref: '#/components/schemas/WhatsAppConversation' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /integrations/whatsapp/conversations/{id}/messages:
+    get:
+      tags: [WhatsApp]
+      summary: Lista mensagens de uma conversa WhatsApp.
+      security: [{ ApiKeyAuth: [whatsapp:read, messages:read] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Mensagens, content: { application/json: { schema: { type: object, properties: { messages: { type: array, items: { $ref: '#/components/schemas/WhatsAppMessage' } } } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /taskzei/notifications:
     get:
-      summary: "Listar notificações"
-      description: "Retorna a lista de notificações para um destinatário específico."
-      operationId: listNotifications
-      tags:
-        - TaskZei
-      parameters:
-        - name: recipient_id
-          in: query
-          required: true
-          schema:
-            type: string
-          description: "ID do destinatário"
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 20
-          description: "Limite de resultados"
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
-          description: "Deslocamento para paginação"
-      security:
-        - ApiKeyAuth: ['system:read']
+      tags: [TaskZei]
+      summary: Endpoint legado proxy TaskZei.
+      security: [{ ApiKeyAuth: [system:read] }]
       responses:
-        '200':
-          description: "Lista de notificações"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  notifications:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Notification'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
+        '200': { description: OK }
     post:
-      summary: "Enviar notificação"
-      description: "Envia uma notificação para um ou mais destinatários."
-      operationId: sendNotification
-      tags:
-        - TaskZei
-      security:
-        - ApiKeyAuth: ['system:write']
+      tags: [TaskZei]
+      summary: Endpoint legado proxy TaskZei.
+      security: [{ ApiKeyAuth: [system:write] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/SendNotificationPayload'
+            schema: { $ref: '#/components/schemas/SendNotificationPayload' }
       responses:
-        '201':
-          description: "Notificação criada"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  notification:
-                    $ref: '#/components/schemas/Notification'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
-
-  # ──────────────────────────────────────────────
-  # CRM - Leads
-  # ──────────────────────────────────────────────
+        '200': { description: OK }
   /crm/leads:
     get:
-      summary: "Listar leads"
-      description: "Retorna a lista de leads do CRM."
-      operationId: listLeads
-      tags:
-        - CRM
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-          description: "Filtrar por status do lead"
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 20
-          description: "Limite de resultados"
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
-          description: "Deslocamento para paginação"
-      security:
-        - ApiKeyAuth: ['agents:read']
+      tags: [CRM]
+      summary: Endpoint legado proxy CRM.
+      security: [{ ApiKeyAuth: [crm:read] }]
       responses:
-        '200':
-          description: "Lista de leads"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  leads:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Lead'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
+        '200': { description: OK }
     post:
-      summary: "Criar lead"
-      description: "Cria um novo lead no CRM."
-      operationId: createLead
-      tags:
-        - CRM
-      security:
-        - ApiKeyAuth: ['agents:execute']
+      tags: [CRM]
+      summary: Endpoint legado proxy CRM.
+      security: [{ ApiKeyAuth: [crm:write] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/CreateLeadPayload'
+            schema: { $ref: '#/components/schemas/CreateLeadPayload' }
       responses:
-        '201':
-          description: "Lead criado"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  lead:
-                    $ref: '#/components/schemas/Lead'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
+        '200': { description: OK }
   /crm/leads/{id}:
-    put:
-      summary: "Atualizar lead"
-      description: "Atualiza os dados de um lead existente."
-      operationId: updateLead
-      tags:
-        - CRM
+    get:
+      tags: [CRM]
+      summary: Endpoint legado proxy CRM.
+      security: [{ ApiKeyAuth: [crm:read] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "ID do lead"
-      security:
-        - ApiKeyAuth: ['agents:execute']
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    put:
+      tags: [CRM]
+      summary: Endpoint legado proxy CRM.
+      security: [{ ApiKeyAuth: [crm:write] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateLeadPayload'
+            schema: { $ref: '#/components/schemas/UpdateLeadPayload' }
       responses:
-        '200':
-          description: "Lead atualizado"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  lead:
-                    $ref: '#/components/schemas/Lead'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
-    get:
-      summary: "Obter lead"
-      description: "Retorna os detalhes de um lead específico."
-      operationId: getLead
-      tags:
-        - CRM
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "ID do lead"
-      security:
-        - ApiKeyAuth: ['agents:read']
-      responses:
-        '200':
-          description: "Detalhes do lead"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  lead:
-                    $ref: '#/components/schemas/Lead'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
-
-  # ──────────────────────────────────────────────
-  # Studio - Projetos
-  # ──────────────────────────────────────────────
+        '200': { description: OK }
   /studio/projects:
     get:
-      summary: "Listar projetos"
-      description: "Retorna a lista de projetos do Studio."
-      operationId: listProjects
-      tags:
-        - Studio
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [draft, active, archived]
-          description: "Filtrar por status do projeto"
-        - name: client_id
-          in: query
-          schema:
-            type: string
-          description: "Filtrar por ID do cliente"
-      security:
-        - ApiKeyAuth: ['system:read']
+      tags: [Studio]
+      summary: Endpoint legado proxy Studio.
+      security: [{ ApiKeyAuth: [system:read] }]
       responses:
-        '200':
-          description: "Lista de projetos"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  projects:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/StudioProject'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
+        '200': { description: OK }
   /studio/projects/{id}:
     get:
-      summary: "Obter projeto"
-      description: "Retorna os detalhes de um projeto específico, incluindo assets e colaboradores."
-      operationId: getProject
-      tags:
-        - Studio
+      tags: [Studio]
+      summary: Endpoint legado proxy Studio.
+      security: [{ ApiKeyAuth: [system:read] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "ID do projeto"
-      security:
-        - ApiKeyAuth: ['system:read']
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
-        '200':
-          description: "Detalhes do projeto"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  project:
-                    $ref: '#/components/schemas/StudioProjectDetail'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
-
-  # ──────────────────────────────────────────────
-  # Vox - Transcrição
-  # ──────────────────────────────────────────────
+        '200': { description: OK }
   /vox/transcriptions:
+    get:
+      tags: [Vox]
+      summary: Endpoint legado proxy Vox.
+      security: [{ ApiKeyAuth: [messages:read] }]
+      responses:
+        '200': { description: OK }
     post:
-      summary: "Transcrever áudio"
-      description: "Envia um áudio para transcrição. O processamento é assíncrono."
-      operationId: transcribe
-      tags:
-        - Vox
-      security:
-        - ApiKeyAuth: ['cid:write']
+      tags: [Vox]
+      summary: Endpoint legado proxy Vox.
+      security: [{ ApiKeyAuth: [messages:write] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/TranscribePayload'
+            schema: { $ref: '#/components/schemas/TranscribePayload' }
       responses:
-        '201':
-          description: "Transcrição iniciada"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  transcription:
-                    $ref: '#/components/schemas/Transcription'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
-    get:
-      summary: "Listar transcrições"
-      description: "Retorna a lista de transcrições recentes."
-      operationId: listTranscriptions
-      tags:
-        - Vox
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [pending, processing, completed, failed]
-          description: "Filtrar por status"
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 20
-            maximum: 100
-          description: "Limite de resultados"
-      security:
-        - ApiKeyAuth: ['cid:read']
-      responses:
-        '200':
-          description: "Lista de transcrições"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  transcriptions:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Transcription'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
+        '200': { description: OK }
   /vox/transcriptions/{id}:
     get:
-      summary: "Obter transcrição"
-      description: "Retorna o resultado de uma transcrição específica."
-      operationId: getTranscription
-      tags:
-        - Vox
+      tags: [Vox]
+      summary: Endpoint legado proxy Vox.
+      security: [{ ApiKeyAuth: [messages:read] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: "ID da transcrição"
-      security:
-        - ApiKeyAuth: ['cid:read']
+        - { name: id, in: path, required: true, schema: { type: string } }
       responses:
-        '200':
-          description: "Detalhes da transcrição"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  transcription:
-                    $ref: '#/components/schemas/Transcription'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '502':
-          $ref: '#/components/responses/UpstreamError'
+        '200': { description: OK }

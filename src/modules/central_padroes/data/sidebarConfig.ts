@@ -1,7 +1,7 @@
 // ============================================================
-// Central de Padrões — Configuração centralizada da Sidebar (T1.2)
+// Central de Documentos e Padrões — Sidebar oficial
 // ============================================================
-// Fonte única da verdade para navegação.
+// Fonte única da verdade para navegação interna do módulo.
 
 export interface SidebarSection {
   label: string;
@@ -13,116 +13,104 @@ export interface SidebarRow {
   id: string;
   label: string;
   icon: string;
+  help?: string;
 }
 
-/**
- * Seções da sidebar com agrupamento por afinidade.
- * Cada row.id corresponde a uma view no CentralPadroesLayout.
- */
 export const sidebarSections: SidebarSection[] = [
   {
     label: 'Central',
-    icon: '📋',
+    icon: '🏛️',
     rows: [
-      { id: 'dashboard', label: 'Início', icon: '⌂' },
-      { id: 'chat-pietro', label: 'Pergunte ao Pietro', icon: '💬' },
-      { id: 'search', label: 'Buscar', icon: '⌕' },
-      { id: 'governance-panel', label: 'Painel de Governança', icon: '📊' }
+      { id: 'dashboard', label: 'Início', icon: '🏠', help: 'Visão executiva da Central.' },
+      { id: 'chat-pietro', label: 'Pergunte ao Pietro', icon: '🧠', help: 'Apoio guiado para padrões e governança.' },
+      { id: 'search', label: 'Buscar', icon: '🔎', help: 'Busca em documentos e padrões.' },
+      { id: 'governance-panel', label: 'Painel de Governança', icon: '🛡️', help: 'Canonicidade, aprovações e riscos.' }
     ]
   },
   {
-    label: 'Padrões',
-    icon: '📐',
+    label: 'Documentos e Padrões',
+    icon: '📚',
     rows: [
-      { id: 'standards', label: 'Padrões Normativos', icon: '📐' },
-      { id: 'approvals', label: 'Aprovações Pendentes', icon: '✓' },
-      { id: 'audit', label: 'Auditoria', icon: '📋' }
+      { id: 'documents', label: 'Documentos', icon: '🔵', help: 'Documentos oficiais, brutos, legados e registros.' },
+      { id: 'standards', label: 'Padrões', icon: '🧭', help: 'Padrões normativos oficiais.' },
+      { id: 'decisions', label: 'Decisões', icon: '🟣', help: 'Decisões técnicas e governança.' },
+      { id: 'checklists', label: 'Checklists', icon: '✅', help: 'Listas de validação e execução.' }
     ]
   },
   {
-    label: 'Documentos e Decisões',
-    icon: '📄',
+    label: 'Auditoria e Execução',
+    icon: '🧾',
     rows: [
-      { id: 'documents', label: 'Documentos', icon: '📄' },
-      { id: 'decisions', label: 'Decisões', icon: '⚖' },
-      { id: 'checklists', label: 'Checklists', icon: '✅' }
+      { id: 'audits', label: 'Auditorias', icon: '🧾', help: 'Achados, evidências e planos de ação.' },
+      { id: 'relatorios', label: 'Relatórios', icon: '📊', help: 'Relatórios técnicos e executivos.' },
+      { id: 'agent-mode', label: 'Execuções LOZE-TRACE', icon: '⚙️', help: 'Execuções de agentes e rastreabilidade.' },
+      { id: 'evidence', label: 'Evidências', icon: '🧪', help: 'Provas, anexos e registros de validação.' }
     ]
   },
   {
-    label: 'Módulos e Agentes',
-    icon: '🔌',
+    label: 'Módulos',
+    icon: '🧩',
     rows: [
-      { id: 'base-modules', label: 'Módulos Base', icon: '🔌' },
-      { id: 'module-links', label: 'Links de Módulos', icon: '🔗' },
-      { id: 'agent-runs', label: 'Execuções de Agentes', icon: '🤖' }
+      { id: 'base-modules', label: 'Módulos Base', icon: '🧩', help: 'Módulos reutilizáveis.' },
+      { id: 'modules', label: 'Links de Módulos', icon: '🔗', help: 'Vínculos entre módulos e padrões.' },
+      { id: 'relationships', label: 'Dependências', icon: '🕸️', help: 'Relacionamentos e dependências.' },
+      { id: 'tags', label: 'Tags', icon: '🏷️', help: 'Classificação futura.' }
     ]
   },
   {
     label: 'Curadoria',
-    icon: '🏛️',
+    icon: '📦',
     rows: [
-      { id: 'ingestion', label: 'Triagem e Ingestão', icon: '📥' },
-      { id: 'evidence', label: 'Evidências', icon: '🔍' }
+      { id: 'curadoria', label: 'Curadoria', icon: '📦', help: 'Materiais em curadoria: legado, duplicados, fora do padrão e itens para decisão futura.' },
+      { id: 'ingestion', label: 'Triagem e Ingestão', icon: '📥', help: 'Fila de curadoria e entrada documental.' },
+      { id: 'documentos-mestres', label: 'Documentos Mestres', icon: '📘', help: 'Acervo mestre em curadoria.' },
+      { id: 'documento-base-99', label: 'Documento-base 99', icon: '📦', help: 'Base 99 e material bruto.' },
+      { id: 'subdocumentos-previstos', label: 'Subdocumentos Previstos', icon: '🗂️', help: 'Documentos planejados.' }
     ]
   },
   {
-    label: 'Acervo MD',
-    icon: '📚',
+    label: 'Operação',
+    icon: '⚙️',
     rows: [
-      { id: 'documentos-mestres', label: 'Documentos Mestres', icon: '📄' },
-      { id: 'documento-base-99', label: 'Documento-base 99', icon: '📋' },
-      { id: 'relatorios', label: 'Relatórios de Curadoria', icon: '📊' },
-      { id: 'subdocumentos-previstos', label: 'Subdocumentos Previstos', icon: '📝' }
-    ]
-  },
-  {
-    label: 'Relacionamentos',
-    icon: '🔀',
-    rows: [
-      { id: 'relationships', label: 'Dependências', icon: '🔀' },
-      { id: 'tags', label: 'Tags', icon: '🏷' }
+      { id: 'approvals', label: 'Aprovações Pendentes', icon: '🟡', help: 'Solicitações aguardando decisão.' },
+      { id: 'settings', label: 'Configurações', icon: '⚙️', help: 'Configurações do módulo.' },
+      { id: 'dev-mode', label: 'Modo Dev', icon: '🛠️', help: 'Ferramentas de operação e diagnóstico.' }
     ]
   }
 ];
 
-/**
- * Mapa de breadcrumb por view id.
- */
 export const breadcrumbLabels: Record<string, string> = {
   dashboard: 'Início',
   'chat-pietro': 'Pergunte ao Pietro',
   search: 'Buscar',
   'governance-panel': 'Painel de Governança',
-  standards: 'Padrões Normativos',
-  approvals: 'Aprovações Pendentes',
-  audit: 'Auditoria',
   documents: 'Documentos',
+  standards: 'Padrões',
   decisions: 'Decisões',
   checklists: 'Checklists',
-  'base-modules': 'Módulos Base',
-  'module-links': 'Links de Módulos',
-  'agent-runs': 'Execuções de Agentes',
-  ingestion: 'Triagem e Ingestão',
+  audits: 'Auditorias',
+  relatorios: 'Relatórios',
+  'agent-mode': 'Execuções LOZE-TRACE',
   evidence: 'Evidências',
+  'base-modules': 'Módulos Base',
+  modules: 'Links de Módulos',
   relationships: 'Dependências',
   tags: 'Tags',
-  settings: 'Configurações',
+  curadoria: 'Curadoria',
+  ingestion: 'Triagem e Ingestão',
   'documentos-mestres': 'Documentos Mestres',
   'documento-base-99': 'Documento-base 99',
-  relatorios: 'Relatórios de Curadoria',
-  'subdocumentos-previstos': 'Subdocumentos Previstos'
+  'subdocumentos-previstos': 'Subdocumentos Previstos',
+  approvals: 'Aprovações Pendentes',
+  settings: 'Configurações',
+  'dev-mode': 'Modo Dev',
+  areas: 'Áreas',
+  'internal-docs': 'Docs Internos',
+  'external-docs': 'Docs Externos',
+  archive: 'Arquivo',
+  publisher: 'Publicador'
 };
 
-/**
- * Encontra o label de uma view pelo id.
- */
-export const getViewLabel = (viewId: string): string => {
-  return breadcrumbLabels[viewId] || viewId;
-};
+export const getViewLabel = (viewId: string): string => breadcrumbLabels[viewId] || viewId;
 
-/**
- * Encontra todas as rows (para busca de navegação).
- */
-export const getAllSidebarRows = (): SidebarRow[] => {
-  return sidebarSections.flatMap(section => section.rows);
-};
+export const getAllSidebarRows = (): SidebarRow[] => sidebarSections.flatMap((section) => section.rows);
