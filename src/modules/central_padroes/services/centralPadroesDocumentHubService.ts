@@ -1,6 +1,6 @@
 import { centralDocumentsManifest } from '../data/centralDocumentsManifest';
 import { centralPadroesFallbackData } from '../data/fallbackData';
-import { CentralDocument, DocumentFilter } from '../types';
+import { CentralDocument, CentralDocumentOfficialStatus, DocumentFilter } from '../types';
 import { buildDocumentSearchText, enrichDocument } from '../utils/documentNormalizers';
 import { centralPadroesCrudService } from './centralPadroesCrudService';
 
@@ -19,6 +19,7 @@ const applyFilter = (documents: CentralDocument[], filter?: DocumentFilter) => {
   return documents.filter((document) => {
     if (!filter?.includeDeleted && document.deletedAt) return false;
     if (filter?.status && document.status !== filter.status) return false;
+    if (filter?.officialStatus && document.officialStatus !== filter.officialStatus) return false;
     if (filter?.areaId && document.areaId !== filter.areaId) return false;
     if (filter?.type && document.type !== filter.type) return false;
     if (filter?.source && document.source !== filter.source) return false;

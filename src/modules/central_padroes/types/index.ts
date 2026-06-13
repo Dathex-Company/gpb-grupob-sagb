@@ -77,6 +77,9 @@ export type CentralRiskLevel = 'baixo' | 'medio' | 'alto' | 'critico';
 // ——— Contrato Document Hub V1 ———
 export type CentralDocumentStatus = 'canonico' | 'revisao' | 'bruto' | 'legado' | 'externo' | 'registro' | 'previsto' | 'arquivado' | 'bloqueado';
 
+// ——— Status oficial do documento (Document Hub V2) ———
+export type CentralDocumentOfficialStatus = 'oficial_ativo' | 'em_revisao' | 'rascunho' | 'incompleto' | 'legado' | 'fonte_bruta' | 'curadoria' | 'externo';
+
 export type CentralDocumentType =
   | 'documento_mestre'
   | 'padrao'
@@ -197,6 +200,7 @@ export interface CentralDocument {
   title: string;
   path: string;
   status: CentralDocumentStatus;
+  officialStatus?: CentralDocumentOfficialStatus;
   category: string;
   areaId: string;
   shouldBecome: 'padrao' | 'checklist' | 'matriz' | 'registro' | 'apoio' | 'arquivo_morto';
@@ -322,6 +326,7 @@ export interface StandardFilter {
 
 export interface DocumentFilter {
   status?: CentralDocument['status'];
+  officialStatus?: CentralDocument['officialStatus'];
   areaId?: string;
   query?: string;
   type?: CentralDocumentType;

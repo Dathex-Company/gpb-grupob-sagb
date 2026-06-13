@@ -2,13 +2,13 @@ import React from 'react';
 import { CentralPageShell } from '../components/CentralPageShell';
 import { CrudModal } from '../components/CrudModal';
 import { FormField } from '../components/FormField';
-import { SectionPanel } from '../components/SectionPanel';
 import { StatusBadge } from '../components/StatusBadge';
 import { Toast } from '../components/Toast';
 import { centralPadroesCrudService } from '../services/centralPadroesCrudService';
 import { centralPadroesDocumentHubService } from '../services/centralPadroesDocumentHubService';
 import { centralPadroesStorageService } from '../services/centralPadroesStorageService';
-import { CentralDocument, DocumentFilter } from '../types';
+import { officialStatusLabel } from '../utils/documentNormalizers';
+import { CentralDocument, CentralDocumentOfficialStatus, DocumentFilter } from '../types';
 
 const statusLabel: Record<string, string> = {
   canonico: 'Canônico',
@@ -16,10 +16,39 @@ const statusLabel: Record<string, string> = {
   bruto: 'Bruto',
   legado: 'Legado',
   externo: 'Externo',
-  registro: 'Registro'
+  registro: 'Registro',
+  previsto: 'Previsto',
+  arquivado: 'Arquivado',
+  bloqueado: 'Bloqueado'
 };
 
 const statusOptions = ['todos', 'bruto', 'revisao', 'canonico', 'legado', 'externo', 'registro'] as const;
+
+const officialStatusOptions: { value: CentralDocumentOfficialStatus | 'todos'; label: string }[] = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'oficial_ativo', label: '⭐ Oficiais ativos' },
+  { value: 'em_revisao', label: '📝 Em revisão' },
+  { value: 'rascunho', label: '📄 Rascunhos' },
+  { value: 'incompleto', label: '⚠️ Incompletos' },
+  { value: 'legado', label: '📦 Legado' },
+  { value: 'fonte_bruta', label: '🗂️ Fontes brutas' },
+  { value: 'curadoria', label: '🔍 Curadoria' },
+  { value: 'externo', label: '🔗 Externos' }
+];
+
+const officialBadgeClass = (status?: CentralDocumentOfficialStatus): string => {
+  switch (status) {
+    case 'oficial_ativo': return 'cp-official-badge active';
+    case 'em_revisao': return 'cp-official-badge review';
+    case 'rascunho': return 'cp-official-badge draft';
+    case 'incompleto': return 'cp-official-badge incomplete';
+    case 'legado': return 'cp-official-badge legacy';
+    case 'fonte_bruta': return 'cp-official-badge raw';
+    case 'curadoria': return 'cp-official-badge curation';
+    case 'externo': return 'cp-official-badge external';
+    default: return 'cp-official-badge';
+  }
+};
 
 type DocumentsPageProps = {
   title?: string;
@@ -28,7 +57,7 @@ type DocumentsPageProps = {
   onOpenDocument?: (documentId: string) => void;
 };
 
-const DocumentsPage: React.FC<DocumentsPageProps> = ({ title = 'Biblioteca de Documentos', subtitle = 'Documentos canônicos, brutos, em revisão, legados, registros e externos com destino normativo sugerido.', initialFilters, onOpenDocument }) => {
+const DocumentsPage: React.FC<DocumentsPageProps> = ({ title = 'Biblioteca de Documentos', subtitle = 'Document Hub V2 — Documentos oficiais, rascunhos, revisões e fontes.', initialFilters, onOpenDocument }) => {
   const [documentsRaw, setDocumentsRaw] = React.useState<CentralDocument[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -38,6 +67,7 @@ const DocumentsPage: React.FC<DocumentsPageProps> = ({ title = 'Biblioteca de Do
   const [form, setForm] = React.useState({ title: '', path: '', category: 'Governança', areaId: 'pietro' });
   const [query, setQuery] = React.useState('');
   const [status, setStatus] = React.useState<string>(initialFilters?.status || 'todos');
+  const [officialFilter, setOfficialFilter] = React.useState<CentralDocumentOfficialStatus | 'todos'>('todos');
 
   const refetch = React.useCallback(async () => {
     setLoading(true);
@@ -57,10 +87,11 @@ const DocumentsPage: React.FC<DocumentsPageProps> = ({ title = 'Biblioteca de Do
   const documents = React.useMemo(() => {
     return documentsRaw.filter((doc) => {
       const matchesStatus = status === 'todos' || doc.status === status;
+      const matchesOfficial = officialFilter === 'todos' || doc.officialStatus === officialFilter;
       const haystack = `${doc.title} ${doc.path} ${doc.category} ${doc.areaId} ${doc.owner || ''} ${doc.summary || ''} ${(doc.tags || []).join(' ')}`.toLowerCase();
-      return matchesStatus && haystack.includes(query.toLowerCase());
+      return matchesStatus && matchesOfficial && haystack.includes(query.toLowerCase());
     });
-  }, [documentsRaw, query, status]);
+  }, [documentsRaw, query, status, officialFilter]);
 
   const ownerInitial = (areaId: string) => (areaId || 'P').slice(0, 1).toUpperCase();
 
@@ -97,50 +128,116 @@ const DocumentsPage: React.FC<DocumentsPageProps> = ({ title = 'Biblioteca de Do
 
   return (
     <CentralPageShell title={title} subtitle={subtitle}>
-      {loading && <div className="cp-docs-inline-alert">Carregando documentos diretamente do Supabase...</div>}
-      {error && <div className="cp-docs-inline-alert error">Falha ao carregar Supabase: {error}</div>}
+      {loading && <div className="cp-docs-inline-alert">Carregando documentos...</div>}
+      {error && <div className="cp-docs-inline-alert error">Falha ao carregar: {error}</div>}
+
+      {/* Count bar */}
+      <div className="cp-docs-count-bar">
+        <span className="cp-docs-count">{documents.length} documento{documents.length !== 1 ? 's' : ''}</span>
+        <span className="cp-docs-count-muted">
+          {documents.filter((d) => d.officialStatus === 'oficial_ativo').length} oficiais ativos
+        </span>
+      </div>
+
       <section className="cp-docs-panel">
+        {/* Search and official filter row */}
         <div className="cp-docs-toolbar">
           <label className="cp-docs-subtle-search">
             <span>⌕</span>
-            <input placeholder="Pesquisar nesta página..." value={query} onChange={(event) => setQuery(event.target.value)} />
+            <input placeholder="Buscar por título, owner, tag, conteúdo..." value={query} onChange={(event) => setQuery(event.target.value)} />
           </label>
-          <div className="cp-docs-filters">
-            {statusOptions.map((item) => (
-              <button key={item} type="button" onClick={() => setStatus(item)} className={`cp-docs-filter ${status === item ? 'active' : ''}`}>
-                {item === 'todos' ? 'Todos' : statusLabel[item] || item}
-              </button>
-            ))}
-          </div>
         </div>
 
-        <section className="cp-docs-table">
-          <div className="cp-docs-table-head"><span>Documentos</span><span>Status</span><span>Responsável</span><span>Tipo/Origem</span><span>Ações</span></div>
-          {documents.map((doc) => (
-            <div key={doc.id} className="cp-docs-doc-row">
-              <div className="cp-docs-doc-name"><span>📄</span><span>{doc.title}<small>{doc.summary || doc.pathRelative || doc.path}</small></span></div>
-              <span><StatusBadge value={doc.status} /></span>
-              <span className="cp-docs-person"><span className="cp-docs-owner-dot">{ownerInitial(doc.owner || doc.areaId)}</span>{doc.owner || doc.areaId}</span>
-              <span>{doc.type || doc.shouldBecome}<br /><small>{doc.source}</small></span>
-              <span className="cp-docs-row-actions"><button onClick={() => onOpenDocument?.(doc.id)} className="rounded-lg bg-blue-600 px-2 py-1 text-[10px] font-black text-white">Abrir</button><button onClick={() => openEdit(doc.id)} className="rounded-lg bg-sagb-bg-2 px-2 py-1 text-[10px] font-black text-sagb-text">Editar</button></span>
-            </div>
+        {/* Official status filter tabs */}
+        <div className="cp-docs-filters cp-docs-filters-official">
+          {officialStatusOptions.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setOfficialFilter(item.value)}
+              className={`cp-docs-filter ${officialFilter === item.value ? 'active' : ''}`}
+            >
+              {item.label}
+            </button>
           ))}
-          {!documents.length && (
-            <div className="cp-docs-doc-row">
-              <div className="cp-docs-doc-name"><span>∅</span><span>Nenhum documento encontrado</span></div>
-              <span className="cp-docs-status revisao">Filtro</span>
-              <span className="cp-docs-person"><span className="cp-docs-owner-dot">CP</span>Central</span>
-              <span>—</span>
-              <span>—</span>
-            </div>
-          )}
-        </section>
+        </div>
+
+        {/* Technical status filter */}
+        <div className="cp-docs-filters">
+          {statusOptions.map((item) => (
+            <button key={item} type="button" onClick={() => setStatus(item)} className={`cp-docs-filter cp-docs-filter-sm ${status === item ? 'active' : ''}`}>
+              {item === 'todos' ? 'Todos os status' : statusLabel[item] || item}
+            </button>
+          ))}
+        </div>
       </section>
 
-      <div className="cp-docs-new-line" onClick={openCreate}><span>+</span><span>Registrar novo documento nesta biblioteca</span></div>
+      {/* Document list — clickable rows */}
+      <section className="cp-docs-table">
+        <div className="cp-docs-table-head">
+          <span>Documento</span>
+          <span>Oficial</span>
+          <span>Status</span>
+          <span>Owner</span>
+          <span>Tipo</span>
+          <span>Ações</span>
+        </div>
+        {documents.map((doc) => (
+          <div
+            key={doc.id}
+            className="cp-docs-doc-row cp-docs-doc-row-clickable"
+            onClick={() => onOpenDocument?.(doc.id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter') onOpenDocument?.(doc.id); }}
+          >
+            <div className="cp-docs-doc-name">
+              <span>📄</span>
+              <span>
+                <strong>{doc.title}</strong>
+                <small>{doc.summary || doc.pathRelative || doc.path}</small>
+              </span>
+            </div>
+            <span>
+              <span className={officialBadgeClass(doc.officialStatus)}>
+                {officialStatusLabel[doc.officialStatus || 'incompleto']}
+              </span>
+            </span>
+            <span><StatusBadge value={doc.status} /></span>
+            <span className="cp-docs-person">
+              <span className="cp-docs-owner-dot">{ownerInitial(doc.owner || doc.areaId)}</span>
+              {doc.owner || doc.areaId}
+            </span>
+            <span><small>{doc.type || doc.shouldBecome}</small></span>
+            <span className="cp-docs-row-actions" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => onOpenDocument?.(doc.id)} className="cp-docs-mini-btn primary">Abrir</button>
+              <button onClick={() => openEdit(doc.id)} className="cp-docs-mini-btn">Editar</button>
+            </span>
+          </div>
+        ))}
+        {!documents.length && (
+          <div className="cp-docs-empty-note">
+            Nenhum documento encontrado com os filtros atuais.
+          </div>
+        )}
+      </section>
+
+      <div className="cp-docs-new-line" onClick={openCreate}>
+        <span>+</span><span>Registrar novo documento nesta biblioteca</span>
+      </div>
 
       <button type="button" className="cp-docs-floating-add" onClick={openCreate}>+</button>
-      <CrudModal title={editingId ? 'Editar Documento' : 'Registrar Documento'} open={open} onClose={() => setOpen(false)} footer={<button onClick={submit} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">{editingId ? 'Atualizar' : 'Salvar'}</button>}>
+
+      <CrudModal
+        title={editingId ? 'Editar Documento' : 'Registrar Documento'}
+        open={open}
+        onClose={() => setOpen(false)}
+        footer={
+          <button onClick={submit} className="cp-docs-btn-primary">
+            {editingId ? 'Atualizar' : 'Salvar'}
+          </button>
+        }
+      >
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <FormField label="Título" value={form.title} onChange={(value) => setForm((prev) => ({ ...prev, title: value }))} />
           <FormField label="Caminho/Origem" value={form.path} onChange={(value) => setForm((prev) => ({ ...prev, path: value }))} />

@@ -17,9 +17,9 @@ A Central de Documentos e Padrões é o módulo oficial para documentos, padrõe
 
 ## 📖 Ler primeiro
 1. Este README.
-2. docs/overview/mapa-documental-central-padroes-12-06-2026.md.
-3. docs/reports/relatorio-loze-trace-refatoracao-central-padroes-12-06-2026.md.
-4. docs/reports/relatorio-refatoracao-funcional-central-padroes-12-06-2026.md.
+2. docs/overview/00.06-mapa-documental-central-padroes-12-06-2026.md.
+3. docs/reports/01.13-relatorio-loze-trace-refatoracao-central-padroes-12-06-2026.md.
+4. docs/reports/01.21-relatorio-refatoracao-funcional-central-padroes-12-06-2026.md.
 
 ## ✅ Como registrar novo padrão
 Criar pela tela Padrões ou documentar em docs/standards com nome kebab-case, data dd-mm-aaaa, status, risco, owner e decisão relacionada quando aplicável.

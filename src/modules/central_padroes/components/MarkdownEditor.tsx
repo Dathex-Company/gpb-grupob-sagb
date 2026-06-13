@@ -8,29 +8,34 @@ type MarkdownEditorProps = {
 };
 
 export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ value, onChange, disabled }) => {
-  const [mode, setMode] = React.useState<'edit' | 'preview'>('edit');
+  const [preview, setPreview] = React.useState(false);
   return (
-    <section className="cp-docs-panel">
+    <section className="cp-docs-panel cp-markdown-editor-panel">
       <div className="cp-docs-toolbar">
         <p className="cp-docs-kicker">Editor markdown</p>
         <div className="cp-docs-filters">
-          <button type="button" className={`cp-docs-filter ${mode === 'edit' ? 'active' : ''}`} onClick={() => setMode('edit')}>Editar</button>
-          <button type="button" className={`cp-docs-filter ${mode === 'preview' ? 'active' : ''}`} onClick={() => setMode('preview')}>Preview</button>
+          <button type="button" className={`cp-docs-filter ${!preview ? 'active' : ''}`} onClick={() => setPreview(false)}>✏️ Editar</button>
+          <button type="button" className={`cp-docs-filter ${preview ? 'active' : ''}`} onClick={() => setPreview(true)}>👁️ Preview</button>
         </div>
       </div>
-      {mode === 'edit' ? (
+      {preview ? (
+        <div className="cp-markdown-editor-preview">
+          <MarkdownPreview content={value} emptyMessage="Nada para mostrar. Escreva algo no editor." />
+        </div>
+      ) : (
         <textarea
-          className="cp-markdown-editor"
+          className="cp-markdown-editor-textarea"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}
-          rows={18}
-          placeholder="# Título\n\nEscreva o conteúdo markdown do documento..."
+          rows={20}
+          placeholder="# Título do documento\n\nEscreva o conteúdo markdown aqui...\n\n## Seção\n\n- item 1\n- item 2\n\n**negrito** *itálico* `código`"
         />
-      ) : (
-        <MarkdownPreview content={value} />
       )}
+      <div className="cp-markdown-editor-footer">
+        <span className="cp-muted-text">{value.length} caracteres | {value.split('\n').length} linhas</span>
+        <span className="cp-muted-text">Markdown suportado: títulos, listas, negrito, itálico, código inline</span>
+      </div>
     </section>
   );
 };
-

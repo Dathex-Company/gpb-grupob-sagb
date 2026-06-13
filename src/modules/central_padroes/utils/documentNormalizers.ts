@@ -2,6 +2,7 @@ import {
   CentralCanonicalLevel,
   CentralDocument,
   CentralDocumentContentAvailability,
+  CentralDocumentOfficialStatus,
   CentralDocumentSource,
   CentralDocumentStatus,
   CentralDocumentType,
@@ -46,6 +47,30 @@ export const normalizeDocumentType = (value?: string | null): CentralDocumentTyp
   return 'desconhecido';
 };
 
+export const normalizeOfficialStatus = (value?: string | null): CentralDocumentOfficialStatus => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (['oficial_ativo', 'oficial ativo', 'ativo', 'active', 'published'].includes(normalized)) return 'oficial_ativo';
+  if (['em_revisao', 'em revisão', 'revisao', 'review'].includes(normalized)) return 'em_revisao';
+  if (['rascunho', 'draft'].includes(normalized)) return 'rascunho';
+  if (['incompleto', 'incomplete'].includes(normalized)) return 'incompleto';
+  if (['legado', 'legacy'].includes(normalized)) return 'legado';
+  if (['fonte_bruta', 'fonte bruta', 'raw'].includes(normalized)) return 'fonte_bruta';
+  if (['curadoria', 'curation'].includes(normalized)) return 'curadoria';
+  if (['externo', 'external'].includes(normalized)) return 'externo';
+  return 'incompleto';
+};
+
+export const officialStatusLabel: Record<CentralDocumentOfficialStatus, string> = {
+  oficial_ativo: 'Oficial ativo',
+  em_revisao: 'Em revisão',
+  rascunho: 'Rascunho',
+  incompleto: 'Incompleto',
+  legado: 'Legado',
+  fonte_bruta: 'Fonte bruta',
+  curadoria: 'Curadoria',
+  externo: 'Externo'
+};
+
 export const normalizeRiskLevel = (value?: string | null): CentralRiskLevel => {
   const normalized = String(value || '').trim().toLowerCase();
   if (['critico', 'crítico', 'critical'].includes(normalized)) return 'critico';
@@ -86,6 +111,7 @@ export const resolveContentAvailability = (document: Pick<CentralDocument, 'cont
 
 export const enrichDocument = (document: CentralDocument): CentralDocument => {
   const status = normalizeDocumentStatus(document.status);
+  const officialStatus = document.officialStatus || normalizeOfficialStatus(document.status);
   const type = normalizeDocumentType(document.type || document.shouldBecome || document.category);
   const riskLevel = normalizeRiskLevel(document.riskLevel);
   const source = normalizeDocumentSource(document.source);
@@ -105,6 +131,7 @@ export const enrichDocument = (document: CentralDocument): CentralDocument => {
     ...document,
     slug: document.slug || slugify(document.title),
     status,
+    officialStatus,
     type,
     riskLevel,
     source,

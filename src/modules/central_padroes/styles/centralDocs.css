@@ -1775,3 +1775,398 @@
    gap: 8px;
  }
 }
+
+/* ============================================================
+  Document Hub V2 — Official Status Badges
+  ============================================================ */
+
+.cp-official-badge {
+ display: inline-flex;
+ align-items: center;
+ gap: 4px;
+ width: fit-content;
+ border-radius: 999px;
+ border: 1px solid var(--cp-line);
+ padding: 3px 10px;
+ font-size: 10.5px;
+ font-weight: 800;
+ line-height: 1.3;
+ white-space: nowrap;
+}
+
+.cp-official-badge.active  { color: var(--cp-green);  background: var(--cp-green-soft);  border-color: var(--cp-green); }
+.cp-official-badge.review  { color: var(--cp-blue);   background: var(--cp-blue-soft);   border-color: var(--cp-blue); }
+.cp-official-badge.draft   { color: var(--cp-muted);  background: var(--cp-surface-soft); }
+.cp-official-badge.incomplete { color: var(--cp-orange); background: var(--cp-orange-soft); border-color: var(--cp-orange); }
+.cp-official-badge.legacy  { color: var(--cp-soft);   background: var(--cp-hover); }
+.cp-official-badge.raw     { color: var(--cp-yellow); background: var(--cp-yellow-soft); border-color: var(--cp-yellow); }
+.cp-official-badge.curation { color: var(--cp-purple); background: var(--cp-purple-soft); border-color: var(--cp-purple); }
+.cp-official-badge.external { color: var(--cp-blue);  background: var(--cp-blue-soft); }
+
+/* ============================================================
+  Document Hub V2 — Detail Page
+  ============================================================ */
+
+.cp-doc-detail-v2 {
+ display: flex;
+ flex-direction: column;
+ gap: 16px;
+ padding: 0 16px 24px;
+}
+
+.cp-doc-detail-header {
+ padding: 16px 0 8px;
+}
+
+.cp-doc-detail-title-row {
+ display: flex;
+ flex-wrap: wrap;
+ align-items: flex-start;
+ gap: 12px;
+ margin-bottom: 8px;
+}
+
+.cp-doc-detail-title {
+ font-size: 20px;
+ font-weight: 800;
+ line-height: 1.3;
+ color: var(--cp-text);
+ margin: 0;
+ flex: 1;
+ min-width: 240px;
+}
+
+.cp-doc-detail-badges {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+ align-items: center;
+}
+
+.cp-doc-detail-summary {
+ font-size: 13px;
+ color: var(--cp-muted);
+ line-height: 1.5;
+ margin: 0;
+ max-width: 720px;
+}
+
+/* Metadata grid */
+
+.cp-doc-detail-metadata {
+ padding: 0;
+}
+
+.cp-meta-grid {
+ display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+ gap: 8px;
+}
+
+.cp-meta-card {
+ display: flex;
+ flex-direction: column;
+ gap: 2px;
+ padding: 10px 12px;
+ background: var(--cp-surface);
+ border: 1px solid var(--cp-line-soft);
+ border-radius: 8px;
+}
+
+.cp-meta-card-label {
+ font-size: 10px;
+ font-weight: 700;
+ text-transform: uppercase;
+ letter-spacing: 0.04em;
+ color: var(--cp-soft);
+}
+
+.cp-meta-card-value {
+ font-size: 13px;
+ font-weight: 600;
+ color: var(--cp-text);
+ word-break: break-word;
+}
+
+/* Paths */
+
+.cp-doc-detail-paths {
+ padding: 0;
+}
+
+.cp-path-list {
+ display: flex;
+ flex-direction: column;
+ gap: 4px;
+}
+
+.cp-path-item {
+ display: flex;
+ gap: 12px;
+ align-items: baseline;
+ padding: 6px 0;
+}
+
+.cp-path-label {
+ font-size: 11px;
+ font-weight: 700;
+ color: var(--cp-soft);
+ min-width: 70px;
+ text-transform: uppercase;
+ letter-spacing: 0.04em;
+}
+
+.cp-path-value {
+ font-size: 12px;
+ font-family: 'SF Mono', 'Fira Code', monospace;
+ color: var(--cp-muted);
+ background: var(--cp-surface-soft);
+ padding: 2px 8px;
+ border-radius: 4px;
+ word-break: break-all;
+}
+
+/* Tags row */
+
+.cp-tags-row {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+}
+
+.cp-tag {
+ display: inline-block;
+ font-size: 11px;
+ font-weight: 600;
+ color: var(--cp-primary);
+ background: var(--cp-primary-soft);
+ padding: 3px 10px;
+ border-radius: 999px;
+}
+
+.cp-muted-text {
+ font-size: 12px;
+ color: var(--cp-soft);
+ font-style: italic;
+}
+
+/* Gaps */
+
+.cp-gaps-list {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+}
+
+.cp-gap-item {
+ font-size: 11px;
+ font-weight: 600;
+ color: var(--cp-orange);
+ background: var(--cp-orange-soft);
+ padding: 3px 10px;
+ border-radius: 6px;
+}
+
+/* Detail preview */
+
+.cp-doc-detail-preview {
+ border: 1px solid var(--cp-line);
+ border-radius: var(--cp-radius);
+ padding: 16px;
+ background: var(--cp-surface);
+ min-height: 120px;
+}
+
+/* ============================================================
+  Document Hub V2 — Documents Page
+  ============================================================ */
+
+.cp-docs-count-bar {
+ display: flex;
+ gap: 12px;
+ align-items: baseline;
+ padding: 4px 16px 0;
+}
+
+.cp-docs-count {
+ font-size: 20px;
+ font-weight: 800;
+ color: var(--cp-text);
+}
+
+.cp-docs-count-muted {
+ font-size: 12px;
+ color: var(--cp-soft);
+}
+
+.cp-docs-filters-official {
+ margin-bottom: 4px;
+}
+
+.cp-docs-filter-sm {
+ font-size: 10.5px;
+ padding: 3px 8px;
+}
+
+/* Clickable rows */
+
+.cp-docs-doc-row-clickable {
+ cursor: pointer;
+ transition: background 0.12s ease;
+}
+
+.cp-docs-doc-row-clickable:hover {
+ background: var(--cp-primary-soft);
+}
+
+.cp-docs-mini-btn {
+ display: inline-flex;
+ align-items: center;
+ gap: 4px;
+ border: 1px solid var(--cp-line);
+ border-radius: 6px;
+ padding: 4px 10px;
+ font-size: 10.5px;
+ font-weight: 700;
+ background: var(--cp-surface);
+ color: var(--cp-muted);
+ cursor: pointer;
+ white-space: nowrap;
+}
+
+.cp-docs-mini-btn:hover {
+ background: var(--cp-hover);
+}
+
+.cp-docs-mini-btn.primary {
+ background: var(--cp-primary);
+ color: #fff;
+ border-color: var(--cp-primary);
+}
+
+.cp-docs-mini-btn.primary:hover {
+ opacity: 0.9;
+}
+
+.cp-docs-btn-primary {
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ border: none;
+ border-radius: 8px;
+ padding: 8px 18px;
+ font-size: 12px;
+ font-weight: 800;
+ background: var(--cp-primary);
+ color: #fff;
+ cursor: pointer;
+}
+
+.cp-docs-btn-primary:hover:not(:disabled) { opacity: 0.9; }
+.cp-docs-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.cp-docs-btn-secondary {
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ border: 1px solid var(--cp-line);
+ border-radius: 8px;
+ padding: 8px 18px;
+ font-size: 12px;
+ font-weight: 700;
+ background: var(--cp-surface);
+ color: var(--cp-muted);
+ cursor: pointer;
+}
+
+.cp-docs-btn-secondary:hover:not(:disabled) { background: var(--cp-hover); }
+.cp-docs-btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.cp-docs-btn-danger {
+ background: var(--cp-red) !important;
+ border-color: var(--cp-red) !important;
+}
+
+.cp-docs-btn-danger:hover:not(:disabled) { opacity: 0.85; }
+
+/* ============================================================
+  Document Hub V2 — Editor
+  ============================================================ */
+
+.cp-editor-status-bar {
+ display: flex;
+ align-items: center;
+ gap: 12px;
+ padding: 8px 16px;
+ font-size: 12px;
+ color: var(--cp-muted);
+ background: var(--cp-surface-soft);
+ border-bottom: 1px solid var(--cp-line-soft);
+}
+
+.cp-editor-actions {
+ display: flex;
+ gap: 8px;
+ padding: 16px;
+ justify-content: flex-end;
+ border-top: 1px solid var(--cp-line);
+}
+
+.cp-editor-readonly-area {
+ cursor: pointer;
+ min-height: 80px;
+ padding: 4px 0;
+ border-radius: 8px;
+ transition: background 0.15s;
+}
+
+.cp-editor-readonly-area:hover {
+ background: var(--cp-hover);
+}
+
+/* Markdown editor textarea */
+
+.cp-markdown-editor-panel {
+ margin: 0 0 0;
+}
+
+.cp-markdown-editor-textarea {
+ width: 100%;
+ border: 1px solid var(--cp-line);
+ border-radius: 8px;
+ padding: 14px;
+ font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+ font-size: 13px;
+ line-height: 1.6;
+ color: var(--cp-text);
+ background: var(--cp-surface);
+ resize: vertical;
+ min-height: 280px;
+}
+
+.cp-markdown-editor-textarea:focus {
+ outline: none;
+ border-color: var(--cp-primary);
+ box-shadow: 0 0 0 3px var(--cp-primary-soft);
+}
+
+.cp-markdown-editor-textarea:disabled {
+ opacity: 0.6;
+ cursor: not-allowed;
+ background: var(--cp-surface-soft);
+}
+
+.cp-markdown-editor-preview {
+ min-height: 120px;
+ padding: 12px;
+ border: 1px solid var(--cp-line);
+ border-radius: 8px;
+ background: var(--cp-surface);
+}
+
+.cp-markdown-editor-footer {
+ display: flex;
+ justify-content: space-between;
+ padding: 6px 0 0;
+ font-size: 10.5px;
+}
