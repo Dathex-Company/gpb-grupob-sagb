@@ -35,8 +35,8 @@ export const moduleDoc: ModuleDoc = {
       'central_padroes_evidence_records'
     ],
     storageBuckets: [
-      'canonical-documents',
-      'evidence-files'
+      'cp-documents',
+      'cp-evidence'
     ],
     localStorageKeys: []
   }

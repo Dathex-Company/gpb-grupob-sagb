@@ -8,7 +8,7 @@ export interface CentralPadroesUploadInput {
 }
 
 export const centralPadroesStorageService = {
-  buckets: ['central-padroes-documents', 'central-padroes-evidence', 'central-padroes-templates'],
+  buckets: ['cp-documents', 'cp-evidence'],
 
   async ingestDocument(input: CentralPadroesUploadInput): Promise<string> {
     const data = await restFetch('rpc/central_padroes_ingest_document', {

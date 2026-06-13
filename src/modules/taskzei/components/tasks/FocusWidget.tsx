@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useFocusStore } from '../../../foco_total/stores/focusStore';
+import { focusSessionFacade } from '../../../foco_total';
 import { useFocusWidgetStore } from '../../store/focusWidgetStore';
 
 // ============================================================================
@@ -83,7 +83,6 @@ function usePipDrag(deps: { enabled: boolean }) {
 
 const FocusConfigModal: React.FC = () => {
   const { taskTitle, close } = useFocusWidgetStore();
-  const startSession = useFocusStore((state) => state.startSession);
 
   const [task, setTask] = useState(taskTitle);
   const [duration, setDuration] = useState<number>(25);
@@ -101,7 +100,7 @@ const FocusConfigModal: React.FC = () => {
     const finalDuration = isCustom && customDuration ? Number(customDuration) : duration;
     if (finalDuration <= 0) return;
 
-    startSession(trimmed, finalDuration);
+    focusSessionFacade.startFocusSession(trimmed, finalDuration);
     // Transition to active_modal after starting session
     useFocusWidgetStore.getState().setMode('active_modal');
   };
@@ -268,7 +267,7 @@ const FocusConfigModal: React.FC = () => {
 // ============================================================================
 
 const FocusActiveModal: React.FC = () => {
-  const { currentSession, pauseSession, resumeSession, stopSession, tick } = useFocusStore();
+  const { currentSession, pauseSession, resumeSession, requestStopSession, tick } = focusSessionFacade.useFacade();
   const { minimize, close } = useFocusWidgetStore();
 
   useEffect(() => {
@@ -297,7 +296,7 @@ const FocusActiveModal: React.FC = () => {
     100;
 
   const handleStop = () => {
-    stopSession();
+    requestStopSession();
     close();
   };
 
@@ -477,7 +476,7 @@ const FocusActiveModal: React.FC = () => {
 // ============================================================================
 
 const FocusPipWidget: React.FC = () => {
-  const { currentSession, pauseSession, resumeSession, tick } = useFocusStore();
+  const { currentSession, pauseSession, resumeSession, tick } = focusSessionFacade.useFacade();
   const { expand, close } = useFocusWidgetStore();
 
   const { pipRef, position, handleMouseDown } = usePipDrag({ enabled: true });
@@ -507,7 +506,7 @@ const FocusPipWidget: React.FC = () => {
     100;
 
   const handleStop = () => {
-    useFocusStore.getState().stopSession();
+    focusSessionFacade.requestStopFocusSession();
     close();
   };
 

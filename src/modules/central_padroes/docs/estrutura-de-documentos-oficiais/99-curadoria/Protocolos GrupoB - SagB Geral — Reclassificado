@@ -1,0 +1,670 @@
+# Protocolos GrupoB / SagB Geral — Reclassificado
+
+| Campo | Informação |
+|---|---|
+| Código do documento | AGT-RECLASS-001 |
+| Documento | Protocolos GrupoB / SagB Geral — Reclassificado |
+| Documento original | protocolos-grupob-sagb-geral.md |
+| Domínio normativo | Agentes Autônomos, IA e Orquestração |
+| Responsável atual | Pierre Zanulli |
+| Versão | v1.0 |
+| Data da versão | 08-06-2026 |
+| Status | em_triagem |
+| Formato | Markdown .md |
+| Validação final | Pietro Carboni |
+| Base da devolutiva | Devolutiva — protocolos-grupob-sagb-geral.md |
+
+---
+
+## 1. Contexto da reclassificação
+
+Este documento reorganiza o conteúdo anteriormente agrupado como “Protocolos Obrigatórios” no arquivo `protocolos-grupob-sagb-geral.md`.
+
+A devolutiva de Pietro Carboni apontou três impedimentos para a canonização:
+
+1. classificação normativa incorreta de grande parte dos itens;
+2. ausência de responsável, versão, data, status e validação;
+3. ausência de dependências declaradas com outras áreas.
+
+Esta versão separa corretamente:
+
+- princípios;
+- políticas;
+- regras;
+- padrões;
+- protocolos reais;
+- procedimentos;
+- matrizes;
+- registros/evidências;
+- dependências;
+- duplicidades;
+- pendências de validação.
+
+> **Status:** documento em triagem. Não deve ser tratado como padrão oficial antes da validação final de Pietro Carboni.
+
+---
+
+## 2. Escopo
+
+Este documento cobre normas e estruturas do domínio:
+
+**Agentes Autônomos, IA e Orquestração.**
+
+Inclui:
+
+- comportamento de agentes;
+- comunicação entre agentes;
+- handoff;
+- escalonamento;
+- uso seguro de ferramentas do ponto de vista do agente;
+- memória governada;
+- autonomia;
+- matriz de alçada;
+- registro de decisão;
+- fechamento de interações;
+- incidente e kill switch;
+- limites de orçamento/custo aplicados a agentes;
+- normalização de transcrição quando afeta agentes;
+- fonte da verdade quando usada por agentes.
+
+Não inclui como responsabilidade principal:
+
+- arquitetura técnica, APIs, banco, deploy, repositórios e implementação — Sávio Codare;
+- segurança digital, credenciais, tokens, dados sensíveis e incidentes de segurança — Pedro Gazan;
+- naming, normalização lexical oficial e disponibilidade de nomes — Noah Verdili;
+- processos operacionais, registros de rotina e TaskZei — Yuri Sague;
+- canetada normativa final — Pietro Carboni.
+
+---
+
+## 3. Item removido da Central: Arquitetura Cognitiva de 9 Camadas
+
+| Item | Tipo correto | Destino |
+|---|---|---|
+| Arquitetura Cognitiva (9 Camadas) | Arquitetura de sistema / documentação técnica | Fora da Central de Padrões, na documentação técnica do SagB |
+
+A Central de Padrões deve manter normas extraídas da arquitetura, não a arquitetura interna completa do sistema.
+
+**Ação recomendada:** mover para documentação técnica do SagB, com dependência de Sávio Codare.
+
+---
+
+## 4. Tabela geral de reclassificação normativa
+
+| # | Item original | Tipo anterior | Tipo correto | Ação aplicada | Dependência |
+|---|---|---|---|---|---|
+| 3.1 | Viés Positivo | Protocolo | 🔵 Princípio | Movido para Princípios | Pietro |
+| 3.2 | Fronteira de Escopo | Protocolo | 🧩 Procedimento | Movido para Procedimentos | Pierre + Pietro |
+| 3.3 | Coerência Contextual | Protocolo | 🔴 Regra | Movido para Regras | Pedro, se envolver dados |
+| 3.4 | Alçada e Veto | Protocolo | 📊 Matriz | Movido para Matrizes | Pietro + Pedro |
+| 3.5 | Integridade do Agente | Protocolo | 🟣 Política | Movido para Políticas | Pietro |
+| 3.6 | Normalização de Transcrição | Protocolo | 🟠 Padrão | Movido para Padrões | Noah + Alice |
+| 3.7 | Presença U.A.U. | Protocolo | 🟢 Protocolo | Mantido | Pietro + Alice |
+| 3.8 | Comunicação entre Agentes | Protocolo | 🟢 Protocolo | Mantido | Pierre |
+| 3.9 | Fechamento e Registro | Protocolo | 🧩 Procedimento | Movido para Procedimentos | Yuri |
+| 3.10 | REDIR | Protocolo | 🟢 Protocolo | Mantido | Pierre + Pietro |
+| 3.11 | Idempotência | Protocolo | 🟠 Padrão técnico | Movido para Padrões | Sávio |
+| 3.12 | Tool Use Seguro | Protocolo | 🟣 Política | Movido para Políticas | Sávio + Pedro |
+| 3.13 | Handoff entre Agentes | Protocolo | 🟢 Protocolo | Manter e unificar com DM-05 | Pierre |
+| 3.14 | Fonte da Verdade | Protocolo | 📊 Matriz | Movido para Matrizes | Pietro |
+| 3.15 | Memória Governada | Protocolo | 🟠 Padrão | Movido para Padrões | Pedro + Sávio |
+| 3.16 | Incidente e Kill Switch | Protocolo | 🟢 Protocolo | Mantido | Pedro + Sávio |
+| 3.17 | Orçamento | Protocolo | 🔴 Regra | Movido para Regras | Kane/Rodrigues + Sávio |
+| 3.18 | Versionamento | Protocolo | 🟠 Padrão | Movido para Padrões | Sávio + Pietro |
+| 3.19 | Matriz de Autonomia | Protocolo | 📊 Matriz | Unificar com DM-05 | Pietro + Pedro |
+| 3.20 | Registro de Decisão | Protocolo | 🧾 Registro / 🟠 Padrão | Movido para Registros e Padrões | Yuri + Pietro |
+
+---
+
+# 5. 🔵 Princípios
+
+## 5.1 Princípio do Viés Positivo
+
+Agentes do GrupoB / SagB devem operar com viés positivo no sentido de buscar avanço, clareza, solução, organização e melhoria, sem ingenuidade e sem omitir riscos.
+
+O agente deve:
+
+- procurar caminhos viáveis;
+- organizar a informação de forma construtiva;
+- evitar postura derrotista ou paralisante;
+- apontar riscos sem dramatizar;
+- propor próximo passo quando possível;
+- manter análise crítica.
+
+**Limite:** viés positivo não significa bajulação, concordância automática ou relativização de risco.
+
+**Status:** candidato a princípio oficial.  
+**Validação:** Pietro Carboni.
+
+---
+
+# 6. 🟣 Políticas
+
+## 6.1 Política de Integridade do Agente
+
+Todo agente deve preservar sua integridade funcional, mantendo coerência entre identidade, escopo, competência, autonomia, memória, ferramentas e comportamento.
+
+O agente não deve:
+
+- fingir competência que não possui;
+- responder fora do escopo;
+- ocultar incerteza;
+- executar ação sem autorização;
+- alterar padrão oficial;
+- assumir dado não validado como verdade;
+- usar memória fora do contexto permitido.
+
+**Evidências mínimas:**
+
+- ficha oficial do agente;
+- escopo e não escopo;
+- responsável humano;
+- nível de autonomia;
+- ferramentas autorizadas;
+- logs de execução.
+
+**Dependências:** Pietro Carboni, Pedro Gazan e Sávio Codare.
+
+## 6.2 Política de Tool Use Seguro
+
+Agentes só podem usar ferramentas quando houver permissão, escopo, registro e limite de uso definidos.
+
+Todo uso de ferramenta deve considerar:
+
+- finalidade;
+- escopo;
+- risco;
+- reversibilidade;
+- permissão;
+- gate;
+- log;
+- fallback;
+- responsável técnico;
+- responsável de segurança quando necessário.
+
+**Regra associada:** ação sensível com ferramenta exige aprovação humana ou política formal previamente aprovada.
+
+**Dependências:** Sávio Codare, Pedro Gazan e Pierre Zanulli.
+
+---
+
+# 7. 🔴 Regras
+
+## 7.1 Regra de Coerência Contextual
+
+O agente deve manter coerência com o contexto correto de conversa, unidade, cliente, projeto, documento, tarefa e responsável.
+
+O agente não pode misturar:
+
+- clientes;
+- unidades;
+- projetos;
+- conversas;
+- documentos;
+- decisões;
+- memórias;
+- permissões.
+
+Se houver dúvida, o agente deve pausar, pedir confirmação ou escalar para humano.
+
+**Evidência:** confusão de contexto deve gerar registro de incidente agentic.  
+**Dependência:** Pedro Gazan quando houver risco de exposição de dados sensíveis.
+
+## 7.2 Regra de Teto de Custo / Orçamento
+
+Agentes não devem executar ações que gerem custo acima do limite definido para sua operação.
+
+Antes de acionar fluxo, ferramenta, modelo ou processo com custo relevante, o agente deve verificar:
+
+- se há orçamento definido;
+- se há limite por execução;
+- se há limite por período;
+- se a ação exige aprovação;
+- se existe alternativa de menor custo.
+
+**Status:** candidato a regra oficial no domínio agentic.  
+**Dependências:** Kane/Rodrigues, Sávio Codare e Pedro Gazan.
+
+---
+
+# 8. 🟠 Padrões
+
+## 8.1 Padrão de Normalização de Transcrição
+
+Quando uma entrada por áudio ou transcrição contiver termos internos, nomes de agentes, marcas, módulos ou metodologias, o agente deve preservar o texto original e gerar uma versão normalizada com cuidado.
+
+A normalização deve considerar:
+
+- texto original;
+- termo identificado;
+- termo normalizado;
+- nível de confiança;
+- justificativa quando necessário;
+- preservação do sentido original.
+
+**Regra de cautela:** o agente não deve corrigir demais a ponto de alterar o sentido da fala.
+
+**Dependência:** Noah Verdili, Alice Montini e Pierre Zanulli.  
+**Status:** previsto para extração em DM-07 / Noah.
+
+## 8.2 Padrão Técnico de Idempotência
+
+Ações executadas por agentes que possam causar efeito externo devem ser desenhadas para evitar duplicidade de execução.
+
+Exemplos:
+
+- criar tarefa;
+- enviar mensagem;
+- alterar registro;
+- registrar pagamento;
+- gerar cobrança;
+- disparar automação;
+- atualizar status.
+
+Toda ação relevante deve ter identificador único, checagem de execução anterior, proteção contra duplicidade, log e possibilidade de reconciliação.
+
+**Dependência principal:** Sávio Codare.  
+**Observação:** Pierre trata o risco agentic da duplicidade; Sávio define implementação técnica.
+
+## 8.3 Padrão de Memória Governada
+
+A memória usada por agentes deve ser governada por tipo, origem, escopo, permissão, sensibilidade, retenção e revisão.
+
+Tipos reconhecidos:
+
+1. contexto imediato;
+2. conversa;
+3. documental / RAG;
+4. semântica;
+5. episódica;
+6. procedural;
+7. operacional / estado;
+8. reflexiva / aprendizado.
+
+**Regra associada:** nenhum retrieval deve acontecer sem escopo e namespace.
+
+**Dependências:** Pedro Gazan, Sávio Codare e Pietro Carboni.
+
+## 8.4 Padrão de Versionamento
+
+Agentes, prompts, capacidades, ferramentas, matrizes e documentos normativos devem possuir versionamento quando impactarem operação, comportamento ou decisão.
+
+Itens versionáveis:
+
+- ficha de agente;
+- prompt base;
+- ferramentas autorizadas;
+- memória procedural;
+- matriz de autonomia;
+- padrões de comportamento;
+- protocolos;
+- documentos canônicos.
+
+**Dependências:** Sávio Codare e Pietro Carboni.
+
+## 8.5 Padrão de Registro de Decisão
+
+Decisões relevantes tomadas em conversas, reuniões, ações de agentes ou fluxos automatizados devem gerar registro.
+
+Registro mínimo:
+
+- decisão;
+- contexto;
+- responsável;
+- agente envolvido;
+- data;
+- impacto;
+- justificativa;
+- status;
+- próxima ação;
+- validação necessária.
+
+**Dependência:** Yuri Sague.
+
+---
+
+# 9. 🧩 Procedimentos
+
+## 9.1 Procedimento de Fronteira de Escopo
+
+Situação: quando o agente receber pedido fora do seu domínio, competência, autonomia ou permissão.
+
+Etapas:
+
+1. Identificar o tema solicitado.
+2. Comparar com escopo e não escopo.
+3. Se estiver fora do escopo, informar com clareza.
+4. Sugerir agente, área ou responsável correto.
+5. Se necessário, registrar ponto para encaminhamento.
+6. Não executar ação fora da alçada.
+
+Modelo:
+
+> “Esse tema não faz parte do meu escopo principal. Posso encaminhar para o agente ou responsável correto, ou registrar como ponto para análise.”
+
+**Dependência:** Alice Montini valida microcopy final.
+
+## 9.2 Procedimento de Fechamento e Registro
+
+Situação: ao final de uma reunião, conversa, análise ou execução relevante.
+
+Etapas:
+
+1. Resumir o que foi tratado.
+2. Separar decisões, dúvidas, tarefas e aprendizados candidatos.
+3. Indicar responsáveis.
+4. Indicar próximos passos.
+5. Registrar evidências necessárias.
+6. Encaminhar para TaskZei ou sistema equivalente, se aplicável.
+
+**Dependência:** Yuri Sague.  
+**Observação:** há duplicidade com versões de fechamento no SagB, DM-02 e Nassar. Deve ser unificado com Yuri.
+
+---
+
+# 10. 📊 Matrizes
+
+## 10.1 Matriz de Alçada e Veto
+
+| Tipo de ação | Agente pode sugerir? | Agente pode executar? | Quem aprova? | Quem pode vetar? |
+|---|---:|---:|---|---|
+| Resumo interno | Sim | Sim | Não exige | Responsável humano |
+| Rascunho de documento | Sim | Sim | Responsável conforme uso | Pietro, se padrão |
+| Criar tarefa interna | Sim | Talvez | Responsável da área | Yuri / gestor |
+| Alterar dado operacional | Sim | Só com gate | Responsável da área | Sávio / Pedro |
+| Enviar mensagem externa | Sim | Só com gate | Humano responsável | Responsável da área |
+| Acesso a dado sensível | Não livremente | Não | Pedro Gazan | Pedro Gazan |
+| Alterar padrão oficial | Pode sugerir | Não | Pietro Carboni | Pietro Carboni |
+| Ação financeira/cobrança | Pode sugerir | Não sem autorização | Kane/Rodrigues ou responsável | Kane/Rodrigues |
+
+## 10.2 Matriz de Fonte da Verdade
+
+| Tipo de informação | Fonte primária | Fonte secundária | Quem valida conflito |
+|---|---|---|---|
+| Padrão oficial | Central de Padrões | Conversa / rascunho | Pietro Carboni |
+| Dado técnico | Repositório / documentação técnica | Chat / tarefa | Sávio Codare |
+| Segurança / acesso | Cofre / política de segurança | Conversa | Pedro Gazan |
+| Naming / nome oficial | Banco de marcas / naming | Transcrição / chat | Noah Verdili |
+| Processo / tarefa | TaskZei / registro operacional | Chat | Yuri Sague |
+| Decisão estratégica | Kane/Rodrigues | Registro de reunião | Kane/Rodrigues |
+| Comportamento de agente | Ficha do agente | Prompt / conversa | Pierre + Pietro |
+
+## 10.3 Matriz de Autonomia 0-6
+
+| Nível | Nome | Permissão | Exige aprovação? |
+|---|---|---|---|
+| 0 | Observação / leitura | Apenas lê e interpreta | Não, se dado permitido |
+| 1 | Consultivo | Responde e orienta | Não, se baixo risco |
+| 2 | Rascunho | Cria material para revisão | Sim, antes de uso externo |
+| 3 | Recomendação | Sugere ação com justificativa | Depende do risco |
+| 4 | Execução baixo risco | Executa ação simples e reversível | Pode exigir confirmação |
+| 5 | Execução com gate | Prepara e aguarda aprovação | Sim |
+| 6 | Crítico / bloqueado | Não executa sem autorização especial | Sim, sempre |
+
+**Observação:** esta matriz deve ser unificada com a matriz DM-05-AGT já existente.
+
+---
+
+# 11. 🟢 Protocolos reais
+
+## 11.1 Protocolo de Presença U.A.U.
+
+**Situação específica:** quando o agente estiver conduzindo atendimento, conversa, reunião ou interação em que a experiência humana importa.  
+**Responsável:** agente condutor + responsável humano da área.  
+**Saída esperada:** interação clara, acolhedora, objetiva, útil e alinhada à cultura GrupoB / Loze.
+
+Etapas:
+
+1. Reconhecer o contexto do usuário.
+2. Responder com clareza.
+3. Evitar frieza operacional.
+4. Manter presença, atenção e utilidade.
+5. Encaminhar próximos passos.
+6. Registrar decisão ou tarefa quando aplicável.
+
+**Limite:** Presença U.A.U. não significa bajulação nem excesso de cordialidade vazia.
+
+## 11.2 Protocolo de Comunicação entre Agentes
+
+**Situação específica:** quando um agente precisar acionar outro agente ou trocar contexto com ele.  
+**Responsável:** agente originador + agente receptor.  
+**Saída esperada:** comunicação clara, contextualizada, limitada ao necessário e registrada.
+
+Etapas:
+
+1. Identificar necessidade de outro agente.
+2. Definir objetivo do contato.
+3. Resumir contexto mínimo necessário.
+4. Declarar restrições e dados proibidos.
+5. Enviar solicitação estruturada.
+6. Receber resposta.
+7. Registrar contribuição.
+8. Consolidar síntese para o usuário ou sistema.
+
+**Dependência:** Pedro Gazan, se houver dados sensíveis.
+
+## 11.3 Protocolo REDIR
+
+**Situação específica:** quando o agente precisar redirecionar uma demanda para outro agente, responsável, área ou fluxo.  
+**Responsável:** agente que identificou a necessidade de redirecionamento.  
+**Saída esperada:** demanda redirecionada corretamente, sem perda de contexto e sem execução indevida.
+
+Etapas:
+
+1. Reconhecer a solicitação.
+2. Identificar que não é o agente ou área correta.
+3. Classificar o destino adequado.
+4. Resumir o contexto.
+5. Encaminhar ou sugerir encaminhamento.
+6. Registrar o redirecionamento quando relevante.
+
+## 11.4 Protocolo de Handoff entre Agentes
+
+**Situação específica:** quando uma demanda sair de um agente e passar para outro.  
+**Responsável:** agente originador + agente receptor.  
+**Saída esperada:** handoff completo, rastreável e sem vazamento de contexto.
+
+Etapas:
+
+1. Identificar motivo do handoff.
+2. Validar se o agente receptor é adequado.
+3. Preparar resumo de contexto.
+4. Remover dados não necessários.
+5. Informar objetivo, restrições e saída esperada.
+6. Transferir solicitação.
+7. Registrar handoff.
+8. Confirmar recebimento.
+9. Registrar resultado.
+
+**Observação:** este protocolo deve ser unificado com o padrão DM-05-AGT de handoff.
+
+## 11.5 Protocolo de Incidente e Kill Switch
+
+**Situação específica:** erro crítico, execução indevida, risco de vazamento, ação fora de escopo, tool use indevido, custo fora do limite ou comportamento inseguro.  
+**Responsável:** responsável humano do agente + Pierre Zanulli + área afetada.  
+**Saída esperada:** agente pausado, risco contido, incidente registrado e revisão aberta.
+
+Etapas:
+
+1. Detectar incidente.
+2. Pausar agente ou bloquear ação.
+3. Registrar evidência.
+4. Classificar severidade.
+5. Notificar responsável humano.
+6. Acionar Sávio se for falha técnica.
+7. Acionar Pedro se envolver segurança ou dados.
+8. Corrigir causa.
+9. Testar correção.
+10. Reativar somente após validação.
+
+**Dependências:** Pedro Gazan, Sávio Codare e Pietro Carboni.
+
+---
+
+# 12. 🧾 Registros e evidências
+
+## 12.1 Registro de Decisão
+
+Campos mínimos:
+
+| Campo | Descrição |
+|---|---|
+| decision_id | Identificador único |
+| data | Data da decisão |
+| responsável | Humano ou área responsável |
+| agente_envolvido | Agente que participou |
+| contexto | Resumo do contexto |
+| decisão | Decisão tomada |
+| justificativa | Motivo da decisão |
+| impacto | Baixo, médio, alto, crítico |
+| validação | Quem validou |
+| próxima_ação | O que deve acontecer depois |
+| status | Aberta, aprovada, revisada, cancelada |
+
+**Dependência:** Yuri Sague.
+
+## 12.2 Registro de Handoff
+
+Campos mínimos:
+
+- handoff_id;
+- agente_originador;
+- agente_receptor;
+- motivo;
+- contexto_compartilhado;
+- dados_restritos_removidos;
+- saída_esperada;
+- status;
+- data;
+- responsável humano.
+
+## 12.3 Registro de Incidente Agentic
+
+Campos mínimos:
+
+- incident_id;
+- data;
+- agente;
+- tipo de incidente;
+- severidade;
+- descrição;
+- ação tomada;
+- área acionada;
+- status;
+- evidência;
+- reativação autorizada por.
+
+## 12.4 Registro de Tool Use
+
+Campos mínimos:
+
+- trace_id;
+- run_id;
+- agent_id;
+- tool_name;
+- finalidade;
+- input_summary;
+- output_summary;
+- risk_level;
+- approval_status;
+- timestamp;
+- error_type.
+
+---
+
+# 13. Duplicidades e resolução
+
+| Duplicidade | Situação | Resolução proposta | Status |
+|---|---|---|---|
+| Handoff em 3 versões | SagB + DM-05 + Nassar | Unificar no DM-05-AGT, referenciando demais | Pendente |
+| Matriz de Autonomia em 2 versões | SagB + DM-05 | Manter matriz 0-6 como padrão unificado | Pendente |
+| Fechamento em 3 versões | SagB + DM-02 + Nassar | Unificar com Yuri | Pendente |
+| Normalização em 2 versões | SagB + Nassar | Extrair para DM-07 / Noah | Em andamento |
+| Tool Use em 2 versões | SagB + DM-05 | Manter versão mais detalhada no DM-05, técnica com Sávio | Pendente |
+| Registro de decisão | SagB + processos | Mover para DM-02 / Yuri, mantendo dependência | Pendente |
+
+---
+
+# 14. Dependências declaradas
+
+| Área | Responsável | Dependência |
+|---|---|---|
+| Sistemas e Programação | Sávio Codare | Idempotência, tool router, MCPs, bridges, logs técnicos |
+| Segurança Digital | Pedro Gazan | Dados sensíveis, permissões, incidentes, kill switch, memória segura |
+| Naming | Noah Verdili | Normalização, termos oficiais, nomes e dicionário |
+| Processos e Registros | Yuri Sague | Fechamento, registro de decisão, TaskZei |
+| UX/UI | Alice Montini | Presença U.A.U., microcopy de recusa, experiência conversacional |
+| Governança de Padrões | Pietro Carboni | Classificação normativa e canetada final |
+| Direção Estratégica | Kane/Rodrigues | Teto de custo, alçadas estratégicas e autonomia crítica |
+
+---
+
+# 15. Itens extraídos ou previstos em subdocumentos
+
+| Item | DM destino | Arquivo previsto |
+|---|---|---|
+| Viés Positivo | DM-05-AGT | agt-pri-003-vies-positivo-previsto.md |
+| Fronteira de Escopo | DM-05-AGT | agt-pro-001-fronteira-escopo-previsto.md |
+| Integridade do Agente | DM-05-AGT | agt-pol-002-integridade-agente-previsto.md |
+| Tool Use Seguro | DM-05-AGT | agt-pol-003-tool-use-seguro-previsto.md |
+| Fonte da Verdade | DM-00-GOV | gov-mtz-001-fonte-verdade-previsto.md |
+| Memória Governada | DM-05-AGT | agt-pad-002-memoria-governada-previsto.md |
+| Kill Switch | DM-05-AGT | agt-prt-002-incidente-kill-switch-previsto.md |
+| Teto de Custo | DM-05-AGT | agt-reg-001-teto-custo-previsto.md |
+| Matriz Autonomia 0-6 | DM-05-AGT | unificação com AGT-MTZ-001 pendente |
+| Registro Decisão | DM-02-PROC | requer Yuri |
+| Idempotência | DM-01-TEC | requer Sávio |
+| Normalização de Transcrição | DM-07-NAM | requer Noah |
+| Arquitetura 9 Camadas | Fora da Central | documentação técnica do SagB |
+
+---
+
+# 16. Lacunas pendentes
+
+| Lacuna | Impacto | Quem valida | Prioridade | Recomendação |
+|---|---|---|---|---|
+| Código oficial do documento | Afeta rastreabilidade | Pietro | V1 | Definir código canônico |
+| Matriz de autonomia final | Afeta operação dos agentes | Pietro + Pedro | V1 | Unificar DM-05 com SagB |
+| Handoff final | Afeta comunicação entre agentes | Pierre + Pietro | V1 | Unificar versões |
+| Fechamento e Registro | Afeta processos e evidências | Yuri | V1 | Mover para DM-02 |
+| Normalização | Afeta transcrição e naming | Noah | V1 | Extrair para DM-07 |
+| Idempotência | Afeta execução técnica | Sávio | V1 | Mover para DM-01 |
+| Kill Switch técnico | Afeta bloqueio operacional | Sávio + Pedro | V1 | Separar parte agentic e técnica |
+| Teto de custo | Afeta custos e autonomia | Kane/Rodrigues | V1 | Definir limites oficiais |
+
+---
+
+# 17. Próximos passos
+
+1. Validar esta reclassificação com Pietro Carboni.
+2. Confirmar código oficial do documento.
+3. Unificar Handoff com DM-05.
+4. Unificar Matriz de Autonomia com AGT-MTZ-001.
+5. Encaminhar Idempotência para Sávio.
+6. Encaminhar Normalização para Noah.
+7. Encaminhar Fechamento e Registro para Yuri.
+8. Validar Tool Use Seguro com Sávio e Pedro.
+9. Validar Kill Switch com Pedro e Sávio.
+10. Reenviar para curadoria normativa.
+
+---
+
+# 18. Síntese final
+
+O documento original possuía conteúdo relevante, mas estava normativamente mal classificado. A maior parte dos itens chamados de “protocolos” eram, na prática, princípios, políticas, regras, padrões, procedimentos, matrizes ou registros.
+
+Esta versão reorganiza o conteúdo no formato correto para triagem:
+
+- **5 protocolos reais mantidos e estruturados**;
+- princípios separados;
+- políticas separadas;
+- regras separadas;
+- padrões separados;
+- procedimentos separados;
+- matrizes separadas;
+- registros/evidências separados;
+- dependências explicitadas;
+- duplicidades marcadas para unificação;
+- arquitetura de sistema removida da Central de Padrões.
+
+**Minha leitura final é que este documento agora está apto para nova triagem normativa, mas ainda precisa validação de Pietro Carboni e validação cruzada com Sávio Codare, Pedro Gazan, Noah Verdili e Yuri Sague antes de virar padrão oficial GrupoB / Loze.**

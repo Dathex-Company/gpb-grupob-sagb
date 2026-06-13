@@ -3,11 +3,20 @@ import { ModuleHeader } from '../../../../components/ui/ModuleHeader';
 import { auth } from '../../../../services/supabase';
 import { FocusTimer } from '../components/FocusTimer';
 import { SessionConfigModal } from '../components/SessionConfigModal';
+import { SessionCloseModal } from '../components/SessionCloseModal';
+import { SessionHistoryPanel } from '../components/SessionHistoryPanel';
 import { useFocusStore } from '../stores/focusStore';
 
 const FocoTotalPage: React.FC = () => {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
-  const { currentSession, startSession, pendingTask, isVoiceMuted, toggleVoiceMute } = useFocusStore();
+  const {
+    currentSession,
+    startSession,
+    pendingTask,
+    isVoiceMuted,
+    toggleVoiceMute,
+    isCloseModalOpen,
+  } = useFocusStore();
 
   React.useEffect(() => {
     if (pendingTask && (!currentSession || currentSession.status === 'completed')) {
@@ -33,6 +42,7 @@ const FocoTotalPage: React.FC = () => {
   return (
     <div className="dark h-full">
       <div className="h-full overflow-y-auto bg-[#0a0f1c] text-gray-100 p-6 font-sans">
+        {/* Header */}
         <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
           <ModuleHeader
             moduleName="Zen Folk | Foco AI"
@@ -43,7 +53,8 @@ const FocoTotalPage: React.FC = () => {
           <button
             onClick={toggleVoiceMute}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#121a2b] border border-white/10 text-sm hover:bg-[#1a2338] transition-colors"
-            title={isVoiceMuted ? "Ativar Voz" : "Mutar Voz"}
+            title={isVoiceMuted ? 'Ativar Voz' : 'Mutar Voz'}
+            aria-label={isVoiceMuted ? 'Ativar Voz' : 'Mutar Voz'}
           >
             {isVoiceMuted ? (
               <>
@@ -61,7 +72,7 @@ const FocoTotalPage: React.FC = () => {
 
         <div className="max-w-5xl mx-auto space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
+            {/* Main Timer Area */}
             <div className="lg:col-span-2 space-y-6">
               {!currentSession || currentSession.status === 'completed' ? (
                 <div className="bg-[#121a2b] border border-white/10 rounded-2xl p-10 flex flex-col items-center justify-center text-center space-y-4">
@@ -84,35 +95,49 @@ const FocoTotalPage: React.FC = () => {
               )}
             </div>
 
+            {/* Sidebar */}
             <div className="lg:col-span-1 space-y-6">
-               <section className="rounded-2xl border border-white/10 bg-[#121a2b] overflow-hidden">
-                  <div className="px-5 py-4 border-b border-white/10 bg-[#0a0f1c]/70">
-                    <h2 className="text-sm font-semibold text-gray-100 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      Zen Folk Coach
-                    </h2>
-                  </div>
-                  <div className="p-5 h-64 overflow-y-auto flex flex-col justify-end space-y-4">
-                    {currentSession && currentSession.logs.filter(l => l.type === 'agent_message' || l.type === 'start' || l.type === 'stop' || l.type === 'pause').map((log) => (
+              {/* Zen Folk Coach Logs */}
+              <section className="rounded-2xl border border-white/10 bg-[#121a2b] overflow-hidden">
+                <div className="px-5 py-4 border-b border-white/10 bg-[#0a0f1c]/70">
+                  <h2 className="text-sm font-semibold text-gray-100 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Zen Folk Coach
+                  </h2>
+                </div>
+                <div className="p-5 h-64 overflow-y-auto flex flex-col justify-end space-y-4">
+                  {currentSession && currentSession.logs
+                    .filter((l) =>
+                      l.type === 'agent_message' ||
+                      l.type === 'start' ||
+                      l.type === 'stop' ||
+                      l.type === 'pause' ||
+                      l.type === 'resume' ||
+                      l.type === 'checkpoint'
+                    )
+                    .map((log) => (
                       <div key={log.id} className="bg-[#0a0f1c] p-3 rounded-lg text-sm text-gray-300 border border-white/5">
-                         <span className="text-xs text-gray-400 block mb-1">
-                           {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                         </span>
-                         {log.message}
+                        <span className="text-xs text-gray-400 block mb-1">
+                          {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {log.message}
                       </div>
                     ))}
-                    
-                    {(!currentSession || currentSession.logs.length === 0) && (
-                      <div className="text-center text-sm text-gray-500 italic py-4">
-                        Estou aqui para acompanhar seu foco. Inicie uma sessão quando estiver pronto.
-                      </div>
-                    )}
-                  </div>
-               </section>
+
+                  {(!currentSession || currentSession.logs.length === 0) && (
+                    <div className="text-center text-sm text-gray-500 italic py-4">
+                      Estou aqui para acompanhar seu foco. Inicie uma sessão quando estiver pronto.
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Session History */}
+              <SessionHistoryPanel />
             </div>
-            
           </div>
-          
+
+          {/* Vision Section */}
           <div className="space-y-6 text-[12px] opacity-70">
             <section className="rounded-xl border border-white/10 bg-[#121a2b] p-5">
               <h2 className="text-sm font-semibold text-gray-100">Visão do Produto</h2>
@@ -135,11 +160,14 @@ const FocoTotalPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Modals */}
         <SessionConfigModal
           isOpen={isConfigModalOpen}
           onClose={() => setIsConfigModalOpen(false)}
           onStart={handleStartSession}
         />
+
+        <SessionCloseModal isOpen={isCloseModalOpen} />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { ModuleManifest } from '../../core/modules/module.types';
 
 export const focoTotalManifest: ModuleManifest = {
   id: 'foco-total',
-  internalName: '.foco_total',
+  internalName: 'foco_total',
   displayName: 'Zen Folk | Foco AI',
   baseRoute: '/foco-total',
   icon: 'BotIcon',

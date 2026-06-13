@@ -8,11 +8,11 @@ const formatTime = (seconds: number) => {
 };
 
 export const FocusTimer: React.FC = () => {
-  const { currentSession, pauseSession, resumeSession, stopSession, tick } = useFocusStore();
+  const { currentSession, pauseSession, resumeSession, requestStopSession, tick } = useFocusStore();
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
-    
+
     if (currentSession?.status === 'running') {
       interval = setInterval(() => {
         tick();
@@ -75,23 +75,25 @@ export const FocusTimer: React.FC = () => {
             onClick={pauseSession}
             className="w-14 h-14 flex items-center justify-center rounded-full bg-amber-900/30 text-amber-400 hover:bg-amber-900/50 transition-colors"
             title="Pausar"
+            aria-label="Pausar sessão"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
           </button>
         )}
-        
+
         {currentSession.status === 'paused' && (
           <button
             onClick={resumeSession}
             className="w-14 h-14 flex items-center justify-center rounded-full bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50 transition-colors"
             title="Retomar"
+            aria-label="Retomar sessão"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           </button>
         )}
 
         <button
-          onClick={stopSession}
+          onClick={requestStopSession}
           disabled={currentSession.status === 'completed'}
           className={`w-14 h-14 flex items-center justify-center rounded-full transition-colors ${
             currentSession.status === 'completed'
@@ -99,6 +101,7 @@ export const FocusTimer: React.FC = () => {
               : 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
           }`}
           title="Encerrar"
+          aria-label="Encerrar sessão"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
         </button>
