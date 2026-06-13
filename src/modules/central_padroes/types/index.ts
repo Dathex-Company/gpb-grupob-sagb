@@ -226,6 +226,8 @@ export interface CentralDocument {
   createdAt?: string | null;
   deletedAt?: string | null;
   deletedBy?: string | null;
+  publishedAt?: string | null;
+  publishedBy?: string | null;
 }
 
 // ——— Checklist ———
@@ -396,6 +398,50 @@ export interface SearchResult {
     pathRelative?: string | null;
     summary?: string | null;
   };
+}
+
+// ============================================================
+// Document Hub V2 — Persistência e Versionamento (R5)
+// ============================================================
+
+export type DocumentEventType = 'draft_saved' | 'published' | 'version_restored' | 'status_changed';
+
+export interface DocumentVersion {
+  id: string;
+  documentId: string;
+  version: number;
+  title?: string | null;
+  content?: string | null;
+  summary?: string | null;
+  tags?: string[];
+  officialStatus?: string | null;
+  createdBy?: string | null;
+  createdAt?: string | null;
+}
+
+export interface DocumentDraft {
+  id: string;
+  documentId: string;
+  title?: string | null;
+  content?: string | null;
+  summary?: string | null;
+  tags?: string[];
+  owner?: string | null;
+  updatedBy?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface DocumentEvent {
+  id: string;
+  documentId: string;
+  eventType: DocumentEventType;
+  previousOfficialStatus?: string | null;
+  newOfficialStatus?: string | null;
+  versionFrom?: number | null;
+  versionTo?: number | null;
+  changedBy?: string | null;
+  metadata?: Record<string, unknown>;
+  createdAt?: string | null;
 }
 
 // ============================================================

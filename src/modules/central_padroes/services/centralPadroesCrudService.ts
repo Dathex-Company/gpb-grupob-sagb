@@ -70,12 +70,15 @@ const mapDocument = (row: any): CentralDocument => enrichDocument({
   module: row.module || null,
   division: row.division || null,
   canonicalLevel: row.canonical_level || undefined,
+  officialStatus: row.official_status || undefined,
   createdBy: row.created_by || null,
   updatedBy: row.updated_by || null,
   createdAt: row.created_at || null,
   updatedAt: row.updated_at || null,
   deletedAt: row.deleted_at || null,
-  deletedBy: row.deleted_by || null
+  deletedBy: row.deleted_by || null,
+  publishedAt: row.published_at || null,
+  publishedBy: row.published_by || null
 });
 
 const mapDecision = (row: any): CentralDecision => ({
@@ -315,5 +318,118 @@ export const centralPadroesCrudService = {
 
   async recordHistory(standardId: string, action: string, previousData: unknown, nextData: unknown): Promise<void> {
     await restFetch('central_padroes_standard_history', { method: 'POST', body: { standard_id: standardId, action, previous_data: previousData, next_data: nextData, changed_by: currentUserLabel() } });
+  },
+
+  // ============================================================
+  // Document Hub V2 — Persistência R5
+  // ============================================================
+
+  async saveDraft(documentId: string, input: { title?: string; content?: string; summary?: string; tags?: string[]; owner?: string }): Promise<{ draftId: string; documentId: string; status: string }> {
+    const data = await restFetch('rpc/cp_save_document_draft', {
+      method: 'POST',
+      body: {
+        p_document_id: documentId,
+        p_content: input.content ?? null,
+        p_title: input.title ?? null,
+        p_summary: input.summary ?? null,
+        p_tags: input.tags ?? null,
+        p_owner: input.owner ?? null
+      }
+    });
+    if (!data) throw new Error('Falha ao salvar rascunho.');
+    return data as { draftId: string; documentId: string; status: string };
+  },
+
+  async publishDocument(documentId: string, content: string, input?: { title?: string; summary?: string; tags?: string[]; owner?: string }): Promise<{ documentId: string; version: number; status: string; officialStatus: string }> {
+    const data = await restFetch('rpc/cp_publish_document', {
+      method: 'POST',
+      body: {
+        p_document_id: documentId,
+        p_content: content,
+        p_title: input?.title ?? null,
+        p_summary: input?.summary ?? null,
+        p_tags: input?.tags ?? null,
+        p_owner: input?.owner ?? null
+      }
+    });
+    if (!data) throw new Error('Falha ao publicar documento.');
+    await centralPadroesAuditService.logUpdate('document', documentId, {}, data as unknown as Record<string, unknown>, 'Publicação oficial via RPC cp_publish_document').catch(() => undefined);
+    return data as { documentId: string; version: number; status: string; officialStatus: string };
+  },
+
+  async restoreVersion(documentId: string, version: number): Promise<{ documentId: string; restoredVersion: number; status: string; officialStatus: string }> {
+    const data = await restFetch('rpc/cp_restore_document_version', {
+      method: 'POST',
+      body: { p_document_id: documentId, p_version: version }
+    });
+    if (!data) throw new Error('Falha ao restaurar versão.');
+    return data as { documentId: string; restoredVersion: number; status: string; officialStatus: string };
+  },
+
+  async listVersions(documentId: string): Promise<import('../types').DocumentVersion[]> {
+    const query = new URLSearchParams();
+    query.set('select', '*');
+    query.set('document_id', `eq.${documentId}`);
+    query.set('order', 'version.desc');
+    const data = await restFetch('central_padroes_document_versions', { method: 'GET', query });
+    return Array.isArray(data) ? data.map((row: any) => ({
+      id: row.id,
+      documentId: row.document_id,
+      version: row.version,
+      title: row.title || null,
+      content: row.content || null,
+      summary: row.summary || null,
+      tags: Array.isArray(row.tags) ? row.tags : [],
+      officialStatus: row.official_status || null,
+      createdBy: row.created_by || null,
+      createdAt: row.created_at || null
+    })) : [];
+  },
+
+  async getDraft(documentId: string): Promise<import('../types').DocumentDraft | null> {
+    const query = new URLSearchParams();
+    query.set('select', '*');
+    query.set('document_id', `eq.${documentId}`);
+    query.set('limit', '1');
+    const data = await restFetch('central_padroes_document_drafts', { method: 'GET', query });
+    if (!Array.isArray(data) || !data[0]) return null;
+    const row = data[0];
+    return {
+      id: row.id,
+      documentId: row.document_id,
+      title: row.title || null,
+      content: row.content || null,
+      summary: row.summary || null,
+      tags: Array.isArray(row.tags) ? row.tags : [],
+      owner: row.owner || null,
+      updatedBy: row.updated_by || null,
+      updatedAt: row.updated_at || null
+    };
+  },
+
+  async discardDraft(documentId: string): Promise<void> {
+    const query = new URLSearchParams();
+    query.set('document_id', `eq.${documentId}`);
+    await restFetch('central_padroes_document_drafts', { method: 'DELETE', query });
+  },
+
+  async listEvents(documentId: string): Promise<import('../types').DocumentEvent[]> {
+    const query = new URLSearchParams();
+    query.set('select', '*');
+    query.set('document_id', `eq.${documentId}`);
+    query.set('order', 'created_at.desc');
+    const data = await restFetch('central_padroes_document_events', { method: 'GET', query });
+    return Array.isArray(data) ? data.map((row: any) => ({
+      id: row.id,
+      documentId: row.document_id,
+      eventType: row.event_type,
+      previousOfficialStatus: row.previous_official_status || null,
+      newOfficialStatus: row.new_official_status || null,
+      versionFrom: row.version_from || null,
+      versionTo: row.version_to || null,
+      changedBy: row.changed_by || null,
+      metadata: row.metadata || {},
+      createdAt: row.created_at || null
+    })) : [];
   }
 };

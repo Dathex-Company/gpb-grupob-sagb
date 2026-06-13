@@ -10,7 +10,7 @@ import { centralPadroesIndexService } from '../services/centralPadroesIndexServi
 import { centralPadroesPermissionService } from '../services/centralPadroesPermissionService';
 import { centralPadroesStorageService } from '../services/centralPadroesStorageService';
 import { officialStatusLabel } from '../utils/documentNormalizers';
-import { CentralDocument, CentralDocumentOfficialStatus } from '../types';
+import { CentralDocument, CentralDocumentOfficialStatus, DocumentVersion, DocumentEvent } from '../types';
 
 type DocumentoEditorPageProps = {
   documentId: string | null;
@@ -29,6 +29,13 @@ const DocumentoEditorPage: React.FC<DocumentoEditorPageProps> = ({ documentId, o
   const [hasChanges, setHasChanges] = React.useState(false);
   const [confirmPublish, setConfirmPublish] = React.useState(false);
   const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [versions, setVersions] = React.useState<DocumentVersion[]>([]);
+  const [events, setEvents] = React.useState<DocumentEvent[]>([]);
+  const [loadingHistory, setLoadingHistory] = React.useState(false);
+  const [restoringVersion, setRestoringVersion] = React.useState<number | null>(null);
+  const [confirmRestore, setConfirmRestore] = React.useState<number | null>(null);
+  const [showVersions, setShowVersions] = React.useState(false);
+  const [showEvents, setShowEvents] = React.useState(false);
 
   const originalContent = React.useRef('');
 
@@ -53,6 +60,17 @@ const DocumentoEditorPage: React.FC<DocumentoEditorPageProps> = ({ documentId, o
   }, [documentId]);
 
   React.useEffect(() => {
+    if (!documentId) return;
+    setLoadingHistory(true);
+    Promise.all([
+      centralPadroesCrudService.listVersions(documentId).catch(() => [] as DocumentVersion[]),
+      centralPadroesCrudService.listEvents(documentId).catch(() => [] as DocumentEvent[])
+    ])
+      .then(([v, e]) => { setVersions(v); setEvents(e); })
+      .finally(() => setLoadingHistory(false));
+  }, [documentId, toast]);
+
+  React.useEffect(() => {
     setHasChanges(form.content !== originalContent.current);
   }, [form.content]);
 
@@ -65,22 +83,16 @@ const DocumentoEditorPage: React.FC<DocumentoEditorPageProps> = ({ documentId, o
     setSaving(true);
     try {
       const tags = form.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
-      await centralPadroesCrudService.updateDocument(documentId, {
+      await centralPadroesCrudService.saveDraft(documentId, {
         title: form.title,
-        path: document.path,
-        category: document.category,
-        areaId: document.areaId,
-        shouldBecome: document.shouldBecome,
-        summary: form.summary,
-        owner: form.owner,
-        tags,
         content: form.content,
-        status: 'bruto',
-        officialStatus: 'rascunho' as CentralDocumentOfficialStatus
+        summary: form.summary,
+        tags,
+        owner: form.owner
       });
       originalContent.current = form.content;
       setHasChanges(false);
-      setToast({ message: 'Rascunho salvo com sucesso.', type: 'success' });
+      setToast({ message: '💾 Rascunho salvo com sucesso.', type: 'success' });
       onSaved?.(documentId);
     } catch (err) {
       setToast({ message: String((err as Error)?.message || err), type: 'error' });
@@ -100,18 +112,11 @@ const DocumentoEditorPage: React.FC<DocumentoEditorPageProps> = ({ documentId, o
     setConfirmPublish(false);
     try {
       const tags = form.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
-      await centralPadroesCrudService.updateDocument(documentId, {
+      const result = await centralPadroesCrudService.publishDocument(documentId, form.content, {
         title: form.title,
-        path: document.path,
-        category: document.category,
-        areaId: document.areaId,
-        shouldBecome: document.shouldBecome,
         summary: form.summary,
-        owner: form.owner,
         tags,
-        content: form.content,
-        status: 'canonico',
-        officialStatus: 'oficial_ativo' as CentralDocumentOfficialStatus
+        owner: form.owner
       });
 
       if (form.content.trim()) {
@@ -121,7 +126,7 @@ const DocumentoEditorPage: React.FC<DocumentoEditorPageProps> = ({ documentId, o
       await centralPadroesIndexService.reindexItem(documentId).catch(() => undefined);
       originalContent.current = form.content;
       setHasChanges(false);
-      setToast({ message: '✅ Documento publicado como oficial ativo.', type: 'success' });
+      setToast({ message: `✅ Documento publicado como oficial ativo (versão ${result.version}).`, type: 'success' });
       onSaved?.(documentId);
     } catch (err) {
       setToast({ message: String((err as Error)?.message || err), type: 'error' });
@@ -134,6 +139,56 @@ const DocumentoEditorPage: React.FC<DocumentoEditorPageProps> = ({ documentId, o
     setForm((prev) => ({ ...prev, content: originalContent.current }));
     setHasChanges(false);
     setToast({ message: 'Alterações descartadas.', type: 'success' });
+  };
+
+  const restoreVersion = async (version: number) => {
+    if (!documentId) return;
+    if (confirmRestore !== version) {
+      setConfirmRestore(version);
+      setToast({ message: `⚠️ Tem certeza que deseja restaurar a versão ${version}? O conteúdo atual será substituído. Clique novamente para confirmar.`, type: 'error' });
+      return;
+    }
+    setConfirmRestore(null);
+    setRestoringVersion(version);
+    try {
+      const result = await centralPadroesCrudService.restoreVersion(documentId, version);
+      setForm((prev) => ({ ...prev, content: '' }));
+      setToast({ message: `✅ Versão ${result.restoredVersion} restaurada com sucesso.`, type: 'success' });
+      // Reload document
+      const doc = await centralPadroesDocumentHubService.getDocument(documentId);
+      if (doc) {
+        setDocument(doc);
+        setForm({
+          title: doc.title || '',
+          summary: doc.summary || '',
+          owner: doc.owner || '',
+          tags: (doc.tags || []).join(', '),
+          content: doc.content || ''
+        });
+        originalContent.current = doc.content || '';
+        setHasChanges(false);
+      }
+    } catch (err) {
+      setToast({ message: String((err as Error)?.message || err), type: 'error' });
+    } finally {
+      setRestoringVersion(null);
+    }
+  };
+
+  const eventLabel = (type: string): string => {
+    switch (type) {
+      case 'draft_saved': return '💾 Rascunho salvo';
+      case 'published': return '⭐ Publicado';
+      case 'version_restored': return '↩️ Versão restaurada';
+      case 'status_changed': return '📝 Status alterado';
+      default: return type;
+    }
+  };
+
+  const formatDate = (date?: string | null): string => {
+    if (!date) return '—';
+    try { return new Date(date).toLocaleString('pt-BR'); }
+    catch { return date; }
   };
 
   return (
@@ -198,6 +253,68 @@ const DocumentoEditorPage: React.FC<DocumentoEditorPageProps> = ({ documentId, o
           {confirmPublish ? '⚠️ Confirmar publicação' : '⭐ Publicar como oficial'}
         </button>
       </div>
+
+      {/* Toggle history panels */}
+      <div className="cp-editor-actions" style={{ marginTop: 8 }}>
+        <button type="button" className="cp-docs-btn-secondary" onClick={() => setShowVersions((v) => !v)}>
+          {showVersions ? '🔼 Ocultar' : '📜'} Histórico de versões ({versions.length})
+        </button>
+        <button type="button" className="cp-docs-btn-secondary" onClick={() => setShowEvents((v) => !v)}>
+          {showEvents ? '🔼 Ocultar' : '📋'} Eventos editoriais ({events.length})
+        </button>
+      </div>
+
+      {/* Version history panel */}
+      {showVersions && (
+        <section className="cp-docs-panel">
+          <p className="cp-docs-kicker">Histórico de versões</p>
+          {loadingHistory && <div className="cp-docs-inline-alert">Carregando histórico...</div>}
+          {!loadingHistory && versions.length === 0 && (
+            <div className="cp-docs-inline-alert">Nenhuma versão publicada ainda. Use "Publicar como oficial" para criar a primeira versão.</div>
+          )}
+          {versions.map((v) => (
+            <div key={v.id} className="cp-history-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--cp-border, #e0e0e0)' }}>
+              <div>
+                <strong>v{v.version}</strong>
+                {v.title && <span> — {v.title}</span>}
+                <div style={{ fontSize: '0.8em', color: 'var(--cp-muted, #666)' }}>
+                  {formatDate(v.createdAt)}
+                  {v.officialStatus && <> · {officialStatusLabel[v.officialStatus] || v.officialStatus}</>}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="cp-docs-btn-secondary"
+                style={{ padding: '4px 12px', fontSize: '0.85em' }}
+                onClick={() => restoreVersion(v.version)}
+                disabled={restoringVersion === v.version || !canEdit}
+              >
+                {restoringVersion === v.version ? '⏳' : confirmRestore === v.version ? '⚠️ Confirmar' : '↩️ Restaurar'}
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* Events panel */}
+      {showEvents && (
+        <section className="cp-docs-panel">
+          <p className="cp-docs-kicker">Eventos editoriais</p>
+          {loadingHistory && <div className="cp-docs-inline-alert">Carregando eventos...</div>}
+          {!loadingHistory && events.length === 0 && (
+            <div className="cp-docs-inline-alert">Nenhum evento editorial registrado ainda.</div>
+          )}
+          {events.map((ev) => (
+            <div key={ev.id} className="cp-history-item" style={{ padding: '6px 0', borderBottom: '1px solid var(--cp-border, #e0e0e0)', fontSize: '0.9em' }}>
+              <span>{eventLabel(ev.eventType)}</span>
+              {ev.versionTo && <span> · v{ev.versionTo}</span>}
+              {ev.previousOfficialStatus && <span style={{ color: 'var(--cp-muted, #666)' }}> · {officialStatusLabel[ev.previousOfficialStatus] || ev.previousOfficialStatus} → </span>}
+              {ev.newOfficialStatus && <span>{officialStatusLabel[ev.newOfficialStatus] || ev.newOfficialStatus}</span>}
+              <div style={{ fontSize: '0.8em', color: 'var(--cp-muted, #666)' }}>{formatDate(ev.createdAt)}</div>
+            </div>
+          ))}
+        </section>
+      )}
 
       <Toast message={toast?.message || null} type={toast?.type} onClose={() => setToast(null)} />
     </CentralPageShell>

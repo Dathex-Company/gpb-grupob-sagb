@@ -120,6 +120,8 @@ const DocumentoDetalhePage: React.FC<DocumentoDetalhePageProps> = ({ documentId,
               <MetaCard label="Divisão" value={document.division} />
               <MetaCard label="Origem" value={document.source} />
               <MetaCard label="Conteúdo" value={document.contentAvailability} />
+              <MetaCard label="Publicado em" value={document.publishedAt ? new Date(document.publishedAt).toLocaleString('pt-BR') : 'Ainda não publicado'} />
+              <MetaCard label="Publicado por" value={document.publishedBy || '—'} />
             </div>
           </section>
 
