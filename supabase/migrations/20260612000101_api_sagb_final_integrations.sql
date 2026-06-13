@@ -8,10 +8,19 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- API keys hardening
 -- -----------------------------------------------------------------------------
 ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMPTZ;
+ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS key_hash_sha256 TEXT;
 
-UPDATE api_keys
-SET key_hash = encode(digest(key_hash, 'sha256'), 'hex')
-WHERE key_hash !~ '^[a-f0-9]{64}$';
+-- SAFETY NOTE:
+-- This migration must not transform existing api_keys.key_hash values automatically.
+-- Previous drafts re-hashed non-64-hex values in-place, which could break valid
+-- legacy hashes, encrypted values or externally rotated keys. Real key conversion
+-- must be performed only after an explicit production audit and backup.
+-- Manual example, intentionally commented and NOT executed:
+-- UPDATE api_keys
+-- SET key_hash_sha256 = encode(digest('<raw-api-key-known-only-to-operator>', 'sha256'), 'hex')
+-- WHERE id = '<reviewed-api-key-id>';
+
+CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash_sha256 ON api_keys(key_hash_sha256);
 
 UPDATE api_keys
 SET scopes = ARRAY[
@@ -24,6 +33,7 @@ WHERE client_id = 'client_sandbox_admin' AND environment = 'sandbox';
 
 COMMENT ON COLUMN api_keys.revoked_at IS 'When set, the API key is revoked and must return 401.';
 COMMENT ON COLUMN api_keys.scopes IS 'Official API SagB scopes: system, api, audit, events, integrations, whatsapp, crm, messages and legacy scopes.';
+COMMENT ON COLUMN api_keys.key_hash_sha256 IS 'Optional reviewed SHA-256 API key hash. Do not backfill automatically; rotate keys manually after production audit.';
 
 -- -----------------------------------------------------------------------------
 -- Audit log enrichment

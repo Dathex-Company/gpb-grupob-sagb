@@ -1,7 +1,9 @@
 import { ApiScope, AuthContext } from './auth.types';
 import type { AuditEntry } from '../audit/audit.types';
 
-const isProduction = () => ['production', 'prod'].includes(String(process.env.SAGB_ENV || process.env.NODE_ENV || '').toLowerCase());
+const runtimeEnvironment = () => String(process.env.SAGB_ENV || process.env.NODE_ENV || '').toLowerCase();
+const isProduction = () => ['production', 'prod'].includes(runtimeEnvironment());
+const isMockAllowed = () => ['development', 'dev', 'test', 'sandbox'].includes(runtimeEnvironment());
 
 async function sha256Hex(value: string): Promise<string> {
   const bytes = new TextEncoder().encode(value);
@@ -29,7 +31,7 @@ export class ForbiddenError extends Error {
  */
 function getSupabaseConfig() {
   return {
-    url: process.env.SUPABASE_URL || 'http://localhost:54321',
+    url: process.env.SUPABASE_URL || '',
     serviceKey: process.env.SUPABASE_SERVICE_KEY || '',
   };
 }
@@ -49,8 +51,8 @@ export async function validateApiKey(apiKey: string): Promise<AuthContext> {
   }
 
   // Mock apenas em desenvolvimento/teste. Produção sempre consulta key_hash.
-  if (apiKey === 'sgb_sandbox_test_key') {
-    if (isProduction()) {
+  if (apiKey === 'sgb_sandbox_test_key' || apiKey.startsWith('sgb_sandbox_')) {
+    if (isProduction() || !isMockAllowed()) {
       throw new UnauthorizedError('Mock API Key is not allowed in production');
     }
     return {
@@ -64,6 +66,9 @@ export async function validateApiKey(apiKey: string): Promise<AuthContext> {
   try {
     // Consulta a tabela api_keys via REST do Supabase
     const { url, serviceKey } = getSupabaseConfig();
+    if (!url || !serviceKey) {
+      throw new UnauthorizedError('Unable to validate API Key');
+    }
     const keyHash = await sha256Hex(apiKey);
     const response = await fetch(
       `${url}/rest/v1/api_keys?key_hash=eq.${encodeURIComponent(keyHash)}&select=id,key_hash,client_id,environment,scopes,active,client_name,expires_at,revoked_at`,
@@ -77,7 +82,7 @@ export async function validateApiKey(apiKey: string): Promise<AuthContext> {
     );
 
     if (!response.ok) {
-      throw new UnauthorizedError('Failed to validate API Key');
+      throw new UnauthorizedError('Unable to validate API Key');
     }
 
     const data = await response.json();
@@ -89,15 +94,15 @@ export async function validateApiKey(apiKey: string): Promise<AuthContext> {
     const keyRecord = data[0];
 
     if (keyRecord.active === false) {
-      throw new UnauthorizedError('API Key is inactive');
+      throw new UnauthorizedError('Invalid API Key');
     }
 
     if (keyRecord.revoked_at) {
-      throw new UnauthorizedError('API Key is revoked');
+      throw new UnauthorizedError('Invalid API Key');
     }
 
     if (keyRecord.expires_at && new Date(keyRecord.expires_at).getTime() <= Date.now()) {
-      throw new UnauthorizedError('API Key is expired');
+      throw new UnauthorizedError('Invalid API Key');
     }
 
     return {

@@ -8,12 +8,13 @@
  * CORS por ambiente, auditoria persistente e logs sem secrets.
  */
 
-import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 
-const API_VERSION = '1.1.0';
+const API_VERSION = '1.1.1';
 const MODULE_NAME = 'api-sagb';
 const DEFAULT_ENVIRONMENT = process.env.SAGB_ENV || process.env.CONTEXT || process.env.NODE_ENV || 'production';
 const IS_PRODUCTION = ['production', 'prod'].includes(String(DEFAULT_ENVIRONMENT).toLowerCase());
+const SIGNATURE_BYPASS_ENVIRONMENTS = new Set(['development', 'dev', 'test', 'sandbox']);
 const SUPABASE_URL = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const WHATSAPP_API_VERSION = process.env.WHATSAPP_GRAPH_API_VERSION || 'v20.0';
@@ -84,6 +85,7 @@ export async function handler(event) {
   let route = null;
   let params = {};
   let body = null;
+  const rawBody = getRawBody(event.body, Boolean(event.isBase64Encoded));
 
   if (method === 'OPTIONS') {
     return buildResponse(204, null, { requestId, startTime, origin });
@@ -100,7 +102,7 @@ export async function handler(event) {
       return buildResponse(result.statusCode, result.body, { requestId, startTime, origin });
     }
 
-    body = safeParseBody(event.body, getHeader(event.headers, 'content-type'), Boolean(event.isBase64Encoded));
+    body = safeParseBody(rawBody, getHeader(event.headers, 'content-type'));
     if (body?.__parseError) {
       const result = errorResult(400, 'INVALID_JSON', 'Request body must be valid JSON');
       await auditSafe({ event, requestId, startTime, route, auth, result, action: 'request.invalid_body' });
@@ -137,7 +139,9 @@ export async function handler(event) {
       params,
       query,
       body,
-      headers: maskHeaders(event.headers || {}),
+      headers: event.headers || {},
+      maskedHeaders: maskHeaders(event.headers || {}),
+      rawBody,
       auth,
       requestId,
       startTime,
@@ -193,6 +197,7 @@ async function executeHandler(route, context) {
 async function getStatus() {
   const supabase = await supabaseHealth();
   const providerStatuses = Object.fromEntries(await Promise.all(PROVIDERS.map(async (provider) => [provider, await providerStatus(provider)])));
+  const readyProviders = Object.values(providerStatuses).filter((status) => status.status === 'ready' || status.status === 'configured').length;
   return ok({
     status: supabase.status === 'ok' ? 'ok' : 'degraded',
     version: API_VERSION,
@@ -201,9 +206,10 @@ async function getStatus() {
     timestamp: new Date().toISOString(),
     supabase,
     hub: {
-      status: 'available',
+      status: readyProviders > 0 ? 'partially_configured' : 'driver_pending',
       role: 'connectors_credentials_external_execution',
       providers: PROVIDERS,
+      note: 'API validates/authenticates/audits. Hub owns providers and credentials. Some provider actions remain pending by driver/credentials.',
     },
     providers: providerStatuses,
     whatsapp: providerStatuses.whatsapp,
@@ -333,7 +339,17 @@ async function verifyWhatsAppWebhook({ query, requestId }) {
   return errorResult(403, 'FORBIDDEN', 'Invalid WhatsApp webhook verification token');
 }
 
-async function receiveWhatsAppWebhook({ body, requestId }) {
+async function receiveWhatsAppWebhook({ body, rawBody, headers, requestId }) {
+  const signatureValidation = validateMetaWebhookSignature(rawBody, headers || {});
+  if (!signatureValidation.valid) {
+    await recordIntegrationEvent('whatsapp', 'webhook.signature.denied', {
+      requestId,
+      reason: signatureValidation.reason,
+      signature_present: signatureValidation.signaturePresent,
+    });
+    return errorResult(signatureValidation.statusCode, signatureValidation.code, signatureValidation.message);
+  }
+
   if (!body || typeof body !== 'object' || body.object !== 'whatsapp_business_account' || !Array.isArray(body.entry)) {
     return errorResult(400, 'VALIDATION_ERROR', 'Invalid Meta WhatsApp webhook payload');
   }
@@ -380,6 +396,14 @@ async function sendWhatsAppMessage({ body, requestId, auth }) {
     payload: sanitizePayload(body || {}),
     status: 'sent',
     sent_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+  });
+  await supabaseInsert('whatsapp_delivery_status', {
+    id: randomUUID(),
+    provider_message_id: providerMessageId,
+    status: 'sent',
+    timestamp: new Date().toISOString(),
+    raw_payload_sanitized: sanitizePayload({ source: 'api_send_initial_status' }),
     created_at: new Date().toISOString(),
   });
   await supabaseInsert('integration_logs', {
@@ -431,6 +455,9 @@ async function legacyProxy(route, { method, query, body, params, auth }) {
 
 async function executeHubProviderAction(provider, action, payload, { requestId }) {
   if (provider === 'whatsapp' && ['send-message', 'send_message'].includes(action)) {
+    // Temporary pre-production bridge: the Hub owns provider credentials/driver boundaries,
+    // while this serverless router performs the Meta Cloud API call until a server-safe Hub
+    // driver can be imported without browser/localStorage dependencies.
     return callWhatsAppCloudApi(payload, requestId);
   }
   if (provider === 'supabase' && action === 'health') return supabaseHealth();
@@ -578,7 +605,7 @@ async function upsertWhatsAppConversation(contactId, origin) {
 }
 
 async function validateApiKey(apiKey) {
-  if (!IS_PRODUCTION && isDevMockKey(apiKey)) {
+  if (isMockApiKeyAllowed() && isDevMockKey(apiKey)) {
     const mockScopes = String(apiKey).includes('limited')
       ? ['system:read']
       : [
@@ -599,12 +626,12 @@ async function validateApiKey(apiKey) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return { valid: false, error: 'Auth service unavailable' };
   const keyHash = sha256Hex(apiKey);
   let data = await findApiKeyByHash(keyHash);
-  if (!data?.length && !IS_PRODUCTION && isDevMockKey(apiKey)) data = await findApiKeyByHash(apiKey);
+  if (!data?.length && isMockApiKeyAllowed() && isDevMockKey(apiKey)) data = await findApiKeyByHash(apiKey);
   if (!data?.length) return { valid: false, error: 'Invalid API Key' };
   const key = data[0];
   if (!constantTimeEquals(String(key.key_hash), String(keyHash)) && (IS_PRODUCTION || !isDevMockKey(apiKey))) return { valid: false, error: 'Invalid API Key' };
-  if (key.active === false || key.revoked_at) return { valid: false, error: 'API Key is inactive or revoked' };
-  if (key.expires_at && new Date(key.expires_at).getTime() <= Date.now()) return { valid: false, error: 'API Key is expired' };
+  if (key.active === false || key.revoked_at) return { valid: false, error: 'Invalid API Key' };
+  if (key.expires_at && new Date(key.expires_at).getTime() <= Date.now()) return { valid: false, error: 'Invalid API Key' };
   await supabasePatch('api_keys', new URLSearchParams({ id: `eq.${key.id}` }), { last_used_at: new Date().toISOString() });
   return { valid: true, keyId: key.id, clientId: key.client_id, environment: key.environment || DEFAULT_ENVIRONMENT, scopes: key.scopes || [] };
 }
@@ -667,16 +694,63 @@ async function supabaseHealth() {
 }
 
 async function providerStatus(provider) {
-  const configured = {
-    whatsapp: Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_VERIFY_TOKEN),
-    clickup: Boolean(process.env.CLICKUP_API_TOKEN || process.env.HUB_CLICKUP_API_TOKEN),
-    gmail: Boolean(process.env.GMAIL_CLIENT_ID || process.env.HUB_GMAIL_REFRESH_TOKEN),
-    titan: Boolean(process.env.TITAN_API_KEY || process.env.TITAN_SMTP_HOST),
-    meta_facebook: Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET),
-    google_calendar: Boolean(process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_CLIENT_ID),
-    supabase: Boolean(SUPABASE_URL && SUPABASE_SERVICE_KEY),
+  const catalog = {
+    whatsapp: {
+      driver: 'temporary_router_cloud_api_bridge',
+      required: ['WHATSAPP_ACCESS_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID', 'WHATSAPP_VERIFY_TOKEN', 'META_APP_SECRET'],
+      configured: Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_VERIFY_TOKEN && process.env.META_APP_SECRET),
+      partial: Boolean(process.env.WHATSAPP_ACCESS_TOKEN || process.env.WHATSAPP_PHONE_NUMBER_ID || process.env.WHATSAPP_VERIFY_TOKEN || process.env.META_APP_SECRET),
+    },
+    clickup: {
+      driver: 'hub_clickup_driver_available_frontend_service',
+      required: ['CLICKUP_API_TOKEN or HUB_CLICKUP_API_TOKEN'],
+      configured: Boolean(process.env.CLICKUP_API_TOKEN || process.env.HUB_CLICKUP_API_TOKEN),
+      partial: false,
+    },
+    gmail: {
+      driver: 'hub_email_driver_available_frontend_service',
+      required: ['GMAIL_CLIENT_ID or HUB_GMAIL_REFRESH_TOKEN'],
+      configured: Boolean(process.env.GMAIL_CLIENT_ID || process.env.HUB_GMAIL_REFRESH_TOKEN),
+      partial: false,
+    },
+    titan: {
+      driver: 'hub_email_driver_available_frontend_service',
+      required: ['TITAN_API_KEY or TITAN_SMTP_HOST'],
+      configured: Boolean(process.env.TITAN_API_KEY || process.env.TITAN_SMTP_HOST),
+      partial: false,
+    },
+    meta_facebook: {
+      driver: 'driver_pending',
+      required: ['META_APP_ID', 'META_APP_SECRET'],
+      configured: Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET),
+      partial: Boolean(process.env.META_APP_ID || process.env.META_APP_SECRET),
+    },
+    google_calendar: {
+      driver: 'driver_pending',
+      required: ['GOOGLE_CALENDAR_CLIENT_ID or GOOGLE_CLIENT_ID'],
+      configured: Boolean(process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_CLIENT_ID),
+      partial: false,
+    },
+    supabase: {
+      driver: 'rest_persistence',
+      required: ['SUPABASE_URL', 'SUPABASE_SERVICE_KEY'],
+      configured: Boolean(SUPABASE_URL && SUPABASE_SERVICE_KEY),
+      partial: Boolean(SUPABASE_URL || SUPABASE_SERVICE_KEY),
+    },
   }[provider];
-  return { status: configured ? 'configured' : 'not_configured', configured: Boolean(configured), secrets_exposed: false };
+  if (!catalog) return { status: 'unavailable', configured: false, secrets_exposed: false };
+  const status = catalog.configured
+    ? (catalog.driver === 'driver_pending' ? 'driver_pending' : 'configured')
+    : catalog.partial
+      ? 'partially_configured'
+      : (catalog.driver === 'driver_pending' ? 'driver_pending' : 'missing_credentials');
+  return {
+    status,
+    configured: Boolean(catalog.configured),
+    driver: catalog.driver,
+    required_env: catalog.required,
+    secrets_exposed: false,
+  };
 }
 
 async function supabaseRequest(table, { method = 'GET', query, body } = {}) {
@@ -726,9 +800,13 @@ function normalizePath(rawPath) {
   return path.startsWith('/v1') ? path : path.replace(/^\/api-sagb/, '') || '/';
 }
 
-function safeParseBody(rawBody, contentType, isBase64Encoded) {
+function getRawBody(rawBody, isBase64Encoded) {
   if (!rawBody) return null;
-  const body = isBase64Encoded ? Buffer.from(rawBody, 'base64').toString('utf8') : rawBody;
+  return isBase64Encoded ? Buffer.from(rawBody, 'base64').toString('utf8') : String(rawBody);
+}
+
+function safeParseBody(body, contentType) {
+  if (!body) return null;
   if (String(contentType || '').includes('application/json')) {
     try { return JSON.parse(body); } catch { return { __parseError: true }; }
   }
@@ -755,7 +833,7 @@ function buildResponse(statusCode, body, { requestId, startTime, origin, extraHe
       'X-API-Version': API_VERSION,
       'Access-Control-Allow-Origin': resolveCorsOrigin(origin),
       'Vary': 'Origin',
-      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key, Authorization, X-Request-Id',
+      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key, Authorization, X-Request-Id, X-Hub-Signature-256',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
       'Access-Control-Max-Age': '86400',
       ...extraHeaders,
@@ -766,9 +844,9 @@ function buildResponse(statusCode, body, { requestId, startTime, origin, extraHe
 
 function resolveCorsOrigin(origin) {
   const allowed = String(process.env.API_SAGB_ALLOWED_ORIGINS || process.env.CORS_ALLOWED_ORIGINS || '').split(',').map((item) => item.trim()).filter(Boolean);
-  if (!origin) return allowed[0] || (IS_PRODUCTION ? 'https://sagb.com.br' : '*');
+  if (!origin) return allowed[0] || (IS_PRODUCTION ? 'https://sagb.grupob.com.br' : '*');
   if (!IS_PRODUCTION && !allowed.length) return origin;
-  return allowed.includes(origin) ? origin : (allowed[0] || 'https://sagb.com.br');
+  return allowed.includes(origin) ? origin : (allowed[0] || 'https://sagb.grupob.com.br');
 }
 
 function ok(body) { return { statusCode: 200, body }; }
@@ -777,13 +855,64 @@ function sha256Hex(value) { return createHash('sha256').update(String(value || '
 function getHeader(headers = {}, name) { const found = Object.keys(headers || {}).find((key) => key.toLowerCase() === name.toLowerCase()); return found ? headers[found] : undefined; }
 function constantTimeEquals(a, b) { const left = Buffer.from(String(a)); const right = Buffer.from(String(b)); return left.length === right.length && timingSafeEqual(left, right); }
 function isDevMockKey(apiKey) { return String(apiKey || '').startsWith('sgb_sandbox_') || String(apiKey || '') === 'sgb_sandbox_test_key'; }
+function isMockApiKeyAllowed() { return SIGNATURE_BYPASS_ENVIRONMENTS.has(String(DEFAULT_ENVIRONMENT).toLowerCase()); }
+function isWebhookSignatureBypassAllowed() { return SIGNATURE_BYPASS_ENVIRONMENTS.has(String(DEFAULT_ENVIRONMENT).toLowerCase()); }
 function clampLimit(value, fallback, max) { const n = Number(value || fallback); return String(Math.min(Math.max(Number.isFinite(n) ? n : fallback, 1), max)); }
 function safeErrorMessage(error) { return String(error?.message || 'Unknown error').replace(/Bearer\s+[A-Za-z0-9._~+\-/]+=*/g, 'Bearer [REDACTED]'); }
+
+function validateMetaWebhookSignature(rawBody, headers) {
+  const appSecret = process.env.META_APP_SECRET || '';
+  const signature = getHeader(headers, 'x-hub-signature-256') || '';
+  const signaturePresent = Boolean(signature);
+
+  if (!appSecret) {
+    if (isWebhookSignatureBypassAllowed()) {
+      return { valid: true, reason: 'bypass_non_production_no_app_secret', signaturePresent };
+    }
+    return {
+      valid: false,
+      statusCode: 503,
+      code: 'WHATSAPP_SIGNATURE_NOT_CONFIGURED',
+      message: 'WhatsApp webhook signature validation is not configured',
+      reason: 'missing_meta_app_secret',
+      signaturePresent,
+    };
+  }
+
+  if (!signature || !String(signature).startsWith('sha256=')) {
+    if (isWebhookSignatureBypassAllowed()) {
+      return { valid: true, reason: 'bypass_non_production_missing_signature', signaturePresent };
+    }
+    return {
+      valid: false,
+      statusCode: 403,
+      code: 'FORBIDDEN',
+      message: 'Invalid WhatsApp webhook signature',
+      reason: 'missing_signature',
+      signaturePresent,
+    };
+  }
+
+  const expected = `sha256=${createHmac('sha256', appSecret).update(String(rawBody || ''), 'utf8').digest('hex')}`;
+  if (!constantTimeEquals(signature, expected)) {
+    return {
+      valid: false,
+      statusCode: 403,
+      code: 'FORBIDDEN',
+      message: 'Invalid WhatsApp webhook signature',
+      reason: 'signature_mismatch',
+      signaturePresent,
+    };
+  }
+  return { valid: true, reason: 'signature_valid', signaturePresent };
+}
 
 function validateEventPayload(body) {
   if (!body || typeof body !== 'object') return 'Payload is required';
   if (!body.event_type || typeof body.event_type !== 'string') return 'event_type is required';
   if (!body.source?.type || !body.source?.id) return 'source.type and source.id are required';
+  if (!body.context?.type || !body.context?.id) return 'context.type and context.id are required';
+  if (!body.resource?.type || !body.resource?.id) return 'resource.type and resource.id are required';
   return null;
 }
 

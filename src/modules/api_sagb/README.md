@@ -4,6 +4,8 @@ API SagB é a camada oficial versionada do ecossistema SagB em `/api-sagb/v1`.
 
 Ela serve sistemas internos, módulos SagB, ferramentas externas, Hub de Integrações e WhatsApp Cloud API oficial da Meta.
 
+Status do PR #4: implementado para revisão pré-produção. Não houve deploy, merge ou aplicação de migration. A validação operacional depende de secrets reais, migration controlada e testes Meta/Supabase em ambiente aprovado.
+
 ## Responsabilidades
 
 - Autenticar por API Key.
@@ -49,4 +51,3 @@ Ela serve sistemas internos, módulos SagB, ferramentas externas, Hub de Integra
 - `docs/api-whatsapp.md`
 - `docs/api-go-live-checklist.md`
 - `docs/api-rollback.md`
-

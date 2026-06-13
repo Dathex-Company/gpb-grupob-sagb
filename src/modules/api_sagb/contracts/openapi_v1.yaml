@@ -1,14 +1,20 @@
 openapi: 3.0.3
 info:
   title: API SagB
-  version: 1.1.0
+  version: 1.1.1
   description: API Oficial do ecossistema SagB em /api-sagb/v1 para sistemas, módulos, integrações, Hub de Integrações e WhatsApp Cloud API oficial da Meta.
   x-module: api-sagb
 servers:
-  - url: https://app.sagb.com.br/api-sagb/v1
-    description: Produção via Netlify Function
+  - url: https://sagb.grupob.com.br/api-sagb/v1
+    description: Produção oficial SagB
+  - url: https://{branch}--sagbapp.netlify.app/api-sagb/v1
+    description: Branch preview Netlify. Substituir {branch} pelo slug real do preview.
+    variables:
+      branch:
+        default: review-finalizacao-api-sagb
+        description: Slug da branch/preview no Netlify.
   - url: http://localhost:8888/api-sagb/v1
-    description: Desenvolvimento local Netlify
+    description: Desenvolvimento local Netlify CLI
 security:
   - ApiKeyAuth: []
 components:
@@ -39,7 +45,7 @@ components:
       type: object
       properties:
         status: { type: string, example: ok }
-        version: { type: string, example: 1.1.0 }
+        version: { type: string, example: 1.1.1 }
         timestamp: { type: string, format: date-time }
         module: { type: string, example: api-sagb }
     StatusResponse:
@@ -63,9 +69,13 @@ components:
         status: { type: string, example: configured }
         configured: { type: boolean }
         secrets_exposed: { type: boolean, example: false }
+        driver: { type: string, example: temporary_router_cloud_api_bridge }
+        required_env:
+          type: array
+          items: { type: string }
     EventPayload:
       type: object
-      required: [event_type, source]
+      required: [event_type, source, context, resource]
       properties:
         event_type: { type: string, example: whatsapp.message.received }
         source:
@@ -329,8 +339,16 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [WhatsApp]
-      summary: Recebe webhook POST da Meta e persiste contatos, conversas, mensagens e status.
+      summary: Recebe webhook POST da Meta, valida X-Hub-Signature-256 e persiste contatos, conversas, mensagens e status.
       security: []
+      parameters:
+        - name: X-Hub-Signature-256
+          in: header
+          required: true
+          schema:
+            type: string
+            example: sha256=example-redacted
+          description: Assinatura HMAC SHA-256 da Meta calculada com META_APP_SECRET. Obrigatória em produção; bypass apenas em development/test/sandbox.
       requestBody:
         required: true
         content:
@@ -339,6 +357,7 @@ paths:
       responses:
         '200': { description: Recebido, content: { application/json: { schema: { type: object } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /integrations/whatsapp/send-message:
     post:
       tags: [WhatsApp]

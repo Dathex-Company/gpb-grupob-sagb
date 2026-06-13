@@ -5,6 +5,25 @@ Todas as mudanças notáveis na API SagB serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.1.1] - 2026-06-12
+
+### Segurança
+
+- Adicionada validação de `X-Hub-Signature-256` no webhook POST do WhatsApp com `META_APP_SECRET` e comparação timing-safe.
+- Migration ajustada para não re-hashear `api_keys.key_hash` automaticamente.
+- Mock keys restritas a `development`, `test` e `sandbox`.
+- CORS padrão de produção ajustado para `https://sagb.grupob.com.br`.
+
+### Documentação
+
+- OpenAPI corrigido para domínio oficial `https://sagb.grupob.com.br/api-sagb/v1` e branch preview genérico.
+- Painel do módulo marcado como checklist pré-produção, sem indicar status real falso.
+- Providers do Hub documentados com estados reais/pedentes.
+
+### Pré-produção
+
+- Esta versão está implementada para revisão no PR #4. Não houve deploy, merge ou aplicação de migration.
+
 ## [1.1.0] - 2026-06-12
 
 ### Adicionado

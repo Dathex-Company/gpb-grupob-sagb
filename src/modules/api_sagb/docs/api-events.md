@@ -2,6 +2,8 @@
 
 Eventos permitem registrar fatos universais do SagB.
 
+Na revisão pré-produção, o payload mínimo obrigatório inclui `event_type`, `source.type`, `source.id`, `context.type`, `context.id`, `resource.type` e `resource.id`. Payload inválido retorna 400.
+
 Payload mínimo:
 
 ```json
@@ -17,8 +19,9 @@ Payload mínimo:
 
 Persistência: `api_events`.
 
+Dados sensíveis em `payload` e `metadata` são sanitizados antes da persistência e da auditoria.
+
 Escopos:
 
 - Escrita: `events:write`
 - Leitura: `events:read`
-
