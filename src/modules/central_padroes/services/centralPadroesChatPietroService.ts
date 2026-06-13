@@ -8,6 +8,7 @@
 import { centralPadroesRepository } from './centralPadroesRepository';
 import { centralPadroesIndexService } from './centralPadroesIndexService';
 import { centralPadroesPermissionService } from './centralPadroesPermissionService';
+import { centralPadroesDocumentHubService } from './centralPadroesDocumentHubService';
 import {
   ChatPietroRequest,
   ChatPietroResponse,
@@ -146,6 +147,7 @@ export const centralPadroesChatPietroService = {
     // Fallback textual se índice vazio
     if (sources.length === 0 || !indexResults.length) {
       const snapshot = await centralPadroesRepository.getSnapshot();
+      const hubDocuments = await centralPadroesDocumentHubService.listDocuments().catch(() => snapshot.documents);
       const query = question.toLowerCase();
 
       // Buscar em standards
@@ -195,23 +197,23 @@ export const centralPadroesChatPietroService = {
       });
 
       // Buscar em documentos
-      snapshot.documents.forEach((d) => {
-        const text = `${d.title} ${d.category} ${d.path}`.toLowerCase();
+      hubDocuments.forEach((d) => {
+        const text = `${d.title} ${d.category} ${d.path} ${d.pathRelative || ''} ${d.summary || ''} ${d.owner || ''} ${(d.tags || []).join(' ')}`.toLowerCase();
         if (text.includes(query) || query.split(' ').some((t) => text.includes(t))) {
           sources.push({
             key: d.id,
             title: d.title,
             type: 'documentacao_tecnica',
             status: d.status as any,
-            owner: d.areaId || 'Não definido',
+            owner: d.owner || d.areaId || 'Não definido',
             areaId: d.areaId,
-            route: `/central-padroes/documents/${d.id}`,
+            route: `central-padroes:view:documento-detalhe:${d.id}`,
             documentId: d.id,
-            updatedAt: '',
+            updatedAt: d.updatedAt || d.createdAt || '',
             canonicalLevel: d.status as any,
             confidence: 0.3,
-            whyMatched: 'Termo encontrado no documento',
-            excerpt: `${d.category} • ${d.path}`,
+            whyMatched: 'Termo encontrado no documento unificado do Hub',
+            excerpt: `${d.type || d.category} • ${d.pathRelative || d.path} • ${d.summary || ''}`,
             allowedActions: ['abrir'],
           });
         }

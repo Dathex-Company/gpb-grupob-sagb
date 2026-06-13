@@ -23,9 +23,12 @@ import ChatPietroPage from '../pages/ChatPietroPage';
 import GovernancePanelPage from '../pages/GovernancePanelPage';
 import DocumentosMestresPage from '../pages/DocumentosMestresPage';
 import DocumentoBasePage from '../pages/DocumentoBasePage';
+import DocumentoDetalhePage from '../pages/DocumentoDetalhePage';
+import DocumentoEditorPage from '../pages/DocumentoEditorPage';
 import RelatoriosPage from '../pages/RelatoriosPage';
 import SubdocumentosPrevistosPage from '../pages/SubdocumentosPrevistosPage';
 import CuradoriaPage from '../pages/CuradoriaPage';
+import TriagemIngestaoPage from '../pages/TriagemIngestaoPage';
 import { centralPadroesSeedService } from '../services/centralPadroesSeedService';
 import { sidebarSections, getViewLabel, breadcrumbLabels } from '../data/sidebarConfig';
 import '../styles/centralDocs.css';
@@ -37,6 +40,8 @@ type CentralPadroesView =
   | 'areas'
   | 'standards'
   | 'documents'
+  | 'documento-detalhe'
+  | 'documento-editor'
   | 'base-modules'
   | 'modules'
   | 'checklists'
@@ -64,6 +69,7 @@ type CentralPadroesView =
 export const CentralPadroesLayout: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [currentView, setCurrentView] = useState<CentralPadroesView>('dashboard');
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [seedStatus, setSeedStatus] = useState<string>('');
   const [menuQuery, setMenuQuery] = useState('');
   const [registerMenuOpen, setRegisterMenuOpen] = useState(false);
@@ -93,11 +99,16 @@ export const CentralPadroesLayout: React.FC = () => {
   );
 
   const renderCurrentView = () => {
+    const openDocument = (documentId: string) => {
+      setSelectedDocumentId(documentId);
+      setCurrentView('documento-detalhe');
+    };
+
     switch (currentView) {
       case 'dashboard':
         return <DashboardPage />;
       case 'chat-pietro':
-        return <ChatPietroPage />;
+        return <ChatPietroPage onOpenDocument={openDocument} />;
       case 'governance-panel':
         return <GovernancePanelPage />;
       case 'areas':
@@ -105,7 +116,11 @@ export const CentralPadroesLayout: React.FC = () => {
       case 'standards':
         return <StandardsPage />;
       case 'documents':
-        return <DocumentsPage />;
+        return <DocumentsPage onOpenDocument={openDocument} />;
+      case 'documento-detalhe':
+        return <DocumentoDetalhePage documentId={selectedDocumentId} onBack={() => setCurrentView('documents')} onEdit={(documentId) => { setSelectedDocumentId(documentId); setCurrentView('documento-editor'); }} onSendToCuradoria={() => setCurrentView('curadoria')} />;
+      case 'documento-editor':
+        return <DocumentoEditorPage documentId={selectedDocumentId} onBack={() => setCurrentView('documento-detalhe')} onSaved={(documentId) => { setSelectedDocumentId(documentId); setCurrentView('documento-detalhe'); }} />;
       case 'base-modules':
         return <BaseModulesPage />;
       case 'modules':
@@ -117,17 +132,17 @@ export const CentralPadroesLayout: React.FC = () => {
       case 'decisions':
         return <DecisionsPage />;
       case 'internal-docs':
-        return <InternalDocsPage />;
+        return <InternalDocsPage onOpenDocument={openDocument} />;
       case 'external-docs':
-        return <ExternalDocsPage />;
+        return <ExternalDocsPage onOpenDocument={openDocument} />;
       case 'archive':
-        return <ArchivePage />;
+        return <ArchivePage onOpenDocument={openDocument} />;
       case 'dev-mode':
         return <DevModePage />;
       case 'agent-mode':
         return <AgentsPage />;
       case 'search':
-        return <SearchPage onNavigate={(viewId) => setCurrentView(viewId as CentralPadroesView)} />;
+        return <SearchPage onNavigate={(viewId) => setCurrentView(viewId as CentralPadroesView)} onOpenDocument={openDocument} />;
       case 'relationships':
         return <RelationshipsPage />;
       case 'approvals':
@@ -139,7 +154,7 @@ export const CentralPadroesLayout: React.FC = () => {
       case 'tags':
         return plannedView('🏷️', 'Tags e classificação', 'Use esta área para planejar tags oficiais. Próximo passo: ligar tags aos documentos e padrões.', 'documents');
       case 'ingestion':
-        return plannedView('📥', 'Triagem e ingestão', 'Fila visual para entrada de documentos vindos da curadoria. Por enquanto, registre o documento em Documentos.', 'documents');
+        return <TriagemIngestaoPage onOpenDocuments={() => setCurrentView('documents')} />;
       case 'evidence':
         return plannedView('🧪', 'Evidências', 'Área para provas, anexos e validações. Enquanto a storage oficial não estiver completa, registre evidências em Auditorias.', 'audits');
       case 'documentos-mestres':

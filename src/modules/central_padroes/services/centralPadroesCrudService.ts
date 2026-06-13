@@ -18,6 +18,8 @@ import {
   UpdateStandardInput
 } from '../types';
 import { centralPadroesValidationService } from './centralPadroesValidationService';
+import { enrichDocument } from '../utils/documentNormalizers';
+import { centralPadroesAuditService } from './centralPadroesAuditService';
 
 const currentUserLabel = () => {
   const user = auth.currentUser as { id?: string; email?: string } | null;
@@ -47,14 +49,33 @@ const mapStandard = (row: any): CentralStandard => ({
   updatedAt: row.updated_at || row.created_at || new Date().toISOString()
 });
 
-const mapDocument = (row: any): CentralDocument => ({
+const mapDocument = (row: any): CentralDocument => enrichDocument({
   id: row.id,
   title: row.title,
-  path: row.source_path,
+  path: row.source_path || row.path_relative || row.path || '',
   status: row.status,
-  category: row.category,
-  areaId: row.area_id || 'pietro',
-  shouldBecome: row.destination_type || 'apoio'
+  category: row.category || row.type || 'Documentos',
+  areaId: row.area_id || row.division || 'pietro',
+  shouldBecome: row.destination_type || 'apoio',
+  slug: row.slug || null,
+  type: row.type || undefined,
+  riskLevel: row.risk_level || undefined,
+  owner: row.owner || row.owner_name || null,
+  tags: Array.isArray(row.tags) ? row.tags : [],
+  summary: row.summary || null,
+  content: row.content || row.raw_content || null,
+  pathAbsolute: row.path_absolute || null,
+  pathRelative: row.path_relative || row.source_path || null,
+  source: row.source || 'supabase_live',
+  module: row.module || null,
+  division: row.division || null,
+  canonicalLevel: row.canonical_level || undefined,
+  createdBy: row.created_by || null,
+  updatedBy: row.updated_by || null,
+  createdAt: row.created_at || null,
+  updatedAt: row.updated_at || null,
+  deletedAt: row.deleted_at || null,
+  deletedBy: row.deleted_by || null
 });
 
 const mapDecision = (row: any): CentralDecision => ({
@@ -183,7 +204,7 @@ export const centralPadroesCrudService = {
     const data = await restFetch('central_padroes_documents', { method: 'GET', query });
     const rows = Array.isArray(data) ? data.map(mapDocument) : [];
     if (!filter?.query) return rows;
-    return rows.filter((doc) => `${doc.title} ${doc.path} ${doc.category}`.toLowerCase().includes(filter.query!.toLowerCase()));
+    return rows.filter((doc) => `${doc.title} ${doc.path} ${doc.category} ${doc.summary || ''} ${doc.owner || ''} ${(doc.tags || []).join(' ')}`.toLowerCase().includes(filter.query!.toLowerCase()));
   },
 
   async getDocument(id: string): Promise<CentralDocument | null> {
@@ -198,10 +219,12 @@ export const centralPadroesCrudService = {
     const data = await restFetch('central_padroes_documents', { method: 'POST', headers: withReturn, body: { title: input.title, source_path: input.path, status: input.status, category: input.category, area_id: input.areaId, destination_type: input.shouldBecome } });
     const row = Array.isArray(data) ? data[0] : null;
     if (!row) throw new Error('Falha ao criar documento.');
+    await centralPadroesAuditService.logCreate('document', row.id, row, 'Criação de documento no Hub').catch(() => undefined);
     return mapDocument(row);
   },
 
   async updateDocument(id: string, input: UpdateDocumentInput): Promise<CentralDocument> {
+    const previous = await this.getDocument(id).catch(() => null);
     const query = q('*');
     query.set('id', `eq.${id}`);
     const body: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -211,16 +234,33 @@ export const centralPadroesCrudService = {
     if (input.category) body.category = input.category;
     if (input.areaId) body.area_id = input.areaId;
     if (input.shouldBecome) body.destination_type = input.shouldBecome;
+    if (input.summary !== undefined) body.summary = input.summary;
+    if (input.owner !== undefined) body.owner = input.owner;
+    if (input.tags !== undefined) body.tags = input.tags;
+    if (input.content !== undefined) body.content = input.content;
     const data = await restFetch('central_padroes_documents', { method: 'PATCH', query, headers: withReturn, body });
     const row = Array.isArray(data) ? data[0] : null;
     if (!row) throw new Error('Falha ao atualizar documento.');
+    await centralPadroesAuditService.logUpdate('document', id, previous as unknown as Record<string, unknown> || {}, mapDocument(row) as unknown as Record<string, unknown>, 'Atualização de documento no Hub').catch(() => undefined);
     return mapDocument(row);
   },
 
   async deleteDocument(id: string): Promise<void> {
-    const query = new URLSearchParams();
+    const previous = await this.getDocument(id).catch(() => null);
+    const query = q('*');
     query.set('id', `eq.${id}`);
-    await restFetch('central_padroes_documents', { method: 'DELETE', query });
+    await restFetch('central_padroes_documents', {
+      method: 'PATCH',
+      query,
+      headers: withReturn,
+      body: {
+        deleted_at: new Date().toISOString(),
+        deleted_by: currentUserLabel(),
+        status: 'arquivado',
+        updated_at: new Date().toISOString()
+      }
+    });
+    await centralPadroesAuditService.logDelete('document', id, previous as unknown as Record<string, unknown> || {}, 'Soft delete documental no Hub').catch(() => undefined);
   },
 
   async listDecisions(): Promise<CentralDecision[]> {

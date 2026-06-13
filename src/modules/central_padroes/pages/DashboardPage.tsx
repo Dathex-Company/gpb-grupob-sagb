@@ -5,6 +5,7 @@ import { StandardTable } from '../components/StandardTable';
 import { CentralPageShell } from '../components/CentralPageShell';
 import { useCentralPadroes } from '../hooks/useCentralPadroes';
 import { centralPadroesApprovalService } from '../services/centralPadroesApprovalService';
+import { centralPadroesDocumentHubService } from '../services/centralPadroesDocumentHubService';
 
 const groupCount = <T,>(items: T[], getKey: (item: T) => string) => items.reduce<Record<string, number>>((acc, item) => {
   const key = getKey(item) || 'indefinido';
@@ -58,9 +59,11 @@ const DonutChart: React.FC<{ data: Record<string, number> }> = ({ data }) => {
 const DashboardPage: React.FC = () => {
   const { snapshot, metrics, loading, error } = useCentralPadroes();
   const [pendingApprovals, setPendingApprovals] = React.useState(0);
+  const [documentGaps, setDocumentGaps] = React.useState({ total: 0, incomplete: 0, withoutOwner: 0, withoutTags: 0, withoutSummary: 0, withoutContent: 0 });
 
   React.useEffect(() => {
     centralPadroesApprovalService.listPendingApprovals().then((items) => setPendingApprovals(items.filter((item) => item.status === 'pending').length)).catch(() => setPendingApprovals(0));
+    centralPadroesDocumentHubService.listDocuments().then((items) => setDocumentGaps(centralPadroesDocumentHubService.summarizeGaps(items))).catch(() => setDocumentGaps({ total: 0, incomplete: 0, withoutOwner: 0, withoutTags: 0, withoutSummary: 0, withoutContent: 0 }));
   }, []);
 
   const statusChart = snapshot ? groupCount(snapshot.standards, (standard) => standard.status) : {};
@@ -98,6 +101,17 @@ const DashboardPage: React.FC = () => {
               <span><strong>{openDecisions}</strong> Decisões abertas</span>
               <span><strong>{transverseDependencies}</strong> Dependências transversais</span>
               <span><strong>{coverage}%</strong> Cobertura por divisão</span>
+            </div>
+          </section>
+          <section className="cp-docs-chart-card">
+            <p className="cp-docs-kicker">Lacunas Document Hub</p>
+            <div className="cp-docs-insight-grid">
+              <span><strong>{documentGaps.total}</strong> Documentos no Hub</span>
+              <span><strong>{documentGaps.incomplete}</strong> Incompletos</span>
+              <span><strong>{documentGaps.withoutOwner}</strong> Sem owner</span>
+              <span><strong>{documentGaps.withoutTags}</strong> Sem tags</span>
+              <span><strong>{documentGaps.withoutSummary}</strong> Sem resumo</span>
+              <span><strong>{documentGaps.withoutContent}</strong> Sem conteúdo</span>
             </div>
           </section>
         </div>

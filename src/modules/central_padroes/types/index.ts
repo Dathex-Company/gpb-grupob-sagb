@@ -37,6 +37,13 @@ export type CentralAction =
   | 'aprovar_padrao'
   | 'publicar_padrao'
   | 'excluir_padrao'
+  | 'criar_documento'
+  | 'editar_documento_metadata'
+  | 'editar_documento_conteudo'
+  | 'publicar_documento'
+  | 'arquivar_documento'
+  | 'restaurar_documento'
+  | 'enviar_documento_curadoria'
   | 'ver_logs'
   | 'executar_agente';
 
@@ -66,6 +73,39 @@ export type CentralNormativeType =
 
 // ——— Níveis de risco ———
 export type CentralRiskLevel = 'baixo' | 'medio' | 'alto' | 'critico';
+
+// ——— Contrato Document Hub V1 ———
+export type CentralDocumentStatus = 'canonico' | 'revisao' | 'bruto' | 'legado' | 'externo' | 'registro' | 'previsto' | 'arquivado' | 'bloqueado';
+
+export type CentralDocumentType =
+  | 'documento_mestre'
+  | 'padrao'
+  | 'plano'
+  | 'relatorio'
+  | 'auditoria'
+  | 'checklist'
+  | 'evidencia'
+  | 'registro'
+  | 'guia'
+  | 'template'
+  | 'externo'
+  | 'apoio'
+  | 'desconhecido';
+
+export type CentralDocumentSource =
+  | 'supabase_live'
+  | 'md_indexado'
+  | 'governance_report'
+  | 'governance_audit'
+  | 'governance_curadoria'
+  | 'trace_log'
+  | 'fallback'
+  | 'manual'
+  | 'external';
+
+export type CentralCanonicalLevel = 'nao_canonico' | 'candidato' | 'operacional' | 'oficial' | 'legado' | 'previsto';
+
+export type CentralDocumentContentAvailability = 'available' | 'missing' | 'external' | 'storage_only' | 'not_loaded';
 
 // ——— Tipos de evento de auditoria ———
 export type AuditEventType =
@@ -156,10 +196,30 @@ export interface CentralDocument {
   id: string;
   title: string;
   path: string;
-  status: 'canonico' | 'revisao' | 'bruto' | 'legado' | 'externo' | 'registro';
+  status: CentralDocumentStatus;
   category: string;
   areaId: string;
   shouldBecome: 'padrao' | 'checklist' | 'matriz' | 'registro' | 'apoio' | 'arquivo_morto';
+  slug?: string | null;
+  type?: CentralDocumentType;
+  riskLevel?: CentralRiskLevel;
+  owner?: string | null;
+  tags?: string[];
+  summary?: string | null;
+  content?: string | null;
+  pathAbsolute?: string | null;
+  pathRelative?: string | null;
+  source?: CentralDocumentSource;
+  module?: string | null;
+  division?: string | null;
+  canonicalLevel?: CentralCanonicalLevel;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  contentAvailability?: CentralDocumentContentAvailability;
+  isIncomplete?: boolean;
+  incompleteReasons?: string[];
+  updatedAt?: string | null;
+  createdAt?: string | null;
   deletedAt?: string | null;
   deletedBy?: string | null;
 }
@@ -264,6 +324,12 @@ export interface DocumentFilter {
   status?: CentralDocument['status'];
   areaId?: string;
   query?: string;
+  type?: CentralDocumentType;
+  source?: CentralDocumentSource;
+  riskLevel?: CentralRiskLevel;
+  owner?: string;
+  tag?: string;
+  includeDeleted?: boolean;
 }
 
 // ——— Inputs de CRUD ———
@@ -444,10 +510,10 @@ export interface CentralApprovalRequest {
 
 export const CENTRAL_PERMISSION_MATRIX: Record<CentralProfileRole, CentralAction[]> = {
   leitor: ['visualizar'],
-  editor: ['visualizar', 'criar_rascunho', 'editar_rascunho_proprio'],
-  curador: ['visualizar', 'criar_rascunho', 'editar_rascunho_proprio', 'editar_padrao_oficial'],
-  aprovador: ['visualizar', 'criar_rascunho', 'editar_rascunho_proprio', 'editar_padrao_oficial', 'aprovar_padrao', 'publicar_padrao', 'ver_logs'],
-  administrador: ['visualizar', 'criar_rascunho', 'editar_rascunho_proprio', 'editar_padrao_oficial', 'aprovar_padrao', 'publicar_padrao', 'excluir_padrao', 'ver_logs', 'executar_agente'],
+  editor: ['visualizar', 'criar_rascunho', 'editar_rascunho_proprio', 'criar_documento'],
+  curador: ['visualizar', 'criar_rascunho', 'editar_rascunho_proprio', 'editar_padrao_oficial', 'criar_documento', 'editar_documento_metadata', 'editar_documento_conteudo', 'arquivar_documento', 'enviar_documento_curadoria'],
+  aprovador: ['visualizar', 'criar_rascunho', 'editar_rascunho_proprio', 'editar_padrao_oficial', 'aprovar_padrao', 'publicar_padrao', 'criar_documento', 'editar_documento_metadata', 'editar_documento_conteudo', 'publicar_documento', 'arquivar_documento', 'enviar_documento_curadoria', 'ver_logs'],
+  administrador: ['visualizar', 'criar_rascunho', 'editar_rascunho_proprio', 'editar_padrao_oficial', 'aprovar_padrao', 'publicar_padrao', 'excluir_padrao', 'criar_documento', 'editar_documento_metadata', 'editar_documento_conteudo', 'publicar_documento', 'arquivar_documento', 'restaurar_documento', 'enviar_documento_curadoria', 'ver_logs', 'executar_agente'],
   agente_autorizado: ['visualizar', 'executar_agente'],
   auditor: ['visualizar', 'ver_logs']
 };

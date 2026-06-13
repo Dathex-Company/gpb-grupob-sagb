@@ -7,6 +7,7 @@
 import { auth } from '../../../../services/supabase';
 import {
   CentralAction,
+  CentralDocument,
   CentralProfileRole,
   CentralStandard,
   CENTRAL_PERMISSION_MATRIX
@@ -103,6 +104,34 @@ export const centralPadroesPermissionService = {
    */
   canPublishStandard(role: CentralProfileRole): boolean {
     return role === 'administrador';
+  },
+
+  canCreateDocument(role: CentralProfileRole): boolean {
+    return this.can(role, 'criar_documento');
+  },
+
+  canEditDocument(role: CentralProfileRole, document?: CentralDocument): boolean {
+    if (!document) return this.can(role, 'editar_documento_metadata');
+    if (role === 'administrador') return true;
+    if (['curador', 'aprovador'].includes(role)) return !['arquivado', 'bloqueado'].includes(document.status);
+    if (role === 'editor') return this.can(role, 'criar_documento') && ['bruto', 'revisao'].includes(document.status);
+    return false;
+  },
+
+  canPublishDocument(role: CentralProfileRole): boolean {
+    return this.can(role, 'publicar_documento');
+  },
+
+  canArchiveDocument(role: CentralProfileRole): boolean {
+    return this.can(role, 'arquivar_documento');
+  },
+
+  canRestoreDocument(role: CentralProfileRole): boolean {
+    return this.can(role, 'restaurar_documento');
+  },
+
+  canSendDocumentToCuradoria(role: CentralProfileRole): boolean {
+    return this.can(role, 'enviar_documento_curadoria');
   },
 
   /**

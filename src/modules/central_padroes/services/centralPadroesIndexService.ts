@@ -6,6 +6,7 @@
 // Respeita permissões na busca.
 
 import { centralPadroesRepository } from './centralPadroesRepository';
+import { centralPadroesDocumentHubService } from './centralPadroesDocumentHubService';
 import {
   CentralStandard,
   CentralProfileRole,
@@ -72,6 +73,7 @@ const getAllowedRoles = (standard: CentralStandard): CentralProfileRole[] => {
  */
 const buildIndexFromSnapshot = async (): Promise<DocumentIndexSnapshot> => {
   const snapshot = await centralPadroesRepository.getSnapshot();
+  const hubDocuments = await centralPadroesDocumentHubService.listDocuments().catch(() => snapshot.documents);
   const entries: DocumentIndexEntry[] = [];
 
   // Indexar standards
@@ -95,19 +97,19 @@ const buildIndexFromSnapshot = async (): Promise<DocumentIndexSnapshot> => {
   });
 
   // Indexar documentos
-  snapshot.documents.forEach((doc) => {
+  hubDocuments.forEach((doc) => {
     entries.push({
       id: doc.id,
       title: doc.title,
-      summary: `${doc.category} • ${doc.path} • ${doc.status}`,
-      chunks: [`Categoria: ${doc.category}`, `Status: ${doc.status}`, `Área: ${doc.areaId}`],
-      tags: [doc.status, doc.category, doc.shouldBecome].filter(Boolean),
-      owner: doc.areaId || 'Desconhecido',
+      summary: doc.summary || `${doc.category} • ${doc.pathRelative || doc.path} • ${doc.status}`,
+      chunks: chunkText(`${doc.title} ${doc.summary || ''} ${doc.content || ''} ${doc.pathRelative || doc.path} ${(doc.tags || []).join(' ')}`),
+      tags: [doc.status, doc.category, doc.shouldBecome, doc.type, doc.riskLevel, doc.source, ...(doc.tags || [])].filter(Boolean) as string[],
+      owner: doc.owner || doc.areaId || 'Desconhecido',
       status: doc.status as any,
-      normativeType: 'documentacao_tecnica',
+      normativeType: doc.type === 'externo' ? 'documentacao_externa' : 'documentacao_tecnica',
       areaId: doc.areaId,
-      route: `/central-padroes/documents/${doc.id}`,
-      updatedAt: '',
+      route: `central-padroes:view:documento-detalhe:${doc.id}`,
+      updatedAt: doc.updatedAt || doc.createdAt || '',
       canonicalLevel: doc.status as any,
       allowedRoles: ['leitor', 'editor', 'curador', 'aprovador', 'administrador', 'auditor'],
     });

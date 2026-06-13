@@ -6,6 +6,7 @@
 import { centralPadroesRepository } from './centralPadroesRepository';
 import { centralPadroesFallbackData } from '../data/fallbackData';
 import { CentralRepositorySnapshot } from '../types';
+import { centralPadroesDocumentHubService } from './centralPadroesDocumentHubService';
 
 export interface ReconciliationDiff {
   entityType: string;
@@ -215,6 +216,56 @@ export const centralPadroesReconciliationService = {
       lines.push('**Nenhuma divergência encontrada. Fallback e Supabase estão sincronizados.**');
     }
 
+    return lines.join('\n');
+  },
+
+  async generateDocumentHubMarkdownReport(): Promise<string> {
+    const documents = await centralPadroesDocumentHubService.listDocuments({ includeDeleted: true });
+    const gaps = centralPadroesDocumentHubService.summarizeGaps(documents);
+    const bySource = documents.reduce<Record<string, number>>((acc, document) => {
+      const key = document.source || 'indefinido';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+    const byStatus = documents.reduce<Record<string, number>>((acc, document) => {
+      acc[document.status] = (acc[document.status] || 0) + 1;
+      return acc;
+    }, {});
+    const lines: string[] = [];
+    lines.push('# Relatório de Reconciliação Document Hub — Central de Padrões');
+    lines.push('');
+    lines.push(`**Data/Hora:** ${new Date().toISOString()}`);
+    lines.push(`**Total de documentos no Hub:** ${gaps.total}`);
+    lines.push('');
+    lines.push('## Lacunas');
+    lines.push('');
+    lines.push('| Lacuna | Total |');
+    lines.push('|---|---|');
+    lines.push(`| Incompletos | ${gaps.incomplete} |`);
+    lines.push(`| Sem owner | ${gaps.withoutOwner} |`);
+    lines.push(`| Sem tags | ${gaps.withoutTags} |`);
+    lines.push(`| Sem resumo | ${gaps.withoutSummary} |`);
+    lines.push(`| Sem conteúdo | ${gaps.withoutContent} |`);
+    lines.push('');
+    lines.push('## Por origem');
+    lines.push('');
+    lines.push('| Origem | Total |');
+    lines.push('|---|---|');
+    Object.entries(bySource).sort().forEach(([source, total]) => lines.push(`| ${source} | ${total} |`));
+    lines.push('');
+    lines.push('## Por status');
+    lines.push('');
+    lines.push('| Status | Total |');
+    lines.push('|---|---|');
+    Object.entries(byStatus).sort().forEach(([status, total]) => lines.push(`| ${status} | ${total} |`));
+    lines.push('');
+    lines.push('## Documentos incompletos');
+    lines.push('');
+    documents.filter((document) => document.isIncomplete).slice(0, 50).forEach((document) => {
+      lines.push(`- **${document.title}** (${document.id}) — ${document.incompleteReasons?.join(', ') || 'lacuna não especificada'}`);
+    });
+    lines.push('');
+    lines.push('> Relatório não destrutivo. Nenhum merge automático deve ser aplicado sem confirmação explícita.');
     return lines.join('\n');
   },
 

@@ -4,6 +4,7 @@ import { SearchResult, centralPadroesSearchRoadmap, centralPadroesSearchService 
 
 type SearchPageProps = {
   onNavigate?: (viewId: string) => void;
+  onOpenDocument?: (documentId: string) => void;
 };
 
 const resultLabels: Record<string, string> = {
@@ -31,7 +32,7 @@ const routeByType: Record<string, string> = {
 
 const getResultTitle = (result: SearchResult) => result.meta?.title || ('title' in result.entity ? String(result.entity.title) : result.entityType);
 
-const SearchPage: React.FC<SearchPageProps> = ({ onNavigate }) => {
+const SearchPage: React.FC<SearchPageProps> = ({ onNavigate, onOpenDocument }) => {
   const [query, setQuery] = React.useState('');
   const [tab, setTab] = React.useState<'all' | 'standard' | 'document' | 'decision' | 'report' | 'audit' | 'curadoria' | 'traceLog'>('all');
   const [results, setResults] = React.useState<SearchResult[]>([]);
@@ -54,7 +55,13 @@ const SearchPage: React.FC<SearchPageProps> = ({ onNavigate }) => {
   }, [query]);
 
   const filtered = tab === 'all' ? results : results.filter((result) => result.entityType === tab);
-  const navigateToResult = (result: SearchResult) => onNavigate?.(result.routeId || routeByType[result.entityType] || 'search');
+  const navigateToResult = (result: SearchResult) => {
+    if (result.entityType === 'document' && 'id' in result.entity) {
+      onOpenDocument?.(String(result.entity.id));
+      return;
+    }
+    onNavigate?.(result.routeId || routeByType[result.entityType] || 'search');
+  };
 
   return (
     <CentralPageShell title="Busca Textual da Central" subtitle="Busca textual ampliada da ET-22. A busca semântica com embeddings, pgvector e Chat Pietro fica preparada como evolução futura, mas ainda não está ativa.">

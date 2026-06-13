@@ -1,6 +1,7 @@
 import { centralPadroesRepository } from './centralPadroesRepository';
 import { CentralAgentRun, CentralBaseModule, CentralDecision, CentralDocument, CentralStandard, SearchResult, SearchResultEntityType } from '../types';
 import { CentralGovernanceRecord, CentralTraceLog, centralPadroesGovernanceService } from './centralPadroesGovernanceService';
+import { centralPadroesDocumentHubService } from './centralPadroesDocumentHubService';
 
 export const centralPadroesSearchRoadmap = {
   currentMode: 'textual' as const,
@@ -44,8 +45,17 @@ const standardText = (item: CentralStandard) => flattenText([
 const documentText = (item: CentralDocument) => flattenText([
   item.title,
   item.path,
+  item.pathRelative,
+  item.pathAbsolute,
   item.category,
   item.areaId,
+  item.owner,
+  item.summary,
+  item.tags,
+  item.type,
+  item.riskLevel,
+  item.source,
+  item.canonicalLevel,
   item.status,
   item.shouldBecome
 ]);
@@ -133,7 +143,8 @@ export const centralPadroesSearchService = {
     const snapshot = await centralPadroesRepository.getSnapshot();
     const results: SearchResult[] = [];
     const hasQuery = Boolean(query.trim());
-    const [reports, audits, curadoria, traceLogs] = await Promise.all([
+    const [hubDocuments, reports, audits, curadoria, traceLogs] = await Promise.all([
+      centralPadroesDocumentHubService.listDocuments().catch(() => snapshot.documents),
       centralPadroesGovernanceService.listRecords('central_padroes_reports').catch(() => []),
       centralPadroesGovernanceService.listRecords('central_padroes_audits').catch(() => []),
       centralPadroesGovernanceService.listRecords('central_padroes_curadoria').catch(() => []),
@@ -145,10 +156,28 @@ export const centralPadroesSearchService = {
       const score = scoreText(text, query);
       if (score > 0 || !hasQuery) results.push({ entityType: 'standard', entity: item, score, excerpt: `${item.key} • ${item.type} • ${item.status} • ${item.summary}` });
     });
-    snapshot.documents.forEach((item) => {
+    hubDocuments.forEach((item) => {
       const text = documentText(item);
       const score = scoreText(text, query);
-      if (score > 0 || !hasQuery) results.push({ entityType: 'document', entity: item, score, excerpt: `${item.category} • ${item.status} • ${item.path}` });
+      if (score > 0 || !hasQuery) results.push({
+        entityType: 'document',
+        entity: item,
+        score,
+        originLabel: item.source || 'Documento',
+        excerpt: `${item.type || item.category} • ${item.status} • ${item.riskLevel || 'risco n/d'} • ${item.owner || 'sem owner'} • ${item.pathRelative || item.path}`,
+        meta: {
+          title: item.title,
+          type: item.type,
+          category: item.category,
+          status: item.status,
+          risk: item.riskLevel,
+          owner: item.owner || undefined,
+          tags: item.tags,
+          pathAbsolute: item.pathAbsolute,
+          pathRelative: item.pathRelative,
+          summary: item.summary
+        }
+      });
     });
     snapshot.decisions.forEach((item) => {
       const text = decisionText(item);

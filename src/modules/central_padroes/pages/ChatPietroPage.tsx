@@ -35,7 +35,11 @@ const SUGGESTED_QUESTIONS = [
   'Quais documentos falam sobre gate visual?',
 ];
 
-const ChatPietroPage: React.FC = () => {
+type ChatPietroPageProps = {
+  onOpenDocument?: (documentId: string) => void;
+};
+
+const ChatPietroPage: React.FC<ChatPietroPageProps> = ({ onOpenDocument }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [mode, setMode] = useState<ChatPietroMode>('buscar_documento');
@@ -107,7 +111,7 @@ const ChatPietroPage: React.FC = () => {
                 <div className="cp-chat-sources">
                   <div className="cp-chat-sources-label">🔗 Fontes ({msg.sources.length})</div>
                   {msg.sources.map((source, sIdx) => (
-                    <div key={sIdx} className="cp-chat-source-item" onClick={() => window.dispatchEvent(new CustomEvent('sagb:navigate', { detail: source.route }))}>
+                    <div key={sIdx} className="cp-chat-source-item" onClick={() => onOpenDocument?.(source.documentId)}>
                       <div className="cp-chat-source-title">{source.key} — {source.title}</div>
                       <div className="cp-chat-source-meta">
                         <span className={`cp-visual-badge info`}>{source.status}</span>

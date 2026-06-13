@@ -12,6 +12,13 @@
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+export const supabaseConfig = {
+  url: supabaseUrl,
+  anonKey: supabaseAnonKey
+};
+
+export const getSupabaseAccessToken = () => getStoredSession()?.access_token || null;
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase env vars ausentes: VITE_SUPABASE_URL e/ou VITE_SUPABASE_ANON_KEY');
 }

@@ -5,10 +5,10 @@ import { FormField } from '../components/FormField';
 import { SectionPanel } from '../components/SectionPanel';
 import { StatusBadge } from '../components/StatusBadge';
 import { Toast } from '../components/Toast';
-import { useCentralPadroes } from '../hooks/useCentralPadroes';
 import { centralPadroesCrudService } from '../services/centralPadroesCrudService';
+import { centralPadroesDocumentHubService } from '../services/centralPadroesDocumentHubService';
 import { centralPadroesStorageService } from '../services/centralPadroesStorageService';
-import { CENTRAL_STATUS_LABELS, CentralDocument } from '../types';
+import { CentralDocument, DocumentFilter } from '../types';
 
 const statusLabel: Record<string, string> = {
   canonico: 'Canônico',
@@ -21,22 +21,46 @@ const statusLabel: Record<string, string> = {
 
 const statusOptions = ['todos', 'bruto', 'revisao', 'canonico', 'legado', 'externo', 'registro'] as const;
 
-const DocumentsPage: React.FC = () => {
-  const { snapshot, refetch, loading, error } = useCentralPadroes();
+type DocumentsPageProps = {
+  title?: string;
+  subtitle?: string;
+  initialFilters?: DocumentFilter;
+  onOpenDocument?: (documentId: string) => void;
+};
+
+const DocumentsPage: React.FC<DocumentsPageProps> = ({ title = 'Biblioteca de Documentos', subtitle = 'Documentos canônicos, brutos, em revisão, legados, registros e externos com destino normativo sugerido.', initialFilters, onOpenDocument }) => {
+  const [documentsRaw, setDocumentsRaw] = React.useState<CentralDocument[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const [open, setOpen] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [form, setForm] = React.useState({ title: '', path: '', category: 'Governança', areaId: 'pietro' });
   const [query, setQuery] = React.useState('');
-  const [status, setStatus] = React.useState<string>('todos');
+  const [status, setStatus] = React.useState<string>(initialFilters?.status || 'todos');
+
+  const refetch = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await centralPadroesDocumentHubService.listDocuments(initialFilters);
+      setDocumentsRaw(result);
+    } catch (err) {
+      setError(String((err as Error)?.message || err));
+    } finally {
+      setLoading(false);
+    }
+  }, [initialFilters]);
+
+  React.useEffect(() => { refetch(); }, [refetch]);
 
   const documents = React.useMemo(() => {
-    return (snapshot?.documents || []).filter((doc) => {
+    return documentsRaw.filter((doc) => {
       const matchesStatus = status === 'todos' || doc.status === status;
-      const haystack = `${doc.title} ${doc.path} ${doc.category} ${doc.areaId}`.toLowerCase();
+      const haystack = `${doc.title} ${doc.path} ${doc.category} ${doc.areaId} ${doc.owner || ''} ${doc.summary || ''} ${(doc.tags || []).join(' ')}`.toLowerCase();
       return matchesStatus && haystack.includes(query.toLowerCase());
     });
-  }, [query, snapshot?.documents, status]);
+  }, [documentsRaw, query, status]);
 
   const ownerInitial = (areaId: string) => (areaId || 'P').slice(0, 1).toUpperCase();
 
@@ -47,7 +71,7 @@ const DocumentsPage: React.FC = () => {
   };
 
   const openEdit = (id: string) => {
-    const doc = snapshot?.documents.find((d) => d.id === id);
+    const doc = documentsRaw.find((d) => d.id === id);
     if (!doc) return;
     setEditingId(id);
     setForm({ title: doc.title, path: doc.path, category: doc.category, areaId: doc.areaId });
@@ -72,7 +96,7 @@ const DocumentsPage: React.FC = () => {
   };
 
   return (
-    <CentralPageShell title="Biblioteca de Documentos" subtitle="Documentos canônicos, brutos, em revisão, legados, registros e externos com destino normativo sugerido.">
+    <CentralPageShell title={title} subtitle={subtitle}>
       {loading && <div className="cp-docs-inline-alert">Carregando documentos diretamente do Supabase...</div>}
       {error && <div className="cp-docs-inline-alert error">Falha ao carregar Supabase: {error}</div>}
       <section className="cp-docs-panel">
@@ -91,14 +115,14 @@ const DocumentsPage: React.FC = () => {
         </div>
 
         <section className="cp-docs-table">
-          <div className="cp-docs-table-head"><span>Documentos</span><span>Status</span><span>Responsável</span><span>Destino</span><span>Ações</span></div>
+          <div className="cp-docs-table-head"><span>Documentos</span><span>Status</span><span>Responsável</span><span>Tipo/Origem</span><span>Ações</span></div>
           {documents.map((doc) => (
             <div key={doc.id} className="cp-docs-doc-row">
-              <div className="cp-docs-doc-name"><span>📄</span><span>{doc.title}</span></div>
+              <div className="cp-docs-doc-name"><span>📄</span><span>{doc.title}<small>{doc.summary || doc.pathRelative || doc.path}</small></span></div>
               <span><StatusBadge value={doc.status} /></span>
-              <span className="cp-docs-person"><span className="cp-docs-owner-dot">{ownerInitial(doc.areaId)}</span>{doc.areaId}</span>
-              <span>{doc.shouldBecome}</span>
-              <span><button onClick={() => openEdit(doc.id)} className="rounded-lg bg-sagb-bg-2 px-2 py-1 text-[10px] font-black text-sagb-text">Editar</button></span>
+              <span className="cp-docs-person"><span className="cp-docs-owner-dot">{ownerInitial(doc.owner || doc.areaId)}</span>{doc.owner || doc.areaId}</span>
+              <span>{doc.type || doc.shouldBecome}<br /><small>{doc.source}</small></span>
+              <span className="cp-docs-row-actions"><button onClick={() => onOpenDocument?.(doc.id)} className="rounded-lg bg-blue-600 px-2 py-1 text-[10px] font-black text-white">Abrir</button><button onClick={() => openEdit(doc.id)} className="rounded-lg bg-sagb-bg-2 px-2 py-1 text-[10px] font-black text-sagb-text">Editar</button></span>
             </div>
           ))}
           {!documents.length && (
