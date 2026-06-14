@@ -22,7 +22,7 @@ export const sidebarSections: SidebarSection[] = [
     icon: '🏛️',
     rows: [
       { id: 'dashboard', label: 'Início', icon: '🏠', help: 'Visão executiva da Central.' },
-      { id: 'chat-pietro', label: 'Pergunte ao Pietro', icon: '🧠', help: 'Apoio guiado para padrões e governança.' },
+      { id: 'chat-pietro', label: 'Assistente da Central', icon: '🧠', help: 'Apoio guiado para padrões e governança.' },
       { id: 'search', label: 'Buscar', icon: '🔎', help: 'Busca em documentos e padrões.' },
       { id: 'governance-panel', label: 'Painel de Governança', icon: '🛡️', help: 'Canonicidade, aprovações e riscos.' }
     ]
@@ -81,7 +81,7 @@ export const sidebarSections: SidebarSection[] = [
 
 export const breadcrumbLabels: Record<string, string> = {
   dashboard: 'Início',
-  'chat-pietro': 'Pergunte ao Pietro',
+  'chat-pietro': 'Assistente da Central',
   search: 'Buscar',
   'governance-panel': 'Painel de Governança',
   documents: 'Documentos',

@@ -7,6 +7,7 @@ type CentralPageShellProps = {
   icon?: string;
   status?: 'seguro' | 'atencao' | 'alto-risco' | 'critico' | 'bloqueado' | 'informacao' | 'decisao';
   guidance?: string;
+  eyebrow?: string;
 };
 
 const statusMeta: Record<NonNullable<CentralPageShellProps['status']>, { label: string; icon: string; className: string }> = {
@@ -19,18 +20,19 @@ const statusMeta: Record<NonNullable<CentralPageShellProps['status']>, { label: 
   decisao: { label: 'Decisão', icon: '🟣', className: 'decision' }
 };
 
-export const CentralPageShell: React.FC<CentralPageShellProps> = ({ title, subtitle, children, icon = '📄', status = 'informacao', guidance }) => {
+export const CentralPageShell: React.FC<CentralPageShellProps> = ({ title, subtitle, children, icon = '📄', status = 'informacao', guidance, eyebrow = 'Central de Padrões' }) => {
   const meta = statusMeta[status];
   return (
     <div className="cp-docs-page">
       <div className="cp-docs-wrap">
         <header className="cp-docs-title-block">
+          <div className="cp-docs-breadcrumb"><span>{eyebrow}</span><span>›</span><strong>{title}</strong></div>
           <div className="cp-docs-title">
             <div className="cp-docs-title-icon">{icon}</div>
             <h1>{title}</h1>
           </div>
           <p className="cp-docs-subtitle">{subtitle}</p>
-          <div className="cp-docs-meta-line"><span className="cp-docs-owner-dot">P</span><span>Pietro Carboni</span><span>·</span><span>Central de Documentos e Padrões</span><span>·</span><span className={`cp-visual-badge ${meta.className}`}>{meta.icon} {meta.label}</span></div>
+          <div className="cp-docs-meta-line"><span className="cp-docs-owner-dot">C</span><span>Governança documental</span><span>·</span><span>Central de Documentos e Padrões</span><span>·</span><span className={`cp-visual-badge ${meta.className}`}>{meta.icon} {meta.label}</span></div>
           {guidance && <div className="cp-guidance-card"><strong>🧠 Explicação guiada:</strong> {guidance}</div>}
         </header>
         <div className="cp-docs-content">{children}</div>

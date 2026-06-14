@@ -32,18 +32,18 @@ const DecisionsPage: React.FC = () => {
       guidance="Use esta tela quando uma escolha técnica precisar ser rastreável. Decisões críticas não devem ser tomadas apenas no chat: registre impacto, área e motivo."
     >
       <SectionPanel title="Decisões estruturais">
-        <div className="mb-4"><button onClick={() => setOpen(true)} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Nova Decisão</button></div>
+        <div className="mb-4"><button onClick={() => setOpen(true)} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white">Nova Decisão</button></div>
         <div className="space-y-3">
           {snapshot?.decisions.map((decision) => (
             <article key={decision.id} className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4">
-              <div className="flex items-start justify-between gap-3"><h3 className="font-black text-sagb-text">{decision.title}</h3><StatusBadge value={decision.status} /></div>
+              <div className="flex items-start justify-between gap-3"><h3 className="font-bold text-sagb-text">{decision.title}</h3><StatusBadge value={decision.status} /></div>
               <p className="mt-2 text-[12px] text-sagb-muted">{decision.summary}</p>
               <p className="mt-2 text-[11px] text-sagb-muted">Impactos: {decision.impacts.join(', ')}</p>
             </article>
           ))}
         </div>
       </SectionPanel>
-      <CrudModal title="Nova Decisão" open={open} onClose={() => setOpen(false)} footer={<button onClick={submit} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Salvar</button>}>
+      <CrudModal title="Nova Decisão" open={open} onClose={() => setOpen(false)} footer={<button onClick={submit} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white">Salvar</button>}>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <FormField label="Título" value={form.title} onChange={(value) => setForm((prev) => ({ ...prev, title: value }))} />
           <FormField label="Área" value={form.areaId} onChange={(value) => setForm((prev) => ({ ...prev, areaId: value }))} />

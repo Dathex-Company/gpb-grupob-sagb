@@ -79,12 +79,12 @@ const StandardsPage: React.FC = () => {
       {snapshot && (
         <SectionPanel title="Todos os padrões registrados">
           <div className="mb-4 flex flex-wrap gap-2">
-            <button onClick={openCreate} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Novo Padrão</button>
+            <button onClick={openCreate} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white">Novo Padrão</button>
           </div>
           <StandardTable standards={filteredStandards} onEdit={openEdit} onDelete={setDeleteId} onRequestApproval={requestApproval} />
         </SectionPanel>
       )}
-      <CrudModal title={editingId ? 'Editar Padrão' : 'Novo Padrão'} open={modalOpen} onClose={() => setModalOpen(false)} footer={<button onClick={submit} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Salvar</button>}>
+      <CrudModal title={editingId ? 'Editar Padrão' : 'Novo Padrão'} open={modalOpen} onClose={() => setModalOpen(false)} footer={<button onClick={submit} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white">Salvar</button>}>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <FormField label="Chave" value={form.key} onChange={(value) => setForm((prev) => ({ ...prev, key: value }))} placeholder="CP-GOV-002" />
           <FormField label="Tipo" value={form.type} onChange={(value) => setForm((prev) => ({ ...prev, type: value }))} placeholder="padrao" />

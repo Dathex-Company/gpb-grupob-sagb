@@ -5,8 +5,8 @@ export const ChecklistPanel: React.FC<{ checklists: CentralChecklist[] }> = ({ c
   <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
     {checklists.map((checklist) => (
       <article key={checklist.id} className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-sagb-muted">{checklist.context}</p>
-        <h3 className="mt-1 text-sm font-black text-sagb-text">{checklist.title}</h3>
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-sagb-muted">{checklist.context}</p>
+        <h3 className="mt-1 text-sm font-bold text-sagb-text">{checklist.title}</h3>
         <p className="mt-1 text-[11px] text-sagb-muted">Responsável: {checklist.owner}</p>
         <ul className="mt-3 space-y-2">
           {checklist.items.map((item) => (

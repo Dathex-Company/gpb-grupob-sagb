@@ -28,9 +28,9 @@ export const StandardTable: React.FC<{ standards: CentralStandard[]; onEdit?: (i
             {(onEdit || onDelete || onRequestApproval) && (
               <td className="px-4 py-3">
                 <div className="flex gap-2">
-                  {onEdit && <button onClick={() => onEdit(standard.id)} className="rounded-lg bg-sagb-bg-2 px-2 py-1 text-[10px] font-black text-sagb-text">Editar</button>}
-                  {onRequestApproval && <button onClick={() => onRequestApproval(standard.id)} className="rounded-lg bg-blue-500/10 px-2 py-1 text-[10px] font-black text-blue-600">Aprovar</button>}
-                  {onDelete && <button onClick={() => onDelete(standard.id)} className="rounded-lg bg-red-500/10 px-2 py-1 text-[10px] font-black text-red-600">Excluir</button>}
+                  {onEdit && <button onClick={() => onEdit(standard.id)} className="rounded-lg bg-sagb-bg-2 px-2 py-1 text-[10px] font-bold text-sagb-text">Editar</button>}
+                  {onRequestApproval && <button onClick={() => onRequestApproval(standard.id)} className="rounded-lg bg-blue-500/10 px-2 py-1 text-[10px] font-bold text-blue-600">Aprovar</button>}
+                  {onDelete && <button onClick={() => onDelete(standard.id)} className="rounded-lg bg-red-500/10 px-2 py-1 text-[10px] font-bold text-red-600">Excluir</button>}
                 </div>
               </td>
             )}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { CentralPageShell } from '../components/CentralPageShell';
+import { CentralEmptyState, CentralErrorState, CentralFilterBar, CentralLoadingState } from '../components/CentralUI';
 import { SearchResult, centralPadroesSearchRoadmap, centralPadroesSearchService } from '../services/centralPadroesSearchService';
 
 type SearchPageProps = {
@@ -64,17 +65,19 @@ const SearchPage: React.FC<SearchPageProps> = ({ onNavigate, onOpenDocument }) =
   };
 
   return (
-    <CentralPageShell title="Busca Textual da Central" subtitle="Busca textual ampliada da ET-22. A busca semântica com embeddings, pgvector e Chat Pietro fica preparada como evolução futura, mas ainda não está ativa.">
+    <CentralPageShell title="Busca Textual da Central" subtitle="Busca textual ampliada da Central. A busca semântica com embeddings e pgvector fica preparada como evolução futura, mas ainda não está ativa.">
       <section className="cp-docs-search-hero">
         <div>
           <p className="cp-docs-kicker">Modo atual: {centralPadroesSearchRoadmap.currentMode}</p>
           <h2>Pesquisar padrões, documentos e decisões</h2>
           <p>Campos considerados: título, tipo, categoria, status, risco, owner, tags, caminhos, resumo, conteúdo, origem, data e metadados disponíveis.</p>
         </div>
-        <label className="cp-docs-big-search">
-          <span>⌕</span>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex: decisão com IA, rastreabilidade, deploy, criar tabela Supabase" />
-        </label>
+        <CentralFilterBar activeCount={(query.trim() ? 1 : 0) + (tab !== 'all' ? 1 : 0)} onClear={(query.trim() || tab !== 'all') ? () => { setQuery(''); setTab('all'); } : undefined}>
+          <label className="cp-docs-big-search">
+            <span>⌕</span>
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex: decisão com IA, rastreabilidade, deploy, criar tabela Supabase" />
+          </label>
+        </CentralFilterBar>
       </section>
 
       <div className="cp-docs-tab-row">
@@ -84,8 +87,8 @@ const SearchPage: React.FC<SearchPageProps> = ({ onNavigate, onOpenDocument }) =
       </div>
 
       <section className="cp-docs-result-list">
-        {loading && <div className="cp-docs-inline-alert">Buscando registros na Central...</div>}
-        {error && <div className="cp-docs-inline-alert error">Não foi possível concluir a busca: {error}</div>}
+        {loading && <CentralLoadingState label="Buscando registros na Central..." />}
+        {error && <CentralErrorState title="Não foi possível concluir a busca" message={error} />}
         {filtered.map((result, index) => (
           <article key={`${result.entityType}-${index}`} className="cp-docs-result-card">
             <div>
@@ -110,7 +113,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ onNavigate, onOpenDocument }) =
             </div>
           </article>
         ))}
-        {!loading && filtered.length === 0 && <div className="cp-docs-empty-note">Nenhum resultado encontrado na busca textual ampliada. Tente buscar por título, tag, owner, caminho, status, risco ou categoria.</div>}
+        {!loading && filtered.length === 0 && <CentralEmptyState icon="🔎" title="Nenhum resultado encontrado" description="Tente buscar por título, tag, owner, caminho, status, risco ou categoria." />}
       </section>
 
       <section className="cp-docs-panel cp-docs-roadmap-box">

@@ -8,8 +8,8 @@ export const AgentRunBoard: React.FC<{ agents: CentralAgentRun[] }> = ({ agents 
       <article key={agent.id} className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-sagb-muted">{agent.agentCode} · {agent.block}</p>
-            <h3 className="mt-1 text-sm font-black text-sagb-text">{agent.agentName}</h3>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-sagb-muted">{agent.agentCode} · {agent.block}</p>
+            <h3 className="mt-1 text-sm font-bold text-sagb-text">{agent.agentName}</h3>
           </div>
           <StatusBadge value={agent.status} />
         </div>

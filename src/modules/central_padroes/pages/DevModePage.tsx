@@ -29,15 +29,15 @@ const DevModePage: React.FC = () => {
 
   return (
     <CentralPageShell title="Modo Dev / Programador" subtitle="Atalhos e triagem para responder rapidamente qual padrão consultar antes de construir.">
-      <div className="flex gap-2"><button onClick={() => setTab('atalhos')} className="rounded-xl bg-sagb-panel px-4 py-2 text-[12px] font-black text-sagb-text">Atalhos</button><button onClick={() => setTab('triagem')} className="rounded-xl bg-sagb-panel px-4 py-2 text-[12px] font-black text-sagb-text">Triagem</button></div>
+      <div className="flex gap-2"><button onClick={() => setTab('atalhos')} className="rounded-xl bg-sagb-panel px-4 py-2 text-[12px] font-bold text-sagb-text">Atalhos</button><button onClick={() => setTab('triagem')} className="rounded-xl bg-sagb-panel px-4 py-2 text-[12px] font-bold text-sagb-text">Triagem</button></div>
       {tab === 'atalhos' ? (
         <SectionPanel title="Antes de construir">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">{shortcuts.map((shortcut) => <article key={shortcut} className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4 text-[12px] font-black text-sagb-text">{shortcut}</article>)}</div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">{shortcuts.map((shortcut) => <article key={shortcut} className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4 text-[12px] font-bold text-sagb-text">{shortcut}</article>)}</div>
         </SectionPanel>
       ) : (
         <SectionPanel title="Fila de triagem" description="Documentos brutos com sugestão de destino e confiança.">
           <div className="space-y-3">
-            {queue.map((item) => <article key={item.id} className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-black text-sagb-text">{item.title}</h3><p className="mt-1 font-mono text-[11px] text-sagb-muted">{item.sourcePath}</p><p className="mt-2 text-[12px] text-sagb-muted">Área: {item.suggestedAreaId || 'indefinida'} · Destino: {item.suggestedDestination} · Confiança: {item.confidence}%</p></div><StatusBadge value={item.status} /></div><div className="mt-4 flex gap-2"><button onClick={() => act(item.id, 'accept')} className="rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-black text-white">Aceitar sugestão</button><button onClick={() => act(item.id, 'ignore')} className="rounded-xl bg-sagb-panel px-4 py-2 text-[12px] font-black text-sagb-muted">Ignorar</button></div></article>)}
+            {queue.map((item) => <article key={item.id} className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold text-sagb-text">{item.title}</h3><p className="mt-1 font-mono text-[11px] text-sagb-muted">{item.sourcePath}</p><p className="mt-2 text-[12px] text-sagb-muted">Área: {item.suggestedAreaId || 'indefinida'} · Destino: {item.suggestedDestination} · Confiança: {item.confidence}%</p></div><StatusBadge value={item.status} /></div><div className="mt-4 flex gap-2"><button onClick={() => act(item.id, 'accept')} className="rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-bold text-white">Aceitar sugestão</button><button onClick={() => act(item.id, 'ignore')} className="rounded-xl bg-sagb-panel px-4 py-2 text-[12px] font-bold text-sagb-muted">Ignorar</button></div></article>)}
           </div>
         </SectionPanel>
       )}

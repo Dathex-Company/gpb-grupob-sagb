@@ -4,6 +4,7 @@ import { CrudModal } from '../components/CrudModal';
 import { FormField } from '../components/FormField';
 import { StatusBadge } from '../components/StatusBadge';
 import { Toast } from '../components/Toast';
+import { CentralEmptyState, CentralErrorState, CentralFilterBar, CentralLoadingState } from '../components/CentralUI';
 import { centralPadroesCrudService } from '../services/centralPadroesCrudService';
 import { centralPadroesDocumentHubService } from '../services/centralPadroesDocumentHubService';
 import { centralPadroesStorageService } from '../services/centralPadroesStorageService';
@@ -68,6 +69,8 @@ const DocumentsPage: React.FC<DocumentsPageProps> = ({ title = 'Biblioteca de Do
   const [query, setQuery] = React.useState('');
   const [status, setStatus] = React.useState<string>(initialFilters?.status || 'todos');
   const [officialFilter, setOfficialFilter] = React.useState<CentralDocumentOfficialStatus | 'todos'>('todos');
+  const activeFilterCount = (query.trim() ? 1 : 0) + (status !== 'todos' ? 1 : 0) + (officialFilter !== 'todos' ? 1 : 0);
+  const clearFilters = () => { setQuery(''); setStatus('todos'); setOfficialFilter('todos'); };
 
   const refetch = React.useCallback(async () => {
     setLoading(true);
@@ -128,8 +131,8 @@ const DocumentsPage: React.FC<DocumentsPageProps> = ({ title = 'Biblioteca de Do
 
   return (
     <CentralPageShell title={title} subtitle={subtitle}>
-      {loading && <div className="cp-docs-inline-alert">Carregando documentos...</div>}
-      {error && <div className="cp-docs-inline-alert error">Falha ao carregar: {error}</div>}
+      {loading && <CentralLoadingState label="Carregando documentos..." />}
+      {error && <CentralErrorState title="Falha ao carregar documentos" message={error} />}
 
       {/* Count bar */}
       <div className="cp-docs-count-bar">
@@ -141,12 +144,12 @@ const DocumentsPage: React.FC<DocumentsPageProps> = ({ title = 'Biblioteca de Do
 
       <section className="cp-docs-panel">
         {/* Search and official filter row */}
-        <div className="cp-docs-toolbar">
+        <CentralFilterBar activeCount={activeFilterCount} onClear={activeFilterCount ? clearFilters : undefined}>
           <label className="cp-docs-subtle-search">
             <span>⌕</span>
             <input placeholder="Buscar por título, owner, tag, conteúdo..." value={query} onChange={(event) => setQuery(event.target.value)} />
           </label>
-        </div>
+        </CentralFilterBar>
 
         {/* Official status filter tabs */}
         <div className="cp-docs-filters cp-docs-filters-official">
@@ -216,9 +219,7 @@ const DocumentsPage: React.FC<DocumentsPageProps> = ({ title = 'Biblioteca de Do
           </div>
         ))}
         {!documents.length && (
-          <div className="cp-docs-empty-note">
-            Nenhum documento encontrado com os filtros atuais.
-          </div>
+          <CentralEmptyState icon="📄" title="Nenhum documento encontrado" description="Ajuste a busca, limpe filtros ou registre um novo documento para triagem." />
         )}
       </section>
 

@@ -4,6 +4,7 @@ import { FormField } from '../components/FormField';
 import { MarkdownEditor } from '../components/MarkdownEditor';
 import { MarkdownPreview } from '../components/MarkdownPreview';
 import { Toast } from '../components/Toast';
+import { CentralActionBar, EditorialEventsPanel, VersionHistoryPanel } from '../components/CentralUI';
 import { centralPadroesCrudService } from '../services/centralPadroesCrudService';
 import { centralPadroesDocumentHubService } from '../services/centralPadroesDocumentHubService';
 import { centralPadroesIndexService } from '../services/centralPadroesIndexService';
@@ -237,7 +238,7 @@ const DocumentoEditorPage: React.FC<DocumentoEditorPageProps> = ({ documentId, o
       )}
 
       {/* Action buttons */}
-      <div className="cp-editor-actions">
+      <CentralActionBar>
         <button type="button" className="cp-docs-btn-secondary" onClick={discardChanges} disabled={!hasChanges || saving}>
           ↩️ Descartar alterações
         </button>
@@ -252,68 +253,41 @@ const DocumentoEditorPage: React.FC<DocumentoEditorPageProps> = ({ documentId, o
         >
           {confirmPublish ? '⚠️ Confirmar publicação' : '⭐ Publicar como oficial'}
         </button>
-      </div>
+      </CentralActionBar>
 
       {/* Toggle history panels */}
-      <div className="cp-editor-actions" style={{ marginTop: 8 }}>
+      <CentralActionBar compact>
         <button type="button" className="cp-docs-btn-secondary" onClick={() => setShowVersions((v) => !v)}>
           {showVersions ? '🔼 Ocultar' : '📜'} Histórico de versões ({versions.length})
         </button>
         <button type="button" className="cp-docs-btn-secondary" onClick={() => setShowEvents((v) => !v)}>
           {showEvents ? '🔼 Ocultar' : '📋'} Eventos editoriais ({events.length})
         </button>
-      </div>
+      </CentralActionBar>
 
       {/* Version history panel */}
       {showVersions && (
-        <section className="cp-docs-panel">
-          <p className="cp-docs-kicker">Histórico de versões</p>
-          {loadingHistory && <div className="cp-docs-inline-alert">Carregando histórico...</div>}
-          {!loadingHistory && versions.length === 0 && (
-            <div className="cp-docs-inline-alert">Nenhuma versão publicada ainda. Use "Publicar como oficial" para criar a primeira versão.</div>
-          )}
-          {versions.map((v) => (
-            <div key={v.id} className="cp-history-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--cp-border, #e0e0e0)' }}>
-              <div>
-                <strong>v{v.version}</strong>
-                {v.title && <span> — {v.title}</span>}
-                <div style={{ fontSize: '0.8em', color: 'var(--cp-muted, #666)' }}>
-                  {formatDate(v.createdAt)}
-                  {v.officialStatus && <> · {officialStatusLabel[v.officialStatus] || v.officialStatus}</>}
-                </div>
-              </div>
-              <button
-                type="button"
-                className="cp-docs-btn-secondary"
-                style={{ padding: '4px 12px', fontSize: '0.85em' }}
-                onClick={() => restoreVersion(v.version)}
-                disabled={restoringVersion === v.version || !canEdit}
-              >
-                {restoringVersion === v.version ? '⏳' : confirmRestore === v.version ? '⚠️ Confirmar' : '↩️ Restaurar'}
-              </button>
-            </div>
-          ))}
-        </section>
+        <VersionHistoryPanel
+          versions={versions}
+          loading={loadingHistory}
+          canEdit={canEdit}
+          restoringVersion={restoringVersion}
+          confirmRestore={confirmRestore}
+          onRestore={restoreVersion}
+          formatDate={formatDate}
+          getStatusLabel={(status) => status ? (officialStatusLabel[status as CentralDocumentOfficialStatus] || status) : '—'}
+        />
       )}
 
       {/* Events panel */}
       {showEvents && (
-        <section className="cp-docs-panel">
-          <p className="cp-docs-kicker">Eventos editoriais</p>
-          {loadingHistory && <div className="cp-docs-inline-alert">Carregando eventos...</div>}
-          {!loadingHistory && events.length === 0 && (
-            <div className="cp-docs-inline-alert">Nenhum evento editorial registrado ainda.</div>
-          )}
-          {events.map((ev) => (
-            <div key={ev.id} className="cp-history-item" style={{ padding: '6px 0', borderBottom: '1px solid var(--cp-border, #e0e0e0)', fontSize: '0.9em' }}>
-              <span>{eventLabel(ev.eventType)}</span>
-              {ev.versionTo && <span> · v{ev.versionTo}</span>}
-              {ev.previousOfficialStatus && <span style={{ color: 'var(--cp-muted, #666)' }}> · {officialStatusLabel[ev.previousOfficialStatus] || ev.previousOfficialStatus} → </span>}
-              {ev.newOfficialStatus && <span>{officialStatusLabel[ev.newOfficialStatus] || ev.newOfficialStatus}</span>}
-              <div style={{ fontSize: '0.8em', color: 'var(--cp-muted, #666)' }}>{formatDate(ev.createdAt)}</div>
-            </div>
-          ))}
-        </section>
+        <EditorialEventsPanel
+          events={events}
+          loading={loadingHistory}
+          formatDate={formatDate}
+          getEventLabel={eventLabel}
+          getStatusLabel={(status) => status ? (officialStatusLabel[status as CentralDocumentOfficialStatus] || status) : '—'}
+        />
       )}
 
       <Toast message={toast?.message || null} type={toast?.type} onClose={() => setToast(null)} />

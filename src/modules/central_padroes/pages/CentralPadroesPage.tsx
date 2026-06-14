@@ -126,7 +126,7 @@ const CentralPadroesPage: React.FC = () => {
         <div className="bg-sagb-panel rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
           <div className="p-6 border-b border-sagb-line flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-black text-sagb-text">{selectedDoc?.title || 'Documento de Governança'}</h2>
+              <h2 className="text-2xl font-bold text-sagb-text">{selectedDoc?.title || 'Documento de Governança'}</h2>
               <p className="text-[12px] text-sagb-muted">
                 {selectedDoc?.sync_target_path || 'docs/governanca_sagb/_readme.md'}
               </p>
@@ -154,7 +154,7 @@ const CentralPadroesPage: React.FC = () => {
 
           <div className="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-4">
             <section className="space-y-2">
-              <div className="text-[10px] font-black uppercase tracking-widest text-sagb-muted">Editor Markdown</div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-sagb-muted">Editor Markdown</div>
               <textarea
                 value={editorContent}
                 onChange={(event) => setEditorContent(event.target.value)}
@@ -183,7 +183,7 @@ const CentralPadroesPage: React.FC = () => {
             </section>
 
             <section>
-              <div className="text-[10px] font-black uppercase tracking-widest text-sagb-muted mb-2">Preview</div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-sagb-muted mb-2">Preview</div>
               <article className="prose prose-sm max-w-none text-[12px] text-sagb-text">
                 <ReactMarkdown>{editorContent || '_Documento vazio._'}</ReactMarkdown>
               </article>
@@ -198,13 +198,13 @@ const CentralPadroesPage: React.FC = () => {
     <div className="flex-1 p-10 bg-sagb-bg text-[12px] text-sagb-text font-inter">
       <header className="mb-10 flex justify-between items-start gap-6">
         <div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter">Central de Padrões</h1>
+          <h1 className="text-3xl font-bold uppercase tracking-tighter">Central de Padrões</h1>
           <p className="text-sagb-muted mt-2 text-[12px]">
             A base da verdade oficial de stack, design, naming e arquitetura do SagB.
           </p>
         </div>
         <div className="text-right">
-          <div className="text-[10px] font-black text-sagb-muted uppercase tracking-widest mb-1">Módulo Oficial</div>
+          <div className="text-[10px] font-bold text-sagb-muted uppercase tracking-widest mb-1">Módulo Oficial</div>
           <div className="text-lg font-bold text-sagb-text">Central de Padrões</div>
           <div className="mt-2 text-[12px] text-sagb-muted">
             Responsável: <span className="font-semibold text-sagb-text">{manifest.owner?.displayName || 'A definir'}</span>
@@ -243,19 +243,19 @@ const CentralPadroesPage: React.FC = () => {
       <section className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <article className="bg-sagb-panel p-4 rounded-xl border border-sagb-line">
           <div className="text-[10px] text-sagb-muted">Documentos</div>
-          <div className="text-xl font-black text-sagb-text">{stats.total}</div>
+          <div className="text-xl font-bold text-sagb-text">{stats.total}</div>
         </article>
         <article className="bg-sagb-panel p-4 rounded-xl border border-green-500/20">
           <div className="text-[10px] text-sagb-muted">🟢 Synced</div>
-          <div className="text-xl font-black text-sagb-text">{stats.ativos}</div>
+          <div className="text-xl font-bold text-sagb-text">{stats.ativos}</div>
         </article>
         <article className="bg-sagb-panel p-4 rounded-xl border border-sagb-line">
           <div className="text-[10px] text-sagb-muted">🟡 Failed</div>
-          <div className="text-xl font-black text-sagb-text">{stats.parciais}</div>
+          <div className="text-xl font-bold text-sagb-text">{stats.parciais}</div>
         </article>
         <article className="bg-sagb-panel p-4 rounded-xl border border-sagb-line">
           <div className="text-[10px] text-sagb-muted">🔴 Pendentes</div>
-          <div className="text-xl font-black text-sagb-text">{stats.pendentes}</div>
+          <div className="text-xl font-bold text-sagb-text">{stats.pendentes}</div>
         </article>
       </section>
 

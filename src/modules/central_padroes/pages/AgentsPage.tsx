@@ -112,7 +112,7 @@ const AgentsPage: React.FC = () => {
         </div>
       </SectionPanel>
 
-      <CrudModal title="Registrar LOZE-TRACE" open={open} onClose={() => setOpen(false)} footer={<button type="button" className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white" onClick={saveTrace}>Salvar</button>}>
+      <CrudModal title="Registrar LOZE-TRACE" open={open} onClose={() => setOpen(false)} footer={<button type="button" className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white" onClick={saveTrace}>Salvar</button>}>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <FormField label="Execution ID" value={form.executionId} onChange={(value) => setForm((prev) => ({ ...prev, executionId: value }))} />
           <FormField label="Tarefa" value={form.taskTitle} onChange={(value) => setForm((prev) => ({ ...prev, taskTitle: value }))} />

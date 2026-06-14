@@ -31,7 +31,7 @@ const RelationshipsPage: React.FC = () => {
                 const top = 45 + Math.sin(angle) * 32;
                 return (
                   <button key={standard.id} onClick={() => setSelectedId(standard.key)} className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl border px-3 py-2 text-left shadow-sm transition-transform hover:scale-105 ${selectedId === standard.key ? 'border-blue-500 bg-blue-500/20' : 'border-sagb-line bg-sagb-panel'}`} style={{ left: `${left}%`, top: `${top}%` }}>
-                    <p className="font-mono text-[10px] font-black text-sagb-text">{standard.key}</p>
+                    <p className="font-mono text-[10px] font-bold text-sagb-text">{standard.key}</p>
                     <p className="max-w-36 truncate text-[11px] text-sagb-muted">{standard.title}</p>
                   </button>
                 );
@@ -39,8 +39,8 @@ const RelationshipsPage: React.FC = () => {
             </div>
           </div>
           <aside className="rounded-3xl border border-sagb-line bg-sagb-bg-2 p-5">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-sagb-muted">Análise de impacto</p>
-            <h3 className="mt-2 text-lg font-black text-sagb-text">{selectedId || 'Selecione um padrão'}</h3>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-sagb-muted">Análise de impacto</p>
+            <h3 className="mt-2 text-lg font-bold text-sagb-text">{selectedId || 'Selecione um padrão'}</h3>
             {impact && (
               <div className="mt-4 space-y-3 text-[12px] text-sagb-muted">
                 <StatusBadge value={impact.breakingChanges ? 'critico' : impact.riskScore > 0 ? 'medio' : 'baixo'} />

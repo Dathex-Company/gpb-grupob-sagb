@@ -34,6 +34,6 @@ const colorMap: Record<string, string> = {
 export const StatusBadge: React.FC<{ value: string }> = ({ value }) => {
   const classes = colorMap[value] || 'bg-sagb-bg-2 text-sagb-muted border-sagb-line';
   const label = CENTRAL_STATUS_LABELS[value as keyof typeof CENTRAL_STATUS_LABELS] || value.replace(/_/g, ' ');
-  return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${classes}`}>{label}</span>;
+  return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${classes}`}>{label}</span>;
 };
 

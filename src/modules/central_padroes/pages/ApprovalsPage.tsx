@@ -44,21 +44,21 @@ const ApprovalsPage: React.FC = () => {
             <article key={request.id} className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-sagb-muted">{request.standardId}</p>
-                  <h3 className="font-black text-sagb-text">Solicitado por {request.requestedBy}</h3>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-sagb-muted">{request.standardId}</p>
+                  <h3 className="font-bold text-sagb-text">Solicitado por {request.requestedBy}</h3>
                   <p className="mt-1 text-[12px] text-sagb-muted">Revisor: {request.assignedTo}</p>
                 </div>
                 <ApprovalBadge status={request.status} />
               </div>
               <div className="mt-4 flex gap-2">
-                <button onClick={() => setSelected(request)} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Analisar</button>
+                <button onClick={() => setSelected(request)} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white">Analisar</button>
               </div>
             </article>
           ))}
           {requests.length === 0 && <p className="rounded-2xl border border-sagb-line bg-sagb-bg-2 p-4 text-[12px] text-sagb-muted">Nenhuma aprovação pendente.</p>}
         </div>
       </SectionPanel>
-      <CrudModal title="Decisão de aprovação" open={Boolean(selected)} onClose={() => setSelected(null)} footer={<><button onClick={() => decide('reject')} className="rounded-xl bg-red-600 px-4 py-2 text-[12px] font-black text-white">Rejeitar</button><button onClick={() => decide('approve')} className="rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-black text-white">Aprovar</button></>}>
+      <CrudModal title="Decisão de aprovação" open={Boolean(selected)} onClose={() => setSelected(null)} footer={<><button onClick={() => decide('reject')} className="rounded-xl bg-red-600 px-4 py-2 text-[12px] font-bold text-white">Rejeitar</button><button onClick={() => decide('approve')} className="rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-bold text-white">Aprovar</button></>}>
         <FormField label="Notas do revisor" value={notes} onChange={setNotes} textarea />
       </CrudModal>
       <Toast message={toast?.message || null} type={toast?.type} onClose={() => setToast(null)} />

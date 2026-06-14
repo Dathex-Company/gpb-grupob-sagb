@@ -90,8 +90,8 @@ const DocumentosMestresPage: React.FC = () => {
                 <span><StatusBadge value={dm.status} /></span>
                 <span>v{dm.version}.0</span>
                 <span className="flex gap-2">
-                  <button onClick={() => setViewingDm(dm.id)} className="rounded-lg bg-blue-500/10 px-2 py-1 text-[10px] font-black text-blue-600">Ver</button>
-                  <button onClick={() => openEdit(dm.id)} className="rounded-lg bg-sagb-bg-2 px-2 py-1 text-[10px] font-black text-sagb-text">Editar</button>
+                  <button onClick={() => setViewingDm(dm.id)} className="rounded-lg bg-blue-500/10 px-2 py-1 text-[10px] font-bold text-blue-600">Ver</button>
+                  <button onClick={() => openEdit(dm.id)} className="rounded-lg bg-sagb-bg-2 px-2 py-1 text-[10px] font-bold text-sagb-text">Editar</button>
                 </span>
               </div>
             );
@@ -132,15 +132,15 @@ const DocumentosMestresPage: React.FC = () => {
               <p className="mt-1 text-sagb-muted">{selectedDmData.relatedModules.join(', ')}</p>
             </div>
             <div className="mt-4 flex gap-2">
-              <button onClick={() => openEdit(selectedDmData.id)} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Editar metadados</button>
-              <button onClick={() => setViewingDm(null)} className="rounded-xl bg-sagb-bg-2 px-4 py-2 text-[12px] font-black text-sagb-text">Fechar</button>
+              <button onClick={() => openEdit(selectedDmData.id)} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white">Editar metadados</button>
+              <button onClick={() => setViewingDm(null)} className="rounded-xl bg-sagb-bg-2 px-4 py-2 text-[12px] font-bold text-sagb-text">Fechar</button>
             </div>
           </div>
         </SectionPanel>
       )}
 
       {/* Modal de edição */}
-      <CrudModal title="Editar Documento Mestre" open={editModalOpen} onClose={() => setEditModalOpen(false)} footer={<button onClick={submitEdit} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white">Salvar alterações</button>}>
+      <CrudModal title="Editar Documento Mestre" open={editModalOpen} onClose={() => setEditModalOpen(false)} footer={<button onClick={submitEdit} className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white">Salvar alterações</button>}>
         <div className="grid grid-cols-1 gap-3">
           <FormField label="Título" value={dmForm.title} onChange={(value) => setDmForm((prev) => ({ ...prev, title: value }))} />
           <FormField label="Resumo" value={dmForm.summary} onChange={(value) => setDmForm((prev) => ({ ...prev, summary: value }))} textarea />
