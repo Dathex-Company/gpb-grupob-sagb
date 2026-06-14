@@ -23,7 +23,7 @@ const statusLabel: Record<string, string> = {
   bloqueado: 'Bloqueado'
 };
 
-const statusOptions = ['todos', 'bruto', 'revisao', 'canonico', 'legado', 'externo', 'registro'] as const;
+const statusOptions = ['todos', 'bruto', 'revisao', 'canonico', 'previsto', 'legado', 'externo', 'registro'] as const;
 
 const officialStatusOptions: { value: CentralDocumentOfficialStatus | 'todos'; label: string }[] = [
   { value: 'todos', label: 'Todos' },

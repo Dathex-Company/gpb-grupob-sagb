@@ -1,6 +1,18 @@
-import { CentralDocument } from '../types';
+/**
+ * Manifesto consolidado de documentos da Central de Padrões.
+ * 
+ * Inclui:
+ * - Planos e registros de desenvolvimento (01.xx)
+ * - Documentos oficiais indexados da pasta estrutura-de-documentos-oficiais
+ * 
+ * Fonte canônica para documentos oficiais: officialDocumentsIndex.ts
+ * Auditoria de paridade: docs/audits/00.14-auditoria-paridade...md
+ */
 
-export const centralDocumentsManifest: CentralDocument[] = [
+import { CentralDocument } from '../types';
+import { officialDocumentsIndex } from './officialDocumentsIndex';
+
+const legacyPlans: CentralDocument[] = [
   {
     id: 'md-plan-01-12',
     title: 'Plano 01.12 — Execução Consolidada Document Hub V1',
@@ -58,8 +70,8 @@ export const centralDocumentsManifest: CentralDocument[] = [
   {
     id: 'md-plan-01-15',
     title: 'Plano 01.15 — Mega Tarefa Document Hub V1 Completo',
-    path: 'src/modules/central_padroes/docs/plans/01.15-mega-tarefa-document-hub-v1-completo-13-06-2026.md',
-    pathRelative: 'docs/plans/01.15-mega-tarefa-document-hub-v1-completo-13-06-2026.md',
+    path: 'src/modules/central_padroes/docs/plans/01.15-mega-tarefa-document-hub-v1-completo.md',
+    pathRelative: 'docs/plans/01.15-mega-tarefa-document-hub-v1-completo.md',
     status: 'registro',
     officialStatus: 'legado',
     category: 'Mega Tarefa',
@@ -73,41 +85,15 @@ export const centralDocumentsManifest: CentralDocument[] = [
     riskLevel: 'alto',
     canonicalLevel: 'candidato'
   },
-  {
-    id: 'md-dm-00-gov',
-    title: 'Documento Mestre — Governança Central de Padrões',
-    path: 'src/modules/central_padroes/docs/estrutura-de-documentos-oficiais/00-governanca-central-padroes/dm-00-gov-documento-mestre-governanca-central-padroes-v3.0-07-06-2026.md',
-    pathRelative: 'docs/estrutura-de-documentos-oficiais/00-governanca-central-padroes/dm-00-gov-documento-mestre-governanca-central-padroes-v3.0-07-06-2026.md',
-    status: 'canonico',
-    officialStatus: 'oficial_ativo',
-    category: 'Governança',
-    areaId: 'pietro',
-    shouldBecome: 'padrao',
-    type: 'documento_mestre',
-    source: 'md_indexado',
-    owner: 'Pietro Carboni',
-    tags: ['documento-mestre', 'governanca', 'central-padroes'],
-    summary: 'Documento mestre de governança da Central de Padrões.',
-    riskLevel: 'alto',
-    canonicalLevel: 'oficial'
-  },
-  {
-    id: 'md-dm-01-tec',
-    title: 'Documento Mestre — Padrões Técnicos Loze',
-    path: 'src/modules/central_padroes/docs/estrutura-de-documentos-oficiais/01-padroes-tecnicos-loze/dm-01-tec-loze-documento-mestre-padroes-tecnicos-loze-v3.0-07-06-2026.md',
-    pathRelative: 'docs/estrutura-de-documentos-oficiais/01-padroes-tecnicos-loze/dm-01-tec-loze-documento-mestre-padroes-tecnicos-loze-v3.0-07-06-2026.md',
-    status: 'canonico',
-    officialStatus: 'oficial_ativo',
-    category: 'Técnico',
-    areaId: 'savio',
-    shouldBecome: 'padrao',
-    type: 'documento_mestre',
-    source: 'md_indexado',
-    owner: 'Sávio Codare',
-    tags: ['documento-mestre', 'loze', 'padroes-tecnicos'],
-    summary: 'Documento mestre de padrões técnicos Loze.',
-    riskLevel: 'critico',
-    canonicalLevel: 'oficial'
-  }
 ];
 
+/**
+ * Manifesto de documentos completo: planos de desenvolvimento + documentos oficiais indexados.
+ * 
+ * Nota: DM-00 e DM-01 estavam previamente duplicados aqui e no officialDocumentsIndex.
+ * Agora o officialDocumentsIndex é a única fonte para documentos oficiais.
+ */
+export const centralDocumentsManifest: CentralDocument[] = [
+  ...legacyPlans,
+  ...officialDocumentsIndex,
+];
