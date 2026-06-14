@@ -1,8 +1,22 @@
 # Central de Padrões
 
 Módulo oficial do SagB para consolidar, validar e publicar padrões de código, design,
-nomenclatura e arquitetura. Serve como a fonte única da verdade para todas as regras
-que os módulos e QGs do ecossistema devem seguir.
+nomenclatura e arquitetura.
+
+## 🔵 Supabase-First (14-06-2026)
+
+**Supabase é a fonte canônica oficial.** 267 documentos importados com hash SHA-256.
+
+| Fonte | Papel |
+|---|---|
+| Supabase `central_padroes_documents` | 🔵 Fonte canônica oficial |
+| `docs/` | Seed/importação/backup técnico |
+| `data/officialDocumentsIndex.ts` | Apoio/fallback local |
+| `data/fallbackData.ts` | Base legada preservada |
+| `data/centralDocumentsManifest.ts` | Referência técnica |
+
+RPCs: `cp_document_hash`, `cp_import_document`, `cp_create_document`.
+Import: `npm run cp:docs:dry-run` / `npm run cp:docs:import`.
 
 ## Central de Padrões V1
 

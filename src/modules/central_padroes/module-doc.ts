@@ -2,8 +2,8 @@ import { ModuleDoc } from '../../core/modules/module.types';
 
 export const moduleDoc: ModuleDoc = {
   displayName: 'Central de Padrões',
-  purpose: 'Consolidar, validar, publicar e relacionar padrões oficiais, documentos, decisões, módulos, agentes, checklists e evidências do SagB.',
-  version: '1.1.0',
+  purpose: 'Consolidar, validar, publicar e relacionar padrões oficiais, documentos, decisões, módulos, agentes, checklists e evidências do SagB. Supabase é a fonte canônica oficial (267 docs importados).',
+  version: '1.2.0',
   boundaries: [
     'não implementa padrões — apenas os documenta e audita',
     'não substitui o design system — apenas o referencia',

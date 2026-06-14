@@ -4,11 +4,21 @@ import { CentralDocument, CentralDocumentOfficialStatus, DocumentFilter } from '
 import { buildDocumentSearchText, enrichDocument } from '../utils/documentNormalizers';
 import { centralPadroesCrudService } from './centralPadroesCrudService';
 
+export interface SourceSummary {
+  supabaseCount: number;
+  fallbackCount: number;
+  manifestCount: number;
+  dedupedTotal: number;
+  canonicalSource: 'supabase' | 'fallback';
+  fallbackActive: boolean;
+}
+
 const byId = (documents: CentralDocument[]) => {
   const map = new Map<string, CentralDocument>();
   documents.forEach((document) => {
     const enriched = enrichDocument(document);
     const existing = map.get(enriched.id);
+    // Último ganha (Supabase sobrescreve fallback/manifest)
     map.set(enriched.id, existing ? { ...existing, ...enriched } : enriched);
   });
   return Array.from(map.values());
@@ -46,20 +56,47 @@ export const centralPadroesDocumentHubService = {
     return applyFilter(documents, filter);
   },
 
+  /** Retorna documentos + resumo da origem dos dados */
+  async listDocumentsWithSummary(filter?: DocumentFilter): Promise<{ documents: CentralDocument[]; sourceSummary: SourceSummary }> {
+    const [liveDocuments] = await Promise.all([
+      centralPadroesCrudService.listDocuments().catch(() => []),
+    ]);
+
+    const supabaseCount = liveDocuments.length;
+    const fallbackCount = centralPadroesFallbackData.documents.length;
+    const manifestCount = centralDocumentsManifest.length;
+
+    const documents = byId([
+      ...centralPadroesFallbackData.documents.map((d) => ({ ...d, source: d.source || 'fallback' as const })),
+      ...centralDocumentsManifest,
+      ...liveDocuments.map((d) => ({ ...d, source: d.source || 'supabase_live' as const }))
+    ]).sort((a, b) => a.title.localeCompare(b.title));
+
+    const sourceSummary: SourceSummary = {
+      supabaseCount,
+      fallbackCount,
+      manifestCount,
+      dedupedTotal: documents.length,
+      canonicalSource: supabaseCount > 0 ? 'supabase' : 'fallback',
+      fallbackActive: supabaseCount === 0,
+    };
+
+    return { documents: applyFilter(documents, filter), sourceSummary };
+  },
+
   async getDocument(id: string): Promise<CentralDocument | null> {
-    const documents = await this.listDocuments({ includeDeleted: true });
-    return documents.find((document) => document.id === id || document.slug === id) || null;
+    const { documents } = await this.listDocumentsWithSummary({ includeDeleted: true });
+    return documents.find((d) => d.id === id || d.slug === id) || null;
   },
 
   summarizeGaps(documents: CentralDocument[]) {
     return {
       total: documents.length,
-      incomplete: documents.filter((document) => document.isIncomplete).length,
-      withoutOwner: documents.filter((document) => !document.owner).length,
-      withoutTags: documents.filter((document) => !(document.tags || []).length).length,
-      withoutSummary: documents.filter((document) => !document.summary).length,
-      withoutContent: documents.filter((document) => document.contentAvailability === 'missing').length
+      incomplete: documents.filter((d) => d.isIncomplete).length,
+      withoutOwner: documents.filter((d) => !d.owner).length,
+      withoutTags: documents.filter((d) => !(d.tags || []).length).length,
+      withoutSummary: documents.filter((d) => !d.summary).length,
+      withoutContent: documents.filter((d) => d.contentAvailability === 'missing').length
     };
   }
 };
-

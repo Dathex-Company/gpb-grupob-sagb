@@ -100,14 +100,18 @@ const DashboardPage: React.FC = () => {
           ═══════════════════════════════════════════════════ */}
       <section className="cp-docs-dashboard-section">
         <p className="cp-docs-section-title">Visão Executiva</p>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          <MetricCard label="Arquivos físicos" value={metrics.physicalOfficialFiles} hint="Pasta estrutura-de-documentos-oficiais" />
-          <MetricCard label="Indexados" value={metrics.indexedOfficialDocuments} hint="officialDocumentsIndex" />
-          <MetricCard label="Manifest total" value={metrics.manifestTotal} hint="Índice oficial + planos legados" />
-          <MetricCard label="Legados (fallback)" value={metrics.fallbackLegacyDocuments} hint="Base antiga preservada" />
-          <MetricCard label="Oficiais ativos" value={metrics.officialActiveMasters} hint="12 Documentos Mestres v3.0" />
-          <MetricCard label="Previstos" value={metrics.statusPrevisto} hint="Status previsto, em rascunho" />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-7">
+          <MetricCard label="🔵 Supabase" value={metrics.supabaseCount} hint={metrics.supabaseConnected ? 'Fonte canônica oficial' : 'Desconectado'} />
+          <MetricCard label="📂 Arquivos físicos" value={metrics.physicalOfficialFiles} hint="Pasta estrutura-de-documentos-oficiais" />
+          <MetricCard label="📋 Indexados" value={metrics.indexedOfficialDocuments} hint="officialDocumentsIndex (seed)" />
+          <MetricCard label="📦 Manifest" value={metrics.manifestTotal} hint="Índice oficial + planos" />
+          <MetricCard label="📚 Fallback" value={metrics.fallbackLegacyDocuments} hint="Base legada (backup)" />
+          <MetricCard label="⭐ Oficiais ativos" value={metrics.officialActiveMasters} hint="12 Documentos Mestres v3.0" />
+          <MetricCard label="📝 Previstos" value={metrics.statusPrevisto} hint="Status previsto, em rascunho" />
         </div>
+        {!metrics.supabaseConnected && (
+          <div className="cp-dh-notice perm" style={{ marginTop: 8 }}>⚠️ Modo fallback local ativo — Supabase indisponível. Dados exibidos do índice local.</div>
+        )}
       </section>
 
       {/* ═══════════════════════════════════════════════════

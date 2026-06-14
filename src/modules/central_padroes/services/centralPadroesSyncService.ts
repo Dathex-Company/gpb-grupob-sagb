@@ -1,30 +1,51 @@
-import { CentralRepositorySnapshot } from '../types';
-import { centralPadroesBaseModulesService } from './centralPadroesBaseModulesService';
+import { officialDocumentsIndex } from '../data/officialDocumentsIndex';
+import { centralPadroesFallbackData } from '../data/fallbackData';
+import { centralDocumentsManifest } from '../data/centralDocumentsManifest';
 import { centralPadroesCrudService } from './centralPadroesCrudService';
 
+export interface SyncStatus {
+  supabaseConnected: boolean;
+  supabaseDocumentCount: number;
+  localIndexCount: number;
+  fallbackCount: number;
+  manifestCount: number;
+  canonicalSource: 'supabase' | 'fallback';
+  fallbackActive: boolean;
+  estimatedDivergent: number;
+  lastImport: string | null;
+  conflicts: number;
+  pendingCreations: number;
+  pendingUpdates: number;
+}
+
 export const centralPadroesSyncService = {
-  async buildOnlineSnapshot(): Promise<CentralRepositorySnapshot> {
-    const [areas, standards, documents, decisions, checklists, modules, agents] = await Promise.all([
-      centralPadroesCrudService.listAreas().catch(() => []),
-      centralPadroesCrudService.listStandards(),
-      centralPadroesCrudService.listDocuments(),
-      centralPadroesCrudService.listDecisions(),
-      centralPadroesCrudService.listChecklists(),
-      centralPadroesCrudService.listModules(),
-      centralPadroesCrudService.listAgentRuns().catch(() => [])
-    ]);
-    const baseModules = await centralPadroesBaseModulesService.buildBaseModules(modules);
+  async getSyncStatus(): Promise<SyncStatus> {
+    let supabaseCount = 0;
+    let supabaseConnected = false;
+
+    try {
+      const docs = await centralPadroesCrudService.listDocuments();
+      supabaseCount = docs.length;
+      supabaseConnected = supabaseCount > 0;
+    } catch { /* offline */ }
+
+    const localCount = officialDocumentsIndex.length;
+    const fallbackCount = centralPadroesFallbackData.documents.length;
+    const manifestCount = centralDocumentsManifest.length;
 
     return {
-      areas,
-      agents,
-      standards,
-      documents,
-      decisions,
-      checklists,
-      modules,
-      baseModules,
-      isOnline: true
+      supabaseConnected,
+      supabaseDocumentCount: supabaseCount,
+      localIndexCount: localCount,
+      fallbackCount,
+      manifestCount,
+      canonicalSource: supabaseConnected ? 'supabase' : 'fallback',
+      fallbackActive: !supabaseConnected,
+      estimatedDivergent: Math.abs(supabaseCount - localCount),
+      lastImport: null,
+      conflicts: 0,
+      pendingCreations: Math.max(0, localCount - supabaseCount),
+      pendingUpdates: 0,
     };
-  }
+  },
 };

@@ -1,20 +1,12 @@
 /**
  * Serviço de métricas do Dashboard Executivo da Central de Padrões.
- * 
- * Consolida métricas reais a partir de:
- * - officialDocumentsIndex (índice canônico de documentos oficiais)
- * - centralDocumentsManifest (manifesto completo)
- * - fallbackData (base legada preservada)
- * - centralPadroesDocumentHubService (merge live)
- * 
- * Não faz chamadas Supabase — leitura live pendente.
- * Não duplica lógica de páginas.
+ * Supabase-First: Supabase é fonte canônica.
  */
-
 import { officialDocumentsIndex } from '../data/officialDocumentsIndex';
 import { centralDocumentsManifest } from '../data/centralDocumentsManifest';
 import { centralPadroesFallbackData } from '../data/fallbackData';
 import { centralPadroesDocumentHubService } from './centralPadroesDocumentHubService';
+import { centralPadroesCrudService } from './centralPadroesCrudService';
 
 export interface DashboardMetrics {
   /** Arquivos físicos reais na pasta estrutura-de-documentos-oficiais */
@@ -37,8 +29,9 @@ export interface DashboardMetrics {
   rascunho: number;
   /** Planos de desenvolvimento legados no manifesto */
   legacyPlans: number;
-  /** Supabase — pendente de leitura */
-  supabaseStatus: 'pendente';
+  /** Supabase — contagem real de documentos canônicos */
+  supabaseCount: number;
+  supabaseConnected: boolean;
   /** Total consolidado estimado (manifest + fallback, pré-dedup) */
   estimatedTotalPreDedup: number;
   /** Total deduplicado (via listDocuments) */
@@ -108,7 +101,8 @@ export const computeLocalDashboardMetrics = (): DashboardMetrics => {
     curadoria,
     rascunho,
     legacyPlans,
-    supabaseStatus: 'pendente',
+    supabaseCount: 0,
+    supabaseConnected: false,
     estimatedTotalPreDedup,
     totalDeduplicated: null, // preenchido async
     officialActiveOnScreen: null, // preenchido async
@@ -123,8 +117,17 @@ export const computeLocalDashboardMetrics = (): DashboardMetrics => {
 /**
  * Enriquece métricas com dados live do DocumentHub (ainda local, sem Supabase).
  */
+import { centralPadroesCrudService } from './centralPadroesCrudService';
+
 export const enrichDashboardMetrics = async (): Promise<DashboardMetrics> => {
   const base = computeLocalDashboardMetrics();
+  try {
+    const supabaseDocs = await centralPadroesCrudService.listDocuments();
+    base.supabaseCount = supabaseDocs.length;
+    base.supabaseConnected = supabaseDocs.length > 0;
+  } catch {
+    base.supabaseConnected = false;
+  }
   try {
     const docs = await centralPadroesDocumentHubService.listDocuments();
     base.totalDeduplicated = docs.length;

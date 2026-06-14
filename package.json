@@ -13,6 +13,8 @@
     "test": "node --test tests/*.test.mjs",
     "check": "npm run test && npm run build",
     "history:check": "node tools/check-history.mjs",
+    "cp:docs:dry-run": "node --experimental-strip-types src/modules/central_padroes/scripts/importDocsToSupabase.ts",
+    "cp:docs:import": "node --experimental-strip-types src/modules/central_padroes/scripts/importDocsToSupabase.ts --import",
     "prepare": "husky"
   },
   "dependencies": {
@@ -24,6 +26,7 @@
     "@whiskeysockets/baileys": "^6.7.9",
     "imap-simple": "^5.1.0",
     "mailparser": "^3.9.8",
+    "mermaid": "^11.15.0",
     "nodemailer": "^8.0.7",
     "qrcode": "^1.5.4",
     "react": "^19.2.3",
@@ -31,6 +34,7 @@
     "react-hook-form": "^7.72.1",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.17.0",
+    "remark-gfm": "^4.0.1",
     "vite": "^7.3.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.12"

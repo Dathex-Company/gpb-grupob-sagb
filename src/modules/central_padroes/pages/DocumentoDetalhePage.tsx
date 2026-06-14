@@ -1,9 +1,9 @@
 import React from 'react';
 import { CentralPageShell } from '../components/CentralPageShell';
 import { MarkdownPreview } from '../components/MarkdownPreview';
-import { StatusBadge } from '../components/StatusBadge';
 import { Toast } from '../components/Toast';
 import { centralPadroesDocumentHubService } from '../services/centralPadroesDocumentHubService';
+import { centralPadroesMarkdownContentService } from '../services/centralPadroesMarkdownContentService';
 import { officialStatusLabel } from '../utils/documentNormalizers';
 import { CentralDocument, CentralDocumentOfficialStatus } from '../types';
 
@@ -14,26 +14,28 @@ type DocumentoDetalhePageProps = {
   onSendToCuradoria?: (document: CentralDocument) => void;
 };
 
-const officialStatusBadgeClass = (status?: CentralDocumentOfficialStatus): string => {
+const chipClass = (status?: CentralDocumentOfficialStatus): string => {
   switch (status) {
-    case 'oficial_ativo': return 'cp-official-badge active';
-    case 'em_revisao': return 'cp-official-badge review';
-    case 'rascunho': return 'cp-official-badge draft';
-    case 'incompleto': return 'cp-official-badge incomplete';
-    case 'legado': return 'cp-official-badge legacy';
-    case 'fonte_bruta': return 'cp-official-badge raw';
-    case 'curadoria': return 'cp-official-badge curation';
-    case 'externo': return 'cp-official-badge external';
-    default: return 'cp-official-badge';
+    case 'oficial_ativo': return 'active';
+    case 'em_revisao': return 'review';
+    case 'rascunho': return 'draft';
+    case 'legado': return 'legacy';
+    case 'fonte_bruta': return 'raw';
+    case 'curadoria': return 'curation';
+    default: return '';
   }
 };
 
-const MetaCard: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-  <div className="cp-meta-card">
-    <span className="cp-meta-card-label">{label}</span>
-    <span className="cp-meta-card-value">{value || '—'}</span>
-  </div>
-);
+/** Mapeia areaId (agente) para domínio real */
+const domainLabel = (areaId?: string): string => {
+  const map: Record<string, string> = {
+    pietro: 'Governança', savio: 'Técnico', yuri: 'Processos', pedro: 'Segurança',
+    alice: 'UX/UI', pierre: 'IA e Orquestração', klaus: 'Modelos IA', noah: 'Naming',
+    dante: 'Exploração', nilo: 'Metodologias', julio: 'Educação', cesar: 'Negócios',
+    tales: 'RI e Capital',
+  };
+  return map[areaId || ''] || areaId || '—';
+};
 
 const DocumentoDetalhePage: React.FC<DocumentoDetalhePageProps> = ({ documentId, onBack, onEdit, onSendToCuradoria }) => {
   const [document, setDocument] = React.useState<CentralDocument | null>(null);
@@ -42,136 +44,90 @@ const DocumentoDetalhePage: React.FC<DocumentoDetalhePageProps> = ({ documentId,
   const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   React.useEffect(() => {
-    if (!documentId) {
-      setDocument(null);
-      return;
-    }
-    setLoading(true);
-    setError(null);
+    if (!documentId) { setDocument(null); return; }
+    setLoading(true); setError(null);
     centralPadroesDocumentHubService.getDocument(documentId)
-      .then(setDocument)
+      .then((doc) => {
+        if (doc) {
+          // Enriquece com conteúdo real do .md local se não tiver conteúdo do Supabase
+          const enriched = centralPadroesMarkdownContentService.enrichWithContent(doc);
+          setDocument(enriched);
+        } else {
+          setDocument(null);
+        }
+      })
       .catch((err) => setError(String((err as Error)?.message || err)))
       .finally(() => setLoading(false));
   }, [documentId]);
 
   const copyPath = async () => {
-    const path = document?.pathAbsolute || document?.pathRelative || document?.path;
+    const path = document?.pathRelative || document?.path || '';
     if (!path) return;
-    try {
-      await navigator.clipboard?.writeText(path);
-      setToast({ message: 'Caminho copiado.', type: 'success' });
-    } catch {
-      setToast({ message: path, type: 'success' });
-    }
+    try { await navigator.clipboard?.writeText(path); setToast({ message: 'Caminho copiado.', type: 'success' }); }
+    catch { setToast({ message: path, type: 'success' }); }
   };
 
+  const displayPath = () => document?.pathRelative || document?.path || '—';
+
   if (!documentId) {
-    return (
-      <CentralPageShell title="Documento" subtitle="Nenhum documento selecionado.">
-        <button type="button" className="cp-docs-top-link" onClick={onBack}>← Voltar para documentos</button>
-      </CentralPageShell>
-    );
+    return <CentralPageShell title="Documento" subtitle="Nenhum selecionado." compact><button className="cp-dh-btn" onClick={onBack}>← Voltar</button></CentralPageShell>;
   }
 
+  const hasContent = !!(document?.content?.trim());
+
   return (
-    <CentralPageShell title={document?.title || 'Documento'} subtitle="Document Hub V2 — Detalhe documental">
-      <div className="cp-doc-detail-actions">
-        <button type="button" className="cp-docs-top-link" onClick={onBack}>← Voltar</button>
-        <button type="button" className="cp-docs-top-link" onClick={copyPath} disabled={!document}>📋 Copiar caminho</button>
-        <button type="button" className="cp-docs-top-link" onClick={() => document && onEdit?.(document.id)} disabled={!document}>✏️ Editar documento</button>
-        <button type="button" className="cp-docs-top-link primary" onClick={() => document && onSendToCuradoria?.(document)} disabled={!document}>📦 Enviar para curadoria</button>
+    <CentralPageShell title="Detalhe" subtitle={document?.title || 'Documento'} compact>
+      <div className="cp-dh-detail-actions" style={{ marginBottom: 8 }}>
+        <button className="cp-dh-btn" onClick={onBack}>← Voltar</button>
+        <button className="cp-dh-btn" onClick={copyPath}>📋 Copiar</button>
+        <button className="cp-dh-btn" onClick={() => document && onEdit?.(document.id)}>✏️ Editar</button>
+        <button className="cp-dh-btn" onClick={() => document && onSendToCuradoria?.(document)}>📦 Curadoria</button>
       </div>
 
-      {loading && <div className="cp-docs-inline-alert">Carregando detalhe documental...</div>}
-      {error && <div className="cp-docs-inline-alert error">Falha ao carregar documento: {error}</div>}
-      {!loading && !error && !document && <div className="cp-docs-inline-alert error">Documento não encontrado.</div>}
+      {loading && <div className="cp-dh-loading">Carregando...</div>}
+      {error && <div className="cp-dh-empty">Erro: {error}</div>}
+      {!loading && !error && !document && <div className="cp-dh-empty">Documento não encontrado.</div>}
 
       {document && (
-        <div className="cp-doc-detail-v2">
-          {/* Header */}
-          <section className="cp-doc-detail-header">
-            <div className="cp-doc-detail-title-row">
-              <h2 className="cp-doc-detail-title">{document.title}</h2>
-              <div className="cp-doc-detail-badges">
-                <span className={officialStatusBadgeClass(document.officialStatus)}>
-                  {officialStatusLabel[document.officialStatus || 'incompleto']}
-                </span>
-                <StatusBadge value={document.status} />
-                {document.isIncomplete && <span className="cp-visual-badge attention">⚠️ incompleto</span>}
-              </div>
+        <div className="cp-dh-detail">
+          <div className="cp-dh-detail-header">
+            <div>
+              <h2 className="cp-dh-detail-title">{document.title}</h2>
+              {document.summary && <p className="cp-dh-detail-summary">{document.summary}</p>}
             </div>
-            {document.summary && <p className="cp-doc-detail-summary">{document.summary}</p>}
-          </section>
-
-          {/* Metadata grid */}
-          <section className="cp-doc-detail-metadata">
-            <p className="cp-docs-kicker">Metadados</p>
-            <div className="cp-meta-grid">
-              <MetaCard label="Tipo" value={document.type} />
-              <MetaCard label="Status técnico" value={document.status} />
-              <MetaCard label="Status oficial" value={officialStatusLabel[document.officialStatus || 'incompleto']} />
-              <MetaCard label="Risco" value={document.riskLevel} />
-              <MetaCard label="Owner" value={document.owner} />
-              <MetaCard label="Área" value={document.areaId} />
-              <MetaCard label="Categoria" value={document.category} />
-              <MetaCard label="Destino" value={document.shouldBecome} />
-              <MetaCard label="Nível canônico" value={document.canonicalLevel} />
-              <MetaCard label="Módulo" value={document.module} />
-              <MetaCard label="Divisão" value={document.division} />
-              <MetaCard label="Origem" value={document.source} />
-              <MetaCard label="Conteúdo" value={document.contentAvailability} />
-              <MetaCard label="Publicado em" value={document.publishedAt ? new Date(document.publishedAt).toLocaleString('pt-BR') : 'Ainda não publicado'} />
-              <MetaCard label="Publicado por" value={document.publishedBy || '—'} />
+            <div className="cp-dh-detail-badges">
+              <span className={`cp-dh-chip ${chipClass(document.officialStatus)}`}>{officialStatusLabel[document.officialStatus || 'incompleto']}</span>
+              {hasContent && <span className="cp-dh-chip active">Conteúdo</span>}
             </div>
-          </section>
+          </div>
 
-          {/* Paths */}
-          <section className="cp-doc-detail-paths">
-            <p className="cp-docs-kicker">Caminhos</p>
-            <div className="cp-path-list">
-              <div className="cp-path-item">
-                <span className="cp-path-label">Relativo</span>
-                <code className="cp-path-value">{document.pathRelative || document.path || '—'}</code>
-              </div>
-              <div className="cp-path-item">
-                <span className="cp-path-label">Absoluto</span>
-                <code className="cp-path-value">{document.pathAbsolute || '—'}</code>
-              </div>
-              <div className="cp-path-item">
-                <span className="cp-path-label">Slug</span>
-                <code className="cp-path-value">{document.slug || '—'}</code>
-              </div>
+          <p className="cp-dh-section-title">Metadados</p>
+          <div className="cp-dh-meta-grid">
+            <div className="cp-dh-meta-item"><span className="cp-dh-meta-label">Domínio</span><span className="cp-dh-meta-value">{domainLabel(document.areaId)}</span></div>
+            <div className="cp-dh-meta-item"><span className="cp-dh-meta-label">Tipo</span><span className="cp-dh-meta-value">{document.type || '—'}</span></div>
+            <div className="cp-dh-meta-item"><span className="cp-dh-meta-label">Status</span><span className="cp-dh-meta-value">{document.status || '—'}</span></div>
+            <div className="cp-dh-meta-item"><span className="cp-dh-meta-label">Risco</span><span className="cp-dh-meta-value">{document.riskLevel || '—'}</span></div>
+            <div className="cp-dh-meta-item"><span className="cp-dh-meta-label">Owner</span><span className="cp-dh-meta-value">{document.owner || '—'}</span></div>
+            <div className="cp-dh-meta-item"><span className="cp-dh-meta-label">Origem</span><span className="cp-dh-meta-value">{document.source || '—'}</span></div>
+            <div className="cp-dh-meta-item" style={{ gridColumn: '1 / -1' }}>
+              <span className="cp-dh-meta-label">Caminho</span>
+              <code style={{ fontSize: 9.5, wordBreak: 'break-all', color: 'var(--cp-soft)', fontFamily: 'monospace' }}>{displayPath()}</code>
             </div>
-          </section>
+          </div>
 
-          {/* Tags */}
-          <section className="cp-doc-detail-tags">
-            <p className="cp-docs-kicker">Tags</p>
-            <div className="cp-tags-row">
-              {(document.tags || []).map((tag) => (
-                <span key={tag} className="cp-tag">#{tag}</span>
-              ))}
-              {!document.tags?.length && <span className="cp-muted-text">Nenhuma tag associada</span>}
-            </div>
-          </section>
-
-          {/* Lacunas */}
-          {document.incompleteReasons?.length ? (
-            <section className="cp-doc-detail-gaps">
-              <p className="cp-docs-kicker">Lacunas detectadas</p>
-              <div className="cp-gaps-list">
-                {document.incompleteReasons.map((reason) => (
-                  <span key={reason} className="cp-gap-item">⚠️ {reason.replace(/_/g, ' ')}</span>
-                ))}
+          {document.tags?.length ? (
+            <>
+              <p className="cp-dh-section-title">Tags</p>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+                {document.tags.map((t) => <span key={t} className="cp-dh-chip">{t}</span>)}
               </div>
-            </section>
+            </>
           ) : null}
 
-          {/* Preview */}
-          <section className="cp-doc-detail-preview">
-            <p className="cp-docs-kicker">Conteúdo</p>
-            <MarkdownPreview content={document.content} emptyMessage="Este documento não possui conteúdo markdown. Use o editor para adicionar conteúdo." />
-          </section>
+          <p className="cp-dh-section-title">Conteúdo</p>
+          <div className="cp-dh-preview">
+            <MarkdownPreview content={document.content} emptyMessage={hasContent ? undefined : 'Conteúdo não disponível. O arquivo .md pode não ter sido encontrado.'} />
+          </div>
         </div>
       )}
       <Toast message={toast?.message || null} type={toast?.type} onClose={() => setToast(null)} />
