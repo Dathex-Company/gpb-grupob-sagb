@@ -31,6 +31,7 @@ import { sagbBridgeManifest, sagbBridgeRoutes } from '../../modules/sagb_bridge'
 import { mcpSagbManifest, mcpSagbRoutes } from '../../modules/mcp_sagb';
 import { fluxobManifest, fluxobRoutes } from '../../modules/fluxob';
 import { nideManifest, nideRoutes } from '../../modules/nide';
+import { simuladorMentoriasManifest, simuladorMentoriasRoutes } from '../../modules/simulador-mentorias';
 
 // Aqui definimos o registry central. Novos módulos devem ser registrados nesta array.
 
@@ -82,6 +83,10 @@ export const moduleRegistry: PluggableModule[] = [
   {
     manifest: mentoriasManifest,
     routes: mentoriasRoutes
+  },
+  {
+    manifest: simuladorMentoriasManifest,
+    routes: simuladorMentoriasRoutes
   },
   {
     manifest: metodologiasManifest,
