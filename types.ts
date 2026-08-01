@@ -44,6 +44,7 @@ export type TabId =
   | 'nic'
   | 'rai'
   | 'mentorias'
+  | 'simulador-mentorias'
   | 'cid'
   | 'quality'
   | 'intelligence-flow'
